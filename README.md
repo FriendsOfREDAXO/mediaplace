@@ -133,6 +133,33 @@ echo $data['copyright'] ?? '';
 
 Wichtig: `med_json_data` ist ein MediaPlace-eigenes Feld und taucht **nicht** in den generischen Medien-Antworten des `api`-Addons auf (das kennt nur echte Metainfo-Spalten). Für Letztere siehe `GET /api/backend/media/{filename}/metainfo` des `api`-Addons.
 
+### Medien nach Tags oder Sammlungen auslesen
+
+System-Tags und Sammlungen liegen in zwei eigenen Tabellen, nicht im `api`-Addon. Eine Sammlung ist dabei technisch nur ein Tag mit `collection:`-Präfix im Namen (`collection:Sommerkampagne`), angezeigt/verwaltet wird das über dasselbe Tag-Feld im Detail-Panel.
+
+Einen fertigen "gib mir alle Dateien mit Tag X"-API-Endpunkt gibt es nicht – `?rex-api-call=mediaplace_tags` liest Tags nur pro (bekannter) Datei, keine Rückwärtssuche. Serverseitig (eigenes AddOn, Modul, Cronjob) direkt per SQL:
+
+```php
+// Alle Dateien mit einem bestimmten Tag
+$filenames = rex_sql::factory()->getArray(
+    'SELECT filename FROM ' . rex::getTable('mediaplace_media_tags') . ' WHERE tag_name = :tag ORDER BY filename',
+    ['tag' => 'Sommerkampagne'],
+);
+
+// Alle Dateien einer Sammlung (Praefix beachten)
+$filenames = rex_sql::factory()->getArray(
+    'SELECT filename FROM ' . rex::getTable('mediaplace_media_tags') . ' WHERE tag_name = :tag ORDER BY filename',
+    ['tag' => 'collection:Projekt X'],
+);
+
+foreach ($filenames as $row) {
+    $media = rex_media::get($row['filename']);
+    // ...
+}
+```
+
+Kompletten Tag-/Sammlungs-Katalog (alle je vergebenen Namen + Farbe) liefert `\FriendsOfRedaxo\Mediaplace\SystemTagManager::getCatalog()` bzw. GET `?rex-api-call=mediaplace_tags` ohne `filename`/`filenames` (Antwort-Feld `catalog`) – Sammlungen darin am `collection:`-Präfix erkennen, echte Tags sind alles andere.
+
 ### Eigene Feldtypen registrieren
 
 Das Detail-Panel ist über den Extension Point `MEDIAPLACE_WIDGET_TYPES` erweiterbar – andere Addons können so eigene Feldtypen anmelden, ohne dass MediaPlace sie kennen muss:
