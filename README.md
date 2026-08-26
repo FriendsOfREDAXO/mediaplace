@@ -78,6 +78,23 @@ MP3.open(function (filenames) {
 
 ## Für Entwickler
 
+### Eigene Picker-Integration (TinyMCE, CKEditor5, eigene Widgets)
+
+Automatisch abgefangen werden nur klickbare klassische Widgets – `REX_MEDIA[n]`/`REX_MEDIALIST[n]`, mform `+media+`/`+medialist+`, der Hauptmenüpunkt (`mediapool3_classic.js`, Event-Delegation) – die öffnen den MediaPlace-Overlay statt des alten Popups.
+
+TinyMCE und CKEditor5 rufen `openREXMedia()`/`openMediaPool()` dagegen direkt per JavaScript auf, ohne abfangbaren Klick. Das bleibt bewusst unverändert, damit ihr Popup-Fenster-Vertrag (`jQuery(window).on('rex:selectMedia', ...)`) weiter funktioniert – dort springt also weiterhin der klassische Medienpool ein (siehe Hinweis oben).
+
+Baut ihr einen eigenen Picker oder Feldtyp und wollt aktiv MediaPlace nutzen, statt die alte Popup-Kompatibilität nachzubauen, ruft einfach direkt die JS-API auf:
+
+```javascript
+MP3.open(function (filename) {
+    // Datei ausgewählt, z.B. ins eigene Eingabefeld schreiben
+});
+
+// bestehende Auswahl im Detail-Panel ansehen, ohne sie zu ändern
+MP3.openFile('bild.jpg');
+```
+
 ### Eigene API-Endpunkte
 
 | Methode | Endpunkt | Zweck |

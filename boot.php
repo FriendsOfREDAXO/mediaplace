@@ -52,6 +52,8 @@ if (rex::isBackend() && rex::getUser()) {
             $mediapool->setPopup('MP3.open(); return false;');
             // Produktname, analog zum Seitentitel in pages/index.php -- keine Uebersetzung.
             $mediapool->setTitle('MediaPlace');
+            // Gleiches Icon wie der eigene Hauptmenuepunkt (package.yml page.icon).
+            $mediapool->setIcon('rex-icon fa-photo-film');
 
             // Die klassische Dateiliste (mediapool/media) ist durch unseren Overlay ersetzt
             // und wird aus der Navigation entfernt. Die Route bleibt aber aktiv, da TinyMCE/
