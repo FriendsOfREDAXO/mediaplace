@@ -1,6 +1,6 @@
 # MediaPlace
 
-![REDAXO](https://img.shields.io/badge/REDAXO-%3E%3D5.21-red) ![PHP](https://img.shields.io/badge/PHP-%3E%3D8.4-blue) ![API](https://img.shields.io/badge/API_AddOn-%3E%3D1.3-green)
+![REDAXO](https://img.shields.io/badge/REDAXO-%3E%3D5.20-red) ![PHP](https://img.shields.io/badge/PHP-%3E%3D8.4-blue) ![API](https://img.shields.io/badge/API_AddOn-%3E%3D1.3-green)
 
 Hey! Ihr wünscht Euch den Medienpool 3, das können wir nicht bieten. Aber hier ist **MediaPlace** – ein moderner Medienpool-Ersatz fürs REDAXO-Backend, mit dem sich das Warten schon mal ganz gut aushalten lässt.
 
@@ -39,7 +39,7 @@ Vollbild-Overlay statt Popup-Gefrickel, dazu ein Eingabe-Widget für Module/Form
 2. Das [FriendsOfREDAXO/api](https://github.com/FriendsOfREDAXO/api)-Addon muss ebenfalls installiert sein – unter **API → Konfiguration** die `backend/media*`-Endpunkte (Liste, Get, Add, Delete, Update, Category) aktivieren.
 3. Fertig. Der Hauptmenüpunkt „Medienpool“ öffnet ab sofort direkt den neuen Overlay.
 
-Unter **MediaPlace** finden sich die Admin-Seiten **Einstellungen**, **Metainfo Felder**, **Demo** und **Debug**. Der Picker/Overlay selbst bleibt für alle Backend-User mit Medienrecht nutzbar – nur der „Nur unbenutzte Medien“-Filter braucht zusätzlich ein eigenes Recht, das sich über Benutzer → Rollen vergeben lässt.
+Unter **MediaPlace** finden sich die Admin-Seiten **Einstellungen**, **Metainfo Felder**, **Demo** und **Hilfe**. Der Picker/Overlay selbst bleibt für alle Backend-User mit Medienrecht nutzbar – nur der „Nur unbenutzte Medien“-Filter braucht zusätzlich ein eigenes Recht, das sich über Benutzer → Rollen vergeben lässt.
 
 ### Klassischen Medienpool zurückholen
 

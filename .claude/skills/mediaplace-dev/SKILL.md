@@ -22,7 +22,7 @@ Drei Teile: **Overlay** (`MP3.open()`), **Input-Widget** (`<input class="mp3-wid
 - `lib/MediaPermission.php` — zentrale Rechteprüfung für unsere eigenen Endpunkte
 - `lib/SystemTagManager.php` — Tags/Sammlungen (eigene Tabellen `rex_mediaplace_tags`/`_media_tags`, eigenes SQL)
 - `lib/MetainfoFieldGroup.php`, `lib/Widgets/` — Felddefinitionen fürs Detail-Panel (JSON-Storage in `med_json_data`)
-- `pages/einstellungen.php` — `rex_config_form`-basierte Settings-Seite (Ersetzen des klassischen Medienpools ein/aus)
+- `pages/settings.php` — `rex_config_form`-basierte Settings-Seite (Ersetzen des klassischen Medienpools ein/aus)
 - `pages/metainfo_fields.php` — Feldverwaltung, `core/page/section.php`-Fragments + Bootstrap-3-Klassen (siehe unten)
 
 ## Kritische Bereiche — hier besonders vorsichtig sein

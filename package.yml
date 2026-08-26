@@ -8,7 +8,7 @@ page:
     icon: rex-icon fa-photo-film
     perm: admin
     subpages:
-        einstellungen:
+        settings:
             title: 'Einstellungen'
             icon: rex-icon fa-gear
             perm: admin
@@ -20,13 +20,14 @@ page:
             title: 'Demo'
             icon: rex-icon fa-play
             perm: admin
-        debug:
-            title: 'Debug'
-            icon: rex-icon fa-bug
+        help:
+            title: 'translate:help'
+            subPath: README.md
+            itemClass: 'pull-right'
             perm: admin
 
 requires:
-    redaxo: '>=5.21'
+    redaxo: '>=5.20'
     php:
         version: '>=8.4'
     packages:
