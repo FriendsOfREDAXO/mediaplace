@@ -1939,6 +1939,30 @@
                 return;
             }
 
+            if (widget === 'checkbox') {
+                var cbEl = detailPanel.querySelector('[data-json-field="' + key + '"]');
+                json[key] = cbEl ? !!cbEl.checked : false;
+                return;
+            }
+
+            if (widget === 'select') {
+                var selEl = detailPanel.querySelector('[data-json-field="' + key + '"]');
+                if (!selEl) {
+                    json[key] = null;
+                    return;
+                }
+                if (field.options && field.options.multiple) {
+                    var chosen = [];
+                    for (var so = 0; so < selEl.options.length; so++) {
+                        if (selEl.options[so].selected) chosen.push(selEl.options[so].value);
+                    }
+                    json[key] = chosen.length ? chosen : null;
+                } else {
+                    json[key] = selEl.value || null;
+                }
+                return;
+            }
+
             if (widget === 'tinymce' || widget === 'cke5') {
                 if (field.translatable) {
                     var tinyInputs = qsa('.mp3-tiny-canvas-value[data-json-field="' + key + '"][data-clang]', detailPanel);

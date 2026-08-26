@@ -54,6 +54,16 @@ abstract class MetainfoWidget implements MetainfoWidgetInterface
                 'class' => Widgets\TextareaWidget::class,
                 'fragment' => 'mediaplace/detail_field_body_textarea.php',
             ],
+            'checkbox' => [
+                'label' => 'Checkbox (Ja/Nein)',
+                'class' => Widgets\CheckboxWidget::class,
+                'fragment' => 'mediaplace/detail_field_body_checkbox.php',
+            ],
+            'select' => [
+                'label' => 'Auswahlliste (Select)',
+                'class' => Widgets\SelectWidget::class,
+                'fragment' => 'mediaplace/detail_field_body_select.php',
+            ],
             'tinymce' => [
                 'label' => 'TinyMCE (WYSIWYG)',
                 'class' => Widgets\TinyMceWidget::class,

@@ -82,6 +82,10 @@ if ('edit' === $func || 'add' === $func) {
     $translatable = (bool) rex_request('translatable', 'int', $fieldToEdit?->isTranslatable() ? 1 : 0);
     $imageOnly = (bool) rex_request('image_only', 'int', $fieldToEdit?->isImageOnly() ? 1 : 0);
 
+    $existingOptions = $fieldToEdit?->getOptions() ?? [];
+    $choicesSource = rex_request('choices_source', 'string', (string) ($existingOptions['choices_source'] ?? ''));
+    $selectMultiple = (bool) rex_request('select_multiple', 'int', !empty($existingOptions['multiple']) ? 1 : 0);
+
     // Eingebaute + von anderen Addons per Erweiterungspunkt registrierte Typen,
     // siehe MetainfoWidget::getRegisteredTypes().
     $allowedWidgets = array_map(
@@ -133,6 +137,18 @@ if ('edit' === $func || 'add' === $func) {
                         <?php echo rex_i18n::msg('mediaplace_images_only'); ?> <small class="text-muted">(<?php echo rex_i18n::msg('mediaplace_images_only_hint'); ?>)</small>
                     </label>
                 </div>
+
+                <div class="form-group" id="select-choices-group" style="display:none">
+                    <label for="choices_source" class="control-label"><?php echo rex_i18n::msg('mediaplace_field_choices'); ?></label>
+                    <textarea id="choices_source" name="choices_source" class="form-control" rows="5"><?php echo rex_escape($choicesSource); ?></textarea>
+                    <p class="help-block"><?php echo rex_i18n::msg('mediaplace_field_choices_hint'); ?></p>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" id="select_multiple" name="select_multiple" value="1" <?php if ($selectMultiple) echo 'checked'; ?>>
+                            <?php echo rex_i18n::msg('mediaplace_select_multiple'); ?>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -150,20 +166,25 @@ if ('edit' === $func || 'add' === $func) {
         // mediapool3.js), alt rendert immer pro Sprache (der Haken ist dort
         // immer wirkungslos "an"). UI reagiert entsprechend, serverseitig
         // wird das ohnehin unabhaengig davon erzwungen (siehe Save-Handler).
-        var FORCED = { media_link: false, alt: true };
+        var FORCED = { media_link: false, alt: true, checkbox: false, select: false };
         var HINT = {
             media_link: <?php echo json_encode(rex_i18n::msg('mediaplace_field_hint_media_link')); ?>,
-            alt: <?php echo json_encode(rex_i18n::msg('mediaplace_field_hint_alt')); ?>
+            alt: <?php echo json_encode(rex_i18n::msg('mediaplace_field_hint_alt')); ?>,
+            checkbox: <?php echo json_encode(rex_i18n::msg('mediaplace_field_hint_checkbox')); ?>,
+            select: <?php echo json_encode(rex_i18n::msg('mediaplace_field_hint_select')); ?>
         };
 
         var widgetSelect = document.getElementById('widget_type');
         var translatableCheckbox = document.getElementById('translatable');
         var hintEl = document.getElementById('translatable-hint');
+        var choicesGroup = document.getElementById('select-choices-group');
         if (!widgetSelect || !translatableCheckbox || !hintEl) return;
 
         function update() {
             var type = widgetSelect.value;
             var forced = Object.prototype.hasOwnProperty.call(FORCED, type) ? FORCED[type] : null;
+
+            if (choicesGroup) choicesGroup.style.display = ('select' === type) ? '' : 'none';
 
             if (null === forced) {
                 translatableCheckbox.disabled = false;
@@ -221,6 +242,24 @@ if (1 === rex_post('save', 'int', 0)) {
         $translatable = false;
     }
 
+    $options = [];
+
+    if ('checkbox' === $widgetType) {
+        // Ein Ja/Nein-Wert ist nicht sprachabhaengig.
+        $translatable = false;
+    }
+
+    if ('select' === $widgetType) {
+        // Gespeicherte Werte sind sprachunabhaengige Schluessel (nur die
+        // Auswahlmoeglichkeiten selbst koennten uebersetzt werden, das ist
+        // hier bewusst nicht vorgesehen -- choices_source ist global).
+        $translatable = false;
+        $options = [
+            'multiple' => (bool) rex_post('select_multiple', 'int'),
+            'choices_source' => rex_post('choices_source', 'string', ''),
+        ];
+    }
+
     if (!$key || !$label || !$widgetType) {
         echo rex_view::error(\rex_i18n::msg('mediaplace_invalid_input'));
     } else {
@@ -228,7 +267,7 @@ if (1 === rex_post('save', 'int', 0)) {
             $key,
             $label,
             $widgetType,
-            [],
+            $options,
             $translatable,
             $imageOnly,
         );
