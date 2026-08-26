@@ -100,6 +100,8 @@ MP3.openFile('bild.jpg');
 
 ### Eigene API-Endpunkte
 
+Alle `mediaplace_*`-Endpunkte laufen über REDAXOs `rex-api-call`-Mechanismus und sind **Backend-Session-Endpunkte, keine öffentliche/token-basierte API** – sie prüfen `rex::isBackend()` + `rex::getUser()` und funktionieren deshalb nur mit einer eingeloggten Backend-Session (gleicher Origin, z.B. `fetch(..., { credentials: 'same-origin' })` aus eigenem Backend-JS heraus). Für externen/headless-Zugriff auf REDAXO-Standarddaten (Titel, echte Metainfo-Felder) ist stattdessen das [FriendsOfREDAXO/api](https://github.com/FriendsOfREDAXO/api)-Addon mit Bearer-Token gedacht.
+
 | Methode | Endpunkt | Zweck |
 |---|---|---|
 | GET | `?rex-api-call=mediaplace_json_metainfo&filename={f}` | Metadaten + Felder + Tags eines Mediums laden |
@@ -108,6 +110,28 @@ MP3.openFile('bild.jpg');
 | GET/PATCH | `?rex-api-call=mediaplace_categories` | Kategorien laden, verschieben |
 | GET | `?rex-api-call=mediaplace_unused&filenames=a,b,c` | Prüft, welche Dateien unbenutzt sind |
 | GET/POST | `?rex-api-call=mediaplace_focuspoint` | Fokuspunkt lesen/speichern (nur mit `focuspoint`-Addon) |
+
+**Beispiel: Metadaten eines Mediums auslesen** (aus eigenem Backend-JS, gleiche Session):
+
+```javascript
+fetch('index.php?rex-api-call=mediaplace_json_metainfo&filename=beispiel.jpg', {
+    credentials: 'same-origin',
+})
+    .then(r => r.json())
+    .then(json => console.log(json.data)); // { copyright: "...", alt_text: {...}, ... } -- Schlüssel je nach MediaPlace → Metainfo Felder
+```
+
+Antwortform (`handleGet()` in `lib/rex_api_mediaplace_json_metainfo.php`): `{ success, data, fields, clangs, system_tags, system_tag_catalog, title }` – `data` enthält die aktuellen Werte (Schlüssel = Feld-`key` aus **MediaPlace → Metainfo Felder**), `fields` die zugehörigen Felddefinitionen (Label/Widget-Typ/Optionen).
+
+Läuft der Code bereits serverseitig in REDAXO (eigenes AddOn, kein HTTP-Umweg nötig), direkt die PHP-Klasse dahinter nutzen:
+
+```php
+$media = rex_media::get('beispiel.jpg');
+$data = \FriendsOfRedaxo\Mediaplace\MetainfoJsonStorage::loadFromMedia($media);
+echo $data['copyright'] ?? '';
+```
+
+Wichtig: `med_json_data` ist ein MediaPlace-eigenes Feld und taucht **nicht** in den generischen Medien-Antworten des `api`-Addons auf (das kennt nur echte Metainfo-Spalten). Für Letztere siehe `GET /api/backend/media/{filename}/metainfo` des `api`-Addons.
 
 ### Eigene Feldtypen registrieren
 
