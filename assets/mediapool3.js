@@ -2241,17 +2241,27 @@
 
     // ---- Rendering ----
 
+    // Grid-Ansicht (Kacheln) bekommt bewusst ein festes Querformat statt des
+    // natuerlichen Seitenverhaeltnisses -- gleichmaessige Zeilenhoehen statt
+    // "springendem" Grid. Nur die Media-Wall (Masonry, siehe cardAspectRatio())
+    // zeigt das echte Format.
+    var GRID_TILE_RATIO = '4 / 3';
+
     /**
      * Build preview HTML for a single media file. Genutzt von Grid- und Media-
      * Wall-Ansicht (renderFilesGrid()/renderFilesMediaWall()), beide per Slider
      * auf bis zu 360px CSS-Breite skalierbar (--mp3-tile-size) -- deshalb der
      * eigene, groessere Media-Manager-Typ statt rex_media_small (200x200),
      * siehe install.php.
+     *
+     * @param {string|null} [ratioOverride] Explizites aspect-ratio (z.B. aus
+     *   cardAspectRatio() fuer die Media-Wall). Ohne Angabe greift das feste
+     *   Grid-Querformat (GRID_TILE_RATIO).
      */
-    function previewHtml(file) {
+    function previewHtml(file, ratioOverride) {
         if (isImage(file.filename)) {
             var src = mediaThumbSrc(file.filename, 'mediaplace_thumb', file, mediaForceCacheTokens, lastLoadedFiles);
-            var ratio = cardAspectRatio(file);
+            var ratio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
             var style = ratio ? ' style="aspect-ratio:' + ratio + '"' : '';
             return '<img src="' + escAttr(src) + '" alt="' + escAttr(file.title || file.filename) + '"' + style + '>';
         }
@@ -2259,8 +2269,10 @@
     }
 
     /**
-     * Natuerliches Seitenverhaeltnis fuer die Masonry-Kachel (Kachelansicht),
-     * geclampt gegen absurde Panorama-/Hochformat-Extreme. Fehlt width/height
+     * Natuerliches Seitenverhaeltnis fuer die Media-Wall (Masonry-Ansicht),
+     * geclampt gegen absurde Panorama-/Hochformat-Extreme -- ohne Clamp wuerde
+     * z.B. ein extremes Hochkantbild eine einzelne Spalte beliebig lang und
+     * damit das ganze Masonry-Layout unbrauchbar machen. Fehlt width/height
      * (kein Bild oder fehlende Metadaten), greift der CSS-Fallback (1/1).
      */
     function cardAspectRatio(file) {
@@ -2440,7 +2452,7 @@
             // fester Quadrat-/Breit-/Hoch-Buckets, fuer echten Masonry-Effekt.
             var wallRatio = cardAspectRatio(f);
             var wallMediaStyle = wallRatio ? ' style="aspect-ratio:' + wallRatio + '"' : '';
-            html += '<div class="mp3-masonry-media"' + wallMediaStyle + '>' + previewHtml(f) + '</div>';
+            html += '<div class="mp3-masonry-media"' + wallMediaStyle + '>' + previewHtml(f, wallRatio) + '</div>';
 
             // Footer
             html += '<div class="mp3-masonry-footer">' +

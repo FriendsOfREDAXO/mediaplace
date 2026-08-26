@@ -2148,11 +2148,13 @@ body.rex-theme-dark {
    !important, gewinnt dadurch auch gegen den per JS inline gesetzten
    aspect-ratio, siehe cardAspectRatio()) stauchte/streckte Bilder sichtbar,
    sobald die Kachelbreite per Slider (--mp3-tile-size) von der urspruenglich
-   festen ~180px-Breite abwich. 1/1 hier ist nur der Fallback fuer Bilder ohne
-   bekannte width/height (dann fehlt der inline aspect-ratio). */
+   festen ~180px-Breite abwich. 4/3 hier ist nur der Fallback, falls das
+   inline style (GRID_TILE_RATIO, mediapool3.js) aus irgendeinem Grund fehlt --
+   die Grid-Kacheln bekommen bewusst IMMER ein festes Querformat, unabhaengig
+   vom natuerlichen Bildverhaeltnis (das zeigt nur die Media-Wall/Masonry). */
 #mp3-overlay .mp3-card img {
     width: 100% !important;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 3;
     height: auto !important;
     object-fit: cover !important;
     display: block !important;
