@@ -19,9 +19,10 @@ if (rex::isBackend() && rex::getUser()) {
         return '?v=' . filemtime($this->getPath('assets/' . $file));
     };
 
-    // Core: Overlay Picker -- Helfer/API-Schicht zuerst laden (mediapool3.js
+    // Core: Overlay Picker -- i18n/Helfer/API-Schicht zuerst laden (mediapool3.js
     // bindet sie per Alias ein, siehe deren Datei-Header-Kommentare).
     rex_view::addCssFile($this->getAssetsUrl('mediapool3.css') . $bust('mediapool3.css'));
+    rex_view::addJsFile($this->getAssetsUrl('mediapool3-i18n.js') . $bust('mediapool3-i18n.js'));
     rex_view::addJsFile($this->getAssetsUrl('mediapool3-helpers.js') . $bust('mediapool3-helpers.js'));
     rex_view::addJsFile($this->getAssetsUrl('mediapool3-api.js') . $bust('mediapool3-api.js'));
     rex_view::addJsFile($this->getAssetsUrl('mediapool3.js') . $bust('mediapool3.js'));
@@ -71,6 +72,11 @@ if (rex::isBackend() && rex::getUser()) {
         $canFilterUnused = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasUnusedFilterAccess() ? '1' : '0';
         $focuspointUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_focuspoint']);
         $focuspointAvailable = \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit() ? '1' : '0';
+        // Universelle Sprachquelle statt manuell rex::getUser()->getLanguage() zu
+        // verzweigen -- rex_i18n::getLocale() liefert kontextabhaengig das Richtige
+        // (Backend: Sprache des eingeloggten Users; Frontend: eigene Ermittlung),
+        // funktioniert also unveraendert, sobald MediaPlace auch im Frontend laeuft.
+        $lang = rex_i18n::getLocale();
 
         // Feature-Toggles (Einstellungsseite) -- Tagging/Sammlungen koennen unabhaengig
         // voneinander abgeschaltet werden, siehe features-Objekt in mediapool3.js.
@@ -100,7 +106,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '"></div>';
+        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-mp3-lang="' . rex_escape($lang) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '"></div>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);
     });

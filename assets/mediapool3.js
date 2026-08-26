@@ -123,6 +123,7 @@
     var apiReplaceFile = MP3Core.api.apiReplaceFile;
     var apiLoadFocuspointInfo = MP3Core.api.apiLoadFocuspointInfo;
     var apiSaveFocuspoint = MP3Core.api.apiSaveFocuspoint;
+    var t = MP3Core.i18n.t;
     var qs = MP3Core.helpers.qs;
     var qsa = MP3Core.helpers.qsa;
     var formatBytes = MP3Core.helpers.formatBytes;
@@ -3649,6 +3650,12 @@
             root.id = 'mp3-root';
             document.body.appendChild(root);
         }
+
+        // Muss vor dem restlichen Markup-Aufbau laufen, da build() weiter unten
+        // bereits t()-Aufrufe fuer die Overlay-Texte enthalten wird (siehe
+        // MediaPlace-i18n-Stufe -- aktuell nur Widget-JS migriert, das Overlay
+        // selbst folgt in Folge-Slices).
+        MP3Core.i18n.initLang();
 
         // Feature-Toggles (Einstellungsseite -> boot.php -> #mp3-root data-*),
         // Default "an" falls das Attribut fehlt (z.B. waehrend der Entwicklung

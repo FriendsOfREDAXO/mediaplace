@@ -18,6 +18,8 @@
 (function () {
     'use strict';
 
+    var t = (window.MP3Core && window.MP3Core.i18n && window.MP3Core.i18n.t) || function (key) { return key; };
+
     // ---- Helpers ----
     function qs(sel, ctx) {
         return (ctx || document).querySelector(sel);
@@ -102,7 +104,7 @@
         var addBtn = document.createElement('button');
         addBtn.type = 'button';
         addBtn.className = 'btn btn-xs btn-default mp3w-btn mp3w-btn-add';
-        addBtn.title = this.multiple ? 'Medium hinzufügen' : 'Medium auswählen';
+        addBtn.title = this.multiple ? t('widget_add_multiple') : t('widget_add_single');
         addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         addBtn.addEventListener('click', function () {
             self._openPicker();
@@ -113,7 +115,7 @@
         var clearBtn = document.createElement('button');
         clearBtn.type = 'button';
         clearBtn.className = 'btn btn-xs btn-default mp3w-btn mp3w-btn-clear';
-        clearBtn.title = 'Alle entfernen';
+        clearBtn.title = t('widget_clear_all');
         clearBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
         clearBtn.addEventListener('click', function () {
             self._setFiles([]);
@@ -160,7 +162,7 @@
         if (files.length === 0) {
             html = '<div class="mp3w-empty">' +
                 '<i class="fa-solid fa-image"></i> ' +
-                (this.multiple ? 'Keine Medien ausgewählt' : 'Kein Medium ausgewählt') +
+                (this.multiple ? t('widget_empty_multiple') : t('widget_empty_single')) +
                 '</div>';
         } else {
             for (var i = 0; i < files.length; i++) {
@@ -226,9 +228,9 @@
             (this.multiple ? ' draggable="true"' : '') + '>';
         html += '<div class="mp3w-item-preview">' + preview + '</div>';
         html += '<div class="mp3w-item-name">' + escAttr(filename) + '</div>';
-        html += '<button type="button" class="mp3w-item-view" data-filename="' + escAttr(filename) + '" title="Details ansehen">' +
+        html += '<button type="button" class="mp3w-item-view" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('widget_view_details')) + '">' +
             '<i class="fa-solid fa-magnifying-glass"></i></button>';
-        html += '<button type="button" class="mp3w-item-remove" data-filename="' + escAttr(filename) + '" title="Entfernen">' +
+        html += '<button type="button" class="mp3w-item-remove" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('widget_remove')) + '">' +
             '<i class="fa-solid fa-xmark"></i></button>';
         html += '</div>';
         return html;
@@ -320,6 +322,14 @@
      *   3. Build fresh widget instances
      */
     function initWidgets(scope) {
+        // Eigenstaendiger Aufruf noetig, da dieses Skript unabhaengig vom
+        // Overlay-Kern (mediapool3.js, dessen build() erst beim Oeffnen des
+        // Overlays laeuft) auf Widgets auf der Seite reagiert -- idempotent,
+        // mehrfacher Aufruf (z.B. auch spaeter durch build()) ist unproblematisch.
+        if (window.MP3Core && window.MP3Core.i18n) {
+            window.MP3Core.i18n.initLang();
+        }
+
         var root = scope || document;
 
         // MBlock cleanup: remove cloned widget containers & reset flag

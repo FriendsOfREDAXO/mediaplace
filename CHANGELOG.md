@@ -29,6 +29,10 @@ Erste Version von **MediaPlace**: ein vollständiger, moderner Medienpool für d
 - Jedes ausgewählte Medium bekommt einen „Details ansehen“-Button (Lupe), der den Overlay direkt im Detail-Panel dieses Mediums öffnet (Browse-only, ändert die Auswahl nicht) — nutzt `MP3.openFile()`.
 - Der klassische „Medienpool“-Menüpunkt sowie die `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets öffnen wahlweise direkt den neuen Overlay statt der alten Seiten/Popups (abschaltbar in den Einstellungen).
 
+### i18n-Infrastruktur (Anfang)
+- Neue Datei `assets/mediapool3-i18n.js`: eigenständige, frontend-taugliche Übersetzungsschicht (`MP3Core.i18n.t()`), keine Abhängigkeit von REDAXO-Backend-JS — gleiches Muster wie im `filepond_uploader`-Addon (statisches `{de_de, en_gb}`-Objekt direkt im Skript, Sprache über ein Datenattribut statt eines Backend-only-globals ermittelt). Sprachcode kommt aus `rex_i18n::getLocale()` via `data-mp3-lang` an `#mp3-root`.
+- Das komplette Input-Widget (`mediapool3_widget.js`) ist als erste Schicht vollständig migriert (DE/EN). Der große Rest (`mediapool3.js`, ~6000 Zeilen) folgt schrittweise in künftigen Versionen — siehe Roadmap.
+
 ### Technik
 - Eigene `rex_api_function`-Endpunkte (`mediaplace_categories`, `mediaplace_json_metainfo`, `mediaplace_tags`, `mediaplace_unused`, `mediaplace_focuspoint`, `mediaplace_schema`) mit zentraler Rechteprüfung (`MediaPermission`), die REDAXOs Medien-Berechtigungen spiegelt.
 - Serverseitig gerenderte Fragmente für Kategoriebaum und Detail-Panel; JS-Kern in mehrere Dateien aufgeteilt (API-Schicht, generische Helfer, Hauptmodul).
