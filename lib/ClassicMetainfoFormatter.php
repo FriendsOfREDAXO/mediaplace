@@ -34,10 +34,14 @@ class ClassicMetainfoFormatter
                 continue;
             }
             $displayLabel = $fieldDef ? $fieldDef->getLabel() : (string) $key;
-            $rows .= '<dt>' . \rex_escape($displayLabel) . '</dt><dd>' . $displayValue . '</dd>';
+            // Kein Bootstrap "dl-horizontal": dessen feste dt-Breite (160px) ist auf
+            // die volle Formularbreite ausgelegt und erzeugt hier, verschachtelt in
+            // der eigenen dd-Spalte von "MediaPlace Metadaten", einen unverhaeltnis-
+            // maessig grossen Einzug. Gestapeltes Layout stattdessen.
+            $rows .= '<dt style="font-weight:600;margin:6px 0 0;">' . \rex_escape($displayLabel) . '</dt><dd style="margin:0 0 6px;">' . $displayValue . '</dd>';
         }
 
-        return '' === $rows ? self::emptyHint() : '<dl class="dl-horizontal">' . $rows . '</dl>';
+        return '' === $rows ? self::emptyHint() : '<dl style="margin:0;">' . $rows . '</dl>';
     }
 
     private static function emptyHint(): string
@@ -88,22 +92,23 @@ class ClassicMetainfoFormatter
     }
 
     /**
+     * Sprachname wird immer vorangestellt (nicht nur bei >1 aktiver Sprache):
+     * ein Ein-Sprachen-Stand heute schliesst weitere Sprachen morgen nicht aus,
+     * und "Deutsch: ..." ist als einzige Zeile ebenso eindeutig wie ohne Praefix.
+     *
      * @param array<int, string> $clangNames
      */
     private static function formatTranslatable(array $value, array $clangNames): string
     {
-        $multiClang = count($clangNames) > 1;
         $parts = [];
         foreach ($value as $clangId => $text) {
             if (!is_scalar($text) || '' === trim((string) $text)) {
                 continue;
             }
             $escaped = nl2br(\rex_escape((string) $text));
-            if ($multiClang && isset($clangNames[(int) $clangId])) {
-                $parts[] = '<strong>' . \rex_escape($clangNames[(int) $clangId]) . ':</strong> ' . $escaped;
-            } else {
-                $parts[] = $escaped;
-            }
+            $parts[] = isset($clangNames[(int) $clangId])
+                ? '<strong>' . \rex_escape($clangNames[(int) $clangId]) . ':</strong> ' . $escaped
+                : $escaped;
         }
         return implode('<br>', $parts);
     }
