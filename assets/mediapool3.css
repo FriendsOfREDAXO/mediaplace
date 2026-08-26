@@ -767,6 +767,26 @@ body.rex-theme-dark {
     outline: none;
 }
 
+/* TinyMCE haengt alle Dialoge/Menues/Tooltips an einen einzigen globalen
+   Wrapper (.tox-tinymce-aux), Standard z-index 1201 -- weit unter #mp3-overlay
+   (10500), macht sie im Editor-Canvas unsichtbar/unbedienbar. !important
+   noetig, da der Selektor sonst dieselbe Spezifitaet wie TinyMCEs eigene
+   Basisregel hat. */
+.tox-tinymce-aux {
+    z-index: 10600 !important;
+}
+
+/* CKEditor5 haengt Panels/Dialoge/Balloons unter .ck-body-wrapper und
+   bezieht deren Hoehe ueber diese CSS-Variablen (oeffentliche Theming-API,
+   siehe ckeditor-editor.css) -- Override hier statt an jedem einzelnen
+   .ck-*-Element, damit es unabhaengig von internen Klassennamen bleibt. */
+.ck-body-wrapper {
+    --ck-z-default: 10600;
+    --ck-z-panel: 10650;
+    --ck-z-dialog: 10700;
+    --ck-z-fullscreen: 10750;
+}
+
 #mp3-overlay.mp3-open {
     display: flex;
 }
