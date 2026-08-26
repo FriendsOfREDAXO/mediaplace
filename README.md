@@ -45,6 +45,8 @@ Unter **MediaPlace** finden sich die Admin-Seiten **Einstellungen**, **Metainfo 
 
 Falls doch lieber der alte Medienpool gewünscht ist: unter **MediaPlace → Einstellungen** die Checkbox „Klassischen Medienpool-Menüpunkt ersetzen“ abschalten. Dann verhält sich alles wieder wie im REDAXO-Standard.
 
+> **Hinweis:** Der alte Medienpool bleibt als Picker-Seite erreichbar – für AddOns, die MediaPlace noch nicht unterstützen (z. B. TinyMCE/CKEditor5), springt der klassische Auswahl-Popup weiterhin ein.
+
 ### Tagging und Sammlungen einzeln abschalten
 
 Ebenfalls in den Einstellungen: „Tagging (System-Tags) deaktivieren“ und „Sammlungen deaktivieren“ blenden die jeweiligen Bereiche unabhängig voneinander aus. Bereits gespeicherte Daten gehen dabei nicht verloren, nur die Bedienoberfläche verschwindet.
