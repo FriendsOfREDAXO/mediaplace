@@ -270,3 +270,4 @@ mediaplace_field_choices_hint = One option per line, formatted as value|Label (l
 mediaplace_select_multiple = Allow multiple selection
 mediaplace_field_hint_checkbox = A yes/no value isn't language-dependent.
 mediaplace_field_hint_select = The stored values aren't language-dependent, only the choice labels are.
+mediaplace_metainfo_edit_native = Edit natively (prototype)

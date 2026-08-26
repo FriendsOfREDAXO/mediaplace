@@ -104,6 +104,14 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
                     onclick="newPoolWindow(<?= rex_escape(json_encode($legacyEditUrl)) ?>); return false;">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> <?= rex_escape($this->i18n('mediaplace_legacy_edit_classic')) ?>
             </button>
+            <?php // Prototyp: Fasst dieselben Metainfo-Felder ueber REDAXOs eigenen
+            // MEDIA_FORM_EDIT-Pfad direkt im Overlay-Canvas an, statt zum klassischen
+            // Medienpool zu wechseln -- siehe rex_api_mediaplace_metainfo_form.php. ?>
+            <button type="button" class="mp3-legacy-edit-link mp3-metainfo-canvas-open btn btn-default btn-xs"
+                    data-canvas-file="<?= rex_escape($info['filename']) ?>"
+                    data-canvas-label="<?= rex_escape($info['filename']) ?>">
+                <i class="fa-solid fa-pen-to-square"></i> <?= rex_escape($this->i18n('mediaplace_metainfo_edit_native')) ?>
+            </button>
             <div class="mp3-legacy-content" style="display:none"></div>
         </div>
     <?php endif; ?>

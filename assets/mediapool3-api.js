@@ -394,6 +394,59 @@
         });
     }
 
+    // Prototyp: native Metainfo-Feld-Bearbeitung, siehe rex_api_mediaplace_metainfo_form.php
+    // (boot.php liefert die URL ueber #mp3-root[data-metainfo-form-url]).
+    function getMetainfoFormApiUrl(filename) {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.metainfoFormUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_metainfo_form';
+        }
+        if (filename) {
+            baseUrl += (baseUrl.indexOf('?') === -1 ? '?' : '&') + 'file=' + encodeURIComponent(filename);
+        }
+        return baseUrl;
+    }
+
+    // Liefert das von REDAXOs MEDIA_FORM_EDIT-Erweiterungspunkt gerenderte
+    // Formular-HTML (echte med_*-Metainfo-Felder) als String.
+    function apiLoadMetainfoForm(filename) {
+        return fetch(getMetainfoFormApiUrl(filename), {
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || !json.success) throw new Error(json.error || 'HTTP ' + r.status);
+                return typeof json.html === 'string' ? json.html : '';
+            });
+        });
+    }
+
+    // formData = ein FormData-Objekt aus dem #mp3-metainfo-form (echtes
+    // multipart/form-data, KEIN JSON -- REDAXOs eigener Metainfo-Speicherpfad
+    // liest $_POST direkt, siehe rex_api_mediaplace_metainfo_form.php).
+    function apiSaveMetainfoForm(filename, formData) {
+        return fetch(getMetainfoFormApiUrl(filename), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || !json.success) throw new Error(json.error || 'HTTP ' + r.status);
+                return json;
+            });
+        });
+    }
+
     function apiCreateCategory(name, parentId) {
         return fetch(API_BASE + 'media/category', {
             method: 'POST',
@@ -604,6 +657,8 @@
     Core.api.getJsonApiUrl = getJsonApiUrl;
     Core.api.apiLoadJsonMetainfo = apiLoadJsonMetainfo;
     Core.api.apiSaveJsonMetainfo = apiSaveJsonMetainfo;
+    Core.api.apiLoadMetainfoForm = apiLoadMetainfoForm;
+    Core.api.apiSaveMetainfoForm = apiSaveMetainfoForm;
     Core.api.apiCreateCategory = apiCreateCategory;
     Core.api.resolveFolderCategories = resolveFolderCategories;
     Core.api.apiRenameCategory = apiRenameCategory;

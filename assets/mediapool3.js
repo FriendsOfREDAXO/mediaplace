@@ -76,6 +76,9 @@
     var editorCanvasClangId = null;  // clang id (null = no translation)
     var editorCanvasEngine = null;   // 'tinymce' | 'cke5' -- welche Engine der (gemeinsame) Canvas gerade zeigt
     var ckeCanvasEditor = null;      // aktive CKEditor5-Instanz im Canvas (ueber rex:cke5IsInit eingesammelt)
+    // Prototyp: native Metainfo-Feld-Bearbeitung (siehe openMetainfoCanvas())
+    var metainfoCanvasOpen = false;
+    var metainfoCanvasFilename = null;
     // Fokuspunkt-Canvas (Integration mit dem separaten focuspoint-Addon, nur
     // aktiv wenn canFocuspoint -- siehe #mp3-root data-focuspoint-available).
     // Speicherung laeuft bewusst weiter ueber das klassische Metainfo-Feld
@@ -118,6 +121,8 @@
     var getJsonApiUrl = MP3Core.api.getJsonApiUrl;
     var apiLoadJsonMetainfo = MP3Core.api.apiLoadJsonMetainfo;
     var apiSaveJsonMetainfo = MP3Core.api.apiSaveJsonMetainfo;
+    var apiLoadMetainfoForm = MP3Core.api.apiLoadMetainfoForm;
+    var apiSaveMetainfoForm = MP3Core.api.apiSaveMetainfoForm;
     var apiCreateCategory = MP3Core.api.apiCreateCategory;
     var resolveFolderCategories = MP3Core.api.resolveFolderCategories;
     var apiRenameCategory = MP3Core.api.apiRenameCategory;
@@ -1343,6 +1348,7 @@
     function openEditorCanvas(fieldKey, clangId, label, engine) {
         if (!overlay) return;
         if (focuspointCanvasOpen) closeFocuspointCanvas();
+        if (metainfoCanvasOpen) closeMetainfoCanvas();
 
         var selector = clangId !== null
             ? '.mp3-tiny-canvas-value[data-json-field="' + fieldKey + '"][data-clang="' + clangId + '"]'
@@ -1488,6 +1494,81 @@
         if (canvas) canvas.style.display = 'none';
     }
 
+    // ---- Prototyp: native Metainfo-Feld-Bearbeitung ----
+    // Rendert/speichert echte med_*-Felder ueber REDAXOs eigenen
+    // MEDIA_FORM_EDIT/MEDIA_UPDATED-Pfad (rex_api_mediaplace_metainfo_form.php)
+    // statt eigener Widgets pro Feldtyp -- siehe Datei-Kommentar dort.
+    function openMetainfoCanvas(filename, label) {
+        if (!overlay || !filename) return;
+        if (focuspointCanvasOpen) closeFocuspointCanvas();
+        if (editorCanvasOpen) closeEditorCanvas();
+
+        metainfoCanvasOpen = true;
+        metainfoCanvasFilename = filename;
+
+        var content = qs('.mp3-content', overlay);
+        if (content) content.classList.add('mp3-editor-mode');
+
+        var canvas = qs('#mp3-metainfo-canvas', overlay);
+        if (canvas) canvas.style.display = '';
+
+        var titleEl = qs('.mp3-metainfo-canvas-title', canvas);
+        if (titleEl) titleEl.textContent = label || filename;
+
+        var formEl = document.getElementById('mp3-metainfo-form');
+        if (formEl) formEl.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_loading_more') + '</div>';
+
+        apiLoadMetainfoForm(filename)
+            .then(function (html) {
+                if (!formEl || metainfoCanvasFilename !== filename) return;
+                formEl.innerHTML = html || '<p class="mp3-metainfo-canvas-empty text-muted">' + t('mediaplace_metainfo_readonly_empty') + '</p>';
+                // Bootstrap-select faenge sich neu eingefuegte .selectpicker-Elemente
+                // nicht automatisch ein -- ohne diesen Aufruf bleiben sie funktionale,
+                // aber unverzierte native <select>s (kein Rendering-Fehler, nur optisch).
+                if (window.jQuery && window.jQuery.fn && window.jQuery.fn.selectpicker) {
+                    window.jQuery('.selectpicker', formEl).selectpicker();
+                }
+            })
+            .catch(function (err) {
+                if (!formEl) return;
+                formEl.innerHTML = '<div class="mp3-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
+            });
+
+        if (canvas) canvas.scrollTop = 0;
+    }
+
+    function commitMetainfoCanvas() {
+        if (!metainfoCanvasOpen || !metainfoCanvasFilename) return;
+        var formEl = document.getElementById('mp3-metainfo-form');
+        if (!formEl) return;
+
+        var saveBtn = qs('.mp3-metainfo-canvas-save', overlay);
+        if (saveBtn) saveBtn.disabled = true;
+
+        apiSaveMetainfoForm(metainfoCanvasFilename, new FormData(formEl))
+            .then(function () {
+                if (saveBtn) saveBtn.disabled = false;
+                closeMetainfoCanvas();
+                // Legacy-Metadaten-Anzeige zeigt dieselben Spalten read-only an --
+                // beim naechsten Aufklappen neu laden statt veraltet stehen lassen.
+                detailLegacyLoaded = false;
+            })
+            .catch(function (err) {
+                if (saveBtn) saveBtn.disabled = false;
+                alert(t('mediaplace_error_saving', { msg: err.message }));
+            });
+    }
+
+    function closeMetainfoCanvas() {
+        metainfoCanvasOpen = false;
+        metainfoCanvasFilename = null;
+
+        var content = qs('.mp3-content', overlay);
+        if (content) content.classList.remove('mp3-editor-mode');
+        var canvas = qs('#mp3-metainfo-canvas', overlay);
+        if (canvas) canvas.style.display = 'none';
+    }
+
     // ---- Fokuspunkt-Canvas (Integration mit dem focuspoint-Addon) ----
     // Eigenstaendiger Canvas-Block (nicht der TinyMCE-Editor-Canvas oben) --
     // andere Body-Struktur (Bild+Crosshair+Live-Vorschau statt Textarea),
@@ -1602,6 +1683,7 @@
     function openFocuspointCanvas(filename) {
         if (!overlay || !canFocuspoint || !filename) return;
         if (editorCanvasOpen) closeEditorCanvas();
+        if (metainfoCanvasOpen) closeMetainfoCanvas();
 
         focuspointCanvasOpen = true;
         focuspointFilename = filename;
@@ -3965,6 +4047,25 @@
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
+                            // Prototyp: native Bearbeitung echter Metainfo-Felder (siehe
+                            // rex_api_mediaplace_metainfo_form.php) -- teilt sich die
+                            // .mp3-editor-canvas-Chrome mit dem TinyMCE-Canvas (gleiche
+                            // CSS-Klassen fuer Header/Body), eigene -back/-title/-save
+                            // Klassen fuer die Event-Delegation.
+                            '<div class="mp3-editor-canvas" id="mp3-metainfo-canvas" style="display:none">' +
+                                '<div class="mp3-editor-canvas-header">' +
+                                    '<button type="button" class="mp3-metainfo-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
+                                        '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
+                                    '</button>' +
+                                    '<div class="mp3-metainfo-canvas-title"></div>' +
+                                    '<button type="button" class="mp3-metainfo-canvas-save">' +
+                                        '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save') +
+                                    '</button>' +
+                                '</div>' +
+                                '<div class="mp3-editor-canvas-body">' +
+                                    '<form id="mp3-metainfo-form" class="mp3-metainfo-canvas-form"></form>' +
+                                '</div>' +
+                            '</div>' +
                         '</div>' +
                         '<div class="mp3-detail-resize-handle" id="mp3-detail-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '" style="display:none"></div>' +
                         '<div class="mp3-detail" id="mp3-detail"></div>' +
@@ -5653,6 +5754,28 @@
             });
         }
 
+        // Prototyp: Metainfo-Canvas events
+        var metainfoCanvas = qs('#mp3-metainfo-canvas', overlay);
+        if (metainfoCanvas) {
+            metainfoCanvas.addEventListener('click', function (e) {
+                if (e.target.closest('.mp3-metainfo-canvas-back')) {
+                    closeMetainfoCanvas();
+                } else if (e.target.closest('.mp3-metainfo-canvas-save')) {
+                    commitMetainfoCanvas();
+                }
+            });
+            // Enter in einem einzeiligen Feld soll nicht das ganze Formular absenden
+            // (kein <form>-Submit-Handler vorgesehen -- Speichern laeuft ausschliesslich
+            // ueber den expliziten Button/commitMetainfoCanvas()).
+            var metainfoForm = qs('#mp3-metainfo-form', metainfoCanvas);
+            if (metainfoForm) {
+                metainfoForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    commitMetainfoCanvas();
+                });
+            }
+        }
+
         // Fokuspunkt Canvas events
         var focuspointCanvas = qs('#mp3-focuspoint-canvas', overlay);
         if (focuspointCanvas) {
@@ -5708,6 +5831,16 @@
             var lbl = String(btn.getAttribute('data-canvas-label') || fk);
             var eng = String(btn.getAttribute('data-canvas-engine') || 'tinymce');
             if (fk) openEditorCanvas(fk, cl, lbl, eng);
+        });
+
+        // Prototyp: "Nativ bearbeiten"-Button (echte Metainfo-Felder im
+        // eigenen Canvas, siehe openMetainfoCanvas())
+        overlay.addEventListener('click', function (e) {
+            var metaBtn = e.target.closest('.mp3-metainfo-canvas-open');
+            if (!metaBtn) return;
+            var mf = String(metaBtn.getAttribute('data-canvas-file') || '').trim();
+            var mLbl = String(metaBtn.getAttribute('data-canvas-label') || mf);
+            if (mf) openMetainfoCanvas(mf, mLbl);
         });
 
         // Upload via button

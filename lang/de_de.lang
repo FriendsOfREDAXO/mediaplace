@@ -270,3 +270,4 @@ mediaplace_field_choices_hint = Eine Option pro Zeile im Format Wert|Beschriftun
 mediaplace_select_multiple = Mehrfachauswahl erlauben
 mediaplace_field_hint_checkbox = Ein Ja/Nein-Wert ist nicht sprachabhängig.
 mediaplace_field_hint_select = Die gespeicherten Werte sind nicht sprachabhängig, nur die Beschriftungen der Auswahlmöglichkeiten.
+mediaplace_metainfo_edit_native = Nativ bearbeiten (Prototyp)
