@@ -91,13 +91,19 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
         'feature_collections' => $featureCollections,
     ]); ?>
 
+    <?php
+    $legacyEditUrl = rex_url::backendController(['page' => 'mediapool/media', 'file_name' => $info['filename'], 'rex_file_category' => $info['category_id']], false);
+    ?>
     <?php if ($featureLegacyMetainfo): ?>
         <div class="mp3-legacy-section">
             <button type="button" class="mp3-legacy-toggle-btn"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n('mediaplace_legacy_metadata')) ?></button>
-            <a class="mp3-legacy-edit-link btn btn-default btn-xs" target="_blank" rel="noopener"
-               href="<?= rex_escape(rex_url::backendController(['page' => 'mediapool/media', 'file_name' => $info['filename'], 'rex_file_category' => $info['category_id']], false)) ?>">
+            <?php // newPoolWindow() ist REDAXOs eigene globale Popup-Funktion (core/assets/standard.js),
+            // dieselbe, die openMediaPool()/openMediaDetails() im klassischen Medienpool nutzen --
+            // gleiche Fenstergroesse/-optik wie jeder andere klassische Medienpool-Popup. ?>
+            <button type="button" class="mp3-legacy-edit-link btn btn-default btn-xs"
+                    onclick="newPoolWindow(<?= rex_escape(json_encode($legacyEditUrl)) ?>); return false;">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> <?= rex_escape($this->i18n('mediaplace_legacy_edit_classic')) ?>
-            </a>
+            </button>
             <div class="mp3-legacy-content" style="display:none"></div>
         </div>
     <?php endif; ?>
