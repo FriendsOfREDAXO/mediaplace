@@ -1,6 +1,6 @@
 # MediaPlace
 
-![REDAXO](https://img.shields.io/badge/REDAXO-%3E%3D5.10-red) ![PHP](https://img.shields.io/badge/PHP-%3E%3D7.4-blue) ![API](https://img.shields.io/badge/API_AddOn-%3E%3D1.3-green)
+![REDAXO](https://img.shields.io/badge/REDAXO-%3E%3D5.21-red) ![PHP](https://img.shields.io/badge/PHP-%3E%3D8.4-blue) ![API](https://img.shields.io/badge/API_AddOn-%3E%3D1.3-green)
 
 Hey! Ihr wünscht Euch den Medienpool 3, das können wir nicht bieten. Aber hier ist **MediaPlace** – ein moderner Medienpool-Ersatz fürs REDAXO-Backend, mit dem sich das Warten schon mal ganz gut aushalten lässt.
 
