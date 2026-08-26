@@ -3372,6 +3372,62 @@
         });
     }
 
+    // Ersatz fuer window.prompt() (gleiche Optik/gleiches Markup wie die
+    // Kategorie-Modals): resolved mit dem getrimmten Eingabewert bei Klick auf
+    // OK/Enter, mit null bei Abbrechen/Escape/Klick auf Overlay -- exakt die
+    // gleiche Cancel-Semantik wie prompt() selbst.
+    function showPromptModal(opts) {
+        return new Promise(function (resolve) {
+            var overlay = document.createElement('div');
+            overlay.className = 'mp3-cat-move-modal-overlay';
+            overlay.innerHTML =
+                '<div class="mp3-cat-move-modal">' +
+                '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid ' + escAttr(opts.icon || 'fa-pen') + '"></i> ' + opts.title + '</h5>' +
+                (opts.label ? '<p class="mp3-cat-move-modal-info">' + opts.label + '</p>' : '') +
+                '<input type="text" class="mp3-cat-move-modal-input" value="' + escAttr(opts.value || '') + '">' +
+                '<div class="mp3-cat-move-modal-actions">' +
+                '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
+                '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
+                '</div>' +
+                '</div>';
+            document.body.appendChild(overlay);
+
+            var input = overlay.querySelector('.mp3-cat-move-modal-input');
+            var okBtn = overlay.querySelector('.mp3-cat-move-modal-ok');
+            setTimeout(function () { input.focus(); input.select(); }, 0);
+
+            function close() {
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }
+
+            function submit() {
+                var value = input.value.trim();
+                close();
+                resolve(value);
+            }
+
+            function cancel() {
+                close();
+                resolve(null);
+            }
+
+            overlay.querySelector('.mp3-cat-move-modal-cancel').addEventListener('click', cancel);
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) cancel();
+            });
+            okBtn.addEventListener('click', submit);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancel();
+                }
+            });
+        });
+    }
+
     function showMoveCategoryModal(catId, catName) {
         // Build a modal that lets the user pick a new parent for this category
         var overlay = document.createElement('div');
@@ -4223,22 +4279,28 @@
             if (collectionAddBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                var collectionName = prompt(t('mediaplace_prompt_collection_name'));
-                if (null === collectionName) return;
-                createCollection(currentCat, collectionName)
-                    .then(function (created) {
-                        if (!created) {
-                            alert(t('mediaplace_collection_create_failed'));
-                            return;
-                        }
-                        setActiveCollection(created.id);
-                        refreshCollectionsSection();
-                        refreshDisplay();
-                        alert(t('mediaplace_collection_activated_hint'));
-                    })
-                    .catch(function (err) {
-                        alert(t('mediaplace_error_creating_collection', { msg: err.message }));
-                    });
+                showPromptModal({
+                    icon: 'fa-photo-film',
+                    title: t('mediaplace_create_collection'),
+                    label: t('mediaplace_prompt_collection_name'),
+                    confirmLabel: t('mediaplace_create'),
+                }).then(function (collectionName) {
+                    if (null === collectionName) return;
+                    createCollection(currentCat, collectionName)
+                        .then(function (created) {
+                            if (!created) {
+                                alert(t('mediaplace_collection_create_failed'));
+                                return;
+                            }
+                            setActiveCollection(created.id);
+                            refreshCollectionsSection();
+                            refreshDisplay();
+                            alert(t('mediaplace_collection_activated_hint'));
+                        })
+                        .catch(function (err) {
+                            alert(t('mediaplace_error_creating_collection', { msg: err.message }));
+                        });
+                });
                 return;
             }
 
@@ -4256,21 +4318,28 @@
                         break;
                     }
                 }
-                var nextCollectionName = prompt(t('mediaplace_prompt_rename_collection'), currentCollectionName);
-                if (null === nextCollectionName) return;
-                renameCollection(currentCat, renameCollectionId, nextCollectionName)
-                    .then(function (updatedCount) {
-                        if (updatedCount <= 0) {
-                            alert(t('mediaplace_collection_renamed_empty'));
-                            return;
-                        }
-                        refreshCollectionsSection();
-                        refreshDisplay();
-                        if (selectedFile) showDetail(selectedFile);
-                    })
-                    .catch(function (err) {
-                        alert(t('mediaplace_error_renaming_collection', { msg: err.message }));
-                    });
+                showPromptModal({
+                    icon: 'fa-pen',
+                    title: t('mediaplace_rename_collection'),
+                    label: t('mediaplace_prompt_rename_collection'),
+                    value: currentCollectionName,
+                    confirmLabel: t('mediaplace_rename'),
+                }).then(function (nextCollectionName) {
+                    if (null === nextCollectionName) return;
+                    renameCollection(currentCat, renameCollectionId, nextCollectionName)
+                        .then(function (updatedCount) {
+                            if (updatedCount <= 0) {
+                                alert(t('mediaplace_collection_renamed_empty'));
+                                return;
+                            }
+                            refreshCollectionsSection();
+                            refreshDisplay();
+                            if (selectedFile) showDetail(selectedFile);
+                        })
+                        .catch(function (err) {
+                            alert(t('mediaplace_error_renaming_collection', { msg: err.message }));
+                        });
+                });
                 return;
             }
 
