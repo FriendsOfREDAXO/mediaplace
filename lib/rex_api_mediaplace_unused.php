@@ -21,8 +21,6 @@
  */
 class rex_api_mediaplace_unused extends rex_api_function
 {
-    protected $published = true;
-
     /** Schutz gegen versehentlich/absichtlich ueberlange Anfragen -- der
      * Client schickt normalerweise nur eine einzelne Seitengroesse (siehe
      * mediaPerPage in mediapool3.js, max. 250). */

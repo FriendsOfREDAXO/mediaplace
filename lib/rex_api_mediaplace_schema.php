@@ -11,7 +11,6 @@
 class rex_api_mediaplace_schema extends rex_api_function
 {
     /** @var bool Frontend-Aufruf erlauben (nötig, weil die API-Route im Frontend-Context läuft) */
-    protected $published = true;
 
     public function execute(): rex_api_result
     {

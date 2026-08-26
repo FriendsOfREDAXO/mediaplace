@@ -5,8 +5,6 @@
  */
 class rex_api_mediaplace_tags extends rex_api_function
 {
-    protected $published = true;
-
     public function execute(): rex_api_result
     {
         rex_response::cleanOutputBuffers();

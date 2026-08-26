@@ -31,8 +31,6 @@
  */
 class rex_api_mediaplace_categories extends rex_api_function
 {
-    protected $published = true;
-
     public function execute(): rex_api_result
     {
         rex_response::cleanOutputBuffers();
