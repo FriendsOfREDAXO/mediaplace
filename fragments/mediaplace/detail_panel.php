@@ -24,6 +24,7 @@
  * - array $category_list         flache Kategorienliste (Verschieben-Select)
  * - bool  $feature_tagging       Einstellungen-Toggle: System-Tags-Feld zeigen?
  * - bool  $feature_collections   Einstellungen-Toggle: Sammlungen-Zeile zeigen?
+ * - bool  $feature_legacy_metainfo  Einstellungen-Toggle: Alte-Metadaten-Bereich zeigen?
  *
  * @var rex_fragment $this
  */
@@ -39,6 +40,7 @@ $collectionNames = $this->getVar('collection_names');
 $categoryList = $this->getVar('category_list');
 $featureTagging = (bool) $this->getVar('feature_tagging');
 $featureCollections = (bool) $this->getVar('feature_collections');
+$featureLegacyMetainfo = (bool) $this->getVar('feature_legacy_metainfo');
 
 $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
 ?>
@@ -89,10 +91,16 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
         'feature_collections' => $featureCollections,
     ]); ?>
 
-    <div class="mp3-legacy-section">
-        <button type="button" class="mp3-legacy-toggle-btn"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n('mediaplace_legacy_metadata')) ?></button>
-        <div class="mp3-legacy-content" style="display:none"></div>
-    </div>
+    <?php if ($featureLegacyMetainfo): ?>
+        <div class="mp3-legacy-section">
+            <button type="button" class="mp3-legacy-toggle-btn"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n('mediaplace_legacy_metadata')) ?></button>
+            <a class="mp3-legacy-edit-link btn btn-default btn-xs" target="_blank" rel="noopener"
+               href="<?= rex_escape(rex_url::backendController(['page' => 'mediapool/media', 'file_name' => $info['filename'], 'rex_file_category' => $info['category_id']], false)) ?>">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> <?= rex_escape($this->i18n('mediaplace_legacy_edit_classic')) ?>
+            </a>
+            <div class="mp3-legacy-content" style="display:none"></div>
+        </div>
+    <?php endif; ?>
 
     <?php $this->subfragment('mediaplace/detail_actions.php', [
         'info' => $info,

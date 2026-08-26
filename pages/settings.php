@@ -27,6 +27,13 @@ $field = $form->addCheckboxField('disable_collections');
 $field->addOption(rex_i18n::msg('mediaplace_settings_feature_collections_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_collections_hint'));
 
+// Anders als die beiden oberen Checkboxen bewusst als "enable_*" (nicht "disable_*")
+// gespeichert: Default ist hier AUS, nicht AN -- die "disable_*"-Notiz oben betrifft
+// nur Default-an-Features, bei denen das Checkbox-null-Problem eine Rolle spielt.
+$field = $form->addCheckboxField('enable_legacy_metainfo');
+$field->addOption(rex_i18n::msg('mediaplace_settings_feature_legacy_metainfo_label'), 1);
+$field->setNotice(rex_i18n::msg('mediaplace_settings_feature_legacy_metainfo_hint'));
+
 $fragment = new rex_fragment();
 $fragment->setVar('class', 'edit', false);
 $fragment->setVar('title', rex_i18n::msg('mediaplace_settings_menu_legend'));

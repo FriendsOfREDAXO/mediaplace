@@ -85,6 +85,10 @@ if (rex::isBackend() && rex::getUser()) {
         // das trotzdem, weil unberuehrt/nie gespeichert dann korrekt "aktiviert" ergibt.
         $featureTagging = rex_config::get($addonName, 'disable_tagging', false) ? '0' : '1';
         $featureCollections = rex_config::get($addonName, 'disable_collections', false) ? '0' : '1';
+        // "enable_*" statt "disable_*": Default ist hier AUS (Uebergangslösung, siehe
+        // detail_panel.php), das Checkbox-null-Problem der beiden obigen Toggles
+        // betrifft nur Default-an-Features.
+        $featureLegacyMetainfo = rex_config::get($addonName, 'enable_legacy_metainfo', false) ? '1' : '0';
 
         // Klassische Unterseiten des Medienpools (Struktur, Hochladen, Sync, sowie von
         // Drittaddons wie mediatools/ffmpeg eingeklinkte Seiten) bleiben ueber ein
@@ -124,7 +128,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '"></div>'
+        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-legacy-metainfo="' . $featureLegacyMetainfo . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);

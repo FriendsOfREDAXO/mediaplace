@@ -260,3 +260,6 @@ mediaplace_demo_api_open_multiple = Opens in multiple-selection mode. callback(f
 mediaplace_demo_api_close = Closes the overlay programmatically.
 mediaplace_demo_api_widget_init = Re-initializes widgets (e.g. after dynamically inserting inputs via MBlock).
 mediaplace_demo_modules_heading = In REDAXO modules
+mediaplace_settings_feature_legacy_metainfo_label = Link classic Metainfo fields
+mediaplace_settings_feature_legacy_metainfo_hint = Interim solution: shows a "Legacy metadata" section in the detail panel (real med_* fields created via the Metainfo addon, read-only) plus a link that opens the file for editing in the classic Mediapool. Native editing of these fields inside MediaPlace isn't possible yet.
+mediaplace_legacy_edit_classic = Edit in classic Mediapool

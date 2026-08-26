@@ -62,7 +62,7 @@
     // Feature-Toggles (Einstellungsseite), gelesen von #mp3-root in build() --
     // gate Tagging-UI (System-Tags-Feld, Sidebar-Tag-Filter) bzw. Sammlungen-UI
     // (Sidebar-Sektion, Merken-Button, Drag&Drop) unabhaengig voneinander.
-    var features = { tagging: true, collections: true };
+    var features = { tagging: true, collections: true, legacyMetainfo: false };
     var activeCollectionId = null;
     var darkModeEnabled = false; // true = dark mode, false = light mode
     var mediaLinkPickFieldKey = null; // active media_link field key while picking from file grid
@@ -3731,6 +3731,7 @@
         // ohne Cache-Neuaufbau).
         features.tagging = !root.dataset.featureTagging || root.dataset.featureTagging === '1';
         features.collections = !root.dataset.featureCollections || root.dataset.featureCollections === '1';
+        features.legacyMetainfo = root.dataset.featureLegacyMetainfo === '1';
         canFilterUnused = root.dataset.canFilterUnused === '1';
         canFocuspoint = root.dataset.focuspointAvailable === '1';
 

@@ -244,6 +244,7 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
         // bzw. den entsprechenden Kommentar in boot.php (disable_*-Speicherung).
         $fragment->setVar('feature_tagging', !rex_config::get('mediaplace', 'disable_tagging', false), false);
         $fragment->setVar('feature_collections', !rex_config::get('mediaplace', 'disable_collections', false), false);
+        $fragment->setVar('feature_legacy_metainfo', (bool) rex_config::get('mediaplace', 'enable_legacy_metainfo', false), false);
 
         return $fragment->parse('mediaplace/detail_panel.php');
     }

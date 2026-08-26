@@ -2923,6 +2923,11 @@ body.rex-theme-dark {
     margin-top: 8px;
 }
 
+#mp3-overlay .mp3-legacy-edit-link {
+    display: inline-block;
+    margin-top: 6px;
+}
+
 #mp3-overlay .mp3-detail-table {
     width: 100%;
     /* Ohne fixed-Layout ignorieren Browser word-break/overflow-wrap beim
