@@ -1,8 +1,7 @@
 # MediaPlace
-**Eine neue GUI für den Medianpool**
+**Eine neue GUI für den Medienpool**
 
 ![Screenshot](https://github.com/FriendsOfREDAXO/mediaplace/blob/assets/mediaplace.jpg?raw=true)
-
 
 ![REDAXO](https://img.shields.io/badge/REDAXO-%3E%3D5.20-red) ![PHP](https://img.shields.io/badge/PHP-%3E%3D8.4-blue) ![API](https://img.shields.io/badge/API_AddOn-%3E%3D1.3-green)
 
