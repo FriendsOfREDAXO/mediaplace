@@ -26,8 +26,9 @@ page:
             perm: admin
 
 requires:
-    redaxo: '>=5.10'
+    redaxo: '>=5.21'
     php:
-        version: '>=7.4'
+        version: '>=8.4'
     packages:
         api: '>=1.3'
+        mediapool: '^2.13.0'
