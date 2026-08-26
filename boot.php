@@ -50,6 +50,8 @@ if (rex::isBackend() && rex::getUser()) {
         $mediapool = rex_be_controller::getPages()['mediapool'] ?? null;
         if ($mediapool instanceof rex_be_page) {
             $mediapool->setPopup('MP3.open(); return false;');
+            // Produktname, analog zum Seitentitel in pages/index.php -- keine Uebersetzung.
+            $mediapool->setTitle('MediaPlace');
 
             // Die klassische Dateiliste (mediapool/media) ist durch unseren Overlay ersetzt
             // und wird aus der Navigation entfernt. Die Route bleibt aber aktiv, da TinyMCE/
