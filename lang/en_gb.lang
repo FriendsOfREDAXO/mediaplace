@@ -263,3 +263,5 @@ mediaplace_demo_modules_heading = In REDAXO modules
 mediaplace_settings_feature_legacy_metainfo_label = Link classic Metainfo fields
 mediaplace_settings_feature_legacy_metainfo_hint = Interim solution: shows a "Legacy metadata" section in the detail panel (real med_* fields created via the Metainfo addon, read-only) plus a link that opens the file for editing in the classic Mediapool. Native editing of these fields inside MediaPlace isn't possible yet.
 mediaplace_legacy_edit_classic = Edit in classic Mediapool
+mediaplace_metainfo_readonly_empty = No MediaPlace metadata available.
+mediaplace_metainfo_readonly_hint = Read-only – edit via MediaPlace (overlay detail panel).

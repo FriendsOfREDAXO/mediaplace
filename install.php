@@ -94,24 +94,57 @@ if (empty($existingEffect)) {
 }
 
 // Register med_json_data in REDAXO core metainfo addon so it appears in field list
+// (visible in the classic Medienpool edit form, e.g. for AddOns that don't support
+// MediaPlace yet). Eigener Metainfo-Typ statt "textarea" (type_id=2, fruehere
+// Version dieses Blocks): rex_metainfo_handler::renderMetaFields() rendert nur
+// bekannte Typ-Labels (text/textarea/select/...) als Eingabefeld -- ein Label,
+// das keinem davon entspricht, faellt in den default-Zweig und feuert den
+// METAINFO_CUSTOM_FIELD-Erweiterungspunkt, den boot.php fuer eine formatierte,
+// nicht editierbare Anzeige nutzt (rohes JSON als Textarea war editierbar genug,
+// um das gespeicherte JSON versehentlich zu zerstoeren).
 if (rex_addon::get('metainfo')->isInstalled()) {
+    $typeSql2 = rex_sql::factory();
+    $existingJsonType = $typeSql2->getArray(
+        'SELECT id FROM ' . rex::getTable('metainfo_type') . ' WHERE label = :label',
+        [':label' => 'mediaplace_json'],
+    );
+    if (empty($existingJsonType)) {
+        $typeSql2->setTable(rex::getTable('metainfo_type'));
+        $typeSql2->setValue('label', 'mediaplace_json');
+        $typeSql2->setValue('dbtype', 'text');
+        $typeSql2->setValue('dblength', 0);
+        $typeSql2->insert();
+        $jsonTypeId = (int) $typeSql2->getLastId();
+    } else {
+        $jsonTypeId = (int) $existingJsonType[0]['id'];
+    }
+
     $metainfoSql = rex_sql::factory();
     $existing = $metainfoSql->getArray(
-        'SELECT id FROM ' . rex::getTable('metainfo_field') . ' WHERE name = :name',
+        'SELECT id, type_id FROM ' . rex::getTable('metainfo_field') . ' WHERE name = :name',
         [':name' => 'med_json_data'],
     );
     if (empty($existing)) {
         $metainfoSql->setTable(rex::getTable('metainfo_field'));
         $metainfoSql->setValue('name', 'med_json_data');
-        $metainfoSql->setValue('title', 'Medienpool 3 Metadaten');
-        $metainfoSql->setValue('type_id', 2);
+        $metainfoSql->setValue('title', 'MediaPlace Metadaten');
+        $metainfoSql->setValue('type_id', $jsonTypeId);
         $metainfoSql->setValue('priority', 100);
-        $metainfoSql->setValue('attributes', 'readonly="readonly" rows="3" class="form-control"');
+        $metainfoSql->setValue('attributes', '');
         $metainfoSql->setValue('default', '');
         $metainfoSql->setValue('createdate', date('Y-m-d H:i:s'));
         $metainfoSql->setValue('createuser', 'mediaplace');
         $metainfoSql->setValue('updatedate', date('Y-m-d H:i:s'));
         $metainfoSql->setValue('updateuser', 'mediaplace');
         $metainfoSql->insert();
+    } elseif ($jsonTypeId !== (int) $existing[0]['type_id']) {
+        // Bestehende Installation mit der alten type_id=2 (Textarea) --
+        // auf den eigenen Custom-Typ migrieren.
+        $metainfoSql->setTable(rex::getTable('metainfo_field'));
+        $metainfoSql->setWhere(['id' => (int) $existing[0]['id']]);
+        $metainfoSql->setValue('type_id', $jsonTypeId);
+        $metainfoSql->setValue('attributes', '');
+        $metainfoSql->setValue('title', 'MediaPlace Metadaten');
+        $metainfoSql->update();
     }
 }

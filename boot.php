@@ -66,6 +66,69 @@ if (rex::isBackend() && rex::getUser()) {
         }
     });
 
+    // Formatierte, nicht editierbare Anzeige von med_json_data im klassischen
+    // Medienpool-Bearbeiten-Formular -- siehe install.php (eigener Metainfo-Typ
+    // "mediaplace_json" statt "textarea", damit REDAXOs Metainfo-Handler in den
+    // default-Zweig faellt und diesen EP feuert, statt ein editierbares
+    // <textarea> mit dem rohen JSON zu rendern).
+    if (rex_addon::get('metainfo')->isAvailable()) {
+        rex_extension::register('METAINFO_CUSTOM_FIELD', static function (rex_extension_point $ep) {
+            $subject = $ep->getSubject();
+            $sqlFields = $subject['sql'] ?? null;
+            if (!$sqlFields instanceof rex_sql || 'med_json_data' !== (string) $sqlFields->getValue('name')) {
+                return null;
+            }
+
+            [$field, $tag, $tagAttr, $id, $label, $labelIt] = $subject;
+
+            // Multi-Value-Felder (Metainfo-Handler splittet den DB-Wert an "|") sind
+            // hier irrelevant -- med_json_data ist ein einzelner Blob, deshalb der
+            // implode() zum Zurueckbauen des Originalwerts vor json_decode().
+            $rawValues = (array) ($subject['rawvalues'] ?? []);
+            $raw = implode('|', $rawValues);
+
+            $decoded = [];
+            if ('' !== trim($raw)) {
+                $decodedRaw = json_decode($raw, true);
+                if (is_array($decodedRaw)) {
+                    $decoded = $decodedRaw;
+                }
+            }
+
+            if (empty($decoded)) {
+                $innerField = '<p class="text-muted">' . rex_i18n::msg('mediaplace_metainfo_readonly_empty') . '</p>';
+            } else {
+                $fieldLabels = [];
+                foreach (\FriendsOfRedaxo\Mediaplace\MetainfoFieldGroup::getFields() as $fieldDef) {
+                    $fieldLabels[$fieldDef->getKey()] = $fieldDef->getLabel();
+                }
+
+                $rows = '';
+                foreach ($decoded as $key => $value) {
+                    $displayLabel = $fieldLabels[$key] ?? $key;
+                    $displayValue = is_scalar($value) ? (string) $value : json_encode($value, JSON_UNESCAPED_UNICODE);
+                    $rows .= '<dt>' . rex_escape($displayLabel) . '</dt><dd>' . nl2br(rex_escape((string) $displayValue)) . '</dd>';
+                }
+                $innerField = '<dl class="dl-horizontal">' . $rows . '</dl>';
+            }
+
+            // media_handler.php::renderFormItem() gibt $field unveraendert zurueck --
+            // anders als bei article/category baut es KEINE dt/dd-Huelle ums Feld.
+            // Die eingebauten Faelle im switch (text/select/...) bauen sich deshalb
+            // ihre dl.rex-form-group-Huelle selbst per core/form/form.php; das muss
+            // der default-Zweig hier genauso tun, sonst fehlen Label und Rahmen.
+            $formFragment = new rex_fragment();
+            $formFragment->setVar('elements', [[
+                'label' => $label,
+                'field' => $innerField,
+                'note' => rex_i18n::msg('mediaplace_metainfo_readonly_hint'),
+            ]], false);
+            $field = $formFragment->parse('core/form/form.php');
+
+            return [$field, $tag, $tagAttr, $id, $label, $labelIt];
+        });
+    }
+
     rex_extension::register('OUTPUT_FILTER', static function (rex_extension_point $ep) use ($addonName) {
         $content = $ep->getSubject();
         $schemaUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_schema', 'prefix' => 'med_']);
