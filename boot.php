@@ -95,22 +95,9 @@ if (rex::isBackend() && rex::getUser()) {
                 }
             }
 
-            if (empty($decoded)) {
-                $innerField = '<p class="text-muted">' . rex_i18n::msg('mediaplace_metainfo_readonly_empty') . '</p>';
-            } else {
-                $fieldLabels = [];
-                foreach (\FriendsOfRedaxo\Mediaplace\MetainfoFieldGroup::getFields() as $fieldDef) {
-                    $fieldLabels[$fieldDef->getKey()] = $fieldDef->getLabel();
-                }
-
-                $rows = '';
-                foreach ($decoded as $key => $value) {
-                    $displayLabel = $fieldLabels[$key] ?? $key;
-                    $displayValue = is_scalar($value) ? (string) $value : json_encode($value, JSON_UNESCAPED_UNICODE);
-                    $rows .= '<dt>' . rex_escape($displayLabel) . '</dt><dd>' . nl2br(rex_escape((string) $displayValue)) . '</dd>';
-                }
-                $innerField = '<dl class="dl-horizontal">' . $rows . '</dl>';
-            }
+            // Loest bekannte Werte-Formen (Sprach-Map, ALT-Feld {text,decorative})
+            // in lesbaren Text auf, statt pro Schluessel rohes JSON zu zeigen.
+            $innerField = \FriendsOfRedaxo\Mediaplace\ClassicMetainfoFormatter::render($decoded);
 
             // media_handler.php::renderFormItem() gibt $field unveraendert zurueck --
             // anders als bei article/category baut es KEINE dt/dd-Huelle ums Feld.
