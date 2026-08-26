@@ -51,7 +51,7 @@ if ('delete' === $func && $fieldId > 0) {
 
     if ($fieldToDelete) {
         \FriendsOfRedaxo\Mediaplace\MetainfoFieldGroup::deleteField($fieldToDelete->getKey());
-        echo rex_view::success(\rex_i18n::msg('mediaplace_field_deleted', 'Feld gelöscht'));
+        echo rex_view::success(\rex_i18n::msg('mediaplace_field_deleted'));
     }
     $func = '';
 }
@@ -68,7 +68,7 @@ if ('edit' === $func && $fieldId > 0) {
     }
 
     if (!$fieldToEdit) {
-        echo rex_view::error(\rex_i18n::msg('mediaplace_field_not_found', 'Feld nicht gefunden'));
+        echo rex_view::error(\rex_i18n::msg('mediaplace_field_not_found'));
         $func = '';
     }
 } elseif ('add' === $func) {
@@ -95,20 +95,20 @@ if ('edit' === $func || 'add' === $func) {
         <div class="row">
             <div class="col-md-6">
                 <div class="form-group">
-                    <label for="key" class="control-label">Feld-Schlüssel</label>
+                    <label for="key" class="control-label"><?php echo rex_i18n::msg('mediaplace_field_key'); ?></label>
                     <input type="text" id="key" name="key" value="<?php echo rex_escape($key); ?>" class="form-control" <?php if ($fieldToEdit) echo 'readonly'; ?> required>
-                    <p class="help-block">z.B. "description", "subtitle". Nur Kleinbuchstaben, Zahlen, Unterstriche.</p>
+                    <p class="help-block"><?php echo rex_i18n::msg('mediaplace_field_key_hint'); ?></p>
                 </div>
 
                 <div class="form-group">
-                    <label for="label" class="control-label">Label</label>
+                    <label for="label" class="control-label"><?php echo rex_i18n::msg('mediaplace_label'); ?></label>
                     <input type="text" id="label" name="label" value="<?php echo rex_escape($label); ?>" class="form-control" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="widget_type" class="control-label">Widget-Typ</label>
+                    <label for="widget_type" class="control-label"><?php echo rex_i18n::msg('mediaplace_widget_type'); ?></label>
                     <select id="widget_type" name="widget_type" class="form-control selectpicker" required>
-                        <option value="">– Wählen –</option>
+                        <option value=""><?php echo rex_i18n::msg('mediaplace_choose_ellipsis'); ?></option>
                         <?php foreach ($allowedWidgets as $type => $name): ?>
                             <option value="<?php echo rex_escape($type); ?>" <?php if ($widgetType === $type) echo 'selected'; ?>>
                                 <?php echo rex_escape($name); ?>
@@ -122,7 +122,7 @@ if ('edit' === $func || 'add' === $func) {
                 <div class="checkbox">
                     <label>
                         <input type="checkbox" id="translatable" name="translatable" value="1" <?php if ($translatable) echo 'checked'; ?>>
-                        Mehrsprachig <small class="text-muted">(separate Werte pro Sprache)</small>
+                        <?php echo rex_i18n::msg('mediaplace_translatable'); ?> <small class="text-muted">(<?php echo rex_i18n::msg('mediaplace_translatable_hint'); ?>)</small>
                     </label>
                     <p class="help-block" id="translatable-hint" style="display:none"></p>
                 </div>
@@ -130,15 +130,15 @@ if ('edit' === $func || 'add' === $func) {
                 <div class="checkbox">
                     <label>
                         <input type="checkbox" id="image_only" name="image_only" value="1" <?php if ($imageOnly) echo 'checked'; ?>>
-                        Nur für Bilder <small class="text-muted">(versteckt für andere Dateitypen)</small>
+                        <?php echo rex_i18n::msg('mediaplace_images_only'); ?> <small class="text-muted">(<?php echo rex_i18n::msg('mediaplace_images_only_hint'); ?>)</small>
                     </label>
                 </div>
             </div>
         </div>
 
         <div class="rex-form-panel-footer">
-            <button type="submit" name="save" value="1" class="btn btn-save"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
-            <a href="<?php echo $listUrl; ?>" class="btn btn-abort">Abbrechen</a>
+            <button type="submit" name="save" value="1" class="btn btn-save"><i class="fa-solid fa-floppy-disk"></i> <?php echo rex_i18n::msg('mediaplace_save'); ?></button>
+            <a href="<?php echo $listUrl; ?>" class="btn btn-abort"><?php echo rex_i18n::msg('mediaplace_cancel'); ?></a>
         </div>
     </form>
     <script>
@@ -152,8 +152,8 @@ if ('edit' === $func || 'add' === $func) {
         // wird das ohnehin unabhaengig davon erzwungen (siehe Save-Handler).
         var FORCED = { media_link: false, alt: true };
         var HINT = {
-            media_link: 'Nicht verfügbar für diesen Feldtyp – es gibt nur ein Eingabefeld ohne Sprachbezug.',
-            alt: 'Für ALT-Text immer aktiv – wird pro Sprache abgefragt.'
+            media_link: <?php echo json_encode(rex_i18n::msg('mediaplace_field_hint_media_link')); ?>,
+            alt: <?php echo json_encode(rex_i18n::msg('mediaplace_field_hint_alt')); ?>
         };
 
         var widgetSelect = document.getElementById('widget_type');
@@ -191,7 +191,7 @@ if ('edit' === $func || 'add' === $func) {
 
     $fragment = new rex_fragment();
     $fragment->setVar('class', 'edit', false);
-    $fragment->setVar('title', $fieldToEdit ? 'Feld bearbeiten' : 'Neues Feld');
+    $fragment->setVar('title', $fieldToEdit ? rex_i18n::msg('mediaplace_field_edit_title') : rex_i18n::msg('mediaplace_field_new_title'));
     $fragment->setVar('body', $body, false);
     echo $fragment->parse('core/page/section.php');
 }
@@ -222,7 +222,7 @@ if (1 === rex_post('save', 'int', 0)) {
     }
 
     if (!$key || !$label || !$widgetType) {
-        echo rex_view::error(\rex_i18n::msg('mediaplace_invalid_input', 'Ungültige Eingabe'));
+        echo rex_view::error(\rex_i18n::msg('mediaplace_invalid_input'));
     } else {
         \FriendsOfRedaxo\Mediaplace\MetainfoFieldGroup::saveField(
             $key,
@@ -232,7 +232,7 @@ if (1 === rex_post('save', 'int', 0)) {
             $translatable,
             $imageOnly,
         );
-        echo rex_view::success(\rex_i18n::msg('mediaplace_field_saved', 'Feld gespeichert'));
+        echo rex_view::success(\rex_i18n::msg('mediaplace_field_saved'));
         $func = '';
     }
 }
@@ -244,26 +244,26 @@ if ('' === $func) {
     ob_start();
     if (empty($fields)): ?>
         <div class="alert alert-info">
-            <?php echo \rex_i18n::msg('mediaplace_no_fields', 'Noch keine Felder definiert. Erstelle eines um zu beginnen.'); ?>
+            <?php echo \rex_i18n::msg('mediaplace_no_fields'); ?>
         </div>
     <?php else: ?>
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th style="width: 70px;"></th>
-                    <th>Label</th>
-                    <th>Schlüssel</th>
-                    <th>Typ</th>
-                    <th>Optionen</th>
-                    <th class="rex-table-action" colspan="2">Funktionen</th>
+                    <th><?php echo rex_i18n::msg('mediaplace_label'); ?></th>
+                    <th><?php echo rex_i18n::msg('mediaplace_field_key'); ?></th>
+                    <th><?php echo rex_i18n::msg('mediaplace_field_type'); ?></th>
+                    <th><?php echo rex_i18n::msg('mediaplace_options'); ?></th>
+                    <th class="rex-table-action" colspan="2"><?php echo rex_i18n::msg('mediaplace_functions'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($fields as $i => $field): ?>
                     <tr>
                         <td style="white-space:nowrap;">
-                            <?php if ($i > 0): ?><a href="<?php echo rex_url::currentBackendPage(['move_id' => $field->getId(), 'move_dir' => 'up'], false); ?>" class="btn btn-xs btn-default" title="Nach oben"><i class="fa-solid fa-arrow-up"></i></a><?php endif; ?>
-                            <?php if ($i < count($fields) - 1): ?><a href="<?php echo rex_url::currentBackendPage(['move_id' => $field->getId(), 'move_dir' => 'down'], false); ?>" class="btn btn-xs btn-default" title="Nach unten"><i class="fa-solid fa-arrow-down"></i></a><?php endif; ?>
+                            <?php if ($i > 0): ?><a href="<?php echo rex_url::currentBackendPage(['move_id' => $field->getId(), 'move_dir' => 'up'], false); ?>" class="btn btn-xs btn-default" title="<?php echo rex_i18n::msg('mediaplace_move_up'); ?>"><i class="fa-solid fa-arrow-up"></i></a><?php endif; ?>
+                            <?php if ($i < count($fields) - 1): ?><a href="<?php echo rex_url::currentBackendPage(['move_id' => $field->getId(), 'move_dir' => 'down'], false); ?>" class="btn btn-xs btn-default" title="<?php echo rex_i18n::msg('mediaplace_move_down'); ?>"><i class="fa-solid fa-arrow-down"></i></a><?php endif; ?>
                         </td>
                         <td><?php echo rex_escape($field->getLabel()); ?></td>
                         <td><code><?php echo rex_escape($field->getKey()); ?></code></td>
@@ -272,13 +272,13 @@ if ('' === $func) {
                         </td>
                         <td>
                             <?php $badges = [];
-                            if ($field->isTranslatable()) $badges[] = '<span class="label label-default">Multilingual</span>';
-                            if ($field->isImageOnly()) $badges[] = '<span class="label label-warning">Bilder nur</span>';
+                            if ($field->isTranslatable()) $badges[] = '<span class="label label-default">' . rex_escape(rex_i18n::msg('mediaplace_multilingual_badge')) . '</span>';
+                            if ($field->isImageOnly()) $badges[] = '<span class="label label-warning">' . rex_escape(rex_i18n::msg('mediaplace_images_only_badge')) . '</span>';
                             echo implode(' ', $badges);
                             ?>
                         </td>
-                        <td class="rex-table-action"><a href="<?php echo rex_url::currentBackendPage(['func' => 'edit', 'field_id' => $field->getId()], false); ?>" class="rex-edit"><i class="rex-icon rex-icon-edit"></i> Bearbeiten</a></td>
-                        <td class="rex-table-action"><a href="<?php echo rex_url::currentBackendPage(['func' => 'delete', 'field_id' => $field->getId()], false); ?>" class="rex-delete" data-confirm="Wirklich löschen?"><i class="rex-icon rex-icon-delete"></i> Löschen</a></td>
+                        <td class="rex-table-action"><a href="<?php echo rex_url::currentBackendPage(['func' => 'edit', 'field_id' => $field->getId()], false); ?>" class="rex-edit"><i class="rex-icon rex-icon-edit"></i> <?php echo rex_i18n::msg('mediaplace_edit'); ?></a></td>
+                        <td class="rex-table-action"><a href="<?php echo rex_url::currentBackendPage(['func' => 'delete', 'field_id' => $field->getId()], false); ?>" class="rex-delete" data-confirm="<?php echo rex_escape(rex_i18n::msg('mediaplace_confirm_delete_generic')); ?>"><i class="rex-icon rex-icon-delete"></i> <?php echo rex_i18n::msg('mediaplace_delete'); ?></a></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -287,8 +287,8 @@ if ('' === $func) {
     $content = ob_get_clean();
 
     $fragment = new rex_fragment();
-    $fragment->setVar('title', 'Metainfo Felder');
-    $fragment->setVar('options', '<div class="btn-group btn-group-xs"><a href="' . $addUrl . '" class="btn btn-default"><i class="fa-solid fa-plus"></i> Neues Feld</a></div>', false);
+    $fragment->setVar('title', rex_i18n::msg('mediaplace_metainfo_title'));
+    $fragment->setVar('options', '<div class="btn-group btn-group-xs"><a href="' . $addUrl . '" class="btn btn-default"><i class="fa-solid fa-plus"></i> ' . rex_escape(rex_i18n::msg('mediaplace_field_new_title')) . '</a></div>', false);
     $fragment->setVar('content', $content, false);
     echo $fragment->parse('core/page/section.php');
 }

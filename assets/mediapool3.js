@@ -325,13 +325,13 @@
         var list = Array.isArray(tags) ? tags : [];
         var byName = {};
         for (var i = 0; i < list.length; i++) {
-            var t = list[i] || {};
-            var name = String(t.name || '').trim();
+            var tag = list[i] || {};
+            var name = String(tag.name || '').trim();
             if (!name) continue;
             if (!byName[name]) {
                 byName[name] = {
                     name: name,
-                    color: /^#[0-9a-fA-F]{6}$/.test(String(t.color || '')) ? String(t.color).toLowerCase() : '#4a90d9'
+                    color: /^#[0-9a-fA-F]{6}$/.test(String(tag.color || '')) ? String(tag.color).toLowerCase() : '#4a90d9'
                 };
             }
         }
@@ -652,12 +652,12 @@
         var list = getCollectionsForCurrentCategory();
         var html = '<div class="mp3-collections-wrap">';
         html += '<div class="mp3-collections-head">';
-        html += '<span class="mp3-collections-title"><i class="fa-solid fa-photo-film"></i> Sammlungen</span>';
-        html += '<button type="button" class="mp3-collection-add-btn" title="Sammlung erstellen"><i class="fa-solid fa-plus"></i></button>';
+        html += '<span class="mp3-collections-title"><i class="fa-solid fa-photo-film"></i> ' + t('mediaplace_collections') + '</span>';
+        html += '<button type="button" class="mp3-collection-add-btn" title="' + escAttr(t('mediaplace_create_collection')) + '"><i class="fa-solid fa-plus"></i></button>';
         html += '</div>';
 
         if (!list.length) {
-            html += '<div class="mp3-collection-empty">Noch keine Sammlung</div>';
+            html += '<div class="mp3-collection-empty">' + t('mediaplace_no_collections_yet') + '</div>';
         } else {
             html += '<div class="mp3-collections-list">';
             for (var i = 0; i < list.length; i++) {
@@ -666,17 +666,17 @@
                 html += '<a class="mp3-collection' + (String(activeCollectionId || '').toLowerCase() === String(col.id || '').toLowerCase() ? ' mp3-collection-active' : '') + '" data-collection-id="' + escAttr(col.id) + '">';
                 html += '<i class="fa-solid fa-compact-disc"></i> ' + escAttr(col.name) + ' <span class="mp3-collection-count">' + (parseInt(col.filesCount, 10) || 0) + '</span>';
                 html += '</a>';
-                html += '<button type="button" class="mp3-collection-rename-btn" data-collection-id="' + escAttr(col.id) + '" title="Sammlung umbenennen"><i class="fa-solid fa-pen"></i></button>';
-                html += '<button type="button" class="mp3-collection-delete-btn" data-collection-id="' + escAttr(col.id) + '" title="Sammlung löschen"><i class="fa-solid fa-trash-can"></i></button>';
+                html += '<button type="button" class="mp3-collection-rename-btn" data-collection-id="' + escAttr(col.id) + '" title="' + escAttr(t('mediaplace_rename_collection')) + '"><i class="fa-solid fa-pen"></i></button>';
+                html += '<button type="button" class="mp3-collection-delete-btn" data-collection-id="' + escAttr(col.id) + '" title="' + escAttr(t('mediaplace_delete_collection')) + '"><i class="fa-solid fa-trash-can"></i></button>';
                 html += '</div>';
             }
             html += '</div>';
         }
 
         if (activeCollectionId) {
-            html += '<div class="mp3-collection-help">Aktiv: ' + escAttr(activeCollectionId) + ' · Medium per Lesezeichen hinzufügen/entfernen.</div>';
+            html += '<div class="mp3-collection-help">' + t('mediaplace_collection_help_active', { name: escAttr(activeCollectionId) }) + '</div>';
         } else {
-            html += '<div class="mp3-collection-help">Sammlung aktivieren, dann Medien per Lesezeichen zuordnen.</div>';
+            html += '<div class="mp3-collection-help">' + t('mediaplace_collection_help_inactive') + '</div>';
         }
 
         html += '</div>';
@@ -713,7 +713,7 @@
         btn.innerHTML = fullscreenMode
             ? '<i class="fa-solid fa-compress"></i>'
             : '<i class="fa-solid fa-expand"></i>';
-        btn.title = fullscreenMode ? 'Fenstergröße wiederherstellen' : 'Vollbild';
+        btn.title = fullscreenMode ? t('mediaplace_restore_window_size') : t('mediaplace_fullscreen');
     }
 
     function openLightbox(src, caption) {
@@ -918,17 +918,17 @@
             html += '</button>';
         }
         if (!html) {
-            html = '<div class="mp3-tag-filter-empty">Keine Tags vorhanden</div>';
+            html = '<div class="mp3-tag-filter-empty">' + t('mediaplace_no_tags_found') + '</div>';
         }
         menu.innerHTML = html;
 
         var selectedCount = Object.keys(currentTagFilters).length;
         if (selectedCount === 0) {
-            label.textContent = 'Alle Tags';
+            label.textContent = t('mediaplace_all_tags');
         } else if (selectedCount === 1) {
             label.textContent = Object.keys(currentTagFilters)[0];
         } else {
-            label.textContent = selectedCount + ' Tags';
+            label.textContent = t('mediaplace_tags_count', { count: selectedCount });
         }
 
         // Clean up stale selected tags that are not visible anymore
@@ -985,37 +985,38 @@
     // eigenstaendiger Toggle) -- bleibt dadurch auf Mobile genauso
     // kombinierbar wie die Pills auf breiten Screens.
     var FILTER_TYPE_OPTIONS = [
-        { value: 'all', label: 'Alle', icon: null },
-        { value: 'images', label: 'Bilder', icon: 'fa-image' },
-        { value: 'videos', label: 'Videos', icon: 'fa-film' },
-        { value: 'audio', label: 'Audio', icon: 'fa-music' },
-        { value: 'documents', label: 'Dokumente', icon: 'fa-file-lines' },
-        { value: 'other', label: 'Sonstige', icon: 'fa-ellipsis' }
+        { value: 'all', labelKey: 'mediaplace_filter_all', icon: null },
+        { value: 'images', labelKey: 'mediaplace_filter_images', icon: 'fa-image' },
+        { value: 'videos', labelKey: 'mediaplace_filter_videos', icon: 'fa-film' },
+        { value: 'audio', labelKey: 'mediaplace_filter_audio', icon: 'fa-music' },
+        { value: 'documents', labelKey: 'mediaplace_filter_documents', icon: 'fa-file-lines' },
+        { value: 'other', labelKey: 'mediaplace_filter_other', icon: 'fa-ellipsis' }
     ];
 
     function filterTypeLabel(type) {
         for (var i = 0; i < FILTER_TYPE_OPTIONS.length; i++) {
-            if (FILTER_TYPE_OPTIONS[i].value === type) return FILTER_TYPE_OPTIONS[i].label;
+            if (FILTER_TYPE_OPTIONS[i].value === type) return t(FILTER_TYPE_OPTIONS[i].labelKey);
         }
-        return 'Alle';
+        return t('mediaplace_filter_all');
     }
 
     function updateFilterDropdownLabel() {
         var label = qs('.mp3-filter-dropdown-label', overlay);
         if (!label) return;
         var text = filterTypeLabel(currentFilter);
-        if (canFilterUnused && unusedOnlyFilter) text += ' + unbenutzt';
+        if (canFilterUnused && unusedOnlyFilter) text += ' ' + t('mediaplace_plus_unused');
         label.textContent = text;
     }
 
     function buildFilterDropdownMenuHtml() {
         var html = '';
         for (var i = 0; i < FILTER_TYPE_OPTIONS.length; i++) {
-            var t = FILTER_TYPE_OPTIONS[i];
-            var active = currentFilter === t.value;
-            html += '<button type="button" class="mp3-filter-dropdown-option' + (active ? ' is-selected' : '') + '" data-filter="' + escAttr(t.value) + '">' +
-                (t.icon ? '<i class="fa-solid ' + t.icon + ' mp3-filter-dropdown-option-icon"></i>' : '<span class="mp3-filter-dropdown-option-spacer"></span>') +
-                '<span class="mp3-filter-dropdown-option-label">' + escAttr(t.label) + '</span>' +
+            var opt = FILTER_TYPE_OPTIONS[i];
+            var active = currentFilter === opt.value;
+            var optLabel = t(opt.labelKey);
+            html += '<button type="button" class="mp3-filter-dropdown-option' + (active ? ' is-selected' : '') + '" data-filter="' + escAttr(opt.value) + '">' +
+                (opt.icon ? '<i class="fa-solid ' + opt.icon + ' mp3-filter-dropdown-option-icon"></i>' : '<span class="mp3-filter-dropdown-option-spacer"></span>') +
+                '<span class="mp3-filter-dropdown-option-label">' + escAttr(optLabel) + '</span>' +
                 (active ? '<i class="fa-solid fa-check mp3-filter-dropdown-option-check"></i>' : '') +
                 '</button>';
         }
@@ -1023,7 +1024,7 @@
             html += '<div class="mp3-filter-dropdown-separator"></div>';
             html += '<button type="button" class="mp3-filter-dropdown-unused-option' + (unusedOnlyFilter ? ' is-selected' : '') + '">' +
                 '<i class="fa-solid fa-trash-can mp3-filter-dropdown-option-icon"></i>' +
-                '<span class="mp3-filter-dropdown-option-label">Nur unbenutzte</span>' +
+                '<span class="mp3-filter-dropdown-option-label">' + t('mediaplace_unused_only') + '</span>' +
                 '<i class="fa-solid ' + (unusedOnlyFilter ? 'fa-square-check' : 'fa-square') + ' mp3-filter-dropdown-option-check"></i>' +
                 '</button>';
         }
@@ -1152,7 +1153,7 @@
             displayTextEl.textContent = text;
             displayTextEl.classList.remove('mp3-edit-placeholder');
         } else {
-            displayTextEl.textContent = 'Klicken zum Bearbeiten';
+            displayTextEl.textContent = t('mediaplace_click_to_edit');
             displayTextEl.classList.add('mp3-edit-placeholder');
         }
     }
@@ -1482,15 +1483,15 @@
         if (!sel) return;
         var names = focuspointTypeNames();
         if (!names.length) {
-            sel.innerHTML = '<option value="">– kein Media-Manager-Typ nutzt Fokuspunkte –</option>';
+            sel.innerHTML = '<option value="">' + t('mediaplace_no_focuspoint_type') + '</option>';
             sel.disabled = true;
             return;
         }
         sel.disabled = false;
-        var html = '<option value="">– Vorschau wählen –</option>';
+        var html = '<option value="">' + t('mediaplace_choose_preview') + '</option>';
         for (var i = 0; i < names.length; i++) {
-            var t = focuspointTypes[names[i]];
-            var label = (t && t.label) ? t.label : names[i];
+            var typeObj = focuspointTypes[names[i]];
+            var label = (typeObj && typeObj.label) ? typeObj.label : names[i];
             html += '<option value="' + escAttr(names[i]) + '"' + (names[i] === focuspointActiveType ? ' selected' : '') + '>' + escAttr(label) + '</option>';
         }
         sel.innerHTML = html;
@@ -1607,7 +1608,7 @@
             })
             .catch(function (err) {
                 var coords = qs('.mp3-focuspoint-coords', canvas);
-                if (coords) coords.textContent = 'Fehler beim Laden: ' + (err && err.message ? err.message : 'unbekannt');
+                if (coords) coords.textContent = t('mediaplace_error_loading', { msg: (err && err.message ? err.message : t('mediaplace_unknown')) });
                 console.error('MP3 focuspoint info failed:', err);
             });
     }
@@ -1624,7 +1625,7 @@
                 focuspointCurrent[focuspointActiveField] = focuspointPos.slice();
                 if (saveBtn) {
                     saveBtn.disabled = false;
-                    saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Gespeichert';
+                    saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' + t('mediaplace_saved');
                     saveBtn.classList.add('mp3-detail-save-success');
                 }
                 // Schliesst den Canvas nach kurzer Erfolgs-Rueckmeldung automatisch
@@ -1638,11 +1639,11 @@
             .catch(function (err) {
                 if (saveBtn) {
                     saveBtn.disabled = false;
-                    saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Fehler';
-                    saveBtn.title = 'Fehler beim Speichern: ' + err.message;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error');
+                    saveBtn.title = t('mediaplace_error_saving', { msg: err.message });
                     saveBtn.classList.add('mp3-detail-save-error');
                     setTimeout(function () {
-                        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Speichern';
+                        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
                         saveBtn.title = '';
                         saveBtn.classList.remove('mp3-detail-save-error');
                     }, 1800);
@@ -1682,7 +1683,7 @@
         if (needsHint && !hint) {
             hint = document.createElement('div');
             hint.className = 'mp3-alt-hint';
-            hint.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ALT-Text fehlt – bitte ausfüllen oder als dekorativ markieren.';
+            hint.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_alt_missing_hint');
             wrap.insertBefore(hint, wrap.firstChild);
         } else if (!needsHint && hint) {
             hint.remove();
@@ -1985,7 +1986,7 @@
             return k !== 'med_json_data';
         }).sort();
         if (!keys.length) {
-            contentEl.innerHTML = '<div class="mp3-metainfo-hint">Keine alten med_* Felder gefunden.</div>';
+            contentEl.innerHTML = '<div class="mp3-metainfo-hint">' + t('mediaplace_no_legacy_fields') + '</div>';
             return;
         }
 
@@ -2020,7 +2021,7 @@
 
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Speichern…';
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_saving');
         }
 
         var requests = [];
@@ -2083,11 +2084,11 @@
                 }
 
                 if (saveBtn) {
-                    saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Gespeichert';
+                    saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' + t('mediaplace_saved');
                     saveBtn.classList.add('mp3-detail-save-success');
                     setTimeout(function () {
                         saveBtn.disabled = false;
-                        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Speichern';
+                        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
                         saveBtn.classList.remove('mp3-detail-save-success');
                         updateDetailSaveState();
                     }, 1200);
@@ -2114,12 +2115,12 @@
             .catch(function (err) {
                 if (saveBtn) {
                     saveBtn.disabled = false;
-                    saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Fehler';
-                    saveBtn.title = 'Fehler beim Speichern: ' + err.message;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error');
+                    saveBtn.title = t('mediaplace_error_saving', { msg: err.message });
                     saveBtn.classList.add('mp3-detail-save-error');
                     setTimeout(function () {
-                        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Speichern';
-                        saveBtn.title = 'Änderungen speichern';
+                        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
+                        saveBtn.title = t('mediaplace_save_changes');
                         saveBtn.classList.remove('mp3-detail-save-error');
                         updateDetailSaveState();
                     }, 1800);
@@ -2297,8 +2298,8 @@
             }
             var mixedBg = 'conic-gradient(' + stops.join(', ') + ')';
             return '<div class="mp3-file-tag-dots">' +
-                '<span class="mp3-file-tag-dot mp3-file-tag-dot-mixed" style="background:' + escAttr(mixedBg) + '" title="Mehrere Tags (' + tags.length + ')"></span>' +
-                '<span class="mp3-file-tag-more" title="Mehrere Tags">Mehrere Tags</span>' +
+                '<span class="mp3-file-tag-dot mp3-file-tag-dot-mixed" style="background:' + escAttr(mixedBg) + '" title="' + escAttr(t('mediaplace_multiple_tags_count', { count: tags.length })) + '"></span>' +
+                '<span class="mp3-file-tag-more" title="' + escAttr(t('mediaplace_multiple_tags')) + '">' + t('mediaplace_multiple_tags') + '</span>' +
                 '</div>';
         }
 
@@ -2323,7 +2324,7 @@
             grid.className = 'mp3-grid';
             grid.innerHTML = '<div style="padding:40px;text-align:center;color:#6c757d;">' +
                 '<i class="fa-solid fa-box-open" style="font-size:2em;display:block;margin-bottom:10px;"></i>' +
-                'Keine Dateien vorhanden</div>';
+                t('mediaplace_no_files') + '</div>';
             updateStatus(0);
             return;
         }
@@ -2348,7 +2349,7 @@
             var displayName = f.title || f.filename;
             html += '<div class="mp3-card' + (isMultiSel ? ' mp3-card-multi-selected' : '') + '" draggable="true" data-filename="' + escAttr(f.filename) + '">' +
                 (multiMode ? '<div class="mp3-card-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></div>' : '') +
-                (activeCollection ? '<button type="button" class="mp3-collection-toggle-btn' + (inCollection ? ' is-active' : '') + '" data-toggle-collection-file="' + escAttr(f.filename) + '" title="' + (inCollection ? 'Aus Sammlung entfernen' : 'Zur Sammlung hinzufügen') + '"><i class="fa-solid fa-bookmark"></i></button>' : '') +
+                (activeCollection ? '<button type="button" class="mp3-collection-toggle-btn' + (inCollection ? ' is-active' : '') + '" data-toggle-collection-file="' + escAttr(f.filename) + '" title="' + escAttr(inCollection ? t('mediaplace_remove_from_collection') : t('mediaplace_add_to_collection')) + '"><i class="fa-solid fa-bookmark"></i></button>' : '') +
                 previewHtml(f) +
                 '<div class="mp3-info">' +
                     '<span class="mp3-card-name" title="' + escAttr(f.filename) + '">' + escAttr(displayName) + '</span>' +
@@ -2368,11 +2369,11 @@
         html += '<thead><tr>' +
             (multiMode ? '<th class="mp3-list-th-check"></th>' : '') +
             '<th class="mp3-list-th-preview"></th>' +
-            '<th>Name</th>' +
-            (activeCollection ? '<th class="mp3-list-th-collection" title="Sammlung">★</th>' : '') +
-            '<th>Typ</th>' +
-            '<th>Größe</th>' +
-            '<th>Datum</th>' +
+            '<th>' + t('mediaplace_name') + '</th>' +
+            (activeCollection ? '<th class="mp3-list-th-collection" title="' + escAttr(t('mediaplace_collection')) + '">★</th>' : '') +
+            '<th>' + t('mediaplace_field_type') + '</th>' +
+            '<th>' + t('mediaplace_field_size') + '</th>' +
+            '<th>' + t('mediaplace_date') + '</th>' +
         '</tr></thead><tbody>';
         for (var i = 0; i < files.length; i++) {
             var f = files[i];
@@ -2397,7 +2398,7 @@
             if (activeCollection) {
                 var rowInCollection = isFileInActiveCollection(f.filename);
                 html += '<td class="mp3-list-cell-collection">' +
-                    '<button type="button" class="mp3-collection-toggle-btn' + (rowInCollection ? ' is-active' : '') + '" data-toggle-collection-file="' + escAttr(f.filename) + '" title="' + (rowInCollection ? 'Aus Sammlung entfernen' : 'Zur Sammlung hinzufügen') + '"><i class="fa-solid fa-bookmark"></i></button>' +
+                    '<button type="button" class="mp3-collection-toggle-btn' + (rowInCollection ? ' is-active' : '') + '" data-toggle-collection-file="' + escAttr(f.filename) + '" title="' + (rowInCollection ? t('mediaplace_remove_from_collection') : t('mediaplace_add_to_collection')) + '"><i class="fa-solid fa-bookmark"></i></button>' +
                     '</td>';
             }
             html += '<td class="mp3-list-cell-type">' + escAttr(f.filetype || '') + '</td>';
@@ -2431,7 +2432,7 @@
                 html += '<span class="mp3-masonry-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></span>';
             }
             if (activeCollection) {
-                html += '<button type="button" class="mp3-collection-toggle-btn' + (inCollection ? ' is-active' : '') + '" data-toggle-collection-file="' + escAttr(f.filename) + '" title="' + (inCollection ? 'Aus Sammlung entfernen' : 'Zur Sammlung hinzufügen') + '"><i class="fa-solid fa-bookmark"></i></button>';
+                html += '<button type="button" class="mp3-collection-toggle-btn' + (inCollection ? ' is-active' : '') + '" data-toggle-collection-file="' + escAttr(f.filename) + '" title="' + (inCollection ? t('mediaplace_remove_from_collection') : t('mediaplace_add_to_collection')) + '"><i class="fa-solid fa-bookmark"></i></button>';
             }
             html += '</div>';
 
@@ -2523,7 +2524,7 @@
                 emptyHint.className = 'mp3-cat-search-empty';
                 sidebar.insertBefore(emptyHint, qs('.mp3-cat-tree', sidebar) || sidebar.firstChild);
             }
-            emptyHint.textContent = 'Keine Kategorie gefunden';
+            emptyHint.textContent = t('mediaplace_no_category_found');
         } else if (emptyHint) {
             emptyHint.remove();
         }
@@ -2539,17 +2540,17 @@
     function renderCategories(treeHtml) {
         var html = '<div class="mp3-cat-search-wrap">' +
             '<i class="fa-solid fa-magnifying-glass"></i>' +
-            '<input type="text" class="mp3-cat-search-input" placeholder="Kategorie finden..." value="' + escAttr(categorySearchTerm) + '">' +
+            '<input type="text" class="mp3-cat-search-input" placeholder="' + escAttr(t('mediaplace_search_category_placeholder')) + '" value="' + escAttr(categorySearchTerm) + '">' +
             '</div>' +
             '<div class="mp3-cat-tree">' +
                 '<div class="mp3-cat-header">' +
                     '<a class="mp3-cat' + (currentCat === -1 ? ' mp3-cat-active' : '') + '" data-cat="-1">' +
-                        '<i class="fa-solid fa-layer-group"></i> Alle Medien</a>' +
+                        '<i class="fa-solid fa-layer-group"></i> ' + t('mediaplace_all_media') + '</a>' +
                 '</div>' +
                 '<div class="mp3-cat-header">' +
                     '<a class="mp3-cat' + (currentCat === 0 ? ' mp3-cat-active' : '') + '" data-cat="0">' +
-                        '<i class="fa-solid fa-house"></i> Medienpool</a>' +
-                    '<button class="mp3-cat-add-btn" data-add-parent="0" title="Neue Kategorie">' +
+                        '<i class="fa-solid fa-house"></i> ' + t('mediaplace_root_media') + '</a>' +
+                    '<button class="mp3-cat-add-btn" data-add-parent="0" title="' + escAttr(t('mediaplace_new_category')) + '">' +
                         '<i class="fa-solid fa-folder-plus"></i></button>' +
                 '</div>' +
                 (treeHtml || '') +
@@ -2597,10 +2598,10 @@
         if (!portal || !anchorBtn) return;
 
         portal.innerHTML =
-            '<button class="mp3-cat-rename-btn" data-rename-cat="' + id + '"><i class="fa-solid fa-pen"></i> Umbenennen</button>' +
-            '<button class="mp3-cat-move-btn" data-move-cat="' + id + '"><i class="fa-solid fa-folder-tree"></i> Verschieben</button>' +
-            '<button class="mp3-cat-add-btn mp3-cat-add-sub" data-add-parent="' + id + '"><i class="fa-solid fa-plus"></i> Unterkategorie</button>' +
-            '<button class="mp3-cat-delete-btn" data-delete-cat="' + id + '" data-delete-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> Löschen</button>';
+            '<button class="mp3-cat-rename-btn" data-rename-cat="' + id + '"><i class="fa-solid fa-pen"></i> ' + t('mediaplace_rename') + '</button>' +
+            '<button class="mp3-cat-move-btn" data-move-cat="' + id + '"><i class="fa-solid fa-folder-tree"></i> ' + t('mediaplace_move') + '</button>' +
+            '<button class="mp3-cat-add-btn mp3-cat-add-sub" data-add-parent="' + id + '"><i class="fa-solid fa-plus"></i> ' + t('mediaplace_subcategory') + '</button>' +
+            '<button class="mp3-cat-delete-btn" data-delete-cat="' + id + '" data-delete-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete') + '</button>';
         portal.classList.add('mp3-cat-menu-portal-open');
         portal.setAttribute('data-open-for', String(id));
         anchorBtn.classList.add('mp3-cat-menu-btn-active');
@@ -2656,9 +2657,9 @@
             '<div class="mp3-cat-new-input-row" style="padding-left:' + indent + 'px;">' +
                 '<i class="fa-solid fa-folder-plus mp3-cat-new-icon"></i>' +
                 '<input type="text" class="mp3-cat-new-input" data-parent="' + parentId + '" ' +
-                    'placeholder="Kategoriename…" autocomplete="off">' +
-                '<button type="button" class="mp3-cat-new-confirm" title="Anlegen"><i class="fa-solid fa-check"></i></button>' +
-                '<button type="button" class="mp3-cat-new-cancel" title="Abbrechen"><i class="fa-solid fa-xmark"></i></button>' +
+                    'placeholder="' + escAttr(t('mediaplace_category_name_placeholder')) + '" autocomplete="off">' +
+                '<button type="button" class="mp3-cat-new-confirm" title="' + escAttr(t('mediaplace_create')) + '"><i class="fa-solid fa-check"></i></button>' +
+                '<button type="button" class="mp3-cat-new-cancel" title="' + escAttr(t('mediaplace_cancel')) + '"><i class="fa-solid fa-xmark"></i></button>' +
             '</div>';
 
         // Insert at the right position
@@ -2716,7 +2717,7 @@
             })
             .catch(function (err) {
                 console.error('MP3 createCategory error:', err);
-                alert('Fehler beim Erstellen: ' + err.message);
+                alert(t('mediaplace_error_creating', { msg: err.message }));
                 input.disabled = false;
                 if (confirmBtn) confirmBtn.disabled = false;
                 input.focus();
@@ -2769,9 +2770,9 @@
 
     function updateStatus(count) {
         if (statusBar) {
-            var txt = count + ' Treffer';
+            var txt = t('mediaplace_hits', { count: count });
             if (mediaTotal > 0) {
-                txt += ' | ' + lastLoadedFiles.length + ' von ' + mediaTotal + ' geladen';
+                txt += ' | ' + t('mediaplace_loaded_of', { loaded: lastLoadedFiles.length, total: mediaTotal });
             }
             statusBar.textContent = txt;
         }
@@ -2807,7 +2808,7 @@
         var loaded = lastLoadedFiles.length;
         var total = mediaTotal || loaded;
         if (mediaLoading) {
-            info.textContent = 'Lade weitere Medien...';
+            info.textContent = t('mediaplace_loading_more');
             btn.style.display = 'none';
             return;
         }
@@ -2817,7 +2818,7 @@
             totalSize += parseInt(visibleFiles[i].filesize, 10) || 0;
         }
 
-        info.textContent = visibleFiles.length + ' sichtbar (' + formatBytes(totalSize) + ') | ' + loaded + ' / ' + total + ' geladen';
+        info.textContent = t('mediaplace_visible_summary', { count: visibleFiles.length, size: formatBytes(totalSize), loaded: loaded, total: total });
         btn.style.display = mediaHasMore ? '' : 'none';
     }
 
@@ -2830,9 +2831,9 @@
 
         var catName = '';
         if (currentCat === -1) {
-            catName = 'Alle Medien';
+            catName = t('mediaplace_all_media');
         } else if (currentCat === 0) {
-            catName = 'Keine Kategorie';
+            catName = t('mediaplace_no_category');
         } else if (catCache[currentCat]) {
             catName = catCache[currentCat].name;
         }
@@ -2968,8 +2969,8 @@
                     currentTagCatalog = [];
                     updateTagFilterOptions();
                     grid.innerHTML = '<div style="padding:40px;text-align:center;color:#c9302c;">' +
-                        '<i class="fa-solid fa-triangle-exclamation"></i> API-Fehler: ' + escAttr(err.message) +
-                        '<br><small style="color:#6c757d;">Ist das API-Addon installiert und aktiviert?</small></div>';
+                        '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_api_error', { msg: escAttr(err.message) }) +
+                        '<br><small style="color:#6c757d;">' + t('mediaplace_api_check_hint') + '</small></div>';
                 }
                 console.error('MP3 loadFiles error:', err);
             })
@@ -3211,7 +3212,7 @@
             })
             .catch(function (err) {
                 console.error('MP3 folder upload category resolution failed:', err);
-                showGridError('Fehler beim Anlegen der Ordner-Kategorien: ' + ((err && err.message) ? err.message : String(err)));
+                showGridError(t('mediaplace_error_creating_folder_categories', { msg: ((err && err.message) ? err.message : String(err)) }));
             });
     }
 
@@ -3228,7 +3229,7 @@
         var banner = document.createElement('div');
         banner.className = 'mp3-grid-error';
         banner.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span class="mp3-grid-error-text"></span>' +
-            '<button type="button" class="mp3-grid-error-close" title="Schließen"><i class="fa-solid fa-xmark"></i></button>';
+            '<button type="button" class="mp3-grid-error-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>';
         banner.querySelector('.mp3-grid-error-text').textContent = message;
         banner.querySelector('.mp3-grid-error-close').addEventListener('click', function () {
             banner.remove();
@@ -3256,19 +3257,19 @@
         overlay.innerHTML =
             '<div class="mp3-cat-move-modal">' +
             '<h5 class="mp3-cat-move-modal-title">' +
-            '<i class="fa-solid ' + escAttr(opts.icon || 'fa-triangle-exclamation') + '"></i> ' + escAttr(opts.title || 'Bestätigen') + '</h5>' +
+            '<i class="fa-solid ' + escAttr(opts.icon || 'fa-triangle-exclamation') + '"></i> ' + escAttr(opts.title || t('mediaplace_confirm')) + '</h5>' +
             '<p class="mp3-cat-move-modal-info">' + opts.message + '</p>' +
             '<p class="mp3-cat-move-modal-error" style="display:none"></p>' +
             '<div class="mp3-cat-move-modal-actions">' +
-            '<button class="mp3-cat-move-modal-ok btn ' + (opts.dangerous ? 'btn-danger' : 'btn-primary') + ' btn-sm">' + escAttr(opts.confirmLabel || 'OK') + '</button>' +
-            '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">Abbrechen</button>' +
+            '<button class="mp3-cat-move-modal-ok btn ' + (opts.dangerous ? 'btn-danger' : 'btn-primary') + ' btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
+            '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
             '</div>' +
             '</div>';
         document.body.appendChild(overlay);
 
         var errorEl = overlay.querySelector('.mp3-cat-move-modal-error');
         var okBtn = overlay.querySelector('.mp3-cat-move-modal-ok');
-        var okLabel = escAttr(opts.confirmLabel || 'OK');
+        var okLabel = escAttr(opts.confirmLabel || t('mediaplace_ok'));
 
         function onKeydown(e) {
             if (e.key === 'Escape') close();
@@ -3311,13 +3312,13 @@
         overlay.innerHTML =
             '<div class="mp3-cat-move-modal">' +
             '<h5 class="mp3-cat-move-modal-title">' +
-            '<i class="fa-solid fa-pen"></i> Kategorie umbenennen</h5>' +
-            '<p class="mp3-cat-move-modal-info">Neuer Name für <strong>' + escAttr(catName) + '</strong>:</p>' +
+            '<i class="fa-solid fa-pen"></i> ' + t('mediaplace_rename_category') + '</h5>' +
+            '<p class="mp3-cat-move-modal-info">' + t('mediaplace_new_name_for', { name: '<strong>' + escAttr(catName) + '</strong>' }) + '</p>' +
             '<input type="text" class="mp3-cat-move-modal-input" value="' + escAttr(catName) + '">' +
             '<p class="mp3-cat-move-modal-error" style="display:none"></p>' +
             '<div class="mp3-cat-move-modal-actions">' +
-            '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">Umbenennen</button>' +
-            '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">Abbrechen</button>' +
+            '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">' + t('mediaplace_rename') + '</button>' +
+            '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
             '</div>' +
             '</div>';
         document.body.appendChild(overlay);
@@ -3348,10 +3349,10 @@
                     loadCategories();
                 })
                 .catch(function (err) {
-                    errorEl.textContent = 'Fehler beim Umbenennen: ' + err.message;
+                    errorEl.textContent = t('mediaplace_error_renaming', { msg: err.message });
                     errorEl.style.display = '';
                     okBtn.disabled = false;
-                    okBtn.innerHTML = 'Umbenennen';
+                    okBtn.innerHTML = t('mediaplace_rename');
                 });
         }
 
@@ -3378,14 +3379,14 @@
         overlay.innerHTML =
             '<div class="mp3-cat-move-modal">' +
             '<h5 class="mp3-cat-move-modal-title">' +
-            '<i class="fa-solid fa-folder-tree"></i> Kategorie verschieben</h5>' +
-            '<p class="mp3-cat-move-modal-info">Neue übergeordnete Kategorie für <strong>' + escAttr(catName) + '</strong>:</p>' +
+            '<i class="fa-solid fa-folder-tree"></i> ' + t('mediaplace_move_category') + '</h5>' +
+            '<p class="mp3-cat-move-modal-info">' + t('mediaplace_new_parent_for', { name: '<strong>' + escAttr(catName) + '</strong>' }) + '</p>' +
             '<select class="mp3-cat-move-modal-select">' +
-            '<option value="">⏳ Lädt…</option>' +
+            '<option value="">' + t('mediaplace_loading_ellipsis') + '</option>' +
             '</select>' +
             '<div class="mp3-cat-move-modal-actions">' +
-            '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">Verschieben</button>' +
-            '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">Abbrechen</button>' +
+            '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">' + t('mediaplace_move') + '</button>' +
+            '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
             '</div>' +
             '</div>';
         document.body.appendChild(overlay);
@@ -3410,7 +3411,7 @@
         var excludeIds = collectSubIds(catId);
 
         apiFetchAllCategoriesFlat().then(function (cats) {
-            var opts = '<option value="0">(Hauptverzeichnis)</option>';
+            var opts = '<option value="0">' + t('mediaplace_root_category') + '</option>';
             for (var i = 0; i < cats.length; i++) {
                 var cat = cats[i];
                 if (excludeIds.indexOf(cat.id) !== -1) continue;
@@ -3420,7 +3421,7 @@
             }
             select.innerHTML = opts;
         }).catch(function () {
-            select.innerHTML = '<option value="0">(Hauptverzeichnis)</option>';
+            select.innerHTML = '<option value="0">' + t('mediaplace_root_category') + '</option>';
         });
 
         function close() {
@@ -3444,9 +3445,9 @@
                     loadCategories();
                 })
                 .catch(function (err) {
-                    alert('Fehler beim Verschieben: ' + err.message);
+                    alert(t('mediaplace_error_moving', { msg: err.message }));
                     okBtn.disabled = false;
-                    okBtn.innerHTML = 'Verschieben';
+                    okBtn.innerHTML = t('mediaplace_move');
                 });
         });
     }
@@ -3457,12 +3458,12 @@
         modal.className = 'mp3-catpick-modal';
         modal.innerHTML =
             '<div class="mp3-catpick-box">' +
-            '<div class="mp3-catpick-title"><i class="fa-solid fa-folder-open"></i> Kategorie für Upload wählen</div>' +
-            '<p class="mp3-catpick-info">Im Sammlungs-Modus muss eine Kategorie gewählt werden. Die Dateien werden danach automatisch der Sammlung <strong>' + escAttr(colName) + '</strong> zugeordnet.</p>' +
-            '<select class="mp3-catpick-select"><option value="0">(Stamm / kein Kategorie)</option></select>' +
+            '<div class="mp3-catpick-title"><i class="fa-solid fa-folder-open"></i> ' + t('mediaplace_pick_upload_category') + '</div>' +
+            '<p class="mp3-catpick-info">' + t('mediaplace_upload_category_hint', { name: '<strong>' + escAttr(colName) + '</strong>' }) + '</p>' +
+            '<select class="mp3-catpick-select"><option value="0">' + t('mediaplace_root_no_category') + '</option></select>' +
             '<div class="mp3-catpick-actions">' +
-            '<button type="button" class="mp3-catpick-cancel">Abbrechen</button>' +
-            '<button type="button" class="mp3-catpick-confirm">Hochladen</button>' +
+            '<button type="button" class="mp3-catpick-cancel">' + t('mediaplace_cancel') + '</button>' +
+            '<button type="button" class="mp3-catpick-confirm">' + t('mediaplace_upload') + '</button>' +
             '</div>' +
             '</div>';
 
@@ -3474,7 +3475,7 @@
         // Kind-Struktur gibt es seit dem serverseitig gerenderten Baum nicht
         // mehr (siehe loadCategories()).
         apiFetchAllCategoriesFlat().then(function (cats) {
-            var opts = '<option value="0">(Stamm / kein Kategorie)</option>';
+            var opts = '<option value="0">' + t('mediaplace_root_no_category') + '</option>';
             for (var i = 0; i < cats.length; i++) {
                 var cat = cats[i];
                 opts += '<option value="' + escAttr(String(cat.id)) + '">' + '    '.repeat(cat.depth) + escAttr(cat.name) + '</option>';
@@ -3503,7 +3504,7 @@
         var html = '<div class="mp3-upload-tracker">';
         html += '<div class="mp3-upload-header">' +
             '<i class="fa-solid fa-cloud-arrow-up"></i> ' +
-            '<span class="mp3-upload-title">' + total + ' Datei' + (total !== 1 ? 'en' : '') + ' hochladen</span>' +
+            '<span class="mp3-upload-title">' + t('mediaplace_upload_title', { count: total, unit: t(total === 1 ? 'mediaplace_file_singular' : 'mediaplace_file_plural') }) + '</span>' +
             '</div>';
         html += '<div class="mp3-upload-progress-bar"><div class="mp3-upload-progress-fill" id="mp3-progress-fill"></div></div>';
         html += '<div class="mp3-upload-list" id="mp3-upload-list">';
@@ -3534,10 +3535,10 @@
                 var finalize = function () {
                     var summaryEl = document.getElementById('mp3-upload-summary');
                     if (summaryEl) {
-                        var msg = done + ' von ' + total + ' erfolgreich';
-                        if (failed > 0) msg += ', ' + failed + ' fehlgeschlagen';
+                        var msg = t('mediaplace_upload_summary', { done: done, total: total });
+                        if (failed > 0) msg += t('mediaplace_upload_failed_suffix', { count: failed });
                         if (assignToCollectionName && uploadedFilenames.length) {
-                            msg += ' – werden Sammlung "' + escAttr(assignToCollectionName) + '" zugeordnet…';
+                            msg += t('mediaplace_upload_assign_collection', { name: escAttr(assignToCollectionName) });
                         }
                         summaryEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#28a745;"></i> ' + msg;
                     }
@@ -3672,8 +3673,8 @@
         // (overflow-x:auto), das schneidet ein absolut positioniertes Kind sonst ab.
         var tagFilterHtml = features.tagging
             ? '<div class="mp3-tag-filter-wrap">' +
-                '<button type="button" class="mp3-tag-filter-toggle" title="Nach Tags filtern">' +
-                    '<span class="mp3-tag-filter-label">Alle Tags</span>' +
+                '<button type="button" class="mp3-tag-filter-toggle" title="' + escAttr(t('mediaplace_filter_by_tags')) + '">' +
+                    '<span class="mp3-tag-filter-label">' + t('mediaplace_all_tags') + '</span>' +
                     '<i class="fa-solid fa-chevron-down"></i>' +
                 '</button>' +
             '</div>'
@@ -3683,8 +3684,8 @@
         // Teil von features -- deshalb separate Bedingung statt im selben
         // Feature-Toggle-Muster wie Tagging/Sammlungen.
         var unusedFilterHtml = canFilterUnused
-            ? '<button type="button" class="mp3-filter-btn mp3-unused-filter-btn" title="Nur Dateien anzeigen, die aktuell nirgends verwendet werden">' +
-                '<i class="fa-solid fa-trash-can"></i> Nur unbenutzte</button>'
+            ? '<button type="button" class="mp3-filter-btn mp3-unused-filter-btn" title="' + escAttr(t('mediaplace_unused_only_hint')) + '">' +
+                '<i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_unused_only') + '</button>'
             : '';
 
         root.innerHTML =
@@ -3694,64 +3695,64 @@
                         '<span class="mp3-title"><i class="fa-solid fa-photo-film"></i> MediaPlace</span>' +
                         '<span class="mp3-header-info" id="mp3-header-info"></span>' +
                         '<div class="mp3-header-tools">' +
-                            '<button class="mp3-mobile-cat-btn" title="Kategorien"><i class="fa-solid fa-folder-tree"></i></button>' +
+                            '<button class="mp3-mobile-cat-btn" title="' + escAttr(t('mediaplace_categories')) + '"><i class="fa-solid fa-folder-tree"></i></button>' +
                             '<div class="mp3-search-wrap">' +
                                 '<i class="fa-solid fa-magnifying-glass"></i>' +
-                                '<input type="text" class="mp3-search" placeholder="Suchen…">' +
+                                '<input type="text" class="mp3-search" placeholder="' + escAttr(t('mediaplace_search_placeholder')) + '">' +
                             '</div>' +
-                            '<select class="mp3-sort-select" title="Sortierung">' +
-                                '<option value="date_desc">Neueste zuerst</option>' +
-                                '<option value="date_asc">Älteste zuerst</option>' +
-                                '<option value="filename_asc">Dateiname A–Z</option>' +
-                                '<option value="filename_desc">Dateiname Z–A</option>' +
-                                '<option value="title_asc">Titel A–Z</option>' +
-                                '<option value="title_desc">Titel Z–A</option>' +
-                                '<option value="size_desc">Größe (größte zuerst)</option>' +
-                                '<option value="size_asc">Größe (kleinste zuerst)</option>' +
+                            '<select class="mp3-sort-select" title="' + escAttr(t('mediaplace_sorting')) + '">' +
+                                '<option value="date_desc">' + t('mediaplace_sort_newest') + '</option>' +
+                                '<option value="date_asc">' + t('mediaplace_sort_oldest') + '</option>' +
+                                '<option value="filename_asc">' + t('mediaplace_sort_filename_az') + '</option>' +
+                                '<option value="filename_desc">' + t('mediaplace_sort_filename_za') + '</option>' +
+                                '<option value="title_asc">' + t('mediaplace_sort_title_az') + '</option>' +
+                                '<option value="title_desc">' + t('mediaplace_sort_title_za') + '</option>' +
+                                '<option value="size_desc">' + t('mediaplace_sort_size_desc') + '</option>' +
+                                '<option value="size_asc">' + t('mediaplace_sort_size_asc') + '</option>' +
                             '</select>' +
                             '<div class="mp3-view-toggle">' +
-                                '<button class="mp3-view-btn mp3-view-active" data-view="grid" title="Kacheln"><i class="fa-solid fa-table-cells"></i></button>' +
-                                '<button class="mp3-view-btn" data-view="list" title="Liste"><i class="fa-solid fa-list"></i></button>' +
-                                '<button class="mp3-view-btn" data-view="mediawall" title="Media Wall"><i class="fa-solid fa-table-cells-large"></i></button>' +
+                                '<button class="mp3-view-btn mp3-view-active" data-view="grid" title="' + escAttr(t('mediaplace_tiles')) + '"><i class="fa-solid fa-table-cells"></i></button>' +
+                                '<button class="mp3-view-btn" data-view="list" title="' + escAttr(t('mediaplace_list')) + '"><i class="fa-solid fa-list"></i></button>' +
+                                '<button class="mp3-view-btn" data-view="mediawall" title="' + escAttr(t('mediaplace_media_wall')) + '"><i class="fa-solid fa-table-cells-large"></i></button>' +
                             '</div>' +
-                            '<label class="mp3-upload-btn" title="Dateien hochladen">' +
+                            '<label class="mp3-upload-btn" title="' + escAttr(t('mediaplace_upload_files')) + '">' +
                                 '<i class="fa-solid fa-cloud-arrow-up"></i>' +
-                                '<span class="mp3-upload-label">Hochladen</span>' +
+                                '<span class="mp3-upload-label">' + t('mediaplace_upload') + '</span>' +
                                 '<input type="file" multiple style="display:none">' +
                             '</label>' +
                         '</div>' +
                         '<div class="mp3-admin-menu-wrap">' +
-                            '<button type="button" class="mp3-admin-menu-btn" title="Verwaltung (Struktur, Hochladen, Synchronisation, …)"><i class="fa-solid fa-gear"></i></button>' +
+                            '<button type="button" class="mp3-admin-menu-btn" title="' + escAttr(t('mediaplace_admin_menu_title')) + '"><i class="fa-solid fa-gear"></i></button>' +
                             '<div class="mp3-admin-menu" id="mp3-admin-menu"></div>' +
                         '</div>' +
-                        '<button type="button" class="mp3-dark-mode-toggle" title="Dark Mode"><i class="fa-solid fa-moon"></i></button>' +
-                        '<button type="button" class="mp3-fullscreen-toggle" title="Vollbild"><i class="fa-solid fa-expand"></i></button>' +
-                        '<button type="button" class="mp3-close" title="Schließen"><i class="fa-solid fa-xmark"></i></button>' +
+                        '<button type="button" class="mp3-dark-mode-toggle" title="' + escAttr(t('mediaplace_dark_mode')) + '"><i class="fa-solid fa-moon"></i></button>' +
+                        '<button type="button" class="mp3-fullscreen-toggle" title="' + escAttr(t('mediaplace_fullscreen')) + '"><i class="fa-solid fa-expand"></i></button>' +
+                        '<button type="button" class="mp3-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
                     '</div>' +
                     '<div class="mp3-body">' +
                         '<div class="mp3-sidebar" id="mp3-sidebar"></div>' +
-                        '<div class="mp3-sidebar-resize-handle" id="mp3-sidebar-resize-handle" title="Breite ziehen"></div>' +
+                        '<div class="mp3-sidebar-resize-handle" id="mp3-sidebar-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '"></div>' +
                         '<div class="mp3-sidebar-backdrop" id="mp3-sidebar-backdrop"></div>' +
                         '<div class="mp3-content">' +
                             '<div class="mp3-filter-bar">' +
                                 '<div class="mp3-filter-pills">' +
                                     '<button class="mp3-filter-btn mp3-filter-active" data-filter="all">' +
-                                        'Alle <span class="mp3-filter-count">0</span></button>' +
+                                        t('mediaplace_filter_all') + ' <span class="mp3-filter-count">0</span></button>' +
                                     '<button class="mp3-filter-btn" data-filter="images">' +
-                                        '<i class="fa-solid fa-image"></i> Bilder <span class="mp3-filter-count">0</span></button>' +
+                                        '<i class="fa-solid fa-image"></i> ' + t('mediaplace_filter_images') + ' <span class="mp3-filter-count">0</span></button>' +
                                     '<button class="mp3-filter-btn" data-filter="videos">' +
-                                        '<i class="fa-solid fa-film"></i> Videos <span class="mp3-filter-count">0</span></button>' +
+                                        '<i class="fa-solid fa-film"></i> ' + t('mediaplace_filter_videos') + ' <span class="mp3-filter-count">0</span></button>' +
                                     '<button class="mp3-filter-btn" data-filter="audio">' +
-                                        '<i class="fa-solid fa-music"></i> Audio <span class="mp3-filter-count">0</span></button>' +
+                                        '<i class="fa-solid fa-music"></i> ' + t('mediaplace_filter_audio') + ' <span class="mp3-filter-count">0</span></button>' +
                                     '<button class="mp3-filter-btn" data-filter="documents">' +
-                                        '<i class="fa-solid fa-file-lines"></i> Dokumente <span class="mp3-filter-count">0</span></button>' +
+                                        '<i class="fa-solid fa-file-lines"></i> ' + t('mediaplace_filter_documents') + ' <span class="mp3-filter-count">0</span></button>' +
                                     '<button class="mp3-filter-btn" data-filter="other">' +
-                                        '<i class="fa-solid fa-ellipsis"></i> Sonstige <span class="mp3-filter-count">0</span></button>' +
+                                        '<i class="fa-solid fa-ellipsis"></i> ' + t('mediaplace_filter_other') + ' <span class="mp3-filter-count">0</span></button>' +
                                     unusedFilterHtml +
                                 '</div>' +
                                 '<div class="mp3-filter-dropdown-wrap">' +
-                                    '<button type="button" class="mp3-filter-dropdown-toggle" title="Filter">' +
-                                        '<span class="mp3-filter-dropdown-label">Alle</span>' +
+                                    '<button type="button" class="mp3-filter-dropdown-toggle" title="' + escAttr(t('mediaplace_filter_title')) + '">' +
+                                        '<span class="mp3-filter-dropdown-label">' + t('mediaplace_filter_all') + '</span>' +
                                         '<i class="fa-solid fa-chevron-down"></i>' +
                                     '</button>' +
                                 '</div>' +
@@ -3765,7 +3766,7 @@
                             '</div>' +
                             '<div class="mp3-page-footer">' +
                                 '<div class="mp3-page-size">' +
-                                    '<label for="mp3-per-page-select">Pro Seite</label>' +
+                                    '<label for="mp3-per-page-select">' + t('mediaplace_per_page') + '</label>' +
                                     '<select id="mp3-per-page-select" class="mp3-per-page-select">' +
                                         '<option value="30">30</option>' +
                                         '<option value="50">50</option>' +
@@ -3774,21 +3775,21 @@
                                     '</select>' +
                                 '</div>' +
                                 '<div class="mp3-tile-size-control" id="mp3-tile-size-control">' +
-                                    '<i class="fa-solid fa-table-cells" title="Kleinere Kacheln"></i>' +
-                                    '<input type="range" id="mp3-tile-size-slider" class="mp3-tile-size-slider" min="140" max="360" step="10" title="Kachelgröße">' +
-                                    '<i class="fa-solid fa-table-cells-large" title="Größere Kacheln"></i>' +
+                                    '<i class="fa-solid fa-table-cells" title="' + escAttr(t('mediaplace_smaller_tiles')) + '"></i>' +
+                                    '<input type="range" id="mp3-tile-size-slider" class="mp3-tile-size-slider" min="140" max="360" step="10" title="' + escAttr(t('mediaplace_tile_size')) + '">' +
+                                    '<i class="fa-solid fa-table-cells-large" title="' + escAttr(t('mediaplace_larger_tiles')) + '"></i>' +
                                 '</div>' +
-                                '<button type="button" class="mp3-load-more-btn" style="display:none"><i class="fa-solid fa-angles-down"></i> Mehr laden</button>' +
+                                '<button type="button" class="mp3-load-more-btn" style="display:none"><i class="fa-solid fa-angles-down"></i> ' + t('mediaplace_load_more') + '</button>' +
                                 '<span class="mp3-page-info"></span>' +
                             '</div>' +
                             '<div class="mp3-editor-canvas" id="mp3-editor-canvas" style="display:none">' +
                                 '<div class="mp3-editor-canvas-header">' +
-                                    '<button type="button" class="mp3-editor-canvas-back" title="Zurück zur Übersicht">' +
-                                        '<i class="fa-solid fa-arrow-left"></i> Zurück' +
+                                    '<button type="button" class="mp3-editor-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
+                                        '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
                                     '</button>' +
                                     '<div class="mp3-editor-canvas-title"></div>' +
                                     '<button type="button" class="mp3-editor-canvas-save">' +
-                                        '<i class="fa-solid fa-floppy-disk"></i> Speichern' +
+                                        '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save') +
                                     '</button>' +
                                 '</div>' +
                                 '<div class="mp3-editor-canvas-body">' +
@@ -3797,26 +3798,26 @@
                             '</div>' +
                             '<div class="mp3-focuspoint-canvas" id="mp3-focuspoint-canvas" style="display:none">' +
                                 '<div class="mp3-focuspoint-canvas-header">' +
-                                    '<button type="button" class="mp3-focuspoint-canvas-back" title="Zurück zur Übersicht">' +
-                                        '<i class="fa-solid fa-arrow-left"></i> Zurück' +
+                                    '<button type="button" class="mp3-focuspoint-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
+                                        '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
                                     '</button>' +
                                     '<div class="mp3-focuspoint-canvas-title"></div>' +
                                     '<button type="button" class="mp3-focuspoint-canvas-save">' +
-                                        '<i class="fa-solid fa-floppy-disk"></i> Speichern' +
+                                        '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save') +
                                     '</button>' +
                                 '</div>' +
                                 '<div class="mp3-focuspoint-toolbar">' +
                                     '<div class="mp3-focuspoint-field-wrap" style="display:none">' +
-                                        '<label>Feld</label>' +
+                                        '<label>' + t('mediaplace_field') + '</label>' +
                                         '<select class="mp3-focuspoint-field-select"></select>' +
                                     '</div>' +
                                     '<div class="mp3-focuspoint-type-wrap">' +
-                                        '<label>Vorschau</label>' +
+                                        '<label>' + t('mediaplace_preview') + '</label>' +
                                         '<select class="mp3-focuspoint-type-select"></select>' +
                                     '</div>' +
                                     '<span class="mp3-focuspoint-coords"></span>' +
-                                    '<button type="button" class="mp3-focuspoint-reset-btn" title="Auf geladenen Wert zurücksetzen"><i class="fa-solid fa-rotate-left"></i> Zurücksetzen</button>' +
-                                    '<button type="button" class="mp3-focuspoint-remove-btn" title="Fokuspunkt entfernen (Bildmitte)"><i class="fa-solid fa-xmark"></i> Entfernen</button>' +
+                                    '<button type="button" class="mp3-focuspoint-reset-btn" title="' + escAttr(t('mediaplace_reset_to_loaded_value')) + '"><i class="fa-solid fa-rotate-left"></i> ' + t('mediaplace_reset') + '</button>' +
+                                    '<button type="button" class="mp3-focuspoint-remove-btn" title="' + escAttr(t('mediaplace_remove_focuspoint')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_remove') + '</button>' +
                                 '</div>' +
                                 '<div class="mp3-focuspoint-canvas-body">' +
                                     '<div class="mp3-focuspoint-image-wrap">' +
@@ -3829,7 +3830,7 @@
                                 '</div>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="mp3-detail-resize-handle" id="mp3-detail-resize-handle" title="Breite ziehen" style="display:none"></div>' +
+                        '<div class="mp3-detail-resize-handle" id="mp3-detail-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '" style="display:none"></div>' +
                         '<div class="mp3-detail" id="mp3-detail"></div>' +
                     '</div>' +
                     '<div class="mp3-cat-menu-portal" id="mp3-cat-menu-portal"></div>' +
@@ -3838,24 +3839,24 @@
                     '<div class="mp3-resize-handle" id="mp3-resize-handle"></div>' +
                     '<div class="mp3-multi-footer" id="mp3-multi-footer" style="display:none">' +
                         '<div class="mp3-multi-left">' +
-                            '<button class="mp3-multi-select-all"><i class="fa-solid fa-square-check"></i> Alle auswählen</button>' +
-                            '<span class="mp3-multi-count">0 Dateien ausgewählt</span>' +
+                            '<button class="mp3-multi-select-all"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
+                            '<span class="mp3-multi-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
                         '</div>' +
-                        '<button class="mp3-multi-confirm"><i class="fa-solid fa-check"></i> Übernehmen</button>' +
+                        '<button class="mp3-multi-confirm"><i class="fa-solid fa-check"></i> ' + t('mediaplace_apply_selection') + '</button>' +
                     '</div>' +
                     '<div class="mp3-batch-footer" id="mp3-batch-footer" style="display:none">' +
                         '<div class="mp3-batch-left">' +
-                            '<button type="button" class="mp3-batch-select-all"><i class="fa-solid fa-square-check"></i> Alle auswählen</button>' +
-                            '<span class="mp3-batch-count">0 Dateien ausgewählt</span>' +
+                            '<button type="button" class="mp3-batch-select-all"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
+                            '<span class="mp3-batch-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
                         '</div>' +
                         '<div class="mp3-batch-actions">' +
-                            '<button type="button" class="mp3-batch-delete-btn"><i class="fa-solid fa-trash-can"></i> Auswahl löschen</button>' +
-                            '<button type="button" class="mp3-batch-clear-btn"><i class="fa-solid fa-xmark"></i> Auswahl aufheben</button>' +
+                            '<button type="button" class="mp3-batch-delete-btn"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete_selection') + '</button>' +
+                            '<button type="button" class="mp3-batch-clear-btn"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_deselect_all_action') + '</button>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="mp3-lightbox" id="mp3-lightbox">' +
-                    '<button type="button" class="mp3-lightbox-close" title="Schließen"><i class="fa-solid fa-xmark"></i></button>' +
+                    '<button type="button" class="mp3-lightbox-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
                     '<img class="mp3-lightbox-image" alt="">' +
                     '<div class="mp3-lightbox-caption"></div>' +
                 '</div>' +
@@ -4222,21 +4223,21 @@
             if (collectionAddBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                var collectionName = prompt('Name der Sammlung:');
+                var collectionName = prompt(t('mediaplace_prompt_collection_name'));
                 if (null === collectionName) return;
                 createCollection(currentCat, collectionName)
                     .then(function (created) {
                         if (!created) {
-                            alert('Sammlung konnte nicht erstellt werden (Name leer oder bereits vorhanden).');
+                            alert(t('mediaplace_collection_create_failed'));
                             return;
                         }
                         setActiveCollection(created.id);
                         refreshCollectionsSection();
                         refreshDisplay();
-                        alert('Sammlung aktiviert. Klicke auf das Lesezeichen am Medium oder im Detailpanel.');
+                        alert(t('mediaplace_collection_activated_hint'));
                     })
                     .catch(function (err) {
-                        alert('Fehler beim Erstellen der Sammlung: ' + err.message);
+                        alert(t('mediaplace_error_creating_collection', { msg: err.message }));
                     });
                 return;
             }
@@ -4255,12 +4256,12 @@
                         break;
                     }
                 }
-                var nextCollectionName = prompt('Neuer Name der Sammlung:', currentCollectionName);
+                var nextCollectionName = prompt(t('mediaplace_prompt_rename_collection'), currentCollectionName);
                 if (null === nextCollectionName) return;
                 renameCollection(currentCat, renameCollectionId, nextCollectionName)
                     .then(function (updatedCount) {
                         if (updatedCount <= 0) {
-                            alert('Sammlung umbenannt. Es waren aktuell keine Dateien zugeordnet.');
+                            alert(t('mediaplace_collection_renamed_empty'));
                             return;
                         }
                         refreshCollectionsSection();
@@ -4268,7 +4269,7 @@
                         if (selectedFile) showDetail(selectedFile);
                     })
                     .catch(function (err) {
-                        alert('Fehler beim Umbenennen der Sammlung: ' + err.message);
+                        alert(t('mediaplace_error_renaming_collection', { msg: err.message }));
                     });
                 return;
             }
@@ -4280,9 +4281,9 @@
                 var deleteCollectionId = String(collectionDeleteBtn.getAttribute('data-collection-id') || '');
                 if (!deleteCollectionId) return;
                 showConfirmModal({
-                    title: 'Sammlung löschen',
-                    message: 'Sammlung <strong>' + escAttr(deleteCollectionId) + '</strong> wirklich löschen?',
-                    confirmLabel: 'Löschen',
+                    title: t('mediaplace_delete_collection'),
+                    message: t('mediaplace_confirm_delete_collection', { name: '<strong>' + escAttr(deleteCollectionId) + '</strong>' }),
+                    confirmLabel: t('mediaplace_delete'),
                     dangerous: true,
                     onConfirm: function (ctx) {
                         ctx.setBusy(true);
@@ -4293,12 +4294,12 @@
                                 refreshDisplay();
                                 if (selectedFile) showDetail(selectedFile);
                                 if (updatedCount <= 0) {
-                                    alert('Sammlung gelöscht. Es waren aktuell keine Dateien zugeordnet.');
+                                    alert(t('mediaplace_collection_deleted_empty'));
                                 }
                             })
                             .catch(function (err) {
                                 ctx.setBusy(false);
-                                ctx.showError('Fehler beim Löschen der Sammlung: ' + err.message);
+                                ctx.showError(t('mediaplace_error_deleting_collection', { msg: err.message }));
                             });
                     }
                 });
@@ -4343,9 +4344,9 @@
                 if (deleteCatId <= 0) return;
                 var deleteCatName = deleteBtn.getAttribute('data-delete-cat-name') || String(deleteCatId);
                 showConfirmModal({
-                    title: 'Kategorie löschen',
-                    message: 'Kategorie <strong>' + escAttr(deleteCatName) + '</strong> wirklich löschen? Das geht nur, wenn sie leer ist (keine Unterkategorien/Dateien).',
-                    confirmLabel: 'Löschen',
+                    title: t('mediaplace_delete_category'),
+                    message: t('mediaplace_confirm_delete_category', { name: '<strong>' + escAttr(deleteCatName) + '</strong>' }),
+                    confirmLabel: t('mediaplace_delete'),
                     dangerous: true,
                     onConfirm: function (ctx) {
                         ctx.setBusy(true);
@@ -4361,7 +4362,7 @@
                             })
                             .catch(function (err) {
                                 ctx.setBusy(false);
-                                ctx.showError('Fehler beim Löschen: ' + err.message);
+                                ctx.showError(t('mediaplace_error_deleting', { msg: err.message }));
                             });
                     }
                 });
@@ -4569,7 +4570,7 @@
                         if (selectedFile && filenames.indexOf(selectedFile) !== -1) showDetail(selectedFile);
                     })
                     .catch(function (err) {
-                        alert('Fehler beim Zuordnen zur Sammlung: ' + err.message);
+                        alert(t('mediaplace_error_assigning_collection', { msg: err.message }));
                     });
                 return;
             }
@@ -4596,7 +4597,7 @@
                         if (selectedFile && catFilenames.indexOf(selectedFile) !== -1) showDetail(selectedFile);
                     })
                     .catch(function (err) {
-                        alert('Fehler beim Verschieben in die Kategorie: ' + err.message);
+                        alert(t('mediaplace_error_moving_to_category', { msg: err.message }));
                     });
             }
         });
@@ -4631,7 +4632,7 @@
                         }
                     })
                     .catch(function (err) {
-                        alert('Fehler beim Aktualisieren der Sammlung: ' + err.message);
+                        alert(t('mediaplace_error_updating_collection', { msg: err.message }));
                     })
                     .then(function () {
                         quickCollectionBtn.disabled = false;
@@ -4791,10 +4792,12 @@
                 var batchFilenames = Object.keys(collectionDragSelected);
                 if (!batchFilenames.length) return;
                 showConfirmModal({
-                    title: 'Auswahl löschen',
-                    message: batchFilenames.length + (1 === batchFilenames.length ? ' Datei' : ' Dateien') +
-                        ' wirklich löschen? Dateien, die noch verwendet werden, werden dabei automatisch übersprungen.',
-                    confirmLabel: 'Löschen',
+                    title: t('mediaplace_delete_selection'),
+                    message: t('mediaplace_confirm_delete_files', {
+                        count: batchFilenames.length,
+                        unit: (1 === batchFilenames.length ? t('mediaplace_file_singular') : t('mediaplace_file_plural'))
+                    }),
+                    confirmLabel: t('mediaplace_delete'),
                     dangerous: true,
                     onConfirm: function (ctx) {
                         ctx.setBusy(true);
@@ -4819,9 +4822,9 @@
                                     return;
                                 }
                                 ctx.setBusy(false);
-                                var msg = deleted.length + ' gelöscht.';
-                                if (skipped.length) msg += ' In Verwendung, übersprungen: ' + skipped.join(', ') + '.';
-                                if (failed.length) msg += ' Fehlgeschlagen: ' + failed.join(', ') + '.';
+                                var msg = t('mediaplace_deleted_count', { count: deleted.length });
+                                if (skipped.length) msg += ' ' + t('mediaplace_skipped_in_use', { list: skipped.join(', ') });
+                                if (failed.length) msg += ' ' + t('mediaplace_failed_list', { list: failed.join(', ') });
                                 ctx.showError(msg);
                                 return;
                             }
@@ -4869,13 +4872,13 @@
                 var delFilename = deleteBtn.getAttribute('data-filename');
                 var inUse = deleteBtn.getAttribute('data-in-use') === '1';
                 if (inUse) {
-                    alert('Diese Datei wird noch verwendet und kann nicht gelöscht werden.');
+                    alert(t('mediaplace_file_in_use_cannot_delete'));
                     return;
                 }
                 showConfirmModal({
-                    title: 'Datei löschen',
-                    message: 'Datei <strong>' + escAttr(delFilename) + '</strong> wirklich löschen?',
-                    confirmLabel: 'Löschen',
+                    title: t('mediaplace_delete_file'),
+                    message: t('mediaplace_confirm_delete_file', { name: '<strong>' + escAttr(delFilename) + '</strong>' }),
+                    confirmLabel: t('mediaplace_delete'),
                     dangerous: true,
                     onConfirm: function (ctx) {
                         ctx.setBusy(true);
@@ -4892,7 +4895,7 @@
                             })
                             .catch(function (err) {
                                 ctx.setBusy(false);
-                                ctx.showError('Fehler beim Löschen: ' + err.message);
+                                ctx.showError(t('mediaplace_error_deleting', { msg: err.message }));
                             });
                     }
                 });
@@ -4911,7 +4914,7 @@
                         showDetail(collectionFilename);
                     })
                     .catch(function (err) {
-                        alert('Fehler beim Aktualisieren der Sammlung: ' + err.message);
+                        alert(t('mediaplace_error_updating_collection', { msg: err.message }));
                     })
                     .then(function () {
                         collectionBtn.disabled = false;
@@ -4957,15 +4960,15 @@
                 var isOpen = legacyContent.style.display !== 'none';
                 if (isOpen) {
                     legacyContent.style.display = 'none';
-                    legacyToggleBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i> Alte Metadaten laden/anzeigen';
+                    legacyToggleBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i> ' + t('mediaplace_legacy_metadata');
                     return;
                 }
 
                 legacyContent.style.display = '';
-                legacyToggleBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Alte Metadaten ausblenden';
+                legacyToggleBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> ' + t('mediaplace_legacy_metadata_hide');
                 if (detailLegacyLoaded) return;
 
-                legacyContent.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> Lade alte Metadaten…</div>';
+                legacyContent.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_legacy_metadata_loading') + '</div>';
                 apiFetch('media/' + encodeURIComponent(selectedFile) + '/metainfo')
                     .then(function (legacyValues) {
                         detailLegacyLoaded = true;
@@ -5021,7 +5024,7 @@
                 }
                 if (!exists) {
                     if (wrap.closest('.mp3-json-field[data-field-key="__system_tags"]') && isCollectionTagName(newTag)) {
-                        alert('Collection-Tags werden über die Sammlungsauswahl verwaltet und nicht als normale System-Tags.');
+                        alert(t('mediaplace_collection_tags_hint'));
                         return;
                     }
                     var color = '#4a90d9';
@@ -5177,7 +5180,7 @@
                         }
                     })
                     .catch(function (err) {
-                        alert('Fehler beim Verschieben: ' + err.message);
+                        alert(t('mediaplace_error_moving', { msg: err.message }));
                         moveCatSelect.value = prevValue;
                     })
                     .then(function () {
@@ -5193,7 +5196,7 @@
 
                 if (!extensionsCompatible(selectedFile, file.name)) {
                     var allowed = getReplacementAcceptForFilename(selectedFile).replace(/,/g, ' oder ');
-                    alert('Ungueltige Dateiendung. Erlaubt ist nur: ' + allowed + '.');
+                    alert(t('mediaplace_invalid_extension', { allowed: allowed }));
                     replaceInput.value = '';
                     return;
                 }
@@ -5217,7 +5220,7 @@
                         showDetail(selectedFile);
                     })
                     .catch(function (err) {
-                        alert('Fehler beim Datei-Tausch: ' + err.message);
+                        alert(t('mediaplace_error_replacing_file', { msg: err.message }));
                     })
                     .then(function () {
                         if (replaceLabel) replaceLabel.classList.remove('is-loading');
@@ -5696,14 +5699,14 @@
             // dauerhaft sichtbarer Einstiegspunkt fuer eine leere Auswahl.
             batchFooter.style.display = count > 0 ? '' : 'none';
             var batchCountEl = qs('.mp3-batch-count', batchFooter);
-            if (batchCountEl) batchCountEl.textContent = count + (1 === count ? ' Datei ausgewählt' : ' Dateien ausgewählt');
+            if (batchCountEl) batchCountEl.textContent = t('mediaplace_files_selected_dynamic', { count: count, unit: (1 === count ? t('mediaplace_file_singular') : t('mediaplace_file_plural')) });
 
             var visible = getVisibleFilenames();
             var allSelected = visible.length > 0 && visible.every(function (fn) { return !!collectionDragSelected[fn]; });
             var batchSelAllBtn = qs('.mp3-batch-select-all', batchFooter);
             if (batchSelAllBtn) {
                 batchSelAllBtn.innerHTML = '<i class="fa-solid ' + (allSelected ? 'fa-square' : 'fa-square-check') + '"></i> ' +
-                    (allSelected ? 'Alle abwählen' : 'Alle auswählen');
+                    (allSelected ? t('mediaplace_deselect_all') : t('mediaplace_select_all'));
             }
         }
     }
@@ -5761,14 +5764,14 @@
         if (selAllBtn) {
             selAllBtn.style.display = count > 0 ? '' : 'none';
             selAllBtn.innerHTML = '<i class="fa-solid ' + (allSelected ? 'fa-square' : 'fa-square-check') + '"></i> ' +
-                (allSelected ? 'Alle abwählen' : 'Alle auswählen');
+                (allSelected ? t('mediaplace_deselect_all') : t('mediaplace_select_all'));
         }
 
         // Update footer
         if (multiFooter) {
             var countEl = qs('.mp3-multi-count', multiFooter);
             if (countEl) {
-                countEl.textContent = count + ' Datei' + (count !== 1 ? 'en' : '') + ' ausgewählt';
+                countEl.textContent = t('mediaplace_files_selected_dynamic', { count: count, unit: (1 === count ? t('mediaplace_file_singular') : t('mediaplace_file_plural')) });
             }
         }
 
@@ -5908,7 +5911,7 @@
         if (multiFooter) {
             multiFooter.style.display = multiMode ? '' : 'none';
             var countEl = qs('.mp3-multi-count', multiFooter);
-            if (countEl) countEl.textContent = '0 Dateien ausgewählt';
+            if (countEl) countEl.textContent = t('mediaplace_files_selected', { count: 0 });
         }
         if (batchFooter) batchFooter.style.display = 'none';
 
