@@ -43,16 +43,16 @@ $token = $info['updatedate'] ?: (string) $info['filesize'];
 $downloadUrl = $apiBase . 'media/' . rawurlencode($filename) . '/file' . ($token ? '?mp3v=' . rawurlencode($token) : '');
 ?>
 <div class="mp3-detail-actions">
-    <button class="mp3-detail-select-btn" data-filename="<?= rex_escape($filename) ?>" style="display:none"><i class="fa-solid fa-check"></i> Auswählen</button>
+    <button class="mp3-detail-select-btn" data-filename="<?= rex_escape($filename) ?>" style="display:none"><i class="fa-solid fa-check"></i> <?= rex_escape($this->i18n('mediaplace_select')) ?></button>
 
     <div class="mp3-detail-actions-row">
-        <label class="mp3-detail-replace-btn" title="Datei ersetzen (Dateiname bleibt gleich)">
+        <label class="mp3-detail-replace-btn" title="<?= rex_escape($this->i18n('mediaplace_replace_file')) ?>">
             <i class="fa-solid fa-arrows-rotate"></i><input type="file" class="mp3-detail-replace-input" accept="<?= rex_escape(DetailPanelFormatter::replacementAccept($filename)) ?>" style="display:none"></label>
-        <a class="mp3-detail-download-btn" href="<?= rex_escape($downloadUrl) ?>" download="<?= rex_escape($filename) ?>" title="Datei herunterladen">
+        <a class="mp3-detail-download-btn" href="<?= rex_escape($downloadUrl) ?>" download="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_download_file')) ?>">
             <i class="fa-solid fa-download"></i></a>
-        <button type="button" class="mp3-detail-save-btn" title="Änderungen speichern" disabled>
-            <i class="fa-solid fa-floppy-disk"></i> Speichern</button>
-        <button class="mp3-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" title="Datei löschen">
+        <button type="button" class="mp3-detail-save-btn" title="<?= rex_escape($this->i18n('mediaplace_save_changes')) ?>" disabled>
+            <i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
+        <button class="mp3-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" title="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>">
             <i class="fa-solid fa-trash-can"></i></button>
     </div>
 </div>

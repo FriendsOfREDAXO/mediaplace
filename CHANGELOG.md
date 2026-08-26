@@ -30,8 +30,10 @@ Erste Version von **MediaPlace**: ein vollständiger, moderner Medienpool für d
 - Der klassische „Medienpool“-Menüpunkt sowie die `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets öffnen wahlweise direkt den neuen Overlay statt der alten Seiten/Popups (abschaltbar in den Einstellungen).
 
 ### i18n-Infrastruktur (Anfang)
-- Neue Datei `assets/mediapool3-i18n.js`: eigenständige, frontend-taugliche Übersetzungsschicht (`MP3Core.i18n.t()`), keine Abhängigkeit von REDAXO-Backend-JS — gleiches Muster wie im `filepond_uploader`-Addon (statisches `{de_de, en_gb}`-Objekt direkt im Skript, Sprache über ein Datenattribut statt eines Backend-only-globals ermittelt). Sprachcode kommt aus `rex_i18n::getLocale()` via `data-mp3-lang` an `#mp3-root`.
-- Das komplette Input-Widget (`mediapool3_widget.js`) ist als erste Schicht vollständig migriert (DE/EN). Der große Rest (`mediapool3.js`, ~6000 Zeilen) folgt schrittweise in künftigen Versionen — siehe Roadmap.
+- `lang/de_de.lang` ist jetzt die **einzige** Quelle der Wahrheit für übersetzbare Texte — auch für JS-seitige Strings, keine zweite, separat gepflegte Übersetzungstabelle. `boot.php` löst beim Seitenaufbau jeden dort vorhandenen `mediaplace_*`-Schlüssel über `rex_i18n::msg()` für die aktive Locale auf (inkl. deren eingebauter Fallback-Kette) und embedded das Ergebnis als JSON (`<script type="application/json" id="mp3-i18n-data">`). Neue Datei `assets/mediapool3-i18n.js` liest dieses JSON und stellt `MP3Core.i18n.t(key, vars)` bereit — reines PHP-gerendertes JSON, keine Abhängigkeit von REDAXO-Backend-JS-Globals, funktioniert deshalb unverändert auch im Frontend, sobald MediaPlace dort eingesetzt wird.
+- Erste migrierte Schichten: das komplette Input-Widget (`mediapool3_widget.js`) sowie alle 17 PHP-Fragmente des Detail-Panels (`fragments/mediaplace/*.php`) nutzen jetzt `t()`/`rex_i18n::msg()` statt hartkodiertem Text.
+- Aktuell nur Deutsch gepflegt (`lang/en_us.lang` folgt in einer Folgeversion) — dank REDAXOs Locale-Fallback zeigen andere Sprachen bis dahin den deutschen Text statt eines kaputten Platzhalters.
+- Der große Rest (`mediapool3.js`, ~6000 Zeilen) folgt schrittweise in künftigen Versionen.
 
 ### Technik
 - Eigene `rex_api_function`-Endpunkte (`mediaplace_categories`, `mediaplace_json_metainfo`, `mediaplace_tags`, `mediaplace_unused`, `mediaplace_focuspoint`, `mediaplace_schema`) mit zentraler Rechteprüfung (`MediaPermission`), die REDAXOs Medien-Berechtigungen spiegelt.

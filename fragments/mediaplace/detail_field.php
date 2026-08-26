@@ -39,5 +39,5 @@ $bodyFragment = $registeredTypes[$widget]['fragment'] ?? 'mediaplace/detail_fiel
         'info' => $info,
         'clangs' => $clangs,
     ]); ?>
-    <button type="button" class="mp3-field-save-btn" data-save-field="<?= rex_escape($key) ?>" style="display:none"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+    <button type="button" class="mp3-field-save-btn" data-save-field="<?= rex_escape($key) ?>" style="display:none"><i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
 </div>

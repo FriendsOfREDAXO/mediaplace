@@ -22,7 +22,7 @@ foreach ($tags as $t) {
 }
 ?>
 <div class="mp3-edit-field mp3-json-field" data-field-key="__system_tags">
-    <label class="mp3-edit-label">System-Tags <span class="mp3-edit-kind-badge">global</span></label>
+    <label class="mp3-edit-label"><?= rex_escape($this->i18n('mediaplace_system_tags')) ?> <span class="mp3-edit-kind-badge">global</span></label>
     <?php $this->subfragment('mediaplace/detail_tags_widget.php', [
         'key' => '__system_tags',
         'tags' => $tags,
@@ -39,6 +39,6 @@ foreach ($tags as $t) {
             <option value="<?= rex_escape($name) ?>"></option>
         <?php endforeach; ?>
     </datalist>
-    <div class="mp3-metainfo-hint">Autofill aus bestehenden Tags. Farben gelten systemweit.</div>
-    <button type="button" class="mp3-field-save-btn" data-save-field="__system_tags" style="display:none"><i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+    <div class="mp3-metainfo-hint"><?= rex_escape($this->i18n('mediaplace_system_tags_hint')) ?></div>
+    <button type="button" class="mp3-field-save-btn" data-save-field="__system_tags" style="display:none"><i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
 </div>

@@ -22,11 +22,11 @@ $filename = is_string($value) ? $value : '';
 ?>
 <div class="mp3-media-link-widget" data-json-field-wrap="<?= rex_escape($key) ?>">
     <div class="mp3-media-link-row">
-        <input class="mp3-edit-input" type="text" readonly data-json-field="<?= rex_escape($key) ?>" value="<?= rex_escape($filename) ?>" placeholder="Kein Medium verlinkt">
+        <input class="mp3-edit-input" type="text" readonly data-json-field="<?= rex_escape($key) ?>" value="<?= rex_escape($filename) ?>" placeholder="<?= rex_escape($this->i18n('mediaplace_media_link_none')) ?>">
         <button type="button" class="mp3-media-link-picker" data-field="<?= rex_escape($key) ?>"><i class="fa-solid fa-photo-film"></i></button>
         <button type="button" class="mp3-media-link-clear" data-field="<?= rex_escape($key) ?>"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="mp3-media-link-pick-hint" style="display:none"><i class="fa-solid fa-circle-info"></i> Auswahl aktiv: Datei im Raster anklicken.</div>
+    <div class="mp3-media-link-pick-hint" style="display:none"><i class="fa-solid fa-circle-info"></i> <?= rex_escape($this->i18n('mediaplace_media_link_pick_hint')) ?></div>
     <?php if ('' !== $filename && DetailPanelFormatter::isImageFilename($filename)): ?>
         <?php
         $linkedMedia = rex_media::get($filename);

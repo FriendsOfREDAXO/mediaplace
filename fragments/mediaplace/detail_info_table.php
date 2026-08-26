@@ -24,26 +24,26 @@ $categoryList = $this->getVar('category_list');
 $featureCollections = (bool) $this->getVar('feature_collections');
 ?>
 <table class="mp3-detail-table">
-    <tr><td>Dateiname</td><td><?= rex_escape($info['filename']) ?></td></tr>
+    <tr><td><?= rex_escape($this->i18n('mediaplace_field_filename')) ?></td><td><?= rex_escape($info['filename']) ?></td></tr>
     <?php if ('' !== $info['originalname'] && $info['originalname'] !== $info['filename']): ?>
-        <tr><td>Original</td><td><?= rex_escape($info['originalname']) ?></td></tr>
+        <tr><td><?= rex_escape($this->i18n('mediaplace_field_original')) ?></td><td><?= rex_escape($info['originalname']) ?></td></tr>
     <?php endif; ?>
-    <tr><td>Typ</td><td><?= rex_escape($info['filetype']) ?></td></tr>
-    <tr><td>Größe</td><td><?= DetailPanelFormatter::formatBytes($info['filesize']) ?></td></tr>
+    <tr><td><?= rex_escape($this->i18n('mediaplace_field_type')) ?></td><td><?= rex_escape($info['filetype']) ?></td></tr>
+    <tr><td><?= rex_escape($this->i18n('mediaplace_field_size')) ?></td><td><?= DetailPanelFormatter::formatBytes($info['filesize']) ?></td></tr>
     <?php if ($info['width'] && $info['height']): ?>
-        <tr><td>Maße</td><td><?= (int) $info['width'] ?> × <?= (int) $info['height'] ?> px</td></tr>
+        <tr><td><?= rex_escape($this->i18n('mediaplace_field_dimensions')) ?></td><td><?= (int) $info['width'] ?> × <?= (int) $info['height'] ?> px</td></tr>
     <?php endif; ?>
-    <tr><td>Erstellt</td><td><?= rex_escape($info['created_formatted']) ?><br><small><?= rex_escape($info['createuser']) ?></small></td></tr>
-    <tr><td>Aktualisiert</td><td><?= rex_escape($info['updated_formatted']) ?><br><small><?= rex_escape($info['updateuser']) ?></small></td></tr>
-    <tr><td>Datei vorhanden</td><td><?= $info['file_exists'] ? '<span class="mp3-badge-yes">✓ Ja</span>' : '<span class="mp3-badge-no">✗ Nein</span>' ?></td></tr>
-    <tr><td>In Verwendung</td><td><?= $info['is_in_use'] ? '<span class="mp3-badge-yes">✓ Ja</span>' : '<span class="mp3-badge-no">✗ Nein</span>' ?></td></tr>
+    <tr><td><?= rex_escape($this->i18n('mediaplace_field_created')) ?></td><td><?= rex_escape($info['created_formatted']) ?><br><small><?= rex_escape($info['createuser']) ?></small></td></tr>
+    <tr><td><?= rex_escape($this->i18n('mediaplace_field_updated')) ?></td><td><?= rex_escape($info['updated_formatted']) ?><br><small><?= rex_escape($info['updateuser']) ?></small></td></tr>
+    <tr><td><?= rex_escape($this->i18n('mediaplace_field_file_exists')) ?></td><td><?= $info['file_exists'] ? '<span class="mp3-badge-yes">✓ ' . rex_escape($this->i18n('mediaplace_yes')) . '</span>' : '<span class="mp3-badge-no">✗ ' . rex_escape($this->i18n('mediaplace_no')) . '</span>' ?></td></tr>
+    <tr><td><?= rex_escape($this->i18n('mediaplace_field_in_use')) ?></td><td><?= $info['is_in_use'] ? '<span class="mp3-badge-yes">✓ ' . rex_escape($this->i18n('mediaplace_yes')) . '</span>' : '<span class="mp3-badge-no">✗ ' . rex_escape($this->i18n('mediaplace_no')) . '</span>' ?></td></tr>
     <?php if ($featureCollections): ?>
-        <tr><td>Sammlungen</td><td><?= !empty($collectionNames) ? rex_escape(implode(', ', $collectionNames)) : '–' ?></td></tr>
+        <tr><td><?= rex_escape($this->i18n('mediaplace_field_collections')) ?></td><td><?= !empty($collectionNames) ? rex_escape(implode(', ', $collectionNames)) : '–' ?></td></tr>
     <?php endif; ?>
-    <tr class="mp3-move-file-row"><td>Kategorie</td><td>
+    <tr class="mp3-move-file-row"><td><?= rex_escape($this->i18n('mediaplace_field_category')) ?></td><td>
         <div class="mp3-move-file-wrap">
-            <select class="mp3-move-file-select" data-current-cat="<?= rex_escape((string) $info['category_id']) ?>" title="Datei in andere Kategorie verschieben">
-                <option value="0">(Hauptverzeichnis)</option>
+            <select class="mp3-move-file-select" data-current-cat="<?= rex_escape((string) $info['category_id']) ?>" title="<?= rex_escape($this->i18n('mediaplace_move_to_category')) ?>">
+                <option value="0"><?= rex_escape($this->i18n('mediaplace_root_category')) ?></option>
                 <?php foreach ($categoryList as $cat): ?>
                     <option value="<?= rex_escape((string) $cat['id']) ?>"<?= $cat['id'] === $info['category_id'] ? ' selected' : '' ?>><?= str_repeat("\u{00A0}\u{00A0}", $cat['depth']) . rex_escape($cat['name']) ?></option>
                 <?php endforeach; ?>

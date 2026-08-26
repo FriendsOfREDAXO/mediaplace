@@ -104,7 +104,7 @@
         var addBtn = document.createElement('button');
         addBtn.type = 'button';
         addBtn.className = 'btn btn-xs btn-default mp3w-btn mp3w-btn-add';
-        addBtn.title = this.multiple ? t('widget_add_multiple') : t('widget_add_single');
+        addBtn.title = this.multiple ? t('mediaplace_widget_add_multiple') : t('mediaplace_widget_add_single');
         addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         addBtn.addEventListener('click', function () {
             self._openPicker();
@@ -115,7 +115,7 @@
         var clearBtn = document.createElement('button');
         clearBtn.type = 'button';
         clearBtn.className = 'btn btn-xs btn-default mp3w-btn mp3w-btn-clear';
-        clearBtn.title = t('widget_clear_all');
+        clearBtn.title = t('mediaplace_widget_clear_all');
         clearBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
         clearBtn.addEventListener('click', function () {
             self._setFiles([]);
@@ -162,7 +162,7 @@
         if (files.length === 0) {
             html = '<div class="mp3w-empty">' +
                 '<i class="fa-solid fa-image"></i> ' +
-                (this.multiple ? t('widget_empty_multiple') : t('widget_empty_single')) +
+                (this.multiple ? t('mediaplace_widget_empty_multiple') : t('mediaplace_widget_empty_single')) +
                 '</div>';
         } else {
             for (var i = 0; i < files.length; i++) {
@@ -228,9 +228,9 @@
             (this.multiple ? ' draggable="true"' : '') + '>';
         html += '<div class="mp3w-item-preview">' + preview + '</div>';
         html += '<div class="mp3w-item-name">' + escAttr(filename) + '</div>';
-        html += '<button type="button" class="mp3w-item-view" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('widget_view_details')) + '">' +
+        html += '<button type="button" class="mp3w-item-view" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('mediaplace_widget_view_details')) + '">' +
             '<i class="fa-solid fa-magnifying-glass"></i></button>';
-        html += '<button type="button" class="mp3w-item-remove" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('widget_remove')) + '">' +
+        html += '<button type="button" class="mp3w-item-remove" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('mediaplace_widget_remove')) + '">' +
             '<i class="fa-solid fa-xmark"></i></button>';
         html += '</div>';
         return html;

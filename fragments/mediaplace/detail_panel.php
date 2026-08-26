@@ -45,7 +45,7 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
 <div class="mp3-detail-inner">
     <div class="mp3-detail-header">
         <span class="mp3-detail-header-name" title="<?= rex_escape($info['filename']) ?>"><?= rex_escape($headerName) ?></span>
-        <button class="mp3-detail-close" title="Schließen"><i class="fa-solid fa-xmark"></i></button>
+        <button class="mp3-detail-close" title="<?= rex_escape($this->i18n('mediaplace_close')) ?>"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <?php $this->subfragment('mediaplace/detail_preview.php', [
@@ -90,7 +90,7 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
     ]); ?>
 
     <div class="mp3-legacy-section">
-        <button type="button" class="mp3-legacy-toggle-btn"><i class="fa-solid fa-chevron-right"></i> Alte Metadaten laden/anzeigen</button>
+        <button type="button" class="mp3-legacy-toggle-btn"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n('mediaplace_legacy_metadata')) ?></button>
         <div class="mp3-legacy-content" style="display:none"></div>
     </div>
 

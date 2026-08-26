@@ -1,55 +1,35 @@
 /**
  * MediaPlace -- i18n-Schicht (frontend-tauglich, keine REDAXO-Backend-JS-
- * Abhaengigkeit). Statisches Uebersetzungs-Objekt direkt im Skript, gleiches
- * Muster wie assets/filepond_widget.js im filepond_uploader-Addon: keine
- * separate JSON-Datei, kein Nachladen, keine Abhaengigkeit von irgendeinem
- * Backend-only-JS-Objekt (das im Frontend nicht existieren wuerde, sobald
- * MediaPlace dort eingesetzt wird).
- *
- * Sprachauswahl: #mp3-root liefert data-mp3-lang (PHP-seitig aus
- * rex_i18n::getLocale(), siehe boot.php), Fallback document.documentElement.lang,
- * Fallback 'de_de'. initLang() muss explizit aufgerufen werden (siehe build()
- * in mediapool3.js) -- beim Laden dieses Scripts existiert #mp3-root evtl.
- * noch nicht.
+ * Abhaengigkeit). Die `lang/*.lang`-Dateien sind die EINZIGE Quelle der
+ * Wahrheit -- keine zweite, parallel gepflegte Uebersetzungstabelle hier im
+ * Script. boot.php loest alle `mediaplace_*`-Schluessel serverseitig ueber
+ * rex_i18n::msg() fuer die aktuelle Locale auf (inkl. deren eingebauter
+ * Fallback-Kette, z.B. auf de_de, falls ein Schluessel in der aktiven
+ * Sprache noch fehlt) und embedded das Ergebnis als JSON in
+ * <script id="mp3-i18n-data" type="application/json">. Rein PHP-gerendertes
+ * JSON in der Seite -- keine REDAXO-Backend-JS-Globals, funktioniert deshalb
+ * unveraendert, sobald MediaPlace auch im Frontend eingesetzt wird.
  */
 (function (Core) {
     'use strict';
 
     Core.i18n = Core.i18n || {};
 
-    var TRANSLATIONS = {
-        de_de: {
-            widget_add_single: 'Medium auswählen',
-            widget_add_multiple: 'Medium hinzufügen',
-            widget_clear_all: 'Alle entfernen',
-            widget_view_details: 'Details ansehen',
-            widget_remove: 'Entfernen',
-            widget_empty_single: 'Kein Medium ausgewählt',
-            widget_empty_multiple: 'Keine Medien ausgewählt'
-        },
-        en_gb: {
-            widget_add_single: 'Select media',
-            widget_add_multiple: 'Add media',
-            widget_clear_all: 'Remove all',
-            widget_view_details: 'View details',
-            widget_remove: 'Remove',
-            widget_empty_single: 'No media selected',
-            widget_empty_multiple: 'No media selected'
-        }
-    };
-
-    var currentLang = 'de_de';
+    var dict = {};
 
     function initLang() {
-        var root = document.getElementById('mp3-root');
-        var lang = (root && root.dataset.mp3Lang) || document.documentElement.lang || 'de_de';
-        currentLang = TRANSLATIONS[lang] ? lang : 'de_de';
+        var el = document.getElementById('mp3-i18n-data');
+        if (!el) return;
+        try {
+            dict = JSON.parse(el.textContent) || {};
+        } catch (e) {
+            dict = {};
+        }
     }
 
-    // {name}-Platzhalter-Interpolation, analog zu fileponds {current}/{total}-Muster.
+    // {name}-Platzhalter-Interpolation.
     function t(key, vars) {
-        var table = TRANSLATIONS[currentLang] || TRANSLATIONS.de_de;
-        var str = table[key] || TRANSLATIONS.de_de[key] || key;
+        var str = dict[key] || key;
         if (vars) {
             Object.keys(vars).forEach(function (k) {
                 str = str.replace('{' + k + '}', vars[k]);

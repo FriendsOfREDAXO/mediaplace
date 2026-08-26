@@ -72,11 +72,6 @@ if (rex::isBackend() && rex::getUser()) {
         $canFilterUnused = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasUnusedFilterAccess() ? '1' : '0';
         $focuspointUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_focuspoint']);
         $focuspointAvailable = \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit() ? '1' : '0';
-        // Universelle Sprachquelle statt manuell rex::getUser()->getLanguage() zu
-        // verzweigen -- rex_i18n::getLocale() liefert kontextabhaengig das Richtige
-        // (Backend: Sprache des eingeloggten Users; Frontend: eigene Ermittlung),
-        // funktioniert also unveraendert, sobald MediaPlace auch im Frontend laeuft.
-        $lang = rex_i18n::getLocale();
 
         // Feature-Toggles (Einstellungsseite) -- Tagging/Sammlungen koennen unabhaengig
         // voneinander abgeschaltet werden, siehe features-Objekt in mediapool3.js.
@@ -106,7 +101,27 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-mp3-lang="' . rex_escape($lang) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '"></div>';
+        // JS-seitige Uebersetzungen: lang/de_de.lang ist die Quelle der Wahrheit fuer
+        // die Schluesselliste (nicht nur fuer die deutschen Werte) -- jeder dort
+        // vorhandene Schluessel wird ueber rex_i18n::msg() fuer die AKTIVE Locale
+        // aufgeloest (inkl. deren eingebauter Fallback-Kette) und als JSON embedded.
+        // Keine zweite, separat gepflegte Uebersetzungstabelle im JS noetig (siehe
+        // mediapool3-i18n.js) -- rein PHP-gerendertes JSON, funktioniert deshalb
+        // unveraendert auch im Frontend, sobald MediaPlace dort eingesetzt wird.
+        $i18nMap = [];
+        // static-Closure hat keinen $this-Kontext (rex_addon), deshalb der
+        // globale rex_path::addon()-Helfer statt $this->getPath().
+        $langFile = rex_path::addon($addonName, 'lang/de_de.lang');
+        if (is_file($langFile)) {
+            foreach (file($langFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+                if (preg_match('/^([a-zA-Z0-9_]+)\s*=/', $line, $m)) {
+                    $i18nMap[$m[1]] = rex_i18n::msg($m[1]);
+                }
+            }
+        }
+
+        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '"></div>'
+            . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);
     });

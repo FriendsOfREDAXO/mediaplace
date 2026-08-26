@@ -30,7 +30,7 @@ $withDatalist = (bool) $this->getVar('with_datalist', false);
         <?php endforeach; ?>
     </div>
     <div class="mp3-tags-input-wrap">
-        <input class="mp3-edit-input mp3-tags-input" type="text" placeholder="Tag hinzufügen"<?= $withDatalist ? ' list="mp3-system-tags-suggestions"' : '' ?>>
+        <input class="mp3-edit-input mp3-tags-input" type="text" placeholder="<?= rex_escape($this->i18n('mediaplace_add_tag')) ?>"<?= $withDatalist ? ' list="mp3-system-tags-suggestions"' : '' ?>>
         <button type="button" class="mp3-tags-add-btn"><i class="fa-solid fa-plus"></i></button>
     </div>
 </div>

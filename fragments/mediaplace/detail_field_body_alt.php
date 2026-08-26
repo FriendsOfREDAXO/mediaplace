@@ -32,7 +32,7 @@ $altMissing = !$decorative && !$hasAltText;
 ?>
 <div class="mp3-alt-wrap" data-alt-key="<?= rex_escape($key) ?>">
     <?php if ($altMissing): ?>
-        <div class="mp3-alt-hint"><i class="fa-solid fa-triangle-exclamation"></i> ALT-Text fehlt – bitte ausfüllen oder als dekorativ markieren.</div>
+        <div class="mp3-alt-hint"><i class="fa-solid fa-triangle-exclamation"></i> <?= rex_escape($this->i18n('mediaplace_alt_missing_hint')) ?></div>
     <?php endif; ?>
     <div class="mp3-lang-inputs"<?= $decorative ? ' style="display:none"' : '' ?>>
         <?php $this->subfragment('mediaplace/detail_lang_group.php', [
@@ -42,5 +42,5 @@ $altMissing = !$decorative && !$hasAltText;
             'clangs' => $clangs,
         ]); ?>
     </div>
-    <label class="mp3-edit-checkbox-label"><input type="checkbox" data-json-field="<?= rex_escape($key) ?>-decorative"<?= $decorative ? ' checked' : '' ?>> Dekoratives Bild (kein ALT)</label>
+    <label class="mp3-edit-checkbox-label"><input type="checkbox" data-json-field="<?= rex_escape($key) ?>-decorative"<?= $decorative ? ' checked' : '' ?>> <?= rex_escape($this->i18n('mediaplace_alt_decorative_short')) ?></label>
 </div>

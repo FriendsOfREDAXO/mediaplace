@@ -52,7 +52,7 @@ $restCount = count($clangs) - 1;
         'multiline' => $multiline,
         'input_class' => $inputClass,
     ]); ?>
-    <button type="button" class="mp3-lang-toggle" data-lang-toggle="<?= rex_escape($fieldKey) ?>"><i class="fa-solid fa-chevron-right"></i> <?= $restCount ?> weitere Sprache<?= $restCount > 1 ? 'n' : '' ?></button>
+    <button type="button" class="mp3-lang-toggle" data-lang-toggle="<?= rex_escape($fieldKey) ?>"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n($restCount > 1 ? 'mediaplace_lang_more_many' : 'mediaplace_lang_more_one', $restCount)) ?></button>
     <div class="mp3-lang-extra" style="display:none">
         <?php for ($i = 1; $i < count($clangs); $i++): ?>
             <?php $this->subfragment('mediaplace/detail_lang_row.php', [
