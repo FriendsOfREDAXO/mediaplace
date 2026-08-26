@@ -1,0 +1,4803 @@
+/* ==========================================================================
+   Medienpool 3.0 – Overlay Styles
+   Refactored to use CSS Variables for robust Theme Support (Light/Dark/Auto)
+   All selectors scoped under #mp3-overlay (ID) for maximum CSS specificity
+   to override Bootstrap 3 and REDAXO backend styles.
+   ========================================================================== */
+
+/* ============================================================
+   CSS Variables – Light Mode Defaults
+   ============================================================ */
+:root {
+    /* Palette aligned with the REDAXO backend theme (be_style _variables.scss):
+       a-lighter #f3f6fb, a-light #dfe3e9, a #9ca5b2, a-dark #324050, a-darker #283542,
+       b-lighter #dbedf7, b-light #c1e8f0, b #4b9ad9 (brand-primary), danger #d9534f */
+
+    /* Overlay & Modal */
+    --mp3-overlay-bg: rgba(0, 0, 0, 0.6);
+    --mp3-modal-bg: #fff;
+    --mp3-modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+    /* Media-Wall-Masonry-Spaltenbreite, per Slider im Footer steuerbar (siehe mediapool3.js) */
+    --mp3-tile-size: 220px;
+
+    /* Resize Handle */
+    --mp3-resize-border: rgba(0, 0, 0, 0.25);
+    --mp3-resize-border-hover: rgba(0, 0, 0, 0.5);
+
+    /* Header */
+    --mp3-header-bg: #324050;
+
+    /* Sidebar */
+    --mp3-sidebar-bg: #f3f6fb;
+    --mp3-sidebar-border: #dfe3e9;
+
+    /* Category Tree */
+    --mp3-cat-text: #324050;
+    --mp3-cat-hover-bg: #dfe3e9;
+    --mp3-cat-active-bg: #dbedf7;
+    --mp3-cat-active-border: #324050;
+    --mp3-cat-toggle: #68727d;
+    --mp3-cat-toggle-hover: #324050;
+    --mp3-cat-folder-icon: #68727d;
+    --mp3-cat-add-color: #68727d;
+    --mp3-cat-add-hover-bg: #324050;
+    --mp3-cat-new-input-bg: #fff;
+    --mp3-cat-new-input-border: #324050;
+    --mp3-cat-new-input-text: #324050;
+    --mp3-cat-new-icon: #324050;
+
+    /* Breadcrumb */
+    --mp3-bc-bg: #f3f6fb;
+    --mp3-bc-border: #dfe3e9;
+    --mp3-bc-item: #4b9ad9;
+    --mp3-bc-item-hover-bg: #dbedf7;
+    --mp3-bc-item-hover: #2f7ab8;
+    --mp3-bc-sep: #68727d;
+
+    /* Toolbar */
+    --mp3-toolbar-bg: #fff;
+    --mp3-toolbar-border: #dfe3e9;
+
+    /* Inputs (Search, Sort) */
+    --mp3-input-bg: #f3f6fb;
+    --mp3-input-border: #c7ccd3;
+    --mp3-input-text: #324050;
+    --mp3-input-focus-border: #324050;
+    --mp3-input-focus-shadow: rgba(50, 64, 80, 0.15);
+    --mp3-search-icon: #68727d;
+    --mp3-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2368727d'/%3E%3C/svg%3E");
+
+    /* Upload Button */
+    --mp3-upload-btn-bg: #324050;
+    --mp3-upload-btn-hover: #283542;
+
+    /* Filter Bar */
+    --mp3-filter-bar-bg: #f3f6fb;
+    --mp3-filter-bar-border: #dfe3e9;
+    --mp3-filter-btn-bg: #fff;
+    --mp3-filter-btn-border: #dfe3e9;
+    --mp3-filter-btn-text: #324050;
+    --mp3-filter-hover-bg: #dfe3e9;
+    --mp3-filter-hover-border: #68727d;
+    --mp3-filter-active-bg: #324050;
+    --mp3-filter-active-border: #324050;
+    --mp3-filter-active-hover-bg: #283542;
+    --mp3-filter-active-hover-border: #283542;
+    --mp3-filter-count-bg: rgba(0, 0, 0, 0.1);
+    --mp3-filter-count-active-bg: rgba(255, 255, 255, 0.25);
+
+    /* Status Bar */
+    --mp3-status-bg: #f3f6fb;
+    --mp3-status-text: #777;
+    --mp3-status-border: #dfe3e9;
+
+    /* Semantic text colors (dark enough for AA on white -- see #4a90d9/#28a745/#6c9bd2 contrast fix) */
+    --mp3-link-color: #2f6ea8;
+    --mp3-success-color: #1e7e34;
+    --mp3-upload-icon-color: #2f6ea8;
+
+    /* Speichern-/Bestaetigen-Buttons (Detail-Panel-Footer, Feld-Speichern, Modal-Dialoge) */
+    --mp3-confirm-btn-bg: #5bb585;
+    --mp3-confirm-btn-hover-bg: #45986c;
+    --mp3-confirm-text-color: #357553;
+    --mp3-confirm-btn-soft-bg: rgba(91, 181, 133, 0.12);
+    --mp3-confirm-btn-soft-hover-bg: rgba(91, 181, 133, 0.18);
+
+    /* View Toggle */
+    --mp3-view-btn-bg: #fff;
+    --mp3-view-btn-text: #68727d;
+    --mp3-view-btn-border: #c7ccd3;
+    --mp3-view-btn-hover-bg: #dfe3e9;
+    --mp3-view-btn-hover-text: #324050;
+    --mp3-view-active-bg: #324050;
+
+    /* Mobile Category Button */
+    --mp3-mobile-btn-bg: #fff;
+    --mp3-mobile-btn-border: #c7ccd3;
+    --mp3-mobile-btn-text: #324050;
+
+    /* Grid / Content Area */
+    --mp3-grid-bg: transparent;
+    --mp3-dragover-bg: #dbedf7;
+
+    /* Card */
+    --mp3-card-bg: #fff;
+    --mp3-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --mp3-card-hover-border: #324050;
+    --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --mp3-card-icon-bg: #f3f6fb;
+    --mp3-card-icon-color: #68727d;
+    --mp3-card-info-bg: #fff;
+    --mp3-card-info-border: #dfe3e9;
+    --mp3-card-name: #324050;
+    --mp3-card-fname: #777;
+    --mp3-card-meta: #777;
+
+    /* Detail Panel */
+    --mp3-detail-bg: #fff;
+    --mp3-detail-border: #dfe3e9;
+    --mp3-detail-preview-bg: #f3f6fb;
+    --mp3-detail-icon: #68727d;
+    --mp3-detail-filename: #777;
+    --mp3-detail-close-hover-bg: #dfe3e9;
+    --mp3-detail-close-hover-text: #324050;
+
+    /* Editable Fields */
+    --mp3-edit-section-border: #dfe3e9;
+    --mp3-edit-label: #777;
+    --mp3-edit-display-hover: rgba(0, 0, 0, 0.04);
+    --mp3-edit-text: #324050;
+    --mp3-edit-placeholder: #68727d;
+    --mp3-edit-pen: #68727d;
+    --mp3-edit-input-bg: #f3f6fb;
+    --mp3-edit-input-border: #4b9ad9;
+    --mp3-edit-input-text: #324050;
+    --mp3-edit-input-shadow: rgba(75, 154, 217, 0.15);
+
+    /* Detail Table */
+    --mp3-table-td-border: #dfe3e9;
+    --mp3-table-td-text: #324050;
+    --mp3-table-td-label: #777;
+
+    /* Detail Actions */
+    --mp3-select-btn-bg: #324050;
+    --mp3-select-btn-hover: #283542;
+    --mp3-action-icon-bg: transparent;
+    --mp3-action-icon-text: #68727d;
+    --mp3-action-icon-hover-bg: #dfe3e9;
+    --mp3-action-icon-hover-text: #324050;
+    --mp3-delete-hover-bg: #fbeceb;
+    --mp3-delete-hover-text: #d9534f;
+
+    /* Selected State */
+    --mp3-selected-border: #324050;
+    --mp3-selected-shadow: rgba(50, 64, 80, 0.3);
+
+    /* List View */
+    --mp3-list-th-bg: #f3f6fb;
+    --mp3-list-th-text: #777;
+    --mp3-list-th-border: #dfe3e9;
+    --mp3-list-hover-bg: #dbedf7;
+    --mp3-list-td-border: #dfe3e9;
+    --mp3-list-td-text: #324050;
+    --mp3-list-name: #324050;
+    --mp3-list-meta: #777;
+    --mp3-list-selected-bg: #dbedf7;
+    --mp3-list-selected-border: #c1e8f0;
+    --mp3-list-icon: #68727d;
+
+    /* Multi-Select */
+    --mp3-multi-footer-bg: #f3f6fb;
+    --mp3-multi-footer-border: #dfe3e9;
+    --mp3-multi-count: #324050;
+    --mp3-multi-select-text: #324050;
+    --mp3-multi-select-border: #c7ccd3;
+    --mp3-multi-select-hover-bg: #dfe3e9;
+    --mp3-multi-select-hover-border: #68727d;
+    --mp3-multi-selected-bg: rgba(75, 154, 217, 0.08);
+
+    /* Upload Tracker */
+    --mp3-upload-header: #324050;
+    --mp3-upload-progress-bg: #dfe3e9;
+    --mp3-upload-item-bg: #f3f6fb;
+    --mp3-upload-active-bg: #dbedf7;
+    --mp3-upload-failed-bg: #fbeceb;
+    --mp3-upload-name: #324050;
+    --mp3-upload-size: #777;
+    --mp3-upload-pending: #c7ccd3;
+    --mp3-upload-summary: #324050;
+}
+
+/* ============================================================
+   Dark Mode Overrides (Explicit: body.rex-theme-dark)
+   ============================================================ */
+body.rex-theme-dark {
+    --mp3-overlay-bg: rgba(0, 0, 0, 0.75);
+    --mp3-modal-bg: #1a202c;
+    --mp3-modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --mp3-resize-border: rgba(255, 255, 255, 0.25);
+    --mp3-resize-border-hover: rgba(255, 255, 255, 0.5);
+    --mp3-header-bg: #2d3748;
+    --mp3-sidebar-bg: #212836;
+    --mp3-sidebar-border: #3a4557;
+    --mp3-cat-text: #ccc;
+    --mp3-cat-hover-bg: #384252;
+    --mp3-cat-active-bg: #2d3748;
+    --mp3-cat-active-border: #6c9bd2;
+    --mp3-cat-toggle: #777;
+    --mp3-cat-toggle-hover: #ccc;
+    --mp3-cat-folder-icon: #777;
+    --mp3-cat-add-color: #666;
+    --mp3-cat-add-hover-bg: #6c9bd2;
+    --mp3-cat-new-input-bg: #2d3748;
+    --mp3-cat-new-input-border: #6c9bd2;
+    --mp3-cat-new-input-text: #eee;
+    --mp3-cat-new-icon: #6c9bd2;
+    --mp3-bc-bg: #212836;
+    --mp3-bc-border: #3a4557;
+    --mp3-bc-item: #6c9bd2;
+    --mp3-bc-item-hover-bg: rgba(255, 255, 255, 0.06);
+    --mp3-bc-item-hover: #8ab8e8;
+    --mp3-bc-sep: #666;
+    --mp3-toolbar-bg: #1a202c;
+    --mp3-toolbar-border: #3a4557;
+    --mp3-input-bg: #2d3748;
+    --mp3-input-border: #4a5568;
+    --mp3-input-text: #eee;
+    --mp3-input-focus-border: #6c9bd2;
+    --mp3-input-focus-shadow: rgba(108, 155, 210, 0.2);
+    --mp3-search-icon: #777;
+    --mp3-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23adb5bd'/%3E%3C/svg%3E");
+    --mp3-upload-btn-bg: #4b6078;
+    --mp3-upload-btn-hover: #6c9bd2;
+    --mp3-filter-bar-bg: #212836;
+    --mp3-filter-bar-border: #3a4557;
+    --mp3-filter-btn-bg: #384252;
+    --mp3-filter-btn-border: #555;
+    --mp3-filter-btn-text: #ccc;
+    --mp3-filter-hover-bg: #444;
+    --mp3-filter-hover-border: #666;
+    --mp3-filter-active-bg: #4b6078;
+    --mp3-filter-active-border: #6c9bd2;
+    --mp3-filter-active-hover-bg: #5a7a9a;
+    --mp3-filter-active-hover-border: #8ab8e8;
+    --mp3-filter-count-bg: rgba(255, 255, 255, 0.1);
+    --mp3-filter-count-active-bg: rgba(255, 255, 255, 0.2);
+    --mp3-status-bg: #212836;
+    --mp3-status-text: #999;
+    --mp3-status-border: #3a4557;
+    --mp3-link-color: #4a90d9;
+    --mp3-success-color: #28a745;
+    --mp3-confirm-btn-bg: #429167;
+    --mp3-confirm-btn-hover-bg: #357553;
+    --mp3-confirm-text-color: #5bb585;
+    --mp3-confirm-btn-soft-bg: rgba(66, 145, 103, 0.18);
+    --mp3-confirm-btn-soft-hover-bg: rgba(66, 145, 103, 0.26);
+    --mp3-upload-icon-color: #6c9bd2;
+    --mp3-view-btn-bg: #2d3748;
+    --mp3-view-btn-text: #999;
+    --mp3-view-btn-border: #555;
+    --mp3-view-btn-hover-bg: #444;
+    --mp3-view-btn-hover-text: #eee;
+    --mp3-view-active-bg: #4b6078;
+    --mp3-mobile-btn-bg: #2d3748;
+    --mp3-mobile-btn-border: #555;
+    --mp3-mobile-btn-text: #ccc;
+    --mp3-grid-bg: #1a202c;
+    --mp3-dragover-bg: rgba(108, 155, 210, 0.1);
+    --mp3-card-bg: #2d3748;
+    --mp3-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --mp3-card-hover-border: #6c9bd2;
+    --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --mp3-card-icon-bg: #212836;
+    --mp3-card-icon-color: #666;
+    --mp3-card-info-bg: #2d3748;
+    --mp3-card-info-border: #3a4557;
+    --mp3-card-name: #ddd;
+    --mp3-card-fname: #777;
+    --mp3-card-meta: #888;
+    --mp3-detail-bg: #12151d;
+    --mp3-detail-border: #3a4557;
+    --mp3-detail-preview-bg: #212836;
+    --mp3-detail-icon: #555;
+    --mp3-detail-filename: #777;
+    --mp3-detail-close-hover-bg: #384252;
+    --mp3-detail-close-hover-text: #eee;
+    --mp3-edit-section-border: #3a4557;
+    --mp3-edit-label: #888;
+    --mp3-edit-display-hover: rgba(255, 255, 255, 0.06);
+    --mp3-edit-text: #ddd;
+    --mp3-edit-placeholder: #666;
+    --mp3-edit-pen: #666;
+    --mp3-edit-input-bg: #2d3748;
+    --mp3-edit-input-border: #6c9bd2;
+    --mp3-edit-input-text: #ddd;
+    --mp3-edit-input-shadow: rgba(108, 155, 210, 0.2);
+    --mp3-table-td-border: #333;
+    --mp3-table-td-text: #ccc;
+    --mp3-table-td-label: #888;
+    --mp3-select-btn-bg: #4b6078;
+    --mp3-select-btn-hover: #6c9bd2;
+    --mp3-action-icon-bg: transparent;
+    --mp3-action-icon-text: #888;
+    --mp3-action-icon-hover-bg: #384252;
+    --mp3-action-icon-hover-text: #eee;
+    --mp3-delete-hover-bg: #3a2020;
+    --mp3-delete-hover-text: #e74c3c;
+    --mp3-selected-border: #6c9bd2;
+    --mp3-selected-shadow: rgba(108, 155, 210, 0.3);
+    --mp3-list-th-bg: #1a202c;
+    --mp3-list-th-text: #888;
+    --mp3-list-th-border: #444;
+    --mp3-list-hover-bg: #2d3748;
+    --mp3-list-td-border: #333;
+    --mp3-list-td-text: #ccc;
+    --mp3-list-name: #ddd;
+    --mp3-list-meta: #888;
+    --mp3-list-selected-bg: #2d3748;
+    --mp3-list-selected-border: #3d4f68;
+    --mp3-list-icon: #666;
+    --mp3-multi-footer-bg: #1a2636;
+    --mp3-multi-footer-border: #2d3e50;
+    --mp3-multi-count: #c0d0e0;
+    --mp3-multi-select-text: #c0d0e0;
+    --mp3-multi-select-border: #3d5068;
+    --mp3-multi-select-hover-bg: #253344;
+    --mp3-multi-select-hover-border: #4d6a8a;
+    --mp3-multi-selected-bg: rgba(60, 141, 188, 0.15);
+    --mp3-upload-header: #ccc;
+    --mp3-upload-progress-bg: #333;
+    --mp3-upload-item-bg: #2d3748;
+    --mp3-upload-active-bg: #2d3748;
+    --mp3-upload-failed-bg: #3a2020;
+    --mp3-upload-name: #ccc;
+    --mp3-upload-size: #666;
+    --mp3-upload-pending: #555;
+    --mp3-upload-summary: #ccc;
+}
+
+/* ============================================================
+   Auto Dark Mode (System Preference = Dark)
+   Activates when system is dark AND user has NOT explicitly chosen light
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+    body.rex-has-theme:not(.rex-theme-light) {
+        --mp3-overlay-bg: rgba(0, 0, 0, 0.75);
+        --mp3-modal-bg: #1a202c;
+        --mp3-modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        --mp3-resize-border: rgba(255, 255, 255, 0.25);
+        --mp3-resize-border-hover: rgba(255, 255, 255, 0.5);
+        --mp3-header-bg: #2d3748;
+        --mp3-sidebar-bg: #212836;
+        --mp3-sidebar-border: #3a4557;
+        --mp3-cat-text: #ccc;
+        --mp3-cat-hover-bg: #384252;
+        --mp3-cat-active-bg: #2d3748;
+        --mp3-cat-active-border: #6c9bd2;
+        --mp3-cat-toggle: #777;
+        --mp3-cat-toggle-hover: #ccc;
+        --mp3-cat-folder-icon: #777;
+        --mp3-cat-add-color: #666;
+        --mp3-cat-add-hover-bg: #6c9bd2;
+        --mp3-cat-new-input-bg: #2d3748;
+        --mp3-cat-new-input-border: #6c9bd2;
+        --mp3-cat-new-input-text: #eee;
+        --mp3-cat-new-icon: #6c9bd2;
+        --mp3-bc-bg: #212836;
+        --mp3-bc-border: #3a4557;
+        --mp3-bc-item: #6c9bd2;
+        --mp3-bc-item-hover-bg: rgba(255, 255, 255, 0.06);
+        --mp3-bc-item-hover: #8ab8e8;
+        --mp3-bc-sep: #666;
+        --mp3-toolbar-bg: #1a202c;
+        --mp3-toolbar-border: #3a4557;
+        --mp3-input-bg: #2d3748;
+        --mp3-input-border: #4a5568;
+        --mp3-input-text: #eee;
+        --mp3-input-focus-border: #6c9bd2;
+        --mp3-input-focus-shadow: rgba(108, 155, 210, 0.2);
+        --mp3-search-icon: #777;
+        --mp3-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23adb5bd'/%3E%3C/svg%3E");
+        --mp3-upload-btn-bg: #4b6078;
+        --mp3-upload-btn-hover: #6c9bd2;
+        --mp3-filter-bar-bg: #212836;
+        --mp3-filter-bar-border: #3a4557;
+        --mp3-filter-btn-bg: #384252;
+        --mp3-filter-btn-border: #555;
+        --mp3-filter-btn-text: #ccc;
+        --mp3-filter-hover-bg: #444;
+        --mp3-filter-hover-border: #666;
+        --mp3-filter-active-bg: #4b6078;
+        --mp3-filter-active-border: #6c9bd2;
+        --mp3-filter-active-hover-bg: #5a7a9a;
+        --mp3-filter-active-hover-border: #8ab8e8;
+        --mp3-filter-count-bg: rgba(255, 255, 255, 0.1);
+        --mp3-filter-count-active-bg: rgba(255, 255, 255, 0.2);
+        --mp3-status-bg: #212836;
+        --mp3-status-text: #999;
+        --mp3-status-border: #3a4557;
+        --mp3-link-color: #4a90d9;
+        --mp3-success-color: #28a745;
+        --mp3-confirm-btn-bg: #429167;
+        --mp3-confirm-btn-hover-bg: #357553;
+        --mp3-confirm-text-color: #5bb585;
+        --mp3-confirm-btn-soft-bg: rgba(66, 145, 103, 0.18);
+        --mp3-confirm-btn-soft-hover-bg: rgba(66, 145, 103, 0.26);
+        --mp3-upload-icon-color: #6c9bd2;
+        --mp3-view-btn-bg: #2d3748;
+        --mp3-view-btn-text: #999;
+        --mp3-view-btn-border: #555;
+        --mp3-view-btn-hover-bg: #444;
+        --mp3-view-btn-hover-text: #eee;
+        --mp3-view-active-bg: #4b6078;
+        --mp3-mobile-btn-bg: #2d3748;
+        --mp3-mobile-btn-border: #555;
+        --mp3-mobile-btn-text: #ccc;
+        --mp3-grid-bg: #1a202c;
+        --mp3-dragover-bg: rgba(108, 155, 210, 0.1);
+        --mp3-card-bg: #2d3748;
+        --mp3-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        --mp3-card-hover-border: #6c9bd2;
+        --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        --mp3-card-icon-bg: #212836;
+        --mp3-card-icon-color: #666;
+        --mp3-card-info-bg: #2d3748;
+        --mp3-card-info-border: #3a4557;
+        --mp3-card-name: #ddd;
+        --mp3-card-fname: #777;
+        --mp3-card-meta: #888;
+        --mp3-detail-bg: #12151d;
+        --mp3-detail-border: #3a4557;
+        --mp3-detail-preview-bg: #212836;
+        --mp3-detail-icon: #555;
+        --mp3-detail-filename: #777;
+        --mp3-detail-close-hover-bg: #384252;
+        --mp3-detail-close-hover-text: #eee;
+        --mp3-edit-section-border: #3a4557;
+        --mp3-edit-label: #888;
+        --mp3-edit-display-hover: rgba(255, 255, 255, 0.06);
+        --mp3-edit-text: #ddd;
+        --mp3-edit-placeholder: #666;
+        --mp3-edit-pen: #666;
+        --mp3-edit-input-bg: #2d3748;
+        --mp3-edit-input-border: #6c9bd2;
+        --mp3-edit-input-text: #ddd;
+        --mp3-edit-input-shadow: rgba(108, 155, 210, 0.2);
+        --mp3-table-td-border: #333;
+        --mp3-table-td-text: #ccc;
+        --mp3-table-td-label: #888;
+        --mp3-select-btn-bg: #4b6078;
+        --mp3-select-btn-hover: #6c9bd2;
+        --mp3-action-icon-bg: transparent;
+        --mp3-action-icon-text: #888;
+        --mp3-action-icon-hover-bg: #384252;
+        --mp3-action-icon-hover-text: #eee;
+        --mp3-delete-hover-bg: #3a2020;
+        --mp3-delete-hover-text: #e74c3c;
+        --mp3-selected-border: #6c9bd2;
+        --mp3-selected-shadow: rgba(108, 155, 210, 0.3);
+        --mp3-list-th-bg: #1a202c;
+        --mp3-list-th-text: #888;
+        --mp3-list-th-border: #444;
+        --mp3-list-hover-bg: #2d3748;
+        --mp3-list-td-border: #333;
+        --mp3-list-td-text: #ccc;
+        --mp3-list-name: #ddd;
+        --mp3-list-meta: #888;
+        --mp3-list-selected-bg: #2d3748;
+        --mp3-list-selected-border: #3d4f68;
+        --mp3-list-icon: #666;
+        --mp3-multi-footer-bg: #1a2636;
+        --mp3-multi-footer-border: #2d3e50;
+        --mp3-multi-count: #c0d0e0;
+        --mp3-multi-select-text: #c0d0e0;
+        --mp3-multi-select-border: #3d5068;
+        --mp3-multi-select-hover-bg: #253344;
+        --mp3-multi-select-hover-border: #4d6a8a;
+        --mp3-multi-selected-bg: rgba(60, 141, 188, 0.15);
+        --mp3-upload-header: #ccc;
+        --mp3-upload-progress-bg: #333;
+        --mp3-upload-item-bg: #2d3748;
+        --mp3-upload-active-bg: #2d3748;
+        --mp3-upload-failed-bg: #3a2020;
+        --mp3-upload-name: #ccc;
+        --mp3-upload-size: #666;
+        --mp3-upload-pending: #555;
+        --mp3-upload-summary: #ccc;
+    }
+}
+
+/* ============================================================
+   Local Dark Mode Toggle (Independent from REDAXO Theme)
+   Activates when user toggles dark mode via button
+   ============================================================ */
+#mp3-overlay.mp3-dark-mode {
+    --mp3-overlay-bg: rgba(0, 0, 0, 0.75);
+    --mp3-modal-bg: #1a202c;
+    --mp3-modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --mp3-resize-border: rgba(255, 255, 255, 0.25);
+    --mp3-resize-border-hover: rgba(255, 255, 255, 0.5);
+    --mp3-header-bg: #2d3748;
+    --mp3-sidebar-bg: #212836;
+    --mp3-sidebar-border: #3a4557;
+    --mp3-cat-text: #ccc;
+    --mp3-cat-hover-bg: #384252;
+    --mp3-cat-active-bg: #2d3748;
+    --mp3-cat-active-border: #6c9bd2;
+    --mp3-cat-toggle: #777;
+    --mp3-cat-toggle-hover: #ccc;
+    --mp3-cat-folder-icon: #777;
+    --mp3-cat-add-color: #666;
+    --mp3-cat-add-hover-bg: #6c9bd2;
+    --mp3-cat-new-input-bg: #2d3748;
+    --mp3-cat-new-input-border: #6c9bd2;
+    --mp3-cat-new-input-text: #eee;
+    --mp3-cat-new-icon: #6c9bd2;
+    --mp3-bc-bg: #212836;
+    --mp3-bc-border: #3a4557;
+    --mp3-bc-item: #6c9bd2;
+    --mp3-bc-item-hover-bg: rgba(255, 255, 255, 0.06);
+    --mp3-bc-item-hover: #8ab8e8;
+    --mp3-bc-sep: #666;
+    --mp3-toolbar-bg: #1a202c;
+    --mp3-toolbar-border: #3a4557;
+    --mp3-input-bg: #2d3748;
+    --mp3-input-border: #4a5568;
+    --mp3-input-text: #eee;
+    --mp3-input-focus-border: #6c9bd2;
+    --mp3-input-focus-shadow: rgba(108, 155, 210, 0.2);
+    --mp3-search-icon: #777;
+    --mp3-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23adb5bd'/%3E%3C/svg%3E");
+    --mp3-upload-btn-bg: #4b6078;
+    --mp3-upload-btn-hover: #6c9bd2;
+    --mp3-filter-bar-bg: #212836;
+    --mp3-filter-bar-border: #3a4557;
+    --mp3-filter-btn-bg: #384252;
+    --mp3-filter-btn-border: #555;
+    --mp3-filter-btn-text: #ccc;
+    --mp3-filter-hover-bg: #444;
+    --mp3-filter-hover-border: #666;
+    --mp3-filter-active-bg: #4b6078;
+    --mp3-filter-active-border: #6c9bd2;
+    --mp3-filter-active-hover-bg: #5a7a9a;
+    --mp3-filter-active-hover-border: #8ab8e8;
+    --mp3-filter-count-bg: rgba(255, 255, 255, 0.1);
+    --mp3-filter-count-active-bg: rgba(255, 255, 255, 0.2);
+    --mp3-status-bg: #212836;
+    --mp3-status-text: #999;
+    --mp3-status-border: #3a4557;
+    --mp3-link-color: #4a90d9;
+    --mp3-success-color: #28a745;
+    --mp3-confirm-btn-bg: #429167;
+    --mp3-confirm-btn-hover-bg: #357553;
+    --mp3-confirm-text-color: #5bb585;
+    --mp3-confirm-btn-soft-bg: rgba(66, 145, 103, 0.18);
+    --mp3-confirm-btn-soft-hover-bg: rgba(66, 145, 103, 0.26);
+    --mp3-upload-icon-color: #6c9bd2;
+    --mp3-view-btn-bg: #2d3748;
+    --mp3-view-btn-text: #999;
+    --mp3-view-btn-border: #555;
+    --mp3-view-btn-hover-bg: #444;
+    --mp3-view-btn-hover-text: #eee;
+    --mp3-view-active-bg: #4b6078;
+    --mp3-mobile-btn-bg: #2d3748;
+    --mp3-mobile-btn-border: #555;
+    --mp3-mobile-btn-text: #ccc;
+    --mp3-grid-bg: #1a202c;
+    --mp3-dragover-bg: rgba(108, 155, 210, 0.1);
+    --mp3-card-bg: #2d3748;
+    --mp3-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --mp3-card-hover-border: #6c9bd2;
+    --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --mp3-card-icon-bg: #212836;
+    --mp3-card-icon-color: #666;
+    --mp3-card-info-bg: #2d3748;
+    --mp3-card-info-border: #3a4557;
+    --mp3-card-name: #ddd;
+    --mp3-card-fname: #777;
+    --mp3-card-meta: #888;
+    --mp3-detail-bg: #12151d;
+    --mp3-detail-border: #3a4557;
+    --mp3-detail-preview-bg: #212836;
+    --mp3-detail-icon: #555;
+    --mp3-detail-filename: #777;
+    --mp3-detail-close-hover-bg: #384252;
+    --mp3-detail-close-hover-text: #eee;
+    --mp3-edit-section-border: #3a4557;
+    --mp3-edit-label: #888;
+    --mp3-edit-display-hover: rgba(255, 255, 255, 0.06);
+    --mp3-edit-text: #ddd;
+    --mp3-edit-placeholder: #666;
+    --mp3-edit-pen: #666;
+    --mp3-edit-input-bg: #2d3748;
+    --mp3-edit-input-border: #6c9bd2;
+    --mp3-edit-input-text: #ddd;
+    --mp3-edit-input-shadow: rgba(108, 155, 210, 0.2);
+    --mp3-table-td-border: #333;
+    --mp3-table-td-text: #ccc;
+    --mp3-table-td-label: #888;
+    --mp3-select-btn-bg: #4b6078;
+    --mp3-select-btn-hover: #6c9bd2;
+    --mp3-action-icon-bg: transparent;
+    --mp3-action-icon-text: #888;
+    --mp3-action-icon-hover-bg: #384252;
+    --mp3-action-icon-hover-text: #eee;
+    --mp3-delete-hover-bg: #3a2020;
+    --mp3-delete-hover-text: #e74c3c;
+    --mp3-selected-border: #6c9bd2;
+    --mp3-selected-shadow: rgba(108, 155, 210, 0.3);
+    --mp3-list-th-bg: #1a202c;
+    --mp3-list-th-text: #888;
+    --mp3-list-th-border: #444;
+    --mp3-list-hover-bg: #2d3748;
+    --mp3-list-td-border: #333;
+    --mp3-list-td-text: #ccc;
+    --mp3-list-name: #ddd;
+    --mp3-list-meta: #888;
+    --mp3-list-selected-bg: #2d3748;
+    --mp3-list-selected-border: #3d4f68;
+    --mp3-list-icon: #666;
+    --mp3-multi-footer-bg: #1a2636;
+    --mp3-multi-footer-border: #2d3e50;
+    --mp3-multi-count: #c0d0e0;
+    --mp3-multi-select-text: #c0d0e0;
+    --mp3-multi-select-border: #3d5068;
+    --mp3-multi-select-hover-bg: #253344;
+    --mp3-multi-select-hover-border: #4d6a8a;
+    --mp3-multi-selected-bg: rgba(60, 141, 188, 0.15);
+    --mp3-upload-header: #ccc;
+    --mp3-upload-progress-bg: #333;
+    --mp3-upload-item-bg: #2d3748;
+    --mp3-upload-active-bg: #2d3748;
+    --mp3-upload-failed-bg: #3a2020;
+    --mp3-upload-name: #ccc;
+    --mp3-upload-size: #666;
+    --mp3-upload-pending: #555;
+    --mp3-upload-summary: #ccc;
+}
+
+#mp3-overlay .mp3-admin-menu-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-admin-menu-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background 0.15s ease;
+}
+
+#mp3-overlay .mp3-admin-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#mp3-overlay .mp3-admin-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 220px;
+    margin-top: 1px;
+    background: var(--mp3-toolbar-bg);
+    border: 1px solid var(--mp3-toolbar-border);
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+}
+
+#mp3-overlay .mp3-admin-menu-wrap.mp3-admin-menu-open .mp3-admin-menu {
+    display: block;
+}
+
+#mp3-overlay .mp3-admin-menu a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--mp3-cat-text);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-admin-menu a:hover {
+    background: var(--mp3-cat-hover-bg);
+    color: var(--mp3-cat-text);
+    text-decoration: none;
+}
+
+#mp3-overlay .mp3-admin-menu a i {
+    width: 16px;
+    text-align: center;
+    color: var(--mp3-status-text);
+}
+
+#mp3-overlay .mp3-dark-mode-toggle {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-dark-mode-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#mp3-overlay .mp3-dark-mode-toggle.mp3-dark-mode-active {
+    background: rgba(108, 155, 210, 0.35);
+    color: #8ab8e8;
+}
+
+
+/* ============================================================
+   Component Styles (using CSS Variables – no dark duplication!)
+   ============================================================ */
+
+/* ---- Overlay backdrop ---- */
+#mp3-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10500;
+    background: var(--mp3-overlay-bg);
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+#mp3-overlay.mp3-open {
+    display: flex;
+}
+
+/* ---- Modal box ---- */
+#mp3-overlay .mp3-modal {
+    width: 90vw;
+    max-width: 1200px;
+    height: 85vh;
+    min-width: 480px;
+    min-height: 320px;
+    background: var(--mp3-modal-bg);
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--mp3-modal-shadow);
+    overflow: hidden;
+    position: relative;
+    transition: none;
+}
+
+#mp3-overlay.mp3-fullscreen-mode .mp3-modal {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100vh !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    border-radius: 0;
+    margin: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    transform: none !important;
+}
+
+#mp3-overlay.mp3-fullscreen-mode .mp3-resize-handle {
+    display: none !important;
+}
+
+/* ---- Resize handle (bottom-right corner) ---- */
+#mp3-overlay .mp3-resize-handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    z-index: 10;
+    background: transparent;
+}
+#mp3-overlay .mp3-resize-handle::after {
+    content: '';
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid var(--mp3-resize-border);
+    border-bottom: 2px solid var(--mp3-resize-border);
+}
+#mp3-overlay .mp3-resize-handle:hover::after {
+    border-color: var(--mp3-resize-border-hover);
+}
+
+/* ---- Header ---- */
+#mp3-overlay .mp3-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px 8px 16px;
+    background: var(--mp3-header-bg);
+    color: #fff;
+    flex-shrink: 0;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+#mp3-overlay .mp3-header:active {
+    cursor: grabbing;
+}
+
+/* Nur der leere Titel-/Info-Bereich des Headers ist wirklich per Drag
+   verschiebbar (siehe initDragResize() in mediapool3.js: der mousedown-Handler
+   bricht bei .mp3-close, .mp3-header-tools, input, select, button, label ab).
+   Der ererbte Grab-Cursor muss deshalb ueber allen interaktiven Bereichen
+   explizit zurueckgesetzt werden, sonst wird dort Ziehen suggeriert, das
+   nicht funktioniert (Issue: github.com/FriendsOfREDAXO/mediaplace/issues/1). */
+#mp3-overlay .mp3-header-tools,
+#mp3-overlay .mp3-admin-menu-wrap {
+    cursor: default;
+}
+#mp3-overlay .mp3-search {
+    cursor: text;
+}
+
+/* Im Vollbild und auf Mobile deaktiviert derselbe Handler das Ziehen komplett
+   (isMobile() bzw. .mp3-fullscreen-mode-Check) -- Cursor muss das spiegeln. */
+#mp3-overlay.mp3-fullscreen-mode .mp3-header,
+#mp3-overlay.mp3-fullscreen-mode .mp3-header:active {
+    cursor: default;
+}
+@media (max-width: 768px) {
+    #mp3-overlay .mp3-header,
+    #mp3-overlay .mp3-header:active {
+        cursor: default;
+    }
+}
+
+#mp3-overlay .mp3-title {
+    font-size: 15px;
+    font-weight: 600;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-title i {
+    margin-right: 6px;
+}
+
+/* ---- Header Info ---- */
+#mp3-overlay .mp3-header-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-hi-icon {
+    opacity: 0.6;
+    font-size: 10px;
+    margin-right: 3px;
+}
+
+#mp3-overlay .mp3-hi-sep {
+    margin: 0 6px;
+    opacity: 0.3;
+    font-weight: 300;
+}
+
+/* ---- Header Tools ---- */
+#mp3-overlay .mp3-header-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-end;
+}
+
+#mp3-overlay .mp3-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 0;
+    line-height: 1;
+}
+
+#mp3-overlay .mp3-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#mp3-overlay .mp3-fullscreen-toggle {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 0;
+    line-height: 1;
+}
+
+#mp3-overlay .mp3-fullscreen-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* ---- Body: sidebar + content ---- */
+#mp3-overlay .mp3-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ---- Sidebar ---- */
+#mp3-overlay .mp3-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--mp3-sidebar-border);
+    overflow-y: auto;
+    background: var(--mp3-sidebar-bg);
+    padding: 8px 0;
+}
+
+/* Sidebar per Drag-Handle breiter/schmaler ziehen (initDragResize() in
+   mediapool3.js, Breite in localStorage gemerkt). Im Compact-Modus (Sidebar
+   wird zum Offcanvas) nicht sichtbar -- dort ergibt Resize keinen Sinn. */
+#mp3-overlay .mp3-sidebar-resize-handle {
+    width: 6px;
+    margin-left: -3px;
+    flex-shrink: 0;
+    cursor: ew-resize;
+    background: transparent;
+    z-index: 6;
+    transition: background 0.15s;
+}
+
+#mp3-overlay .mp3-sidebar-resize-handle:hover,
+#mp3-overlay .mp3-sidebar-resize-handle.mp3-resizing {
+    background: var(--mp3-cat-active-border);
+}
+
+#mp3-overlay.mp3-compact .mp3-sidebar-resize-handle {
+    display: none;
+}
+
+#mp3-overlay .mp3-cat-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 8px 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-table-td-label);
+}
+
+#mp3-overlay .mp3-cat-search-wrap i {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+#mp3-overlay .mp3-cat-search-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--mp3-input-text);
+    font-size: 12px;
+    outline: none;
+}
+
+#mp3-overlay .mp3-cat-search-empty {
+    margin: 0 12px 8px;
+    font-size: 12px;
+    color: var(--mp3-table-td-label);
+}
+
+#mp3-overlay .mp3-cat-hidden {
+    display: none !important;
+}
+
+/* ---- Category Tree ---- */
+#mp3-overlay .mp3-cat-tree {
+    user-select: none;
+}
+
+#mp3-overlay .mp3-cat-header {
+    display: flex;
+    align-items: center;
+}
+
+#mp3-overlay .mp3-cat-header .mp3-cat {
+    flex: 1;
+    min-width: 0;
+}
+
+#mp3-overlay .mp3-cat-row {
+    display: flex;
+    align-items: center;
+}
+
+#mp3-overlay .mp3-cat-row .mp3-cat {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Root-Kategorie ("Medienpool") hat nur die eine Aktion (neue Kategorie),
+   deshalb dort weiterhin ein einzelner Button statt eines Menues. Bewusst
+   auf ".mp3-cat-header" gescoped: .mp3-cat-add-btn sitzt per Klick-Logik
+   (siehe openCatMenu()) auch auf dem "Unterkategorie"-Eintrag im Portal-Menue
+   -- eine ungescopte Regel wuerde den dort unsichtbar machen (opacity:0 ohne
+   je greifende Hover-Reveal-Regel, da dort kein .mp3-cat-header drumherum ist). */
+#mp3-overlay .mp3-cat-header .mp3-cat-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-add-color);
+    cursor: pointer;
+    font-size: 11px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+#mp3-overlay .mp3-cat-header:hover .mp3-cat-add-btn {
+    opacity: 1;
+}
+
+#mp3-overlay .mp3-cat-header .mp3-cat-add-btn:hover {
+    background: var(--mp3-cat-add-hover-bg);
+    color: #fff;
+}
+
+/* ---- Aktionsmenue je Kategorie (Umbenennen/Verschieben/Unterkategorie/
+   Loeschen) -- ein Kebab-Button statt vier Einzel-Icons, damit fuer den
+   Namen mehr Platz bleibt (siehe github.com/FriendsOfREDAXO/mediaplace
+   Feedback zu abgeschnittenen Kategorienamen). ---- */
+/* Permanent sichtbar statt Hover-only: :hover bleibt in Browsern nach einem
+   Scroll ohne Mausbewegung auf der zuletzt darunterliegenden Zeile haengen
+   (bekannte CSS-Eigenheit, kein JS-Bug) -- bei einem einzelnen fetten
+   Kebab-Button faellt eine haengengebliebene Hervorhebung deutlich mehr auf
+   als frueher bei vier kleinen Icons, deshalb kein Hover-Gating mehr. */
+#mp3-overlay .mp3-cat-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-right: 4px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-add-color);
+    cursor: pointer;
+    font-size: 13px;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+#mp3-overlay .mp3-cat-row:hover .mp3-cat-menu-btn {
+    opacity: 1;
+}
+
+#mp3-overlay .mp3-cat-menu-btn:hover,
+#mp3-overlay .mp3-cat-menu-btn.mp3-cat-menu-btn-active {
+    opacity: 1;
+    background: var(--mp3-cat-add-hover-bg);
+    color: #fff;
+}
+
+/* Menue-Inhalt wird beim Oeffnen dynamisch in dieses EINE Element geschrieben
+   (openCatMenu() in mediapool3.js), das direkt im Modal haengt (nicht in der
+   Sidebar) und "position: fixed" ist -- sonst schneidet overflow-y:auto der
+   Sidebar das Dropdown ab, sobald eine Kategorie nah am Rand steht. */
+#mp3-overlay .mp3-cat-menu-portal {
+    display: none;
+    position: fixed;
+    min-width: 180px;
+    background: var(--mp3-toolbar-bg);
+    border: 1px solid var(--mp3-toolbar-border);
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 620;
+}
+
+#mp3-overlay .mp3-cat-menu-portal.mp3-cat-menu-portal-open {
+    display: block;
+}
+
+#mp3-overlay .mp3-cat-menu-portal button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: var(--mp3-cat-text);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-cat-menu-portal button i {
+    width: 16px;
+    text-align: center;
+    color: var(--mp3-status-text);
+}
+
+#mp3-overlay .mp3-cat-menu-portal button:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
+#mp3-overlay .mp3-cat-menu-portal .mp3-cat-delete-btn:hover {
+    background: var(--mp3-delete-hover-bg);
+    color: var(--mp3-delete-hover-text);
+}
+
+#mp3-overlay .mp3-cat-menu-portal .mp3-cat-delete-btn:hover i {
+    color: var(--mp3-delete-hover-text);
+}
+
+#mp3-overlay .mp3-cat-menu-portal .mp3-cat-delete-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+/* ---- New category input ---- */
+#mp3-overlay .mp3-cat-new-wrap {
+    margin: 2px 0;
+}
+
+#mp3-overlay .mp3-cat-new-input-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-right: 8px;
+}
+
+#mp3-overlay .mp3-cat-new-icon {
+    color: var(--mp3-cat-new-icon);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-cat-new-input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--mp3-cat-new-input-border);
+    border-radius: 0;
+    font-size: 12px;
+    outline: none;
+    background: var(--mp3-cat-new-input-bg);
+    color: var(--mp3-cat-new-input-text);
+    min-width: 0;
+}
+
+#mp3-overlay .mp3-cat-new-input:focus {
+    box-shadow: 0 0 0 2px var(--mp3-input-focus-shadow);
+}
+
+#mp3-overlay .mp3-cat-new-confirm,
+#mp3-overlay .mp3-cat-new-cancel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-add-color);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-cat-new-confirm:hover {
+    background: var(--mp3-cat-add-hover-bg);
+    color: #fff;
+}
+
+#mp3-overlay .mp3-cat-new-cancel:hover {
+    background: var(--mp3-delete-hover-bg);
+    color: var(--mp3-delete-hover-text);
+}
+
+/* Baum kommt komplett vom Server (siehe fragments/mediaplace/), auf-/
+   zugeklappt wird rein clientseitig per Klasse -- kein Nachladen mehr pro
+   Ebene (toggleCategory() in mediapool3.js). Nur verschachtelte Ebenen
+   (Kind eines .mp3-cat-node) werden per Default versteckt -- die oberste
+   Ebene ist direktes Kind von .mp3-cat-tree (kein umschliessender Node, der
+   sie freischalten koennte) und muss immer sichtbar bleiben. */
+#mp3-overlay .mp3-cat-node > .mp3-cat-children {
+    display: none;
+    overflow: hidden;
+}
+
+#mp3-overlay .mp3-cat-node.mp3-cat-node-open > .mp3-cat-children {
+    display: block;
+}
+
+#mp3-overlay .mp3-cat-node {
+    position: relative;
+}
+
+#mp3-overlay .mp3-cat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px 6px 12px;
+    color: var(--mp3-cat-text);
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 13px;
+    border-left: 3px solid transparent;
+    transition: background 0.12s;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#mp3-overlay .mp3-cat:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
+#mp3-overlay .mp3-cat.mp3-cat-drop-target {
+    outline: 2px dashed var(--mp3-cat-active-border);
+    outline-offset: -2px;
+    background: var(--mp3-cat-hover-bg);
+}
+
+#mp3-overlay .mp3-cat.mp3-cat-active {
+    background: var(--mp3-cat-active-bg);
+    border-left-color: var(--mp3-cat-active-border);
+    font-weight: 600;
+}
+
+#mp3-overlay .mp3-cat-toggle {
+    font-size: 10px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+    color: var(--mp3-cat-toggle);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 0;
+    transition: color 0.12s, background 0.12s;
+}
+
+#mp3-overlay .mp3-cat-toggle:hover {
+    color: var(--mp3-cat-toggle-hover);
+    background: rgba(0, 0, 0, 0.08);
+}
+
+#mp3-overlay .mp3-cat-folder-icon {
+    font-size: 12px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+    color: var(--mp3-cat-folder-icon);
+}
+
+#mp3-overlay .mp3-cat i {
+    /* removed old rule – icon styles above */
+}
+
+/* ---- Collections ---- */
+#mp3-overlay .mp3-collections-wrap {
+    margin-top: 10px;
+    padding: 10px 8px 2px;
+    border-top: 1px solid var(--mp3-sidebar-border);
+}
+
+#mp3-overlay .mp3-collections-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+#mp3-overlay .mp3-collections-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mp3-cat-text);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#mp3-overlay .mp3-collection-add-btn,
+#mp3-overlay .mp3-collection-rename-btn,
+#mp3-overlay .mp3-collection-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-add-color);
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-collection-add-btn:hover,
+#mp3-overlay .mp3-collection-rename-btn:hover,
+#mp3-overlay .mp3-collection-delete-btn:hover {
+    background: var(--mp3-cat-add-hover-bg);
+    color: #fff;
+}
+
+#mp3-overlay .mp3-collection-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#mp3-overlay .mp3-collection-row.mp3-collection-drop-target {
+    outline: 2px dashed var(--mp3-cat-active-border);
+    outline-offset: -2px;
+    border-radius: 0;
+    background: var(--mp3-cat-hover-bg);
+    transform: scaleY(1.12);
+    transform-origin: center;
+    z-index: 1;
+    position: relative;
+}
+
+#mp3-overlay .mp3-card.mp3-card-dragging,
+#mp3-overlay .mp3-list-row.mp3-card-dragging,
+#mp3-overlay .mp3-masonry-card.mp3-card-dragging {
+    opacity: 0.4;
+    transform: scale(0.96);
+    transition: opacity 0.1s, transform 0.1s;
+}
+
+#mp3-overlay .mp3-collection {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--mp3-cat-text);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+}
+
+#mp3-overlay .mp3-collection:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
+#mp3-overlay .mp3-collection.mp3-collection-active {
+    background: var(--mp3-cat-active-bg);
+    border-left-color: var(--mp3-cat-active-border);
+    font-weight: 600;
+}
+
+#mp3-overlay .mp3-collection-count {
+    margin-left: auto;
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+#mp3-overlay .mp3-collection-empty {
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--mp3-status-text);
+}
+
+#mp3-overlay .mp3-collection-help {
+    margin-top: 6px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: var(--mp3-status-text);
+}
+
+/* ---- Grid Error Banner ---- */
+#mp3-overlay .mp3-grid-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    margin: 0;
+    background: #fbeceb;
+    color: #d9534f;
+    font-size: 13px;
+    border-bottom: 1px solid #d9534f;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-grid-error-text {
+    flex: 1;
+    word-break: break-word;
+}
+
+#mp3-overlay .mp3-grid-error-close {
+    background: transparent;
+    border: none;
+    color: #d9534f;
+    cursor: pointer;
+    padding: 2px 6px;
+    flex-shrink: 0;
+}
+
+/* ---- Breadcrumb ---- */
+#mp3-overlay .mp3-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 15px;
+    border-bottom: 1px solid var(--mp3-bc-border);
+    background: var(--mp3-bc-bg);
+    font-size: 12px;
+    flex-shrink: 0;
+    min-height: 28px;
+    flex-wrap: wrap;
+}
+
+#mp3-overlay .mp3-bc-item {
+    color: var(--mp3-bc-item);
+    cursor: pointer;
+    text-decoration: none;
+    padding: 1px 3px;
+    border-radius: 0;
+}
+
+#mp3-overlay .mp3-bc-item:hover {
+    background: var(--mp3-bc-item-hover-bg);
+    color: var(--mp3-bc-item-hover);
+    text-decoration: none;
+}
+
+#mp3-overlay .mp3-bc-sep {
+    font-size: 9px;
+    color: var(--mp3-bc-sep);
+    margin: 0 2px;
+}
+
+/* ---- Content area ---- */
+#mp3-overlay .mp3-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+#mp3-overlay .mp3-search-wrap {
+    flex: 1;
+    position: relative;
+    min-width: 120px;
+    max-width: 280px;
+}
+
+#mp3-overlay .mp3-search-wrap > i {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--mp3-search-icon);
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-search {
+    display: block;
+    width: 100%;
+    padding: 5px 8px 5px 28px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    font-size: 12px;
+    outline: none;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+#mp3-overlay .mp3-search::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+#mp3-overlay .mp3-search:focus {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#mp3-overlay .mp3-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-upload-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* ---- Sort dropdown ---- */
+#mp3-overlay .mp3-sort-select {
+    padding: 5px 24px 5px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    cursor: pointer;
+    outline: none;
+    flex-shrink: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23ffffff'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 8px 5px;
+}
+
+#mp3-overlay .mp3-sort-select:focus {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+#mp3-overlay .mp3-sort-select option {
+    background: var(--mp3-header-bg);
+    color: #fff;
+}
+
+/* ---- Filter bar ---- */
+/* Zwei Kinder: .mp3-filter-pills (Typ-Filter + "Nur unbenutzte", wrappen als
+   eigene Gruppe) und .mp3-tag-filter-wrap (rechtsbuendig). space-between +
+   flex-wrap auf DIESER Ebene sorgt dafuer, dass der Tag-Filter erst dann in
+   eine eigene Zeile faellt, wenn die Pills-Gruppe schon die volle Breite
+   braucht -- statt (wie vorher, ohne die Gruppierung) inmitten einzelner,
+   umgebrochener Pill-Buttons zu landen. */
+#mp3-overlay .mp3-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 15px;
+    border-bottom: 1px solid var(--mp3-filter-bar-border);
+    flex-shrink: 0;
+    background: var(--mp3-filter-bar-bg);
+    flex-wrap: wrap;
+}
+
+#mp3-overlay .mp3-filter-pills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+#mp3-overlay .mp3-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+}
+
+#mp3-overlay .mp3-filter-btn:hover {
+    background: var(--mp3-filter-hover-bg);
+    border-color: var(--mp3-filter-hover-border);
+}
+
+#mp3-overlay .mp3-filter-btn.mp3-filter-active {
+    background: var(--mp3-filter-active-bg);
+    color: #fff;
+    border-color: var(--mp3-filter-active-border);
+}
+
+#mp3-overlay .mp3-filter-btn.mp3-filter-active:hover {
+    background: var(--mp3-filter-active-hover-bg);
+    border-color: var(--mp3-filter-active-hover-border);
+}
+
+#mp3-overlay .mp3-filter-count {
+    display: inline-block;
+    min-width: 18px;
+    padding: 0 4px;
+    border-radius: 0;
+    background: var(--mp3-filter-count-bg);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 18px;
+}
+
+#mp3-overlay .mp3-filter-btn.mp3-filter-active .mp3-filter-count {
+    background: var(--mp3-filter-count-active-bg);
+}
+
+#mp3-overlay .mp3-tag-filter-wrap {
+    position: relative;
+    margin-left: auto;
+    min-width: 170px;
+}
+
+#mp3-overlay .mp3-tag-filter-toggle {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 10px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-tag-filter-wrap.is-open .mp3-tag-filter-toggle {
+    border-color: var(--mp3-filter-active-border);
+    box-shadow: 0 0 0 2px rgba(60, 141, 188, 0.15);
+}
+
+#mp3-overlay .mp3-tag-filter-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Portal statt Inline-Dropdown (gleiches Muster wie #mp3-cat-menu-portal):
+   .mp3-filter-bar ist im Compact-Modus horizontal scrollbar (overflow-x:auto),
+   das schneidet ein absolut positioniertes Kind sonst am Rand ab. Position
+   wird per JS gesetzt (setTagFilterMenuOpen()), position:fixed statt
+   absolute, da relativ zum Viewport statt zu einem (jetzt entfernten)
+   Vorfahren positioniert. */
+#mp3-overlay .mp3-tag-filter-menu-portal {
+    display: none;
+    position: fixed;
+    z-index: 620;
+    min-width: 220px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-modal-bg);
+    box-shadow: var(--mp3-card-hover-shadow);
+}
+
+#mp3-overlay .mp3-tag-filter-menu-portal.mp3-tag-filter-menu-portal-open {
+    display: block;
+}
+
+#mp3-overlay .mp3-tag-filter-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: transparent;
+    color: var(--mp3-filter-btn-text);
+    padding: 6px 8px;
+    border-radius: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-tag-filter-option:hover {
+    background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-tag-filter-option i {
+    margin-left: auto;
+}
+
+#mp3-overlay .mp3-tag-filter-option.is-selected {
+    color: var(--mp3-card-name);
+}
+
+#mp3-overlay .mp3-tag-filter-option-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-tag-filter-empty {
+    padding: 6px 8px;
+    color: var(--mp3-table-td-label);
+    font-size: 12px;
+}
+
+/* Mobiles Filter-Dropdown (Compact-Modus): fasst Typ-Filter-Pills + "Nur
+   unbenutzte" zusammen, damit .mp3-filter-bar dort nicht mehr horizontal
+   scrollen muss. Auf breiten Screens per default ausgeblendet, die
+   Compact-Regeln weiter unten schalten sie um (Pills verstecken, Dropdown
+   zeigen). Tags bleiben bewusst aussen vor -- eigenes Dropdown, unveraendert. */
+#mp3-overlay .mp3-filter-dropdown-wrap {
+    display: none;
+    position: relative;
+}
+
+#mp3-overlay .mp3-filter-dropdown-toggle {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 10px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-filter-dropdown-wrap.is-open .mp3-filter-dropdown-toggle {
+    border-color: var(--mp3-filter-active-border);
+    box-shadow: 0 0 0 2px rgba(60, 141, 188, 0.15);
+}
+
+#mp3-overlay .mp3-filter-dropdown-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-filter-dropdown-menu-portal {
+    display: none;
+    position: fixed;
+    z-index: 620;
+    min-width: 200px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-modal-bg);
+    box-shadow: var(--mp3-card-hover-shadow);
+}
+
+#mp3-overlay .mp3-filter-dropdown-menu-portal.mp3-filter-dropdown-menu-portal-open {
+    display: block;
+}
+
+#mp3-overlay .mp3-filter-dropdown-option,
+#mp3-overlay .mp3-filter-dropdown-unused-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: transparent;
+    color: var(--mp3-filter-btn-text);
+    padding: 6px 8px;
+    border-radius: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-filter-dropdown-option:hover,
+#mp3-overlay .mp3-filter-dropdown-unused-option:hover {
+    background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-filter-dropdown-option-check {
+    margin-left: auto;
+}
+
+#mp3-overlay .mp3-filter-dropdown-option.is-selected,
+#mp3-overlay .mp3-filter-dropdown-unused-option.is-selected {
+    color: var(--mp3-card-name);
+}
+
+#mp3-overlay .mp3-filter-dropdown-option-icon,
+#mp3-overlay .mp3-filter-dropdown-option-spacer {
+    width: 14px;
+    flex-shrink: 0;
+    text-align: center;
+    display: inline-block;
+}
+
+#mp3-overlay .mp3-filter-dropdown-option-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-filter-dropdown-separator {
+    height: 1px;
+    margin: 6px 4px;
+    background: var(--mp3-filter-btn-border);
+}
+
+/* ---- Status bar ---- */
+#mp3-overlay .mp3-status {
+    padding: 4px 15px;
+    font-size: 12px;
+    color: var(--mp3-status-text);
+    background: var(--mp3-status-bg);
+    border-bottom: 1px solid var(--mp3-status-border);
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-page-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--mp3-status-border);
+    background: var(--mp3-status-bg);
+    color: var(--mp3-status-text);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#mp3-overlay .mp3-page-size label {
+    margin: 0;
+    font-size: 12px;
+    color: var(--mp3-status-text);
+}
+
+/* ---- Kachelgroesse (nur Masonry-Kachelansicht, siehe updateTileSizeVisibility()) ---- */
+#mp3-overlay .mp3-tile-size-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mp3-status-text);
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-tile-size-slider {
+    width: 100px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--mp3-status-border);
+    border-radius: 0;
+    outline: none;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-tile-size-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--mp3-cat-active-border, #324050);
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-tile-size-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 50%;
+    background: var(--mp3-cat-active-border, #324050);
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-per-page-select {
+    height: 28px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    padding: 2px 20px 2px 6px;
+    font-size: 12px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: var(--mp3-select-arrow);
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 8px 5px;
+}
+
+#mp3-overlay .mp3-load-more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-load-more-btn:hover {
+    border-color: var(--mp3-input-focus-border);
+}
+
+#mp3-overlay .mp3-page-info {
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+/* ---- View Toggle ---- */
+#mp3-overlay .mp3-view-toggle {
+    display: inline-flex;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 26px;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.12s, color 0.12s;
+}
+
+#mp3-overlay .mp3-view-btn + .mp3-view-btn {
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#mp3-overlay .mp3-view-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+#mp3-overlay .mp3-view-btn.mp3-view-active {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+/* ---- Mobile category button (hidden on desktop) ---- */
+#mp3-overlay .mp3-mobile-cat-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+/* ---- Grid container (scrollable) ---- */
+#mp3-overlay .mp3-grid-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background: var(--mp3-grid-bg);
+    position: relative;
+}
+
+/* No padding in list view – table headers sit flush at top */
+#mp3-overlay .mp3-grid-wrap:has(.mp3-view-list) {
+    padding: 0;
+}
+
+
+/* Custom scroll pill (media wall) */
+#mp3-overlay .mp3-scroll-pill {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 10px;
+    height: 8px;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+    z-index: 7;
+    display: none;
+}
+
+#mp3-overlay .mp3-scroll-pill.is-disabled {
+    opacity: 0.45;
+}
+
+#mp3-overlay .mp3-scroll-pill-thumb {
+    height: 100%;
+    width: 90px;
+    border-radius: 0;
+    background: linear-gradient(90deg, rgba(90, 180, 255, 0.95), rgba(138, 220, 255, 0.95));
+    box-shadow: 0 0 8px rgba(90, 180, 255, 0.45);
+    cursor: ew-resize;
+    transition: transform 0.08s linear;
+}
+
+#mp3-overlay .mp3-grid-wrap.mp3-dragover,
+#mp3-overlay .mp3-grid-wrap.mp3-pasteover {
+    background: var(--mp3-dragover-bg);
+    outline: 2px dashed var(--mp3-selected-border);
+    outline-offset: -6px;
+}
+
+/* =====================================================================
+   THE GRID – CSS Grid (einheitliche Kachelgroesse; Masonry lebt in
+   Media Wall, siehe .mp3-view-mediawall weiter unten)
+   ===================================================================== */
+#mp3-overlay .mp3-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(var(--mp3-tile-size, 220px), 1fr)) !important;
+    gap: 15px !important;
+}
+
+/* =====================================================================
+   CARD
+   ===================================================================== */
+#mp3-overlay .mp3-card {
+    border: 2px solid transparent;
+    border-radius: 0;
+    overflow: hidden !important;
+    cursor: pointer;
+    background: var(--mp3-card-bg);
+    box-shadow: var(--mp3-card-shadow);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+}
+
+#mp3-overlay .mp3-card,
+#mp3-overlay .mp3-list-row,
+#mp3-overlay .mp3-cover-item {
+    cursor: grab;
+}
+
+#mp3-overlay .mp3-collection-toggle-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 3;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-collection-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+#mp3-overlay .mp3-collection-toggle-btn.is-active {
+    background: #3c8dbc;
+}
+
+#mp3-overlay .mp3-card:hover {
+    border-color: var(--mp3-card-hover-border);
+    box-shadow: var(--mp3-card-hover-shadow);
+}
+
+/* =====================================================================
+   CARD IMAGE – THE CRITICAL RULES
+   Uses #id .class element selector + !important to beat ANY Bootstrap
+   or REDAXO override (specificity: 1-1-1 + !important)
+   ===================================================================== */
+/* height:auto + aspect-ratio statt fixer height:150px -- letzteres (mit
+   !important, gewinnt dadurch auch gegen den per JS inline gesetzten
+   aspect-ratio, siehe cardAspectRatio()) stauchte/streckte Bilder sichtbar,
+   sobald die Kachelbreite per Slider (--mp3-tile-size) von der urspruenglich
+   festen ~180px-Breite abwich. 1/1 hier ist nur der Fallback fuer Bilder ohne
+   bekannte width/height (dann fehlt der inline aspect-ratio). */
+#mp3-overlay .mp3-card img {
+    width: 100% !important;
+    aspect-ratio: 1 / 1;
+    height: auto !important;
+    object-fit: cover !important;
+    display: block !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    box-sizing: border-box !important;
+    -webkit-user-drag: none !important;
+    user-select: none !important;
+    pointer-events: none !important;
+}
+
+/* =====================================================================
+   ICON placeholder (non-image files)
+   ===================================================================== */
+#mp3-overlay .mp3-card .mp3-icon {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    background: var(--mp3-card-icon-bg);
+    font-size: 2em;
+    color: var(--mp3-card-icon-color);
+}
+
+/* ---- File info bar ---- */
+#mp3-overlay .mp3-card .mp3-info {
+    padding: 8px 10px;
+    border-top: 1px solid var(--mp3-card-info-border);
+    background: var(--mp3-card-info-bg);
+}
+
+#mp3-overlay .mp3-card .mp3-card-name {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mp3-card-name);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-card .mp3-fname {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--mp3-card-fname);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 1px;
+}
+
+#mp3-overlay .mp3-card .mp3-fmeta {
+    display: block;
+    font-size: 11px;
+    color: var(--mp3-card-meta);
+    margin-top: 2px;
+}
+
+/* ---- Detail Panel ---- */
+#mp3-overlay .mp3-detail {
+    width: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-left: 1px solid var(--mp3-detail-border);
+    background: var(--mp3-detail-bg);
+    transition: width 0.2s ease;
+}
+
+#mp3-overlay .mp3-detail.mp3-detail-open {
+    width: 320px;
+    overflow-y: auto;
+}
+
+/* Analog zum Sidebar-Resize-Handle (.mp3-sidebar-resize-handle), nur
+   spiegelverkehrt: sitzt an der LINKEN Kante des Detail-Panels, deshalb
+   margin-right statt margin-left zum Ueberlappen der border-left oben. */
+#mp3-overlay .mp3-detail-resize-handle {
+    width: 6px;
+    margin-right: -3px;
+    flex-shrink: 0;
+    cursor: ew-resize;
+    background: transparent;
+    z-index: 6;
+    transition: background 0.15s;
+}
+
+#mp3-overlay .mp3-detail-resize-handle:hover,
+#mp3-overlay .mp3-detail-resize-handle.mp3-resizing {
+    background: var(--mp3-cat-active-border);
+}
+
+#mp3-overlay.mp3-compact .mp3-detail-resize-handle {
+    display: none !important;
+}
+
+#mp3-overlay .mp3-detail-inner {
+    padding: 16px;
+    position: relative;
+}
+
+/* Header: Dateiname links, Schliessen-Button rechts ausgerichtet -- statt
+   frei ueber dem Vorschaubild schwebend (X und Lightbox-Button hatten sich
+   sonst nur zufaellig in Groesse/Randabstand geglichen, keinen gemeinsamen
+   Bezugsrahmen). */
+#mp3-overlay .mp3-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: -16px -16px 12px -16px;
+    padding: 10px 10px 10px 16px;
+    background: var(--mp3-status-bg);
+    border-bottom: 1px solid var(--mp3-status-border);
+}
+
+#mp3-overlay .mp3-detail-header-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mp3-detail-filename);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+/* Groesse mit .mp3-lightbox-open-btn abgeglichen (28px) -- Hintergrund/Farbe
+   bleiben bewusst unterschiedlich: der Lightbox-Button sitzt auf einem
+   beliebigen Foto und braucht dauerhaften Kontrast, der Close-Button im
+   Header auf der flachen Panel-Flaeche nicht. */
+#mp3-overlay .mp3-detail-close {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-status-text);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#mp3-overlay .mp3-detail-close:hover {
+    background: var(--mp3-detail-close-hover-bg);
+    color: var(--mp3-detail-close-hover-text);
+}
+
+#mp3-overlay .mp3-detail-preview {
+    position: relative;
+    border-radius: 0;
+    overflow: hidden;
+    background: var(--mp3-detail-preview-bg);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+#mp3-overlay .mp3-lightbox-open-btn {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    z-index: 2;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#mp3-overlay .mp3-lightbox-open-btn:hover {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+/* Analog zum Lightbox-Button, aber daneben statt an derselben Position --
+   beide sind gleichzeitig sichtbar (Bild + focuspoint-Addon installiert),
+   anders als beim PDF-Button, der sich mit dem Lightbox-Button ausschliesst. */
+#mp3-overlay .mp3-focuspoint-edit-btn {
+    position: absolute;
+    left: 44px;
+    top: 10px;
+    z-index: 2;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#mp3-overlay .mp3-focuspoint-edit-btn:hover {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+/* Analog zum Lightbox-Button, aber echter Link statt JS-Handler -- oeffnet
+   die PDF-Datei direkt (rel="noopener": kein window.opener-Zugriff fuer die
+   neue Tab, Standard-Absicherung fuer target="_blank"). */
+#mp3-overlay .mp3-pdf-open-btn {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    z-index: 2;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+#mp3-overlay .mp3-pdf-open-btn:hover {
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    text-decoration: none;
+}
+
+#mp3-overlay .mp3-detail-preview img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 240px !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto !important;
+}
+
+#mp3-overlay .mp3-detail-preview-icon {
+    padding: 40px 20px;
+    font-size: 3em;
+    color: var(--mp3-detail-icon);
+}
+
+#mp3-overlay .mp3-detail-preview video {
+    width: 100% !important;
+    max-height: 280px !important;
+    display: block !important;
+    margin: 0 auto !important;
+    border-radius: 0;
+    outline: none;
+}
+
+#mp3-overlay .mp3-detail-preview-audio {
+    padding: 30px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+#mp3-overlay .mp3-detail-preview-audio i {
+    font-size: 2.4em;
+    color: var(--mp3-detail-icon);
+}
+
+#mp3-overlay .mp3-detail-preview audio {
+    width: 100% !important;
+    outline: none;
+}
+
+/* ---- Editable Fields Section (inline edit pattern) ---- */
+#mp3-overlay .mp3-edit-section {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--mp3-edit-section-border);
+}
+
+#mp3-overlay .mp3-edit-field {
+    margin-bottom: 10px;
+    padding-left: 0;
+}
+
+#mp3-overlay .mp3-json-fields-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+#mp3-overlay .mp3-json-field + .mp3-json-field {
+    padding-top: 8px;
+    border-top: 1px solid var(--mp3-edit-section-border);
+}
+
+#mp3-overlay .mp3-edit-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--mp3-edit-label);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-left: 2px;
+}
+
+/* Display mode (clickable text) */
+#mp3-overlay .mp3-edit-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 0;
+    cursor: pointer;
+    transition: background 0.12s ease;
+    min-height: 28px;
+}
+
+#mp3-overlay .mp3-edit-display:hover {
+    background: var(--mp3-edit-display-hover);
+}
+
+#mp3-overlay .mp3-edit-text {
+    flex: 1;
+    font-size: 13px;
+    color: var(--mp3-edit-text);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+#mp3-overlay .mp3-edit-placeholder {
+    color: var(--mp3-edit-placeholder);
+    font-style: italic;
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-edit-pen {
+    font-size: 10px;
+    color: var(--mp3-edit-pen);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-edit-display:hover .mp3-edit-pen {
+    opacity: 1;
+}
+
+/* Edit mode (input) */
+#mp3-overlay .mp3-edit-input {
+    display: block;
+    width: 100%;
+    padding: 5px 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--mp3-edit-input-text);
+    background: var(--mp3-edit-input-bg);
+    border: 1px solid var(--mp3-edit-input-border);
+    border-radius: 0;
+    outline: none;
+    box-shadow: 0 0 0 2px var(--mp3-edit-input-shadow);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+#mp3-overlay textarea.mp3-edit-input {
+    resize: vertical;
+    min-height: 60px;
+}
+
+#mp3-overlay select.mp3-edit-input {
+    cursor: pointer;
+    appearance: auto;
+}
+
+/* .mp3-detail-save-btn lebt in der fixierten Aktionen-Zeile (siehe
+   .mp3-detail-actions weiter unten) statt am Ende der scrollbaren
+   Bearbeiten-Sektion. Text+Icon (nicht icon-only), damit die Primäraktion
+   zwischen den kleinen grauen Icon-Buttons auffaellt -- Hoehe an diese
+   angeglichen (36px), Breite automatisch am Inhalt statt flex:1 (wirkte als
+   voller Block neben den kleinen Icons unproportional gross).
+*/
+/* Immer sichtbar (kein display:none mehr) -- Grundzustand neutral wie die
+   umliegenden Icon-Buttons, wird erst bei tatsaechlich ungespeicherten
+   Aenderungen (Klasse .is-dirty, siehe updateDetailSaveState()) gruen und
+   klickbar. Vermeidet, dass ein dauerhaft eingefaerbter Button so aussieht
+   als gaebe es immer etwas zu speichern. */
+#mp3-overlay .mp3-detail-save-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--mp3-action-icon-text);
+    background: var(--mp3-action-icon-bg);
+    border: none;
+    border-radius: 0;
+    cursor: not-allowed;
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-detail-save-btn:hover {
+    background: var(--mp3-action-icon-hover-bg);
+    color: var(--mp3-action-icon-hover-text);
+}
+
+#mp3-overlay .mp3-detail-save-btn.is-dirty {
+    color: #fff;
+    background: var(--mp3-confirm-btn-bg);
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-detail-save-btn.is-dirty:hover {
+    background: var(--mp3-confirm-btn-hover-bg);
+}
+
+#mp3-overlay .mp3-detail-save-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#mp3-overlay .mp3-detail-save-btn.mp3-detail-save-success {
+    background: #27ae60;
+}
+
+#mp3-overlay .mp3-detail-save-btn.mp3-detail-save-error {
+    background: #e74c3c;
+}
+
+/* Readonly-Felder (Widget-Typen) */
+#mp3-overlay .mp3-edit-field-readonly .mp3-edit-label {
+    opacity: 0.75;
+}
+
+#mp3-overlay .mp3-edit-readonly-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 6px;
+}
+
+#mp3-overlay .mp3-edit-readonly-value {
+    font-size: 13px;
+    color: var(--mp3-edit-text);
+    word-break: break-word;
+}
+
+#mp3-overlay .mp3-edit-readonly-hint {
+    font-size: 10px;
+    color: var(--mp3-edit-placeholder);
+    font-style: italic;
+}
+
+#mp3-overlay .mp3-edit-readonly-hint .fa-circle-info {
+    margin-right: 2px;
+}
+
+/* Editor-Typ-Badge (hidden by default, shown in admin contexts only) */
+#mp3-overlay .mp3-edit-kind-badge {
+    display: none;
+}
+
+/* Checkbox-Gruppe */
+#mp3-overlay .mp3-edit-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--mp3-edit-text);
+    cursor: pointer;
+    padding: 2px 0;
+}
+
+/* Metainfo-Hinweis wenn keine Felder definiert */
+#mp3-overlay .mp3-metainfo-hint {
+    margin-top: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--mp3-status-text);
+    border-left: 3px solid var(--mp3-edit-section-border);
+    border-radius: 0;
+    background: var(--mp3-edit-display-hover);
+    line-height: 1.5;
+}
+
+#mp3-overlay .mp3-metainfo-hint a {
+    color: var(--mp3-link-color);
+    text-decoration: none;
+}
+
+#mp3-overlay .mp3-metainfo-hint a:hover {
+    text-decoration: underline;
+}
+
+#mp3-overlay .mp3-metainfo-hint code {
+    font-size: 11px;
+    background: var(--mp3-table-td-border);
+    padding: 0 3px;
+    border-radius: 0;
+}
+
+#mp3-overlay .mp3-lang-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 8px;
+}
+
+#mp3-overlay .mp3-lang-row .mp3-lang-badge {
+    order: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 56px;
+    text-align: center;
+    border: 1px solid var(--mp3-edit-input-border);
+    border-left: 0;
+    border-radius: 0;
+    padding: 0 9px;
+    background: var(--mp3-edit-input-bg);
+    color: var(--mp3-table-td-label);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-lang-row .mp3-edit-input {
+    flex: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+#mp3-overlay .mp3-lang-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#mp3-overlay .mp3-lang-extra {
+    margin-top: 2px;
+}
+
+#mp3-overlay .mp3-lang-toggle {
+    align-self: flex-start;
+    border: none;
+    background: transparent;
+    color: var(--mp3-link-color);
+    font-size: 11px;
+    padding: 0;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-lang-toggle:hover {
+    text-decoration: underline;
+}
+
+#mp3-overlay .mp3-tags-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#mp3-overlay .mp3-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+#mp3-overlay .mp3-tag-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 0;
+    font-size: 11px;
+    background: var(--mp3-list-th-bg);
+    color: var(--mp3-list-th-text);
+}
+
+#mp3-overlay .mp3-tag-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    display: inline-block;
+}
+
+#mp3-overlay .mp3-file-tag-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+#mp3-overlay .mp3-file-tag-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    display: inline-block;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+#mp3-overlay .mp3-file-tag-dot-mixed {
+    width: 11px;
+    height: 11px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+#mp3-overlay .mp3-file-tag-more {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--mp3-table-td-label);
+    letter-spacing: 0.01em;
+    text-transform: lowercase;
+}
+
+#mp3-overlay .mp3-list-name-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+#mp3-overlay .mp3-list-cell-name .mp3-file-tag-dots {
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-tag-color {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-tag-remove {
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    cursor: pointer;
+    line-height: 1;
+}
+
+#mp3-overlay .mp3-tags-input-wrap {
+    display: flex;
+    gap: 6px;
+}
+
+#mp3-overlay .mp3-tags-add-btn {
+    width: 34px;
+    border: 1px solid var(--mp3-input-border);
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    border-radius: 0;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-inline-edit-wrap {
+    margin-top: 4px;
+}
+
+#mp3-overlay .mp3-field-save-btn {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    font-size: 11px;
+    border: 1px solid var(--mp3-confirm-btn-bg);
+    border-radius: 0;
+    background: var(--mp3-confirm-btn-soft-bg);
+    color: var(--mp3-confirm-text-color);
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-field-save-btn:hover {
+    background: var(--mp3-confirm-btn-soft-hover-bg);
+}
+
+#mp3-overlay .mp3-edit-field.mp3-field-dirty > .mp3-edit-label {
+    color: var(--mp3-confirm-text-color);
+}
+
+#mp3-overlay .mp3-media-link-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#mp3-overlay .mp3-media-link-row {
+    display: flex;
+    gap: 6px;
+}
+
+#mp3-overlay .mp3-media-link-picker,
+#mp3-overlay .mp3-media-link-clear {
+    width: 34px;
+    border: 1px solid var(--mp3-input-border);
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    border-radius: 0;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-media-link-preview img {
+    max-width: 100%;
+    max-height: 80px;
+    border: 1px solid var(--mp3-table-td-border);
+    border-radius: 0;
+}
+
+#mp3-overlay .mp3-media-link-pick-hint {
+    font-size: 11px;
+    color: var(--mp3-table-td-label);
+}
+
+#mp3-overlay .mp3-media-link-widget-pick-active {
+    padding: 6px;
+    border: 1px solid #4a90d9;
+    border-radius: 0;
+    background: rgba(74, 144, 217, 0.08);
+}
+
+#mp3-overlay.mp3-media-link-pick-mode .mp3-grid .mp3-card,
+#mp3-overlay.mp3-media-link-pick-mode .mp3-list-row,
+#mp3-overlay.mp3-media-link-pick-mode .mp3-cover-item {
+    cursor: copy;
+}
+
+#mp3-overlay .mp3-legacy-section {
+    margin-bottom: 14px;
+}
+
+#mp3-overlay .mp3-legacy-toggle-btn {
+    width: 100%;
+    text-align: left;
+    border: 1px solid var(--mp3-table-td-border);
+    border-radius: 0;
+    padding: 6px 8px;
+    background: var(--mp3-list-th-bg);
+    color: var(--mp3-table-td-text);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-legacy-content {
+    margin-top: 8px;
+}
+
+#mp3-overlay .mp3-detail-table {
+    width: 100%;
+    /* Ohne fixed-Layout ignorieren Browser word-break/overflow-wrap beim
+       Berechnen der automatischen Spaltenbreiten -- lange Dateinamen (und
+       darin liegende Controls wie das Kategorie-Select) konnten dadurch
+       ueber den rechten Panelrand hinaus breit werden, obwohl die Zelle
+       selbst umbrechen sollte. */
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-bottom: 16px;
+    /* REDAXO/Bootstrap setzt global "table { background-color: #fff }" - ohne
+       eigenen Hintergrund faerbt das sonst die Tabelle immer weiss, auch im
+       Dark Mode. */
+    background: transparent;
+}
+
+#mp3-overlay .mp3-detail-table td {
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--mp3-table-td-border);
+    vertical-align: top;
+    color: var(--mp3-table-td-text);
+}
+
+#mp3-overlay .mp3-detail-table td:first-child {
+    font-weight: 600;
+    color: var(--mp3-table-td-label);
+    width: 95px;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-detail-table td:last-child {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+}
+
+#mp3-overlay .mp3-detail-table small {
+    color: var(--mp3-status-text);
+}
+
+#mp3-overlay .mp3-badge-yes {
+    color: var(--mp3-success-color);
+    font-weight: 600;
+}
+
+#mp3-overlay .mp3-badge-no {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+#mp3-overlay .mp3-detail-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: sticky;
+    bottom: 0;
+    margin: 16px -16px -16px;
+    padding: 12px 16px;
+    background: var(--mp3-detail-bg);
+    border-top: 1px solid var(--mp3-detail-border);
+    z-index: 2;
+}
+
+/* Zweite Zeile fuer Ersetzen/Herunterladen/Speichern/Loeschen -- Auswaehlen
+   (Primaeraktion im Picker-Modus) steht als eigener, vollbreiter Button
+   darueber statt mit diesen vier um die feste 320px-Panel-Breite zu
+   konkurrieren (bei fuenf Buttons in einer Reihe wurde "Auswaehlen" bis zur
+   Unlesbarkeit zusammengequetscht, siehe detail_actions.php). */
+#mp3-overlay .mp3-detail-actions-row {
+    display: flex;
+    gap: 8px;
+}
+
+#mp3-overlay .mp3-detail-select-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--mp3-select-btn-bg);
+    color: #fff;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s;
+}
+
+#mp3-overlay .mp3-detail-select-btn:hover {
+    background: var(--mp3-select-btn-hover);
+}
+
+/* Download & Delete icon buttons */
+#mp3-overlay .mp3-detail-download-btn,
+#mp3-overlay .mp3-detail-delete-btn,
+#mp3-overlay .mp3-detail-replace-btn,
+#mp3-overlay .mp3-detail-collection-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 0;
+    background: var(--mp3-action-icon-bg);
+    color: var(--mp3-action-icon-text);
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-detail-download-btn:hover,
+#mp3-overlay .mp3-detail-replace-btn:hover,
+#mp3-overlay .mp3-detail-collection-btn:hover {
+    background: var(--mp3-action-icon-hover-bg);
+    color: var(--mp3-action-icon-hover-text);
+    text-decoration: none;
+}
+
+#mp3-overlay .mp3-detail-collection-btn {
+    width: auto;
+    padding: 0 10px;
+    gap: 6px;
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-detail-collection-btn.is-active {
+    background: var(--mp3-cat-active-bg);
+    color: var(--mp3-cat-active-border);
+}
+
+#mp3-overlay .mp3-detail-replace-btn.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+#mp3-overlay .mp3-detail-delete-btn:hover {
+    background: var(--mp3-delete-hover-bg);
+    color: var(--mp3-delete-hover-text);
+}
+
+#mp3-overlay .mp3-detail-delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#mp3-overlay .mp3-detail-collections-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    background: var(--mp3-edit-display-hover);
+    border-radius: 0;
+    border: 1px solid var(--mp3-edit-section-border);
+}
+
+#mp3-overlay .mp3-detail-collections-inline {
+    margin: 8px 0 10px;
+}
+
+#mp3-overlay .mp3-detail-collections-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--mp3-edit-label);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#mp3-overlay .mp3-detail-collections-select {
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-detail-collections-select:focus {
+    outline: none;
+    border-color: var(--mp3-input-focus-border);
+    box-shadow: 0 0 0 2px var(--mp3-input-focus-shadow);
+}
+
+#mp3-overlay .mp3-detail-loading,
+#mp3-overlay .mp3-detail-error {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--mp3-status-text);
+    font-size: 13px;
+}
+
+#mp3-overlay .mp3-detail-error {
+    color: #c9302c;
+}
+
+#mp3-overlay .mp3-card-selected {
+    border-color: var(--mp3-selected-border) !important;
+    box-shadow: 0 0 0 2px var(--mp3-selected-shadow) !important;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1200px) {
+    #mp3-overlay .mp3-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(var(--mp3-tile-size, 220px), 160px), 1fr)) !important;
+    }
+}
+
+/* ---- List View ---- */
+#mp3-overlay .mp3-grid.mp3-view-list {
+    display: block !important;
+    columns: none !important;
+}
+
+/* ---- Media Wall View – Masonry via CSS Multi-Column (Pinterest-Style) ----
+   Karten behalten ihr natuerliches Seitenverhaeltnis (cardAspectRatio() in
+   mediapool3.js, inline auf .mp3-masonry-media) statt fester Aspekt-Buckets --
+   dadurch variable Kartenhoehen pro Spalte. Kachelgroesse per Slider im
+   Footer steuerbar (--mp3-tile-size, siehe updateTileSizeVisibility()). */
+#mp3-overlay .mp3-grid.mp3-view-mediawall,
+#mp3-overlay .mp3-grid.mp3-view-masonry {
+    display: block !important;
+    columns: var(--mp3-tile-size, 220px) auto !important;
+    column-gap: 15px !important;
+}
+
+#mp3-overlay .mp3-masonry-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    break-inside: avoid;
+    margin-bottom: 15px;
+    border-radius: 0;
+    background: var(--mp3-card-bg);
+    border: 2px solid transparent;
+    box-shadow: var(--mp3-card-shadow);
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Kein transform/z-index auf Hover: Safari re-balanciert bei jedem Layer-
+   Wechsel eines Kindelements die ganze Mehrspalten-Ansicht neu, was als
+   Flackern anderer Kacheln (v. a. in der letzten Spalte) sichtbar wird.
+   Reine Paint-Eigenschaften (Rahmen/Schatten) loesen das nicht aus. */
+#mp3-overlay .mp3-masonry-card:hover {
+    border-color: var(--mp3-card-hover-border);
+    box-shadow:
+        0 16px 34px rgba(0, 0, 0, 0.36),
+        0 0 0 1px rgba(90, 180, 255, 0.35),
+        0 0 22px rgba(90, 180, 255, 0.28);
+}
+
+#mp3-overlay .mp3-masonry-card.mp3-masonry-card-selected {
+    border-color: var(--mp3-selected-border);
+    box-shadow: 0 0 0 2px var(--mp3-selected-shadow);
+}
+
+#mp3-overlay .mp3-masonry-card.mp3-masonry-card-multi {
+    outline: 2px solid var(--mp3-select-btn-bg);
+    outline-offset: -2px;
+}
+
+/* Media area: aspect-ratio kommt inline von cardAspectRatio() (JS); 1/1 ist
+   nur der Fallback fuer Dateien ohne bekannte width/height. */
+#mp3-overlay .mp3-masonry-media {
+    display: block;
+    width: 100%;
+    line-height: 0;
+    aspect-ratio: 1 / 1;
+    background: var(--mp3-card-icon-bg);
+}
+
+#mp3-overlay .mp3-masonry-media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Non-image files: quadratischer Icon-Platzhalter (kein natuerliches Seitenverhaeltnis) */
+#mp3-overlay .mp3-masonry-media .mp3-icon {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--mp3-card-icon-bg);
+    color: var(--mp3-card-icon-color);
+    font-size: 32px;
+}
+
+/* Toolbar (check + collection btn) shown on hover */
+#mp3-overlay .mp3-masonry-toolbar {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 2;
+}
+
+#mp3-overlay .mp3-masonry-card:hover .mp3-masonry-toolbar,
+#mp3-overlay .mp3-masonry-card-selected .mp3-masonry-toolbar,
+#mp3-overlay .mp3-masonry-card-multi .mp3-masonry-toolbar {
+    opacity: 1;
+}
+
+#mp3-overlay .mp3-masonry-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 0;
+    color: #fff;
+    font-size: 15px;
+    pointer-events: none;
+}
+
+/* Footer label */
+#mp3-overlay .mp3-masonry-footer {
+    padding: 6px 8px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+#mp3-overlay .mp3-masonry-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mp3-card-name);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#mp3-overlay .mp3-masonry-meta {
+    font-size: 11px;
+    color: var(--mp3-card-meta);
+}
+
+@media (max-width: 900px) {
+    #mp3-overlay .mp3-grid.mp3-view-mediawall,
+    #mp3-overlay .mp3-grid.mp3-view-masonry {
+        columns: min(var(--mp3-tile-size, 220px), 190px) auto !important;
+    }
+
+    #mp3-overlay .mp3-grid:not(.mp3-view-list):not(.mp3-view-mediawall):not(.mp3-view-masonry) {
+        grid-template-columns: repeat(auto-fill, minmax(min(var(--mp3-tile-size, 220px), 150px), 1fr)) !important;
+    }
+}
+
+@media (max-width: 600px) {
+    #mp3-overlay .mp3-grid.mp3-view-mediawall,
+    #mp3-overlay .mp3-grid.mp3-view-masonry {
+        columns: min(var(--mp3-tile-size, 220px), 150px) auto !important;
+    }
+
+    #mp3-overlay .mp3-grid:not(.mp3-view-list):not(.mp3-view-mediawall):not(.mp3-view-masonry) {
+        grid-template-columns: repeat(auto-fill, minmax(min(var(--mp3-tile-size, 220px), 140px), 1fr)) !important;
+    }
+}
+
+#mp3-overlay .mp3-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    /* REDAXO/Bootstrap setzt global "table { background-color: #fff }" - ohne
+       eigenen Hintergrund faerbt das sonst die Liste immer weiss, auch im
+       Dark Mode. */
+    background: transparent;
+}
+
+#mp3-overlay .mp3-list-table thead th {
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--mp3-list-th-text);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 2px solid var(--mp3-list-th-border);
+    white-space: nowrap;
+    background: var(--mp3-list-th-bg);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#mp3-overlay .mp3-list-table .mp3-list-th-preview {
+    width: 44px;
+}
+
+#mp3-overlay .mp3-list-th-collection,
+#mp3-overlay .mp3-list-cell-collection {
+    width: 44px;
+    text-align: center;
+}
+
+#mp3-overlay .mp3-list-cell-collection .mp3-collection-toggle-btn {
+    position: static;
+    width: 22px;
+    height: 22px;
+}
+
+#mp3-overlay .mp3-list-row {
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+#mp3-overlay .mp3-list-row:hover {
+    background: var(--mp3-list-hover-bg);
+}
+
+#mp3-overlay .mp3-list-row td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--mp3-list-td-border);
+    vertical-align: middle;
+    color: var(--mp3-list-td-text);
+}
+
+#mp3-overlay .mp3-list-cell-preview {
+    width: 44px;
+    text-align: center;
+}
+
+#mp3-overlay .mp3-list-cell-preview img {
+    width: 36px !important;
+    height: 36px !important;
+    object-fit: cover !important;
+    border-radius: 0 !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    -webkit-user-drag: none !important;
+    user-select: none !important;
+    pointer-events: none !important;
+}
+
+#mp3-overlay .mp3-list-cell-preview i {
+    font-size: 18px;
+    color: var(--mp3-list-icon);
+    line-height: 36px;
+}
+
+#mp3-overlay .mp3-list-cell-name {
+    font-weight: 500;
+    color: var(--mp3-list-name);
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-list-cell-type {
+    color: var(--mp3-list-meta);
+    font-size: 12px;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-list-cell-size {
+    white-space: nowrap;
+    color: var(--mp3-list-meta);
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-list-cell-date {
+    white-space: nowrap;
+    color: var(--mp3-list-meta);
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-list-row-selected {
+    background: var(--mp3-list-selected-bg) !important;
+}
+
+#mp3-overlay .mp3-list-row-selected td {
+    border-bottom-color: var(--mp3-list-selected-border);
+}
+
+/* ---- Lightbox ---- */
+#mp3-overlay .mp3-lightbox {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 11000;
+    background: rgba(0, 0, 0, 0.92);
+    align-items: center;
+    justify-content: center;
+    padding: 44px 24px 20px;
+}
+
+#mp3-overlay .mp3-lightbox.mp3-lightbox-open {
+    display: flex;
+}
+
+#mp3-overlay .mp3-lightbox-image {
+    max-width: 96%;
+    max-height: calc(100vh - 120px);
+    object-fit: contain;
+    border-radius: 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+#mp3-overlay .mp3-lightbox-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+#mp3-overlay .mp3-lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#mp3-overlay .mp3-lightbox-caption {
+    position: absolute;
+    bottom: 12px;
+    left: 18px;
+    right: 18px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =====================================================================
+   MOBILE / SMALL SCREEN LAYOUT
+   ===================================================================== */
+@media (max-width: 768px) {
+    /* Modal fullscreen on mobile — no resize/drag */
+    #mp3-overlay .mp3-modal {
+        width: 100vw !important;
+        max-width: none !important;
+        height: 100vh !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        border-radius: 0;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+    }
+    #mp3-overlay .mp3-resize-handle {
+        display: none !important;
+    }
+    #mp3-overlay .mp3-header {
+        cursor: default;
+    }
+    #mp3-overlay .mp3-header-info {
+        display: none;
+    }
+
+    /* Hide sidebar, show as offcanvas */
+    #mp3-overlay .mp3-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        z-index: 10600;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: none;
+    }
+
+    #mp3-overlay .mp3-sidebar.mp3-sidebar-open {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Sidebar backdrop - real overlay element */
+    #mp3-overlay .mp3-sidebar-backdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 10599;
+    }
+
+    #mp3-overlay .mp3-sidebar-backdrop.mp3-backdrop-open {
+        display: block;
+    }
+
+    /* Show mobile cat button */
+    #mp3-overlay .mp3-mobile-cat-btn {
+        display: flex;
+    }
+
+    /* Detail panel as bottom sheet / offcanvas */
+    #mp3-overlay .mp3-detail {
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100% !important;
+        max-height: 92vh;
+        z-index: 10600;
+        border-left: none;
+        border-top: 1px solid var(--mp3-detail-border);
+        border-radius: 0;
+        transform: translateY(100%);
+        transition: transform 0.25s ease;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+    }
+
+    /* Sticky Griff-Balken -- bleibt beim Scrollen im Panel sichtbar und
+       signalisiert durchgehend "das ist ein Sheet ueber dem Grid", nicht nur
+       beim ersten Aufklappen (max-height liess bewusst 92vh statt 100vh, der
+       verbleibende Rand allein reicht bei langem Scroll-Inhalt aber nicht). */
+    #mp3-overlay .mp3-detail::before {
+        content: '';
+        display: block;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        width: 36px;
+        height: 4px;
+        margin: 8px auto 4px auto;
+        background: var(--mp3-detail-border);
+    }
+
+    #mp3-overlay .mp3-detail.mp3-detail-open {
+        transform: translateY(0);
+    }
+
+    /* Grid adjustments */
+    #mp3-overlay .mp3-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+        gap: 10px !important;
+    }
+
+    /* Header: tools wrap on mobile */
+    #mp3-overlay .mp3-header {
+        flex-wrap: wrap;
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    #mp3-overlay .mp3-header-tools {
+        order: 10;
+        flex: 1 1 100%;
+        gap: 6px;
+    }
+
+    #mp3-overlay .mp3-fullscreen-toggle {
+        display: none;
+    }
+
+    #mp3-overlay .mp3-search-wrap {
+        flex: 1 1 100%;
+        order: 10;
+        max-width: none;
+    }
+
+    #mp3-overlay .mp3-sort-select {
+        flex: 1;
+    }
+
+    #mp3-overlay .mp3-upload-label {
+        display: none;
+    }
+
+    #mp3-overlay .mp3-title {
+        font-size: 14px;
+    }
+
+    /* Typ-Filter-Pills + "Nur unbenutzte" werden im Dropdown zusammengefasst
+       (.mp3-filter-dropdown-wrap) statt als horizontal scrollbarer Streifen
+       -- bei so vielen Filtern auf schmalen Breiten sonst unuebersichtlich
+       bzw. das Tag-Dropdown liess sich im scrollbaren Container nicht mehr
+       sauber oeffnen. Tags bleiben bewusst ein eigenes, separates Dropdown. */
+    #mp3-overlay .mp3-filter-bar {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        padding: 6px 10px;
+    }
+
+    #mp3-overlay .mp3-filter-pills {
+        display: none;
+    }
+
+    #mp3-overlay .mp3-filter-dropdown-wrap {
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #mp3-overlay .mp3-tag-filter-wrap {
+        margin-left: 0;
+        flex-shrink: 0;
+        min-width: 150px;
+    }
+
+    /* List view: hide type and date columns */
+    #mp3-overlay .mp3-list-cell-type,
+    #mp3-overlay .mp3-list-table thead th:nth-child(3),
+    #mp3-overlay .mp3-list-cell-date,
+    #mp3-overlay .mp3-list-table thead th:nth-child(5) {
+        display: none;
+    }
+}
+
+/* ---- Multi-Select Mode ---- */
+
+/* Checkbox overlay on cards */
+#mp3-overlay .mp3-card-check {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 2;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    pointer-events: none;
+}
+#mp3-overlay .mp3-card-multi-selected .mp3-card-check {
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.6);
+}
+#mp3-overlay .mp3-card-multi-selected {
+    outline: 3px solid #3c8dbc !important;
+    outline-offset: -3px;
+}
+
+/* List row multi-select */
+#mp3-overlay .mp3-list-cell-check {
+    width: 30px;
+    text-align: center;
+    color: var(--mp3-status-text);
+    font-size: 16px;
+}
+#mp3-overlay .mp3-list-th-check {
+    width: 30px;
+}
+#mp3-overlay .mp3-list-row-multi-selected .mp3-list-cell-check {
+    color: #3c8dbc;
+}
+#mp3-overlay .mp3-list-row-multi-selected {
+    background: var(--mp3-multi-selected-bg) !important;
+}
+
+/* Multi-Mode: cards need position relative for checkbox */
+#mp3-overlay.mp3-multi-mode .mp3-card {
+    position: relative;
+}
+
+/* Footer bar */
+#mp3-overlay .mp3-multi-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--mp3-multi-footer-bg);
+    border-top: 1px solid var(--mp3-multi-footer-border);
+    flex-shrink: 0;
+}
+#mp3-overlay .mp3-multi-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+#mp3-overlay .mp3-multi-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mp3-multi-count);
+}
+#mp3-overlay .mp3-multi-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--mp3-multi-select-text);
+    border: 1px solid var(--mp3-multi-select-border);
+    border-radius: 0;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+#mp3-overlay .mp3-multi-select-all:hover {
+    background: var(--mp3-multi-select-hover-bg);
+    border-color: var(--mp3-multi-select-hover-border);
+}
+#mp3-overlay .mp3-multi-confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: #3c8dbc;
+    color: #fff;
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+#mp3-overlay .mp3-multi-confirm:hover {
+    background: #367fa9;
+}
+
+/* ---- Batch-Footer (Normalmodus: Cmd/Ctrl+Klick-Mehrfachauswahl, siehe
+   toggleCollectionDragSelection()) -- gleiches Layout-Muster wie
+   .mp3-multi-footer, aber eigenstaendig, weil semantisch anders (Aktionen auf
+   bereits vorhandenen Dateien statt Rueckgabe einer Picker-Auswahl). */
+#mp3-overlay .mp3-batch-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--mp3-multi-footer-bg);
+    border-top: 1px solid var(--mp3-multi-footer-border);
+    flex-shrink: 0;
+}
+#mp3-overlay .mp3-batch-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+#mp3-overlay .mp3-batch-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mp3-multi-count);
+}
+#mp3-overlay .mp3-batch-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--mp3-multi-select-text);
+    border: 1px solid var(--mp3-multi-select-border);
+    border-radius: 0;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+#mp3-overlay .mp3-batch-select-all:hover {
+    background: var(--mp3-multi-select-hover-bg);
+    border-color: var(--mp3-multi-select-hover-border);
+}
+#mp3-overlay .mp3-batch-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+#mp3-overlay .mp3-batch-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--mp3-multi-select-text);
+    border: 1px solid var(--mp3-multi-select-border);
+    border-radius: 0;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+#mp3-overlay .mp3-batch-clear-btn:hover {
+    background: var(--mp3-multi-select-hover-bg);
+    border-color: var(--mp3-multi-select-hover-border);
+}
+#mp3-overlay .mp3-batch-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: #d9534f;
+    color: #fff;
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+#mp3-overlay .mp3-batch-delete-btn:hover {
+    background: #c9302c;
+}
+
+/* ---- Upload Tracker ---- */
+#mp3-overlay .mp3-upload-tracker {
+    padding: 24px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+#mp3-overlay .mp3-upload-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--mp3-upload-header);
+    margin-bottom: 16px;
+}
+
+#mp3-overlay .mp3-upload-header i {
+    font-size: 20px;
+    color: var(--mp3-upload-icon-color);
+}
+
+#mp3-overlay .mp3-upload-progress-bar {
+    height: 6px;
+    background: var(--mp3-upload-progress-bg);
+    border-radius: 0;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+#mp3-overlay .mp3-upload-progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #6c9bd2, #4a8bc2);
+    border-radius: 0;
+    transition: width 0.3s ease;
+}
+
+#mp3-overlay .mp3-upload-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: calc(85vh - 280px);
+    overflow-y: auto;
+}
+
+#mp3-overlay .mp3-upload-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 0;
+    background: var(--mp3-upload-item-bg);
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+#mp3-overlay .mp3-upload-item.mp3-upload-active {
+    background: var(--mp3-upload-active-bg);
+}
+
+#mp3-overlay .mp3-upload-item.mp3-upload-done {
+    opacity: 0.65;
+}
+
+#mp3-overlay .mp3-upload-item.mp3-upload-failed {
+    background: var(--mp3-upload-failed-bg);
+}
+
+#mp3-overlay .mp3-upload-item-icon {
+    color: var(--mp3-status-text);
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-upload-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--mp3-upload-name);
+}
+
+#mp3-overlay .mp3-upload-item-size {
+    color: var(--mp3-upload-size);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-upload-item-status {
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-upload-pending {
+    color: var(--mp3-upload-pending);
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-upload-spinning {
+    color: var(--mp3-upload-icon-color);
+    font-size: 14px;
+}
+
+#mp3-overlay .mp3-upload-ok {
+    color: var(--mp3-success-color);
+    font-size: 14px;
+}
+
+#mp3-overlay .mp3-upload-fail {
+    color: #dc3545;
+    font-size: 14px;
+}
+
+#mp3-overlay .mp3-upload-summary {
+    margin-top: 16px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--mp3-upload-summary);
+    text-align: center;
+}
+
+/* ---- ALT-Text-Hinweis ---- */
+
+#mp3-overlay .mp3-alt-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    margin-bottom: 6px;
+    border-radius: 0;
+    background: var(--mp3-alt-hint-bg, rgba(230, 130, 20, 0.12));
+    border: 1px solid var(--mp3-alt-hint-border, rgba(230, 130, 20, 0.35));
+    color: var(--mp3-alt-hint-text, #b06000);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+#mp3-overlay .mp3-alt-hint .fa-triangle-exclamation {
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+/* Dark mode */
+body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
+    --mp3-alt-hint-bg: rgba(255, 160, 50, 0.1);
+    --mp3-alt-hint-border: rgba(255, 160, 50, 0.3);
+    --mp3-alt-hint-text: #f0a040;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.rex-has-theme:not(.rex-theme-light) #mp3-overlay .mp3-alt-hint {
+        --mp3-alt-hint-bg: rgba(255, 160, 50, 0.1);
+        --mp3-alt-hint-border: rgba(255, 160, 50, 0.3);
+        --mp3-alt-hint-text: #f0a040;
+    }
+}
+
+/* ---- TinyMCE Editor Canvas ---- */
+
+/* Hide grid elements when editor canvas is active */
+#mp3-overlay .mp3-content.mp3-editor-mode .mp3-filter-bar,
+#mp3-overlay .mp3-content.mp3-editor-mode .mp3-breadcrumb,
+#mp3-overlay .mp3-content.mp3-editor-mode .mp3-status,
+#mp3-overlay .mp3-content.mp3-editor-mode .mp3-grid-wrap,
+#mp3-overlay .mp3-content.mp3-editor-mode .mp3-page-footer,
+#mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-filter-bar,
+#mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-breadcrumb,
+#mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-status,
+#mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-grid-wrap,
+#mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-page-footer {
+    display: none !important;
+}
+
+/* Detail-Panel (naechstes Geschwister von .mp3-content in .mp3-body) nimmt
+   sonst unnoetig Breite weg, waehrend der Fokuspunkt-Canvas den Hauptbereich
+   nutzt -- ausgeblendet bis Speichern oder Zurueck (siehe commitFocuspointCanvas()/
+   closeFocuspointCanvas()), keine Aenderung an dessen JS-verwalteter Breite/
+   .mp3-detail-open-Klasse noetig, da rein CSS-seitig ausgeblendet. */
+#mp3-overlay .mp3-content.mp3-focuspoint-mode ~ .mp3-detail-resize-handle,
+#mp3-overlay .mp3-content.mp3-focuspoint-mode ~ .mp3-detail {
+    display: none !important;
+}
+
+#mp3-overlay .mp3-editor-canvas {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    animation: mp3EditorFadeIn 0.18s ease;
+}
+
+@keyframes mp3EditorFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+#mp3-overlay .mp3-editor-canvas-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--mp3-detail-border);
+    background: var(--mp3-modal-bg);
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-editor-canvas-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-editor-canvas-back:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-editor-canvas-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mp3-card-name);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-editor-canvas-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: none;
+    border-radius: 0;
+    background: var(--mp3-select-btn-bg);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-editor-canvas-save:hover {
+    opacity: 0.88;
+}
+
+#mp3-overlay .mp3-editor-canvas-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px;
+    background: var(--mp3-modal-bg);
+}
+
+/* Textarea fallback (before TinyMCE loads) */
+#mp3-overlay .mp3-editor-canvas-textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: 10px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    font-size: 14px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+/* ---- TinyMCE canvas preview row in detail panel ---- */
+
+#mp3-overlay .mp3-tiny-canvas-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+}
+
+#mp3-overlay .mp3-tiny-canvas-preview {
+    flex: 1;
+    font-size: 12px;
+    color: var(--mp3-table-td-label);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 4px 0;
+    font-style: italic;
+}
+
+#mp3-overlay .mp3-tiny-canvas-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-tiny-canvas-open:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
+}
+
+/* Keyboard shortcut hint in header */
+#mp3-overlay .mp3-editor-canvas-save::after {
+    content: ' ⌘S';
+    opacity: 0.6;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+@media (max-width: 768px) {
+    #mp3-overlay .mp3-editor-canvas-save::after {
+        content: '';
+    }
+
+    #mp3-overlay .mp3-editor-canvas-body {
+        padding: 10px;
+    }
+}
+
+/* ---- Fokuspunkt-Canvas (Integration mit dem focuspoint-Addon) ---- */
+/* Eigenstaendiger Canvas-Block, kein Re-Skin des TinyMCE-Editor-Canvas oben
+   -- teilt aber bewusst dieselbe Kopfzeilen-Optik (Zurueck/Titel/Speichern). */
+#mp3-overlay .mp3-focuspoint-canvas {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    animation: mp3EditorFadeIn 0.18s ease;
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--mp3-detail-border);
+    background: var(--mp3-modal-bg);
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-back:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mp3-card-name);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: none;
+    border-radius: 0;
+    background: var(--mp3-select-btn-bg);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-save:hover {
+    opacity: 0.88;
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-save.mp3-detail-save-success {
+    background: #27ae60;
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-save.mp3-detail-save-error {
+    background: #e74c3c;
+}
+
+#mp3-overlay .mp3-focuspoint-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--mp3-detail-border);
+    background: var(--mp3-modal-bg);
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-focuspoint-field-wrap,
+#mp3-overlay .mp3-focuspoint-type-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#mp3-overlay .mp3-focuspoint-field-wrap label,
+#mp3-overlay .mp3-focuspoint-type-wrap label {
+    font-size: 12px;
+    color: var(--mp3-table-td-label);
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-focuspoint-field-select,
+#mp3-overlay .mp3-focuspoint-type-select {
+    padding: 4px 8px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-focuspoint-coords {
+    font-size: 12px;
+    font-family: monospace;
+    color: var(--mp3-table-td-label);
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-focuspoint-reset-btn,
+#mp3-overlay .mp3-focuspoint-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-focuspoint-reset-btn:hover,
+#mp3-overlay .mp3-focuspoint-remove-btn:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-focuspoint-canvas-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    background: var(--mp3-modal-bg);
+}
+
+/* Bewusst klein und fest gedeckelt statt viewport-relativ (calc(100vh-...)
+   war auf hohen Bildschirmen bzw. bei sehr hochkant-lastigen Fotos immer
+   noch zu gross) -- zum Fokuspunkt-Setzen reicht ein kompaktes Bild, die
+   eigentliche Beurteilung des Ergebnisses passiert ueber die Live-Vorschau
+   rechts, die dadurch mehr Platz bekommt. .mp3-focuspoint-marker
+   positioniert sich prozentual relativ zu DIESEM Wrap -- da line-height:0 +
+   kein Padding/Border, deckt sich die Wrap-Box exakt mit der gerenderten
+   Bildgroesse (kein Letterboxing), die Prozentwerte bleiben also korrekt,
+   unabhaengig davon ob Breite oder Hoehe die begrenzende Dimension ist. */
+#mp3-overlay .mp3-focuspoint-image-wrap {
+    position: relative;
+    flex: 0 0 auto;
+    max-width: 420px;
+    max-height: 420px;
+    line-height: 0;
+    background: var(--mp3-detail-preview-bg);
+    cursor: crosshair;
+}
+
+#mp3-overlay .mp3-focuspoint-image {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 420px;
+    max-height: 420px;
+}
+
+/* Crosshair-Marker: reines CSS statt Bild-Asset (Kreis + Punkt), per Klick
+   auf .mp3-focuspoint-image-wrap positioniert (siehe focuspointPositionFromEvent()). */
+#mp3-overlay .mp3-focuspoint-marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 6px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+#mp3-overlay .mp3-focuspoint-marker::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+    transform: translate(-50%, -50%);
+}
+
+#mp3-overlay .mp3-focuspoint-preview-wrap {
+    flex: 1 1 420px;
+    max-width: 100%;
+}
+
+/* Anders als das kleine Bearbeitungsbild (fest 420px -- muss nicht gross
+   sein, siehe .mp3-focuspoint-image) darf die Vorschau ruhig deutlich
+   groesser sein, das Detail-Panel ist waehrend der Bearbeitung ja
+   ausgeblendet und schafft dafuer Platz. Bleibt trotzdem viewport-relativ
+   gedeckelt (nie hoeher als das Fenster), der Zuschnitt-Effekt kann je nach
+   Media-Manager-Typ beliebig hochkantig ausfallen (z.B. "fit" statt hartem
+   Crop bei sehr hochkant-lastigen Quellbildern). */
+#mp3-overlay .mp3-focuspoint-preview-img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(100vh - 340px);
+    background: var(--mp3-detail-preview-bg);
+}
+
+@media (max-width: 768px) {
+    #mp3-overlay .mp3-focuspoint-canvas-body {
+        padding: 10px;
+    }
+
+    #mp3-overlay .mp3-focuspoint-toolbar {
+        padding: 8px 10px;
+    }
+}
+
+/* ---- Collection Upload Category Picker Modal ---- */
+#mp3-overlay .mp3-catpick-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9000;
+}
+
+#mp3-overlay .mp3-catpick-box {
+    background: var(--mp3-modal-bg);
+    border: 1px solid var(--mp3-detail-border);
+    border-radius: 0;
+    padding: 24px 28px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .35);
+}
+
+#mp3-overlay .mp3-catpick-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#mp3-overlay .mp3-catpick-info {
+    font-size: 13px;
+    color: var(--mp3-status-text);
+    margin-bottom: 14px;
+}
+
+#mp3-overlay .mp3-catpick-select {
+    width: 100%;
+    padding: 7px 24px 7px 10px;
+    border-radius: 0;
+    border: 1px solid var(--mp3-input-border);
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    font-size: 14px;
+    margin-bottom: 16px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: var(--mp3-select-arrow);
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 8px 5px;
+}
+
+#mp3-overlay .mp3-catpick-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+#mp3-overlay .mp3-catpick-cancel {
+    padding: 7px 16px;
+    border-radius: 0;
+    border: 1px solid var(--mp3-input-border);
+    background: transparent;
+    color: var(--mp3-input-text);
+    cursor: pointer;
+    font-size: 13px;
+}
+
+#mp3-overlay .mp3-catpick-confirm {
+    padding: 7px 16px;
+    border-radius: 0;
+    border: none;
+    background: var(--mp3-select-btn-bg);
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#mp3-overlay .mp3-catpick-confirm:hover {
+    background: var(--mp3-select-btn-hover);
+}
+
+
+/* ---- Category Move Modal ----
+   Wird an document.body angehaengt (nicht an #mp3-overlay), damit sie ueber
+   allem liegt. Die Variablen kommen daher aus :root / body.rex-theme-dark /
+   prefers-color-scheme, nicht aus #mp3-overlay.mp3-dark-mode. */
+.mp3-cat-move-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mp3-cat-move-modal {
+    background: var(--mp3-modal-bg);
+    color: var(--mp3-input-text);
+    border: 1px solid var(--mp3-detail-border);
+    border-radius: 0;
+    padding: 24px;
+    min-width: 320px;
+    max-width: 480px;
+    width: 90vw;
+    box-shadow: 0 8px 40px rgba(0,0,0,.22);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mp3-cat-move-modal-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.mp3-cat-move-modal-info {
+    margin: 0;
+    font-size: 13px;
+    color: var(--mp3-status-text);
+}
+
+.mp3-cat-move-modal-select {
+    width: 100%;
+    padding: 6px 24px 6px 8px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    font-size: 13px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: var(--mp3-select-arrow);
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 8px 5px;
+}
+
+.mp3-cat-move-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* Bestaetigen-Button der Modal-Dialoge (Umbenennen/Verschieben/Anlegen,
+   showConfirmModal() nicht-destruktive Faelle) -- eigene gruene Farbe statt
+   Bootstraps .btn-primary-Blau, damit "bestaetigen" optisch zum Speichern-
+   Button passt. .btn-danger (Loeschen-Bestaetigungen) bleibt bewusst rot. */
+.mp3-cat-move-modal-ok.btn-primary {
+    background-color: var(--mp3-confirm-btn-bg);
+    border-color: var(--mp3-confirm-btn-bg);
+}
+
+.mp3-cat-move-modal-ok.btn-primary:hover,
+.mp3-cat-move-modal-ok.btn-primary:focus {
+    background-color: var(--mp3-confirm-btn-hover-bg);
+    border-color: var(--mp3-confirm-btn-hover-bg);
+}
+
+/* Textfeld-Variante desselben Modals (z. B. Kategorie umbenennen) --
+   gleiche Optik/gleicher Rahmen wie .mp3-cat-move-modal-select. */
+.mp3-cat-move-modal-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.mp3-cat-move-modal-error {
+    margin: 0;
+    font-size: 12px;
+    color: #c9302c;
+}
+
+/* ---- File category dropdown in Detail Panel ---- */
+#mp3-overlay .mp3-move-file-wrap {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+#mp3-overlay .mp3-move-file-select {
+    width: 100%;
+    max-width: 200px;
+    min-width: 0;
+    flex: 0 1 auto;
+    padding: 4px 22px 4px 6px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    font-size: 12px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: var(--mp3-select-arrow);
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 8px 5px;
+}
+
+#mp3-overlay .mp3-move-file-select:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* ===================================================================
+   COMPACT MODE — triggered by ResizeObserver when modal < 700px wide
+   Uses position: absolute (relative to modal) instead of fixed
+   =================================================================== */
+
+/* Modal: allow absolute children to overflow cleanly */
+#mp3-overlay.mp3-compact .mp3-modal {
+    min-width: 0 !important;
+}
+
+#mp3-overlay.mp3-compact .mp3-header {
+    cursor: default;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    gap: 6px;
+}
+
+#mp3-overlay.mp3-compact .mp3-header-info {
+    display: none;
+}
+
+#mp3-overlay.mp3-compact .mp3-header-tools {
+    order: 10;
+    flex: 1 1 100%;
+    gap: 6px;
+}
+
+#mp3-overlay.mp3-compact .mp3-fullscreen-toggle {
+    display: none;
+}
+
+#mp3-overlay.mp3-compact .mp3-search-wrap {
+    flex: 1 1 100%;
+    order: 10;
+    max-width: none;
+}
+
+#mp3-overlay.mp3-compact .mp3-sort-select {
+    flex: 1;
+}
+
+#mp3-overlay.mp3-compact .mp3-upload-label {
+    display: none;
+}
+
+#mp3-overlay.mp3-compact .mp3-title {
+    font-size: 14px;
+}
+
+/* Sidebar as offcanvas (absolute within modal) */
+#mp3-overlay.mp3-compact .mp3-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 600;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: none;
+}
+
+#mp3-overlay.mp3-compact .mp3-sidebar.mp3-sidebar-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Backdrop (absolute within modal) */
+#mp3-overlay.mp3-compact .mp3-sidebar-backdrop {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 599;
+}
+
+#mp3-overlay.mp3-compact .mp3-sidebar-backdrop.mp3-backdrop-open {
+    display: block;
+}
+
+/* Show mobile cat button */
+#mp3-overlay.mp3-compact .mp3-mobile-cat-btn {
+    display: flex;
+}
+
+/* Detail panel as bottom sheet (absolute within modal) */
+#mp3-overlay.mp3-compact .mp3-detail {
+    position: absolute;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    max-height: 92%;
+    z-index: 600;
+    border-left: none;
+    border-top: 1px solid var(--mp3-detail-border);
+    border-radius: 0;
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+}
+
+/* Siehe Kommentar im @media (max-width: 768px)-Block oben -- gleiches
+   Sticky-Griff-Prinzip fuer manuell auf Compact-Breite verkleinerte Modals. */
+#mp3-overlay.mp3-compact .mp3-detail::before {
+    content: '';
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    width: 36px;
+    height: 4px;
+    margin: 8px auto 4px auto;
+    background: var(--mp3-detail-border);
+}
+
+#mp3-overlay.mp3-compact .mp3-detail.mp3-detail-open {
+    transform: translateY(0);
+}
+
+/* Grid */
+#mp3-overlay.mp3-compact .mp3-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+    gap: 8px !important;
+}
+
+/* Filter bar -- gleiches Muster wie im @media (max-width: 768px)-Block oben,
+   hier zusaetzlich fuer manuell auf Compact-Breite verkleinerte Modals
+   (ResizeObserver auf das Modal, nicht den Viewport, siehe initDragResize()). */
+#mp3-overlay.mp3-compact .mp3-filter-bar {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding: 6px 10px;
+}
+
+#mp3-overlay.mp3-compact .mp3-filter-pills {
+    display: none;
+}
+
+#mp3-overlay.mp3-compact .mp3-filter-dropdown-wrap {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#mp3-overlay.mp3-compact .mp3-tag-filter-wrap {
+    margin-left: 0;
+    flex-shrink: 0;
+    min-width: 150px;
+}
+
+/* List view: hide type and date columns */
+#mp3-overlay.mp3-compact .mp3-list-cell-type,
+#mp3-overlay.mp3-compact .mp3-list-table thead th:nth-child(3),
+#mp3-overlay.mp3-compact .mp3-list-cell-date,
+#mp3-overlay.mp3-compact .mp3-list-table thead th:nth-child(5) {
+    display: none;
+}

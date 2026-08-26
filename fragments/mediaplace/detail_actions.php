@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * Aktionen-Zeile (Auswaehlen/Speichern/Ersetzen/Herunterladen/Loeschen), am
+ * unteren Rand des Detail-Panels fixiert (position: sticky). Markup
+ * identisch zum Aktionen-Teil von renderDetail() in mediapool3.js.
+ *
+ * Der "Auswaehlen"-Button wird -- anders als frueher in renderDetail(), wo
+ * er nur bei onSelect/onMultiSelect ueberhaupt ausgegeben wurde -- immer
+ * gerendert und per JS nach dem Einfuegen ein-/ausgeblendet (renderDetail()
+ * in mediapool3.js), weil der PHP-Endpoint zur Renderzeit nicht wissen
+ * kann, in welchem Auswahlmodus der Overlay gerade geoeffnet wurde. Er steht
+ * auf einer eigenen, vollbreiten Zeile ueber den restlichen Buttons: bei fuenf
+ * Buttons in einer Reihe (Auswaehlen/Ersetzen/Herunterladen/Speichern/
+ * Loeschen) reichte die feste 320px-Panel-Breite nicht mehr aus, sobald
+ * Speichern permanent sichtbar wurde (s.u.) -- "Auswaehlen" wurde dabei bis
+ * zur Unlesbarkeit zusammengequetscht. Als Primaeraktion im Auswahlmodus
+ * verdient er ohnehin die volle Breite statt mit den kleinen Icon-Buttons zu
+ * konkurrieren.
+ *
+ * "Speichern" (.mp3-detail-save-btn) lebt hier statt am Ende der (potenziell
+ * langen, scrollbaren) Bearbeiten-Sektion, damit er nicht weggescrollt werden
+ * kann -- immer sichtbar (Default: disabled), nur der disabled-Zustand wird
+ * JS-seitig gesteuert (updateDetailSaveState(), aktiv nur bei ungespeicherten
+ * Aenderungen). Bewusst kein display:none mehr, damit der Button als fester
+ * Anker in der Actions-Zeile erkennbar bleibt statt bei Bedarf zu erscheinen.
+ *
+ * Vars:
+ * - array $info siehe detail_panel.php
+ *
+ * @var rex_fragment $this
+ */
+
+use FriendsOfRedaxo\Mediaplace\DetailPanelFormatter;
+
+$info = $this->getVar('info');
+$filename = $info['filename'];
+
+// Muss mit API_BASE in assets/mediapool3.js uebereinstimmen (fixe Route des
+// FriendsOfRedaxo/api-Addons fuer die Backend-Session-Auth-Spiegelroute).
+$apiBase = '/api/backend/';
+$token = $info['updatedate'] ?: (string) $info['filesize'];
+$downloadUrl = $apiBase . 'media/' . rawurlencode($filename) . '/file' . ($token ? '?mp3v=' . rawurlencode($token) : '');
+?>
+<div class="mp3-detail-actions">
+    <button class="mp3-detail-select-btn" data-filename="<?= rex_escape($filename) ?>" style="display:none"><i class="fa-solid fa-check"></i> Auswählen</button>
+
+    <div class="mp3-detail-actions-row">
+        <label class="mp3-detail-replace-btn" title="Datei ersetzen (Dateiname bleibt gleich)">
+            <i class="fa-solid fa-arrows-rotate"></i><input type="file" class="mp3-detail-replace-input" accept="<?= rex_escape(DetailPanelFormatter::replacementAccept($filename)) ?>" style="display:none"></label>
+        <a class="mp3-detail-download-btn" href="<?= rex_escape($downloadUrl) ?>" download="<?= rex_escape($filename) ?>" title="Datei herunterladen">
+            <i class="fa-solid fa-download"></i></a>
+        <button type="button" class="mp3-detail-save-btn" title="Änderungen speichern" disabled>
+            <i class="fa-solid fa-floppy-disk"></i> Speichern</button>
+        <button class="mp3-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" title="Datei löschen">
+            <i class="fa-solid fa-trash-can"></i></button>
+    </div>
+</div>

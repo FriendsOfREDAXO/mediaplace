@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * Metadaten-Tabelle (Dateiname/Typ/Groesse/Datum/Sammlungen/Kategorie).
+ * Markup identisch zum Tabellen-Teil von renderDetail() in mediapool3.js.
+ * Das Kategorie-Verschieben-Select wird jetzt direkt serverseitig befuellt
+ * (vorher async per apiFetchAllCategoriesFlat() nach dem Rendern) --
+ * der change-Handler dafuer bleibt unveraendert JS-seitig.
+ *
+ * Vars:
+ * - array $info             siehe detail_panel.php
+ * - list<string> $collection_names
+ * - list<array{id:int,name:string,parent_id:int,label:string,depth:int}> $category_list
+ * - bool  $feature_collections  Einstellungen-Toggle: Sammlungen-Zeile zeigen?
+ *
+ * @var rex_fragment $this
+ */
+
+use FriendsOfRedaxo\Mediaplace\DetailPanelFormatter;
+
+$info = $this->getVar('info');
+$collectionNames = $this->getVar('collection_names');
+$categoryList = $this->getVar('category_list');
+$featureCollections = (bool) $this->getVar('feature_collections');
+?>
+<table class="mp3-detail-table">
+    <tr><td>Dateiname</td><td><?= rex_escape($info['filename']) ?></td></tr>
+    <?php if ('' !== $info['originalname'] && $info['originalname'] !== $info['filename']): ?>
+        <tr><td>Original</td><td><?= rex_escape($info['originalname']) ?></td></tr>
+    <?php endif; ?>
+    <tr><td>Typ</td><td><?= rex_escape($info['filetype']) ?></td></tr>
+    <tr><td>Größe</td><td><?= DetailPanelFormatter::formatBytes($info['filesize']) ?></td></tr>
+    <?php if ($info['width'] && $info['height']): ?>
+        <tr><td>Maße</td><td><?= (int) $info['width'] ?> × <?= (int) $info['height'] ?> px</td></tr>
+    <?php endif; ?>
+    <tr><td>Erstellt</td><td><?= rex_escape($info['created_formatted']) ?><br><small><?= rex_escape($info['createuser']) ?></small></td></tr>
+    <tr><td>Aktualisiert</td><td><?= rex_escape($info['updated_formatted']) ?><br><small><?= rex_escape($info['updateuser']) ?></small></td></tr>
+    <tr><td>Datei vorhanden</td><td><?= $info['file_exists'] ? '<span class="mp3-badge-yes">✓ Ja</span>' : '<span class="mp3-badge-no">✗ Nein</span>' ?></td></tr>
+    <tr><td>In Verwendung</td><td><?= $info['is_in_use'] ? '<span class="mp3-badge-yes">✓ Ja</span>' : '<span class="mp3-badge-no">✗ Nein</span>' ?></td></tr>
+    <?php if ($featureCollections): ?>
+        <tr><td>Sammlungen</td><td><?= !empty($collectionNames) ? rex_escape(implode(', ', $collectionNames)) : '–' ?></td></tr>
+    <?php endif; ?>
+    <tr class="mp3-move-file-row"><td>Kategorie</td><td>
+        <div class="mp3-move-file-wrap">
+            <select class="mp3-move-file-select" data-current-cat="<?= rex_escape((string) $info['category_id']) ?>" title="Datei in andere Kategorie verschieben">
+                <option value="0">(Hauptverzeichnis)</option>
+                <?php foreach ($categoryList as $cat): ?>
+                    <option value="<?= rex_escape((string) $cat['id']) ?>"<?= $cat['id'] === $info['category_id'] ? ' selected' : '' ?>><?= str_repeat("\u{00A0}\u{00A0}", $cat['depth']) . rex_escape($cat['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </td></tr>
+</table>

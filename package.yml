@@ -1,0 +1,33 @@
+package: mediaplace
+version: '1.0.0'
+author: FriendsOfREDAXO
+supportpage: https://github.com/FriendsOfREDAXO
+
+page:
+    title: 'MediaPlace'
+    icon: rex-icon fa-photo-film
+    perm: admin
+    subpages:
+        einstellungen:
+            title: 'Einstellungen'
+            icon: rex-icon fa-gear
+            perm: admin
+        metainfo_fields:
+            title: 'Metainfo Felder'
+            icon: rex-icon fa-sliders
+            perm: admin
+        demo:
+            title: 'Demo'
+            icon: rex-icon fa-play
+            perm: admin
+        debug:
+            title: 'Debug'
+            icon: rex-icon fa-bug
+            perm: admin
+
+requires:
+    redaxo: '>=5.10'
+    php:
+        version: '>=7.4'
+    packages:
+        api: '>=1.3'
