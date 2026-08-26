@@ -3,9 +3,7 @@
 $addon = rex_addon::get('mediaplace');
 $addon->setConfig('version', $addon->getVersion());
 
-if (null === rex_config::get('mediaplace', 'replace_classic_mediapool')) {
-    rex_config::set('mediaplace', 'replace_classic_mediapool', true);
-}
+// Default-Config-Werte kommen aus package.yml (default_config:), nicht von hier.
 
 // Register med_json_data field for storing structured metadata (replaces the old schema-based approach)
 require_once __DIR__ . '/lib/MetainfoFieldGroup.php';

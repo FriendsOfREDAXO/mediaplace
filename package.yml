@@ -33,3 +33,10 @@ requires:
     packages:
         api: '>=1.3'
         mediapool: '^2.13.0'
+
+default_config:
+    replace_classic_mediapool: true
+    disable_tagging: false
+    disable_collections: false
+    enable_legacy_metainfo: false
+    enable_metainfo_form_prototype: false

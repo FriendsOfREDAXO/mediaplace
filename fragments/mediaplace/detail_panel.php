@@ -25,6 +25,7 @@
  * - bool  $feature_tagging       Einstellungen-Toggle: System-Tags-Feld zeigen?
  * - bool  $feature_collections   Einstellungen-Toggle: Sammlungen-Zeile zeigen?
  * - bool  $feature_legacy_metainfo  Einstellungen-Toggle: Alte-Metadaten-Bereich zeigen?
+ * - bool  $feature_metainfo_form_prototype  Einstellungen-Toggle: "Nativ bearbeiten"-Button (Prototyp) zeigen?
  *
  * @var rex_fragment $this
  */
@@ -41,6 +42,7 @@ $categoryList = $this->getVar('category_list');
 $featureTagging = (bool) $this->getVar('feature_tagging');
 $featureCollections = (bool) $this->getVar('feature_collections');
 $featureLegacyMetainfo = (bool) $this->getVar('feature_legacy_metainfo');
+$featureMetainfoFormPrototype = (bool) $this->getVar('feature_metainfo_form_prototype');
 
 $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
 ?>
@@ -97,22 +99,21 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
     <?php if ($featureLegacyMetainfo): ?>
         <div class="mp3-legacy-section">
             <button type="button" class="mp3-legacy-toggle-btn"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n('mediaplace_legacy_metadata')) ?></button>
-            <?php // newPoolWindow() ist REDAXOs eigene globale Popup-Funktion (core/assets/standard.js),
-            // dieselbe, die openMediaPool()/openMediaDetails() im klassischen Medienpool nutzen --
-            // gleiche Fenstergroesse/-optik wie jeder andere klassische Medienpool-Popup. ?>
             <button type="button" class="mp3-legacy-edit-link btn btn-default btn-xs"
                     onclick="newPoolWindow(<?= rex_escape(json_encode($legacyEditUrl)) ?>); return false;">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> <?= rex_escape($this->i18n('mediaplace_legacy_edit_classic')) ?>
             </button>
-            <?php // Prototyp: Fasst dieselben Metainfo-Felder ueber REDAXOs eigenen
-            // MEDIA_FORM_EDIT-Pfad direkt im Overlay-Canvas an, statt zum klassischen
-            // Medienpool zu wechseln -- siehe rex_api_mediaplace_metainfo_form.php. ?>
+            <div class="mp3-legacy-content" style="display:none"></div>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($featureMetainfoFormPrototype): ?>
+        <div class="mp3-legacy-section">
             <button type="button" class="mp3-legacy-edit-link mp3-metainfo-canvas-open btn btn-default btn-xs"
                     data-canvas-file="<?= rex_escape($info['filename']) ?>"
                     data-canvas-label="<?= rex_escape($info['filename']) ?>">
                 <i class="fa-solid fa-pen-to-square"></i> <?= rex_escape($this->i18n('mediaplace_metainfo_edit_native')) ?>
             </button>
-            <div class="mp3-legacy-content" style="display:none"></div>
         </div>
     <?php endif; ?>
 

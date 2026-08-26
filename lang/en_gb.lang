@@ -271,3 +271,6 @@ mediaplace_select_multiple = Allow multiple selection
 mediaplace_field_hint_checkbox = A yes/no value isn't language-dependent.
 mediaplace_field_hint_select = The stored values aren't language-dependent, only the choice labels are.
 mediaplace_metainfo_edit_native = Edit natively (prototype)
+mediaplace_settings_experimental_legend = Experimental
+mediaplace_settings_feature_metainfo_prototype_label = Show native Metainfo editing (prototype) in the overlay
+mediaplace_settings_feature_metainfo_prototype_hint = Shows a button in the detail panel that makes real med_* fields (created via the Metainfo addon) editable directly in the overlay, via REDAXO's own MEDIA_FORM_EDIT/MEDIA_UPDATED path — no widget system of our own. Prototype: relies on a file in the Metainfo addon marked @internal and could break without warning on a Metainfo update.

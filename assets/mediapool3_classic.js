@@ -93,12 +93,7 @@
         var link = e.target.closest('a.btn-popup');
         if (!link) return;
 
-        // Innerhalb des eigenen Metainfo-Canvas (echtes MEDIA_FORM_EDIT-Markup,
-        // siehe rex_api_mediaplace_metainfo_form.php) bewusst NICHT abfangen --
-        // sonst oeffnet ein Klick auf "Medium hinzufuegen"/"oeffnen" im dort
-        // eingebetteten REX_MEDIALIST/REX_MEDIA-Widget rekursiv unseren eigenen
-        // Overlay statt des echten klassischen Popup-Fensters, was den ganzen
-        // Overlay-Zustand durcheinanderbringt (verschachteltes MP3.open()).
+        // Im Metainfo-Canvas nicht abfangen, sonst oeffnet sich rekursiv unser eigener Overlay.
         if (link.closest('#mp3-metainfo-canvas')) return;
 
         var wrapper = link.closest('.rex-js-widget-media, .rex-js-widget-medialist');

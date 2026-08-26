@@ -62,7 +62,7 @@
     // Feature-Toggles (Einstellungsseite), gelesen von #mp3-root in build() --
     // gate Tagging-UI (System-Tags-Feld, Sidebar-Tag-Filter) bzw. Sammlungen-UI
     // (Sidebar-Sektion, Merken-Button, Drag&Drop) unabhaengig voneinander.
-    var features = { tagging: true, collections: true, legacyMetainfo: false };
+    var features = { tagging: true, collections: true, legacyMetainfo: false, metainfoFormPrototype: false };
     var activeCollectionId = null;
     var darkModeEnabled = false; // true = dark mode, false = light mode
     var mediaLinkPickFieldKey = null; // active media_link field key while picking from file grid
@@ -76,7 +76,6 @@
     var editorCanvasClangId = null;  // clang id (null = no translation)
     var editorCanvasEngine = null;   // 'tinymce' | 'cke5' -- welche Engine der (gemeinsame) Canvas gerade zeigt
     var ckeCanvasEditor = null;      // aktive CKEditor5-Instanz im Canvas (ueber rex:cke5IsInit eingesammelt)
-    // Prototyp: native Metainfo-Feld-Bearbeitung (siehe openMetainfoCanvas())
     var metainfoCanvasOpen = false;
     var metainfoCanvasFilename = null;
     // Fokuspunkt-Canvas (Integration mit dem separaten focuspoint-Addon, nur
@@ -1494,10 +1493,7 @@
         if (canvas) canvas.style.display = 'none';
     }
 
-    // ---- Prototyp: native Metainfo-Feld-Bearbeitung ----
-    // Rendert/speichert echte med_*-Felder ueber REDAXOs eigenen
-    // MEDIA_FORM_EDIT/MEDIA_UPDATED-Pfad (rex_api_mediaplace_metainfo_form.php)
-    // statt eigener Widgets pro Feldtyp -- siehe Datei-Kommentar dort.
+    // ---- Native Metainfo-Feld-Bearbeitung (Prototyp) ----
     function openMetainfoCanvas(filename, label) {
         if (!overlay || !filename) return;
         if (focuspointCanvasOpen) closeFocuspointCanvas();
@@ -1522,9 +1518,7 @@
             .then(function (html) {
                 if (!formEl || metainfoCanvasFilename !== filename) return;
                 formEl.innerHTML = html || '<p class="mp3-metainfo-canvas-empty text-muted">' + t('mediaplace_metainfo_readonly_empty') + '</p>';
-                // Bootstrap-select faenge sich neu eingefuegte .selectpicker-Elemente
-                // nicht automatisch ein -- ohne diesen Aufruf bleiben sie funktionale,
-                // aber unverzierte native <select>s (kein Rendering-Fehler, nur optisch).
+                // Bootstrap-select initialisiert dynamisch eingefuegte Selects nicht automatisch.
                 if (window.jQuery && window.jQuery.fn && window.jQuery.fn.selectpicker) {
                     window.jQuery('.selectpicker', formEl).selectpicker();
                 }
@@ -1549,8 +1543,6 @@
             .then(function () {
                 if (saveBtn) saveBtn.disabled = false;
                 closeMetainfoCanvas();
-                // Legacy-Metadaten-Anzeige zeigt dieselben Spalten read-only an --
-                // beim naechsten Aufklappen neu laden statt veraltet stehen lassen.
                 detailLegacyLoaded = false;
             })
             .catch(function (err) {
@@ -3881,6 +3873,7 @@
         features.tagging = !root.dataset.featureTagging || root.dataset.featureTagging === '1';
         features.collections = !root.dataset.featureCollections || root.dataset.featureCollections === '1';
         features.legacyMetainfo = root.dataset.featureLegacyMetainfo === '1';
+        features.metainfoFormPrototype = root.dataset.featureMetainfoFormPrototype === '1';
         canFilterUnused = root.dataset.canFilterUnused === '1';
         canFocuspoint = root.dataset.focuspointAvailable === '1';
 
@@ -4047,11 +4040,6 @@
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
-                            // Prototyp: native Bearbeitung echter Metainfo-Felder (siehe
-                            // rex_api_mediaplace_metainfo_form.php) -- teilt sich die
-                            // .mp3-editor-canvas-Chrome mit dem TinyMCE-Canvas (gleiche
-                            // CSS-Klassen fuer Header/Body), eigene -back/-title/-save
-                            // Klassen fuer die Event-Delegation.
                             '<div class="mp3-editor-canvas" id="mp3-metainfo-canvas" style="display:none">' +
                                 '<div class="mp3-editor-canvas-header">' +
                                     '<button type="button" class="mp3-metainfo-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
@@ -5754,7 +5742,7 @@
             });
         }
 
-        // Prototyp: Metainfo-Canvas events
+        // Metainfo-Canvas events
         var metainfoCanvas = qs('#mp3-metainfo-canvas', overlay);
         if (metainfoCanvas) {
             metainfoCanvas.addEventListener('click', function (e) {
@@ -5764,9 +5752,6 @@
                     commitMetainfoCanvas();
                 }
             });
-            // Enter in einem einzeiligen Feld soll nicht das ganze Formular absenden
-            // (kein <form>-Submit-Handler vorgesehen -- Speichern laeuft ausschliesslich
-            // ueber den expliziten Button/commitMetainfoCanvas()).
             var metainfoForm = qs('#mp3-metainfo-form', metainfoCanvas);
             if (metainfoForm) {
                 metainfoForm.addEventListener('submit', function (e) {
@@ -5833,8 +5818,7 @@
             if (fk) openEditorCanvas(fk, cl, lbl, eng);
         });
 
-        // Prototyp: "Nativ bearbeiten"-Button (echte Metainfo-Felder im
-        // eigenen Canvas, siehe openMetainfoCanvas())
+        // "Nativ bearbeiten"-Button (echte Metainfo-Felder im eigenen Canvas)
         overlay.addEventListener('click', function (e) {
             var metaBtn = e.target.closest('.mp3-metainfo-canvas-open');
             if (!metaBtn) return;
