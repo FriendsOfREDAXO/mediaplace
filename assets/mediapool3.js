@@ -74,6 +74,8 @@
     var editorCanvasTinyId = null;  // TinyMCE editor id in canvas
     var editorCanvasFieldKey = null; // field key being edited
     var editorCanvasClangId = null;  // clang id (null = no translation)
+    var editorCanvasEngine = null;   // 'tinymce' | 'cke5' -- welche Engine der (gemeinsame) Canvas gerade zeigt
+    var ckeCanvasEditor = null;      // aktive CKEditor5-Instanz im Canvas (ueber rex:cke5IsInit eingesammelt)
     // Fokuspunkt-Canvas (Integration mit dem separaten focuspoint-Addon, nur
     // aktiv wenn canFocuspoint -- siehe #mp3-root data-focuspoint-available).
     // Speicherung laeuft bewusst weiter ueber das klassische Metainfo-Feld
@@ -1338,7 +1340,7 @@
         return base;
     }
 
-    function openEditorCanvas(fieldKey, clangId, label) {
+    function openEditorCanvas(fieldKey, clangId, label, engine) {
         if (!overlay) return;
         if (focuspointCanvasOpen) closeFocuspointCanvas();
 
@@ -1352,6 +1354,7 @@
         editorCanvasOpen = true;
         editorCanvasFieldKey = fieldKey;
         editorCanvasClangId = clangId;
+        editorCanvasEngine = engine || 'tinymce';
 
         var content = qs('.mp3-content', overlay);
         content.classList.add('mp3-editor-mode');
@@ -1367,31 +1370,58 @@
         var ta = qs('#mp3-editor-canvas-textarea', canvas);
         ta.value = currentValue;
 
-        // Init TinyMCE
-        if (typeof tinymce !== 'undefined') {
-            if (editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
-                tinymce.get(editorCanvasTinyId).remove();
-            }
+        if ('cke5' === editorCanvasEngine) {
+            // CKEditor5 -- offizielles Integrationsmuster des cke5-Addons
+            // (siehe builder-Addon): Textarea per Klasse/data-Attribut markieren,
+            // cke5_init_ready() aufrufen, Instanz ueber das globale jQuery-Event
+            // "rex:cke5IsInit" einsammeln (dort kommt die fertige Editor-Instanz
+            // mit, kein Registry-Polling noetig).
+            ta.className = 'mp3-editor-canvas-textarea cke5-editor';
+            ta.setAttribute('data-profile', 'default');
             if (!ta.id) ta.id = 'mp3-editor-canvas-textarea';
-            editorCanvasTinyId = ta.id;
+            ckeCanvasEditor = null;
 
-            var opts = getTinyFullOptions();
-            opts.selector = '#' + ta.id;
-            opts.license_key = 'gpl';
-            // Remove conflicting keys
-            delete opts.height;
-            opts.setup = (function (origSetup) {
-                return function (editor) {
-                    if (typeof origSetup === 'function') origSetup(editor);
-                    editor.on('keydown', function (e) {
-                        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-                            e.preventDefault();
-                            commitEditorCanvas();
-                        }
-                    });
-                };
-            })(opts.setup || null);
-            tinymce.init(opts);
+            if (typeof window.cke5_init_ready === 'function' && window.jQuery) {
+                var taId = ta.id;
+                window.jQuery(window).off('rex:cke5IsInit.mp3').on('rex:cke5IsInit.mp3', function (e, editor, uniqueId) {
+                    if (uniqueId === taId) {
+                        ckeCanvasEditor = editor;
+                    }
+                });
+                window.cke5_init_ready(window.jQuery(ta));
+            }
+            // Ohne cke5-Addon: Textarea bleibt ein normales Plain-Text-Feld,
+            // kein Fehler -- gleiche Graceful-Degradation wie beim TinyMCE-Zweig.
+        } else {
+            ta.className = 'mp3-editor-canvas-textarea';
+            ta.removeAttribute('data-profile');
+
+            // Init TinyMCE
+            if (typeof tinymce !== 'undefined') {
+                if (editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
+                    tinymce.get(editorCanvasTinyId).remove();
+                }
+                if (!ta.id) ta.id = 'mp3-editor-canvas-textarea';
+                editorCanvasTinyId = ta.id;
+
+                var opts = getTinyFullOptions();
+                opts.selector = '#' + ta.id;
+                opts.license_key = 'gpl';
+                // Remove conflicting keys
+                delete opts.height;
+                opts.setup = (function (origSetup) {
+                    return function (editor) {
+                        if (typeof origSetup === 'function') origSetup(editor);
+                        editor.on('keydown', function (e) {
+                            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                                e.preventDefault();
+                                commitEditorCanvas();
+                            }
+                        });
+                    };
+                })(opts.setup || null);
+                tinymce.init(opts);
+            }
         }
 
         // Focus canvas
@@ -1401,7 +1431,9 @@
     function commitEditorCanvas() {
         if (!editorCanvasOpen) return;
         var val = '';
-        if (typeof tinymce !== 'undefined' && editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
+        if ('cke5' === editorCanvasEngine && ckeCanvasEditor) {
+            val = ckeCanvasEditor.getData();
+        } else if (typeof tinymce !== 'undefined' && editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
             val = tinymce.get(editorCanvasTinyId).getContent();
         } else {
             var ta = qs('#mp3-editor-canvas-textarea', overlay);
@@ -1434,10 +1466,21 @@
         editorCanvasFieldKey = null;
         editorCanvasClangId = null;
 
-        if (typeof tinymce !== 'undefined' && editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
+        if ('cke5' === editorCanvasEngine) {
+            var ckeTa = qs('#mp3-editor-canvas-textarea', overlay);
+            if (ckeTa && window.jQuery && typeof window.cke5_destroy === 'function') {
+                window.cke5_destroy(window.jQuery(ckeTa));
+            }
+            if (ckeTa) {
+                ckeTa.className = 'mp3-editor-canvas-textarea';
+                ckeTa.removeAttribute('data-profile');
+            }
+            ckeCanvasEditor = null;
+        } else if (typeof tinymce !== 'undefined' && editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
             tinymce.get(editorCanvasTinyId).remove();
         }
         editorCanvasTinyId = null;
+        editorCanvasEngine = null;
 
         var content = qs('.mp3-content', overlay);
         if (content) content.classList.remove('mp3-editor-mode');
@@ -1896,7 +1939,7 @@
                 return;
             }
 
-            if (widget === 'tinymce') {
+            if (widget === 'tinymce' || widget === 'cke5') {
                 if (field.translatable) {
                     var tinyInputs = qsa('.mp3-tiny-canvas-value[data-json-field="' + key + '"][data-clang]', detailPanel);
                     var tinyMap = {};
@@ -5639,7 +5682,8 @@
             var fk = String(btn.getAttribute('data-canvas-field') || '').trim();
             var cl = btn.hasAttribute('data-canvas-clang') ? String(btn.getAttribute('data-canvas-clang')) : null;
             var lbl = String(btn.getAttribute('data-canvas-label') || fk);
-            if (fk) openEditorCanvas(fk, cl, lbl);
+            var eng = String(btn.getAttribute('data-canvas-engine') || 'tinymce');
+            if (fk) openEditorCanvas(fk, cl, lbl, eng);
         });
 
         // Upload via button

@@ -59,6 +59,11 @@ abstract class MetainfoWidget implements MetainfoWidgetInterface
                 'class' => Widgets\TinyMceWidget::class,
                 'fragment' => 'mediaplace/detail_field_body_tinymce.php',
             ],
+            'cke5' => [
+                'label' => 'CKEditor5 (WYSIWYG)',
+                'class' => Widgets\CKE5Widget::class,
+                'fragment' => 'mediaplace/detail_field_body_cke5.php',
+            ],
             'alt' => [
                 'label' => 'ALT-Text (mit dekorativ-Option)',
                 'class' => Widgets\AltFieldWidget::class,
