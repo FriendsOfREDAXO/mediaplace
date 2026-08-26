@@ -182,6 +182,22 @@
             });
         });
 
+        // Details ansehen: oeffnet den Overlay direkt im Detail-Panel des
+        // Mediums (Browse-only, kein Callback -- siehe MP3.openFile()),
+        // ohne die Widget-Auswahl selbst zu veraendern. stopPropagation()
+        // noetig, sonst wuerde der Item-Klick-Handler unten (Single-Modus)
+        // zusaetzlich den Picker zum Ersetzen oeffnen.
+        qsa('.mp3w-item-view', this.previewWrap).forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var fn = this.getAttribute('data-filename');
+                if (fn && typeof MP3 !== 'undefined' && MP3.openFile) {
+                    MP3.openFile(fn);
+                }
+            });
+        });
+
         // Bind item clicks → re-open picker to replace (single) or view
         qsa('.mp3w-item', this.previewWrap).forEach(function (item) {
             item.addEventListener('click', function () {
@@ -210,6 +226,8 @@
             (this.multiple ? ' draggable="true"' : '') + '>';
         html += '<div class="mp3w-item-preview">' + preview + '</div>';
         html += '<div class="mp3w-item-name">' + escAttr(filename) + '</div>';
+        html += '<button type="button" class="mp3w-item-view" data-filename="' + escAttr(filename) + '" title="Details ansehen">' +
+            '<i class="fa-solid fa-magnifying-glass"></i></button>';
         html += '<button type="button" class="mp3w-item-remove" data-filename="' + escAttr(filename) + '" title="Entfernen">' +
             '<i class="fa-solid fa-xmark"></i></button>';
         html += '</div>';
