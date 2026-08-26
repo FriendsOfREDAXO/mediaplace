@@ -66,10 +66,20 @@ class ClassicMetainfoFormatter
         }
 
         if (is_scalar($value) || null === $value) {
-            return nl2br(\rex_escape(null === $value ? '' : (string) $value));
+            $text = null === $value ? '' : (string) $value;
+            if (in_array($fieldDef?->getWidgetType(), ['tinymce', 'cke5'], true)) {
+                $text = self::stripRichTextMarkup($text);
+            }
+            return nl2br(\rex_escape($text));
         }
 
         return nl2br(\rex_escape(json_encode($value, JSON_UNESCAPED_UNICODE) ?: ''));
+    }
+
+    private static function stripRichTextMarkup(string $html): string
+    {
+        $text = preg_replace('#</p>|<br\s*/?>#i', "\n", $html) ?? $html;
+        return trim(strip_tags($text));
     }
 
     /**

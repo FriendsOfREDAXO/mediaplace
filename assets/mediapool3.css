@@ -2948,6 +2948,28 @@ body.rex-theme-dark {
     margin-top: 6px;
 }
 
+#mp3-overlay .mp3-metainfo-native-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin: 8px 0 4px;
+    padding: 8px 14px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-metainfo-native-edit-btn:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
+}
+
 #mp3-overlay .mp3-detail-table {
     width: 100%;
     /* Ohne fixed-Layout ignorieren Browser word-break/overflow-wrap beim
@@ -4074,7 +4096,8 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     flex-shrink: 0;
 }
 
-#mp3-overlay .mp3-editor-canvas-back {
+#mp3-overlay .mp3-editor-canvas-back,
+#mp3-overlay .mp3-metainfo-canvas-back {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -4088,12 +4111,14 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     white-space: nowrap;
 }
 
-#mp3-overlay .mp3-editor-canvas-back:hover {
+#mp3-overlay .mp3-editor-canvas-back:hover,
+#mp3-overlay .mp3-metainfo-canvas-back:hover {
     border-color: var(--mp3-filter-active-border);
     background: var(--mp3-filter-hover-bg);
 }
 
-#mp3-overlay .mp3-editor-canvas-title {
+#mp3-overlay .mp3-editor-canvas-title,
+#mp3-overlay .mp3-metainfo-canvas-title {
     flex: 1;
     font-size: 14px;
     font-weight: 600;
@@ -4103,14 +4128,15 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     white-space: nowrap;
 }
 
-#mp3-overlay .mp3-editor-canvas-save {
+#mp3-overlay .mp3-editor-canvas-save,
+#mp3-overlay .mp3-metainfo-canvas-save {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 6px 16px;
     border: none;
     border-radius: 0;
-    background: var(--mp3-select-btn-bg);
+    background: var(--mp3-confirm-btn-bg);
     color: #fff;
     font-size: 13px;
     font-weight: 600;
@@ -4260,7 +4286,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     padding: 6px 16px;
     border: none;
     border-radius: 0;
-    background: var(--mp3-select-btn-bg);
+    background: var(--mp3-confirm-btn-bg);
     color: #fff;
     font-size: 13px;
     font-weight: 600;

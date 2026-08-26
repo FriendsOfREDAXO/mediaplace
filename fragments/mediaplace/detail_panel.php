@@ -63,6 +63,14 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
             'title' => $info['title'],
         ]); ?>
 
+        <?php if ($featureMetainfoFormPrototype): ?>
+            <button type="button" class="mp3-metainfo-native-edit-btn mp3-metainfo-canvas-open"
+                    data-canvas-file="<?= rex_escape($info['filename']) ?>"
+                    data-canvas-label="<?= rex_escape($info['filename']) ?>">
+                <i class="fa-solid fa-lemon"></i> <?= rex_escape($this->i18n('mediaplace_metainfo_edit_native')) ?>
+            </button>
+        <?php endif; ?>
+
         <?php if ($featureTagging): ?>
             <?php $this->subfragment('mediaplace/detail_field_system_tags.php', [
                 'tags' => $systemTagsNormal,
@@ -104,16 +112,6 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> <?= rex_escape($this->i18n('mediaplace_legacy_edit_classic')) ?>
             </button>
             <div class="mp3-legacy-content" style="display:none"></div>
-        </div>
-    <?php endif; ?>
-
-    <?php if ($featureMetainfoFormPrototype): ?>
-        <div class="mp3-legacy-section">
-            <button type="button" class="mp3-legacy-edit-link mp3-metainfo-canvas-open btn btn-default btn-xs"
-                    data-canvas-file="<?= rex_escape($info['filename']) ?>"
-                    data-canvas-label="<?= rex_escape($info['filename']) ?>">
-                <i class="fa-solid fa-pen-to-square"></i> <?= rex_escape($this->i18n('mediaplace_metainfo_edit_native')) ?>
-            </button>
         </div>
     <?php endif; ?>
 

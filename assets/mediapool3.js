@@ -4411,7 +4411,14 @@
 
             if ((e.key === 'f' || e.key === 'F') && overlay.classList.contains('mp3-open')) {
                 var active = document.activeElement;
-                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) {
+                var isEditable = active && (
+                    active.tagName === 'INPUT' ||
+                    active.tagName === 'TEXTAREA' ||
+                    active.tagName === 'SELECT' ||
+                    active.tagName === 'IFRAME' ||
+                    active.isContentEditable
+                );
+                if (isEditable) {
                     return;
                 }
                 e.preventDefault();
