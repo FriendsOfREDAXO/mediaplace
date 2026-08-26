@@ -185,8 +185,9 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
         $filename = $media->getFileName();
 
         // System-Tags mit "collection:"-Praefix sind Sammlungs-Mitgliedschaften
-        // (siehe COLLECTION_TAG_PREFIX in mediapool3.js) -- werden im Tag-Editor
-        // nicht angezeigt, aber als Namensliste in der Info-Tabelle gebraucht.
+        // (siehe SystemTagManager::COLLECTION_PREFIX, gespiegelt in COLLECTION_TAG_PREFIX
+        // in mediapool3.js) -- werden im Tag-Editor nicht angezeigt, aber als
+        // Namensliste in der Info-Tabelle gebraucht.
         $normalTags = [];
         $collectionNames = [];
         foreach ($systemTags as $tag) {
@@ -194,8 +195,8 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
             if ('' === $name) {
                 continue;
             }
-            if (0 === stripos($name, 'collection:')) {
-                $collName = trim((string) preg_replace('/^collection\s*:\s*/i', '', $name));
+            if (\FriendsOfRedaxo\Mediaplace\SystemTagManager::isCollectionTagName($name)) {
+                $collName = trim(mb_substr($name, mb_strlen(\FriendsOfRedaxo\Mediaplace\SystemTagManager::COLLECTION_PREFIX)));
                 if ('' !== $collName) {
                     $collectionNames[] = mb_substr($collName, 0, 60);
                 }

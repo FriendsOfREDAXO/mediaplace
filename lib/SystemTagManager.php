@@ -8,6 +8,8 @@ namespace FriendsOfRedaxo\Mediaplace;
  */
 class SystemTagManager
 {
+    public const COLLECTION_PREFIX = 'collection:';
+
     public static function ensureSchema(): void
     {
         \rex_sql_table::get(\rex::getTable('mediaplace_tags'))
@@ -150,6 +152,91 @@ class SystemTagManager
         }
 
         return $map;
+    }
+
+    /**
+     * Alle Dateien mit einem bestimmten Tag (exakter Name).
+     *
+     * @return list<string>
+     */
+    public static function getFilenamesForTag(string $tagName): array
+    {
+        self::ensureSchema();
+
+        $name = self::normalizeName($tagName);
+        if ('' === $name) {
+            return [];
+        }
+
+        $sql = \rex_sql::factory();
+        $rows = $sql->getArray(
+            'SELECT filename FROM ' . \rex::getTable('mediaplace_media_tags') . ' WHERE tag_name = :tag ORDER BY filename',
+            ['tag' => $name],
+        );
+
+        $filenames = [];
+        foreach ($rows as $row) {
+            $filename = trim((string) ($row['filename'] ?? ''));
+            if ('' !== $filename) {
+                $filenames[] = $filename;
+            }
+        }
+
+        return $filenames;
+    }
+
+    /**
+     * Alle Dateien einer Sammlung. Sammlungen sind Tags mit "collection:"-Praefix
+     * (siehe COLLECTION_PREFIX) -- der Praefix wird hier automatisch ergaenzt.
+     *
+     * @return list<string>
+     */
+    public static function getFilenamesForCollection(string $collectionName): array
+    {
+        $name = trim($collectionName);
+        if ('' === $name) {
+            return [];
+        }
+
+        return self::getFilenamesForTag(self::COLLECTION_PREFIX . $name);
+    }
+
+    public static function isCollectionTagName(string $tagName): bool
+    {
+        return 0 === stripos(trim($tagName), self::COLLECTION_PREFIX);
+    }
+
+    /**
+     * Katalog ohne Sammlungen (siehe getCollections() fuer die Gegenseite).
+     *
+     * @return array<int, array{name:string,color:string}>
+     */
+    public static function getTags(): array
+    {
+        return array_values(array_filter(
+            self::getCatalog(),
+            static fn (array $tag): bool => !self::isCollectionTagName($tag['name']),
+        ));
+    }
+
+    /**
+     * Sammlungsnamen aus dem Katalog, ohne "collection:"-Praefix.
+     *
+     * @return array<int, array{name:string,color:string}>
+     */
+    public static function getCollections(): array
+    {
+        $out = [];
+        foreach (self::getCatalog() as $tag) {
+            if (!self::isCollectionTagName($tag['name'])) {
+                continue;
+            }
+            $out[] = [
+                'name' => trim(mb_substr($tag['name'], mb_strlen(self::COLLECTION_PREFIX))),
+                'color' => $tag['color'],
+            ];
+        }
+        return $out;
     }
 
     /**

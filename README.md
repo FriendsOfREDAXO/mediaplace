@@ -137,28 +137,24 @@ Wichtig: `med_json_data` ist ein MediaPlace-eigenes Feld und taucht **nicht** in
 
 System-Tags und Sammlungen liegen in zwei eigenen Tabellen, nicht im `api`-Addon. Eine Sammlung ist dabei technisch nur ein Tag mit `collection:`-Präfix im Namen (`collection:Sommerkampagne`), angezeigt/verwaltet wird das über dasselbe Tag-Feld im Detail-Panel.
 
-Einen fertigen "gib mir alle Dateien mit Tag X"-API-Endpunkt gibt es nicht – `?rex-api-call=mediaplace_tags` liest Tags nur pro (bekannter) Datei, keine Rückwärtssuche. Serverseitig (eigenes AddOn, Modul, Cronjob) direkt per SQL:
+Einen fertigen "gib mir alle Dateien mit Tag X"-API-Endpunkt gibt es nicht – `?rex-api-call=mediaplace_tags` liest Tags nur pro (bekannter) Datei, keine Rückwärtssuche. Serverseitig (eigenes AddOn, Modul, Cronjob) übernimmt `\FriendsOfRedaxo\Mediaplace\SystemTagManager` das:
 
 ```php
+use FriendsOfRedaxo\Mediaplace\SystemTagManager;
+
 // Alle Dateien mit einem bestimmten Tag
-$filenames = rex_sql::factory()->getArray(
-    'SELECT filename FROM ' . rex::getTable('mediaplace_media_tags') . ' WHERE tag_name = :tag ORDER BY filename',
-    ['tag' => 'Sommerkampagne'],
-);
+$filenames = SystemTagManager::getFilenamesForTag('Sommerkampagne');
 
-// Alle Dateien einer Sammlung (Praefix beachten)
-$filenames = rex_sql::factory()->getArray(
-    'SELECT filename FROM ' . rex::getTable('mediaplace_media_tags') . ' WHERE tag_name = :tag ORDER BY filename',
-    ['tag' => 'collection:Projekt X'],
-);
+// Alle Dateien einer Sammlung (Praefix wird automatisch ergaenzt)
+$filenames = SystemTagManager::getFilenamesForCollection('Projekt X');
 
-foreach ($filenames as $row) {
-    $media = rex_media::get($row['filename']);
+foreach ($filenames as $filename) {
+    $media = rex_media::get($filename);
     // ...
 }
 ```
 
-Kompletten Tag-/Sammlungs-Katalog (alle je vergebenen Namen + Farbe) liefert `\FriendsOfRedaxo\Mediaplace\SystemTagManager::getCatalog()` bzw. GET `?rex-api-call=mediaplace_tags` ohne `filename`/`filenames` (Antwort-Feld `catalog`) – Sammlungen darin am `collection:`-Präfix erkennen, echte Tags sind alles andere.
+Weitere Methoden dort: `getCatalog()` liefert den kompletten Tag-/Sammlungs-Katalog (Name + Farbe, ungetrennt), `getTags()`/`getCollections()` filtern ihn in echte Tags bzw. Sammlungen (bei Sammlungen bereits ohne `collection:`-Präfix), `isCollectionTagName(string $name)` prüft einen einzelnen Namen. Über die API entspricht das GET `?rex-api-call=mediaplace_tags` ohne `filename`/`filenames` (Antwort-Feld `catalog`, ungefiltert wie `getCatalog()`).
 
 ### Eigene Feldtypen registrieren
 
