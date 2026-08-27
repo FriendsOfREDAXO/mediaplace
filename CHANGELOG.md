@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.10 – 2026-08-28
+
+### Bugfix
+- Eine leere Unterkategorie innerhalb einer freigegebenen Kategorie wurde als befüllt angezeigt und zeigte Dateien aus „Alle Medien" – Ursache war eine Rechte-Lücke im `api`-Addon (`filter[permitted_only]` prüfte beim Durchsuchen einer Kategorie nur exakten Treffer, nicht Vorfahren, siehe [api#79](https://github.com/FriendsOfREDAXO/api/issues/79)/dortiger Fix). Beim Fehlschlagen fiel MediaPlace automatisch auf „Alle Medien" zurück, aktualisierte dabei aber Breadcrumb und Sidebar-Markierung nicht – die Kategorie blieb optisch ausgewählt, obwohl bereits eine andere Ansicht geladen war. Breadcrumb/Sidebar werden jetzt beim automatischen Ausweichen korrekt mit aktualisiert, als zusätzliche Absicherung unabhängig vom eigentlichen Fix im `api`-Addon.
+
 ## Version 1.3.9 – 2026-08-28
 
 ### Bugfix

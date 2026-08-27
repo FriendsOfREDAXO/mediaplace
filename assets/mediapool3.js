@@ -3163,6 +3163,17 @@
                     // (kein Fetch, kein refreshDisplay(), Grid haengt dauerhaft
                     // im Spinner-Zustand fest). Deshalb hier vorab freigeben.
                     mediaLoading = false;
+                    // Breadcrumb/Sidebar synchron nachziehen: navigateToCategory()
+                    // hat sie schon VOR diesem fehlgeschlagenen loadFiles()-Aufruf
+                    // auf die urspruenglich gewaehlte (nicht erlaubte) Kategorie
+                    // gesetzt -- ohne das hier zu korrigieren, zeigen sie weiterhin
+                    // die alte Kategorie, waehrend das Grid bereits "Alle Medien"
+                    // laedt (sah aus wie: gewaehlte Kategorie enthaelt Dateien, die
+                    // eigentlich aus "Alle Medien" stammen).
+                    currentCat = -1;
+                    localStorage.setItem('mp3_cat', '-1');
+                    buildBreadcrumb(-1);
+                    updateSidebarActiveState();
                     loadFiles(-1, true);
                     return;
                 }
