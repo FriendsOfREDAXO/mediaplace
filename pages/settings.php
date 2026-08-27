@@ -29,6 +29,24 @@ $field = $form->addCheckboxField('disable_collections');
 $field->addOption(rex_i18n::msg('mediaplace_settings_feature_collections_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_collections_hint'));
 
+$form->addFieldset(rex_i18n::msg('mediaplace_settings_upload_legend'));
+
+$field = $form->addCheckboxField('enable_upload_resize');
+$field->addOption(rex_i18n::msg('mediaplace_settings_upload_resize_label'), 1);
+$field->setNotice(rex_i18n::msg('mediaplace_settings_upload_resize_hint'));
+
+$field = $form->addInputField('number', 'upload_resize_width', null, [
+    'class' => 'form-control',
+    'min' => '100',
+]);
+$field->setLabel(rex_i18n::msg('mediaplace_settings_upload_resize_width'));
+
+$field = $form->addInputField('number', 'upload_resize_height', null, [
+    'class' => 'form-control',
+    'min' => '100',
+]);
+$field->setLabel(rex_i18n::msg('mediaplace_settings_upload_resize_height'));
+
 $fragment = new rex_fragment();
 $fragment->setVar('class', 'edit', false);
 $fragment->setVar('title', rex_i18n::msg('mediaplace_settings_menu_legend'));

@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 1.2.0 – 2026-08-27
+
+### Bilder beim Upload verkleinern
+- Neue Einstellung (Upload, standardmäßig aus): Bilder werden vor dem Hochladen im Browser per Canvas auf eine konfigurierbare maximale Breite/Höhe herunterskaliert – Seitenverhältnis bleibt erhalten, kleinere Bilder werden nie vergrößert, Dateiformat bleibt unverändert.
+- GIFs (könnten animiert sein) und SVGs (kein Rasterbild) werden dabei nie angefasst.
+- Funktioniert für alle Upload-Wege (Button, Drag & Drop, Ordner-Upload, Paste) sowie weiterhin mit dem Chunk-Upload für große Dateien; schlägt die Skalierung fehl, wird die Originaldatei hochgeladen.
+
 ## Version 1.1.1 – 2026-08-27
 
 ### Metadaten bearbeiten

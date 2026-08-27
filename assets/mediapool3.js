@@ -62,7 +62,9 @@
     // Feature-Toggles (Einstellungsseite), gelesen von #mp3-root in build() --
     // gate Tagging-UI (System-Tags-Feld, Sidebar-Tag-Filter) bzw. Sammlungen-UI
     // (Sidebar-Sektion, Merken-Button, Drag&Drop) unabhaengig voneinander.
-    var features = { tagging: true, collections: true, metainfoEditing: false };
+    var features = { tagging: true, collections: true, metainfoEditing: false, uploadResize: false };
+    var uploadResizeWidth = 2000;
+    var uploadResizeHeight = 2000;
     var activeCollectionId = null;
     var darkModeEnabled = false; // true = dark mode, false = light mode
     var mediaLinkPickFieldKey = null; // active media_link field key while picking from file grid
@@ -3808,6 +3810,69 @@
         });
     }
 
+    // GIFs (koennten animiert sein) und SVGs (kein Rasterbild) werden nie
+    // angefasst, auch bei aktivem Resize.
+    function isResizableImageType(type) {
+        return !!type && 0 === type.indexOf('image/') && 'image/gif' !== type && 'image/svg+xml' !== type;
+    }
+
+    // Skaliert eine Bilddatei im Browser auf maxWidth/maxHeight herunter (Seiten-
+    // verhaeltnis erhalten, kein Hochskalieren), Dateiformat bleibt durch
+    // canvas.toBlob(cb, file.type) unveraendert. Bei jedem Fehlschlag (Decode-
+    // Fehler, canvas.toBlob liefert nichts) wird die Originaldatei durchgereicht,
+    // der Upload darf daran nie scheitern.
+    function resizeImageFile(file, maxWidth, maxHeight) {
+        return new Promise(function (resolve) {
+            var url = URL.createObjectURL(file);
+            var img = new Image();
+            img.onload = function () {
+                URL.revokeObjectURL(url);
+                var w = img.naturalWidth;
+                var h = img.naturalHeight;
+                if (!w || !h || (w <= maxWidth && h <= maxHeight)) {
+                    resolve(file);
+                    return;
+                }
+                var ratio = Math.min(maxWidth / w, maxHeight / h);
+                var targetW = Math.max(1, Math.round(w * ratio));
+                var targetH = Math.max(1, Math.round(h * ratio));
+                var canvas = document.createElement('canvas');
+                canvas.width = targetW;
+                canvas.height = targetH;
+                var ctx = canvas.getContext('2d');
+                if (!ctx) { resolve(file); return; }
+                ctx.drawImage(img, 0, 0, targetW, targetH);
+                canvas.toBlob(function (blob) {
+                    if (!blob) { resolve(file); return; }
+                    var resized;
+                    try {
+                        resized = new File([blob], file.name, { type: file.type, lastModified: file.lastModified });
+                    } catch (e) {
+                        resized = blob;
+                    }
+                    // Ordner-Upload haengt die Ziel-Kategorie als Eigenschaft an die
+                    // File-Instanz (siehe doFolderUpload()) -- beim Ersetzen mitnehmen.
+                    if (file.__mp3CategoryId != null) {
+                        resized.__mp3CategoryId = file.__mp3CategoryId;
+                    }
+                    resolve(resized);
+                }, file.type);
+            };
+            img.onerror = function () {
+                URL.revokeObjectURL(url);
+                resolve(file);
+            };
+            img.src = url;
+        });
+    }
+
+    function maybeResizeUploadFile(file) {
+        if (!features.uploadResize || !isResizableImageType(file.type)) {
+            return Promise.resolve(file);
+        }
+        return resizeImageFile(file, uploadResizeWidth, uploadResizeHeight);
+    }
+
     function startUpload(files, catId, assignToCollectionName) {
 
         var total = files.length;
@@ -3884,7 +3949,10 @@
                 var st = itemEl.querySelector('.mp3-upload-item-status');
                 if (st) st.textContent = Math.round((sent / total) * 100) + '%';
             };
-            apiUpload(uploadFile, uploadCatId, onFileProgress)
+            maybeResizeUploadFile(uploadFile)
+                .then(function (fileToSend) {
+                    return apiUpload(fileToSend, uploadCatId, onFileProgress);
+                })
                 .then(function (resp) {
                     done++;
                     // API returns { filename: '...' } — use that (server may rename)
@@ -3976,6 +4044,9 @@
         features.tagging = !root.dataset.featureTagging || root.dataset.featureTagging === '1';
         features.collections = !root.dataset.featureCollections || root.dataset.featureCollections === '1';
         features.metainfoEditing = root.dataset.featureMetainfoEditing === '1';
+        features.uploadResize = root.dataset.featureUploadResize === '1';
+        uploadResizeWidth = parseInt(root.dataset.uploadResizeWidth, 10) || 2000;
+        uploadResizeHeight = parseInt(root.dataset.uploadResizeHeight, 10) || 2000;
         canFilterUnused = root.dataset.canFilterUnused === '1';
         canFocuspoint = root.dataset.focuspointAvailable === '1';
 

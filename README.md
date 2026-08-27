@@ -54,6 +54,10 @@ Falls doch lieber der alte Medienpool gewünscht ist: unter **MediaPlace → Ein
 
 Ebenfalls in den Einstellungen: „Tagging (System-Tags) deaktivieren“ und „Sammlungen deaktivieren“ blenden die jeweiligen Bereiche unabhängig voneinander aus. Bereits gespeicherte Daten gehen dabei nicht verloren, nur die Bedienoberfläche verschwindet.
 
+### Bilder beim Upload verkleinern
+
+Unter **MediaPlace → Einstellungen → Upload** lässt sich „Bilder beim Upload verkleinern“ aktivieren (standardmäßig aus), mit maximaler Breite/Höhe in Pixeln. Zu große Bilder werden im Browser per Canvas herunterskaliert, bevor sie hochgeladen werden – Seitenverhältnis bleibt erhalten, kleinere Bilder werden nie vergrößert, und das Dateiformat bleibt unverändert. GIFs (könnten animiert sein) und SVGs (kein Rasterbild) werden dabei nie angefasst.
+
 ### Als Eingabefeld in Modulen/Formularen nutzen
 
 ```html
