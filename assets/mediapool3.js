@@ -759,6 +759,19 @@
     }
 
     // ---- Filter / Sort ----
+    // Endungslisten fuer den serverseitigen filter[types]-Parameter (api-Addon
+    // Media.php bzw. rex_api_mediaplace_media_list.php Fallback, beide per
+    // Dateiendung statt MIME-Type). "other" hat bewusst keine Liste -- als
+    // "alles ausser den anderen vier" gibt es dafuer keinen server-seitigen
+    // Ausdruck (kein NOT-IN), bleibt daher rein client-seitig gefiltert wie
+    // bisher (siehe applyTypeFilter()/loadFiles()).
+    var TYPE_EXTENSIONS = {
+        images: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'bmp', 'tif', 'tiff', 'heic', 'heif'],
+        videos: ['mp4', 'webm', 'ogv', 'ogg', 'mov', 'm4v', 'mpeg', 'mpg'],
+        audio: ['mp3', 'wav', 'flac', 'aac', 'm4a', 'oga'],
+        documents: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'txt', 'csv', 'rtf']
+    };
+
     var FILTER_MAP = {
         all: null,
         images: function (f) { return /^image\//i.test(f.filetype); },
@@ -872,27 +885,43 @@
 
     function updateFilterCounts() {
         if (!overlay) return;
-        var base = applyCollectionFilter(lastLoadedFiles.slice());
         var selectedTags = Object.keys(currentTagFilters);
-        if (selectedTags.length) {
-            base = base.filter(function (f) {
-                var tags = Array.isArray(f.system_tags) ? f.system_tags : [];
-                for (var i = 0; i < tags.length; i++) {
-                    var n = tags[i] ? String(tags[i].name || '') : '';
-                    if (n && currentTagFilters[n]) {
-                        return true;
+        // Echte Server-Zaehler (fetchTypeCounts()) sind kategorie-/such-exakt,
+        // kennen aber keine Tags (siehe dortiger Kommentar) -- bei aktivem
+        // Tag-Filter faellt der Zaehler deshalb auf die alte, rein
+        // client-seitige Zaehlung innerhalb der bereits geladenen Seite(n)
+        // zurueck (gleiche Einschraenkung wie vorher, jetzt nur noch auf
+        // diesen Fall begrenzt statt immer).
+        var useServerCounts = typeCounts && typeCountsKey === currentTypeCountsKey() && !selectedTags.length;
+
+        var base = null;
+        if (!useServerCounts) {
+            base = applyCollectionFilter(lastLoadedFiles.slice());
+            if (selectedTags.length) {
+                base = base.filter(function (f) {
+                    var tags = Array.isArray(f.system_tags) ? f.system_tags : [];
+                    for (var i = 0; i < tags.length; i++) {
+                        var n = tags[i] ? String(tags[i].name || '') : '';
+                        if (n && currentTagFilters[n]) {
+                            return true;
+                        }
                     }
-                }
-                return false;
-            });
+                    return false;
+                });
+            }
         }
+
         var btns = qsa('.mp3-filter-btn', overlay);
         btns.forEach(function (btn) {
             var type = btn.getAttribute('data-filter');
-            var filterFn = FILTER_MAP[type];
-            var count = filterFn ? base.filter(filterFn).length : base.length;
             var badge = btn.querySelector('.mp3-filter-count');
-            if (badge) badge.textContent = count;
+            if (!badge) return;
+            if (useServerCounts && null !== typeCounts[type] && undefined !== typeCounts[type]) {
+                badge.textContent = typeCounts[type];
+                return;
+            }
+            var filterFn = FILTER_MAP[type];
+            badge.textContent = filterFn ? base.filter(filterFn).length : base.length;
         });
     }
 
@@ -1111,7 +1140,12 @@
             }
         });
         updateFilterDropdownLabel();
-        refreshDisplay();
+        // Server neu abfragen statt nur die bereits geladene(n) Seite(n)
+        // umzusortieren -- lastLoadedFiles enthaelt sonst evtl. gar keine
+        // Treffer des neu gewaehlten Typs (siehe buildMediaEndpoint(),
+        // filter[types]). currentCat aendert sich dabei nicht, nur der
+        // Typ-Filter -- loadFiles(reset=true) baut trotzdem die Liste neu auf.
+        loadFiles(currentCat, true);
     }
 
     // Analog zu applyTypeFilter(): gemeinsame Logik fuer Pill-Button und
@@ -2806,7 +2840,14 @@
         size_asc: 'filesize:asc'
     };
 
-    function buildMediaEndpoint() {
+    // Gemeinsamer Filter-Anteil (Kategorie/Suche/Rechte) fuer die eigentliche
+    // Medienliste UND fetchTypeCounts() -- beide muessen exakt denselben
+    // Ausschnitt beschreiben, sonst passen Zaehler und geladene Treffer nicht
+    // zusammen. Tags bleiben bewusst aussen vor: sie sind MediaPlace's eigenes
+    // System (rex_mediaplace_media_tags), die Medienliste (weder api-Addon
+    // noch der eigene Fallback) kennt sie nicht -- Tag-Filterung bleibt
+    // client-seitig auf den bereits geladenen Dateien (siehe applyFilterSort()).
+    function buildBaseFilterParams() {
         // filter[term] durchsucht serverseitig Dateiname UND Titel (inkl.
         // "quoted phrases" und type:jpg,png) -- api-Addon CHANGELOG 1.3 (#64).
         // filter[permitted_only]=1: der klassische Medienpool gibt jedem
@@ -2816,18 +2857,99 @@
         // Kategorie-Rechtefilterung -- ohne dieses Flag wuerde ab der Version,
         // die den Fix bringt, sonst still wieder der permissive Default
         // greifen (data-api-media-list-secure="1", kein Fallback mehr aktiv).
-        var endpoint = 'media?per_page=' + mediaPerPage + '&page=' + mediaPage + '&filter[permitted_only]=1';
+        var params = '&filter[permitted_only]=1';
         // catId -1 = alle Medien (kein Kategorie-Filter)
         if (currentCat >= 0) {
-            endpoint += '&filter[category_id]=' + currentCat;
+            params += '&filter[category_id]=' + currentCat;
         }
         if (mediaQuery) {
-            endpoint += '&filter[term]=' + encodeURIComponent(mediaQuery);
+            params += '&filter[term]=' + encodeURIComponent(mediaQuery);
+        }
+        return params;
+    }
+
+    function buildMediaEndpoint() {
+        var endpoint = 'media?per_page=' + mediaPerPage + '&page=' + mediaPage + buildBaseFilterParams();
+        // Harter Server-Filter analog zum Typ-Tab -- "other" hat keine
+        // Endungsliste (siehe TYPE_EXTENSIONS-Kommentar) und bleibt daher wie
+        // bisher rein client-seitig gefiltert.
+        if (TYPE_EXTENSIONS[currentFilter]) {
+            endpoint += '&filter[types]=' + encodeURIComponent(TYPE_EXTENSIONS[currentFilter].join(','));
         }
         if (SORT_API_MAP[currentSort]) {
             endpoint += '&sort=' + encodeURIComponent(SORT_API_MAP[currentSort]);
         }
         return endpoint;
+    }
+
+    // ---- Typ-Zaehler (Filter-Tabs) ----
+    // lastLoadedFiles enthaelt nur die bereits geladene(n) Seite(n) -- ein
+    // reiner Client-Count daraus (fruehere Implementierung) zeigt bei grossen
+    // Kategorien falsche/0-Zaehler fuer Typen, die noch nicht mitgeladen
+    // wurden. Holt stattdessen pro Typ die echte Gesamtzahl vom Server
+    // (per_page=1, nur meta.total wird gebraucht) -- 5 sehr leichte Requests,
+    // gecacht ueber typeCountsKey (Kategorie+Suche), damit ein reiner
+    // Typ-Tab-Wechsel oder Tag-Filter keinen erneuten Abruf ausloest.
+    var typeCounts = null; // { all, images, videos, audio, documents, other }
+    var typeCountsKey = null;
+    var typeCountsRequestId = 0;
+
+    function currentTypeCountsKey() {
+        return currentCat + '|' + mediaQuery;
+    }
+
+    function fetchTypeCounts() {
+        var key = currentTypeCountsKey();
+        typeCountsKey = key;
+        var requestId = ++typeCountsRequestId;
+        var base = buildBaseFilterParams();
+
+        function fetchCount(typeKey) {
+            var endpoint = 'media?per_page=1&page=1' + base;
+            if (TYPE_EXTENSIONS[typeKey]) {
+                endpoint += '&filter[types]=' + encodeURIComponent(TYPE_EXTENSIONS[typeKey].join(','));
+            }
+            return apiFetchMediaList(endpoint)
+                .then(function (payload) {
+                    var meta = (payload && payload.meta) ? payload.meta : {};
+                    return parseInt(meta.total, 10) || 0;
+                })
+                .catch(function () { return null; });
+        }
+
+        Promise.all([
+            fetchCount('all'),
+            fetchCount('images'),
+            fetchCount('videos'),
+            fetchCount('audio'),
+            fetchCount('documents')
+        ]).then(function (results) {
+            if (requestId !== typeCountsRequestId || key !== currentTypeCountsKey()) return;
+            var all = results[0];
+            var images = results[1];
+            var videos = results[2];
+            var audio = results[3];
+            var documents = results[4];
+            if (null === all) {
+                typeCounts = null;
+                return;
+            }
+            var known = [images, videos, audio, documents].every(function (v) { return null !== v; });
+            typeCounts = {
+                all: all,
+                images: images,
+                videos: videos,
+                audio: audio,
+                documents: documents,
+                // "other" hat keinen eigenen Server-Ausdruck (kein NOT-IN),
+                // daher per Subtraktion -- kann leicht daneben liegen, wenn
+                // eine Datei durch keine der vier Listen erfasst wird UND
+                // gleichzeitig ein Zaehl-Request fehlschlug, ist dann aber
+                // schon durch "known" abgefangen (undefined statt falscher Wert).
+                other: known ? Math.max(0, all - images - videos - audio - documents) : null
+            };
+            updateFilterCounts();
+        });
     }
 
     // visibleFiles: die tatsaechlich sichtbaren (gefilterten) Dateiobjekte,
@@ -2919,6 +3041,13 @@
                 grid.className = 'mp3-grid';
                 grid.innerHTML = '<div style="padding:40px;text-align:center;">' +
                     '<i class="fa-solid fa-spinner fa-spin" style="font-size:2em;color:#3c4d60;"></i></div>';
+            }
+            // Nur neu abrufen, wenn sich Kategorie/Suche seit dem letzten
+            // Abruf geaendert haben -- ein reiner Typ-Tab-Wechsel (ebenfalls
+            // ein reset=true-Reload, siehe applyTypeFilter()) hat denselben
+            // Schluessel und braucht keinen erneuten Zaehl-Request.
+            if (typeCountsKey !== currentTypeCountsKey()) {
+                fetchTypeCounts();
             }
         }
 

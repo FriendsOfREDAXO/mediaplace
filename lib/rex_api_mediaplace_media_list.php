@@ -20,10 +20,12 @@
  * werden -- RUECKBAU-TODO, kein dauerhafter Bestandteil von MediaPlace.
  *
  * Unterstuetzt bewusst nur die Parameter, die mediapool3.js tatsaechlich
- * schickt (buildMediaEndpoint()): filter[category_id], filter[term], page,
- * per_page. Freitextsuche spiegelt dieselbe Semantik wie api's Media.php
- * (Anfuehrungszeichen gruppieren, "type:jpg,png" filtert die Dateiendung),
- * damit sich das Verhalten fuer den Nutzer durch den Fallback nicht aendert.
+ * schickt (buildMediaEndpoint()/fetchTypeCounts()): filter[category_id],
+ * filter[term], filter[types], page, per_page. Freitextsuche spiegelt
+ * dieselbe Semantik wie api's Media.php (Anfuehrungszeichen gruppieren,
+ * "type:jpg,png" filtert die Dateiendung), filter[types] ebenso
+ * (extensionExpression() IN (...)), damit sich das Verhalten fuer den
+ * Nutzer durch den Fallback nicht aendert.
  *
  * GET /api/backend/mediaplace_media_list?filter[category_id]=&filter[term]=&page=&per_page=
  */
@@ -62,6 +64,7 @@ class rex_api_mediaplace_media_list extends rex_api_function
         $filter = rex_request('filter', 'array', []);
         $categoryId = isset($filter['category_id']) && '' !== $filter['category_id'] ? (int) $filter['category_id'] : null;
         $term = isset($filter['term']) ? trim((string) $filter['term']) : '';
+        $types = isset($filter['types']) ? trim((string) $filter['types']) : '';
 
         if (null !== $categoryId && !\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($categoryId)) {
             rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
@@ -82,6 +85,21 @@ class rex_api_mediaplace_media_list extends rex_api_function
         if (null !== $categoryId) {
             $sqlWhere[':category_id'] = 'category_id = :category_id';
             $sqlParams[':category_id'] = $categoryId;
+        }
+
+        // Gleiche Semantik wie api/lib/RoutePackage/Media.php::handleMediaList()
+        // filter[types] (extensionExpression() IN (...)) -- genutzt von
+        // mediapool3.js's Typ-Filter-Tabs/fetchTypeCounts() fuer harte
+        // Endungs-Filterung statt reinem Client-Nachfiltern.
+        if ('' !== $types) {
+            $sql = rex_sql::factory();
+            $extensions = array_values(array_filter(array_map(
+                static fn (string $t): string => strtolower(trim($t)),
+                explode(',', $types),
+            ), static fn (string $t): bool => '' !== $t));
+            if ([] !== $extensions) {
+                $sqlWhere[':types'] = 'LOWER(RIGHT(filename, LOCATE(".", REVERSE(filename))-1)) IN (' . $sql->in($extensions) . ')';
+            }
         }
 
         // Gleiche Freitextsuche-Semantik wie api/lib/RoutePackage/Media.php::handleMediaList():

@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.7 – 2026-08-27
+
+### Bugfix
+- Die Zähler an den Typ-Filter-Tabs ("Bilder", "Dokumente", ...) zeigten bisher nur, wie viele der bereits *geladenen* Dateien passen – bei großen Kategorien stand dort z.B. "Dokumente 0", obwohl reichlich PDFs existierten, nur eben noch nicht auf der ersten geladenen Seite dabei waren. Ein Klick auf einen Typ-Tab lud außerdem nicht gezielt nach, sondern filterte nur innerhalb der schon geladenen Treffer. Beide Zähler und das Laden nutzen jetzt serverseitige `filter[types]`-Abfragen (Kategorie + Suche exakt berücksichtigt) und zeigen/laden die echte Gesamtzahl. Tag-Filter bleiben bewusst client-seitig (keine serverseitige Tag-Filterung in der Medienliste vorhanden) – bei aktivem Tag-Filter fallen die Zähler auf die bisherige Zählung innerhalb der geladenen Seite zurück.
+
 ## Version 1.3.6 – 2026-08-27
 
 ### Neu

@@ -184,6 +184,39 @@ rex_extension::register('MEDIAPLACE_WIDGET_TYPES', function (rex_extension_point
 
 `MyWidget` implementiert nur `normalizeValue(mixed $value): mixed` fürs Speichern; das Fragment bekommt `$field`, `$value`, `$info` und `$clangs` und liefert nur den Feldkörper (die Hülle kommt vom Dispatcher). Passt der Wert nicht ins generische Einzelfeld-Schema, lässt sich das Auslesen beim Speichern per `MP3.registerFieldCollector(widgetType, function (key, panelEl) { return value; })` anpassen.
 
+### Eigenes Backend-Theme mit MediaPlace kombinieren
+
+Das Overlay ist komplett über CSS-Custom-Properties (`--mp3-*`) eingefärbt, keine Farbe steht hart im Markup oder JS. Ob und wie es auf Dark Mode reagiert, entscheiden vier Blöcke in `assets/mediapool3.css`:
+
+```css
+:root { --mp3-modal-bg: #fff; /* ... */ }                 /* Light-Default */
+
+body.rex-theme-dark { --mp3-modal-bg: #1a202c; /* ... */ } /* manuell gewähltes Dark-Theme */
+
+@media (prefers-color-scheme: dark) {
+    body.rex-has-theme:not(.rex-theme-light) { --mp3-modal-bg: #1a202c; /* ... */ }
+}                                                            /* System-Präferenz, sofern nicht explizit "Hell" gewählt */
+
+#mp3-overlay.mp3-dark-mode { --mp3-modal-bg: #1a202c; /* ... */ } /* eigener Dark-Mode-Toggle im Overlay, unabhängig vom Backend-Theme */
+```
+
+`rex-theme-dark` / `rex-theme-light` / `rex-has-theme` sind **REDAXOs eigene Backend-Konvention** (gesetzt in `core/layout/top.php`, ausgewertet z. B. vom mitgelieferten `be_style`-Addon) – kein MediaPlace-Spezifikum. Setzt euer eigenes Backend-Theme-Addon beim manuellen Umschalten auf Dark ebenfalls die Klasse `rex-theme-dark` auf `<body>` (statt eines eigenen Mechanismus), greift MediaPlaces Dark Mode automatisch mit, ganz ohne Anpassung hier.
+
+Soll MediaPlace stattdessen eine andere Dark-Palette als die eingebaute bekommen, oder nutzt euer Theme eine abweichende Erkennung (eigene Body-Klasse, eigener Selector), reicht es, die betroffenen `--mp3-*`-Variablen im eigenen, **nach** `mediaplace/assets/mediapool3.css` geladenen Stylesheet neu zu definieren:
+
+```css
+/* eigenes Backend-Theme-AddOn, eigene CSS-Datei, nach MediaPlace geladen */
+body.mein-theme-dark {
+    --mp3-modal-bg: #101010;
+    --mp3-header-bg: #181818;
+    /* weitere --mp3-*-Variablen nach Bedarf, siehe :root-Block in mediapool3.css für die vollständige Liste */
+}
+```
+
+Die vollständige Variablenliste steht am Anfang von `assets/mediapool3.css` im `:root`-Block (Light-Defaults) – alle vier Blöcke definieren dieselben Namen, nur mit anderen Werten.
+
+Wichtig: Das gilt nur für den MediaPlace-Overlay selbst (`#mp3-overlay`). Die klassischen REDAXO-Metainfo-Feldtypen im normalen Medienpool-Bearbeiten-Formular (Copyright, Auswahllisten, Medienlisten-Widget usw.) rendern über REDAXOs eigene Core-Fragmente und erben das Backend-Theme direkt – die sollten nicht von hier aus überschrieben werden, sondern folgen automatisch demselben `rex-theme-dark`.
+
 ## Credits
 
 - [FriendsOfREDAXO](https://github.com/FriendsOfREDAXO)
