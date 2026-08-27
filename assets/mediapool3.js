@@ -3843,7 +3843,14 @@
                 if (!ctx) { resolve(file); return; }
                 ctx.drawImage(img, 0, 0, targetW, targetH);
                 canvas.toBlob(function (blob) {
-                    if (!blob) { resolve(file); return; }
+                    // canvas.toBlob() faellt laut Spec still auf image/png zurueck,
+                    // wenn der Browser den angeforderten Typ nicht encodieren kann
+                    // (z.B. AVIF praktisch ueberall, WebP in aelterem Safari) -- ohne
+                    // diesen Check wuerde die Datei mit falschem .type-Label (Original-
+                    // Format), aber tatsaechlich PNG-kodiertem Inhalt hochgeladen.
+                    // Lieber die Originaldatei unveraendert lassen als das Format
+                    // stillschweigend vertauschen.
+                    if (!blob || blob.type !== file.type) { resolve(file); return; }
                     var resized;
                     try {
                         resized = new File([blob], file.name, { type: file.type, lastModified: file.lastModified });

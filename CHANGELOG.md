@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.2.1 – 2026-08-27
+
+### Bugfix
+- Upload-Verkleinerung (1.2.0): `canvas.toBlob()` fällt bei nicht unterstützten Ausgabeformaten (z. B. AVIF praktisch überall, WebP in älterem Safari) laut Spezifikation still auf PNG zurück. Der Code vertraute bisher blind darauf, dass die Ausgabe dem angeforderten Format entspricht, wodurch eine Datei mit falschem `.type`-Label (Originalformat), aber tatsächlich PNG-kodiertem Inhalt hochgeladen worden wäre. Jetzt wird der tatsächliche `blob.type` geprüft; bei einer Abweichung wird die Verkleinerung verworfen und die Originaldatei unverändert hochgeladen.
+
 ## Version 1.2.0 – 2026-08-27
 
 ### Bilder beim Upload verkleinern
