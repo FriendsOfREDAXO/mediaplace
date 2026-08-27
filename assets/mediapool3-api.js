@@ -365,7 +365,11 @@
     }
 
     function apiUpdate(filename, data) {
-        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update', {
+        // permitted_only=1: siehe apiDelete() -- gilt hier nur fuer die
+        // AKTUELLE Kategorie der Datei, nicht fuer eine per data.category_id
+        // evtl. mitgeschickte neue Kategorie (das prueft der Server bislang
+        // gar nicht, siehe FriendsOfREDAXO/api#79).
+        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update?permitted_only=1', {
             method: 'PATCH',
             credentials: 'same-origin',
             headers: {
@@ -381,7 +385,11 @@
     }
 
     function apiDelete(filename) {
-        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/delete', {
+        // permitted_only=1: kaskadierende Rechtepruefung (Zugriff auf eine
+        // Kategorie gilt auch fuer ihren Unterbaum) statt exaktem Treffer --
+        // sonst laesst sich eine Datei in einer Unterkategorie einer
+        // freigegebenen Kategorie nicht loeschen. Siehe apiUpload().
+        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/delete?permitted_only=1', {
             method: 'DELETE',
             credentials: 'same-origin',
             headers: {
@@ -655,7 +663,8 @@
         var fd = new FormData();
         fd.append('file', file);
 
-        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update', {
+        // permitted_only=1: siehe apiDelete().
+        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update?permitted_only=1', {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
