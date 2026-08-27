@@ -106,8 +106,7 @@ if (rex::isBackend() && rex::getUser()) {
         // Feature-Toggles der Einstellungsseite, siehe features-Objekt in mediapool3.js.
         $featureTagging = rex_config::get($addonName, 'disable_tagging', false) ? '0' : '1';
         $featureCollections = rex_config::get($addonName, 'disable_collections', false) ? '0' : '1';
-        $featureLegacyMetainfo = rex_config::get($addonName, 'enable_legacy_metainfo', false) ? '1' : '0';
-        $featureMetainfoFormPrototype = rex_config::get($addonName, 'enable_metainfo_form_prototype', false) ? '1' : '0';
+        $featureMetainfoEditing = rex_config::get($addonName, 'enable_metainfo_editing', false) ? '1' : '0';
 
         // Klassische Unterseiten (Struktur, Hochladen, Sync, ...) bleiben ueber
         // ein Verwaltungs-Icon im Overlay erreichbar.
@@ -138,7 +137,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-legacy-metainfo="' . $featureLegacyMetainfo . '" data-feature-metainfo-form-prototype="' . $featureMetainfoFormPrototype . '"></div>'
+        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);

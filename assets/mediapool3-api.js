@@ -394,7 +394,7 @@
         });
     }
 
-    // Prototyp: native Metainfo-Feld-Bearbeitung, siehe rex_api_mediaplace_metainfo_form.php
+    // Echte Metainfo-Feld-Bearbeitung, siehe rex_api_mediaplace_metainfo_form.php
     // (boot.php liefert die URL ueber #mp3-root[data-metainfo-form-url]).
     function getMetainfoFormApiUrl(filename) {
         var root = document.getElementById('mp3-root');

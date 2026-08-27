@@ -36,7 +36,7 @@ requires:
 
 default_config:
     replace_classic_mediapool: true
+    enable_own_metadata: false
     disable_tagging: false
     disable_collections: false
-    enable_legacy_metainfo: false
-    enable_metainfo_form_prototype: false
+    enable_metainfo_editing: false

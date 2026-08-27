@@ -2923,29 +2923,45 @@ body.rex-theme-dark {
     cursor: copy;
 }
 
-#mp3-overlay .mp3-legacy-section {
-    margin-bottom: 14px;
+/* ---- Metainfo-Canvas: Grid-Auswahl fuer klassische REX_MEDIA[n]/
+   REX_MEDIALIST[n]-Widgets (startMetainfoPick() in mediapool3.js) ---- */
+#mp3-overlay.mp3-metainfo-pick-mode .mp3-grid .mp3-card,
+#mp3-overlay.mp3-metainfo-pick-mode .mp3-list-row,
+#mp3-overlay.mp3-metainfo-pick-mode .mp3-masonry-card {
+    cursor: copy;
 }
 
-#mp3-overlay .mp3-legacy-toggle-btn {
-    width: 100%;
-    text-align: left;
-    border: 1px solid var(--mp3-table-td-border);
-    border-radius: 0;
-    padding: 6px 8px;
-    background: var(--mp3-list-th-bg);
-    color: var(--mp3-table-td-text);
-    cursor: pointer;
+#mp3-overlay .mp3-metainfo-pick-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 15px;
+    background: rgba(74, 144, 217, 0.1);
+    border-bottom: 1px solid var(--mp3-filter-bar-border);
     font-size: 12px;
+    color: var(--mp3-card-name);
+    flex-shrink: 0;
 }
 
-#mp3-overlay .mp3-legacy-content {
-    margin-top: 8px;
+#mp3-overlay .mp3-metainfo-pick-cancel {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-#mp3-overlay .mp3-legacy-edit-link {
-    display: inline-block;
-    margin-top: 6px;
+#mp3-overlay .mp3-metainfo-pick-cancel:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
 }
 
 #mp3-overlay .mp3-metainfo-native-edit-btn {
@@ -2968,6 +2984,18 @@ body.rex-theme-dark {
 #mp3-overlay .mp3-metainfo-native-edit-btn:hover {
     border-color: var(--mp3-filter-active-border);
     background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-alt-missing-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 4px;
+    padding: 6px 10px;
+    background: rgba(230, 162, 60, 0.12);
+    border: 1px solid rgba(230, 162, 60, 0.4);
+    color: #b8720c;
+    font-size: 12px;
 }
 
 #mp3-overlay .mp3-detail-table {
@@ -4146,6 +4174,14 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 
 #mp3-overlay .mp3-editor-canvas-save:hover {
     opacity: 0.88;
+}
+
+#mp3-overlay .mp3-metainfo-canvas-save.mp3-detail-save-success {
+    background: #27ae60;
+}
+
+#mp3-overlay .mp3-metainfo-canvas-save.mp3-detail-save-error {
+    background: #e74c3c;
 }
 
 #mp3-overlay .mp3-editor-canvas-body {

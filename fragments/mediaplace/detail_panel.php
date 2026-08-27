@@ -22,10 +22,11 @@
  * - array $system_tag_catalog    globaler Tag-Katalog (Autocomplete)
  * - array $collection_names      Namen der Sammlungen, denen die Datei angehoert
  * - array $category_list         flache Kategorienliste (Verschieben-Select)
+ * - bool  $feature_own_metadata  Einstellungen-Toggle: eigene Metadaten-Felder zeigen?
  * - bool  $feature_tagging       Einstellungen-Toggle: System-Tags-Feld zeigen?
  * - bool  $feature_collections   Einstellungen-Toggle: Sammlungen-Zeile zeigen?
- * - bool  $feature_legacy_metainfo  Einstellungen-Toggle: Alte-Metadaten-Bereich zeigen?
- * - bool  $feature_metainfo_form_prototype  Einstellungen-Toggle: "Nativ bearbeiten"-Button (Prototyp) zeigen?
+ * - bool  $feature_metainfo_editing  Einstellungen-Toggle: "Metadaten bearbeiten"-Button zeigen?
+ * - bool  $alt_text_missing      ALT-Text fehlt (eigenes "alt"-Feld falls aktiv, sonst med_alt)?
  *
  * @var rex_fragment $this
  */
@@ -39,10 +40,11 @@ $systemTagsNormal = $this->getVar('system_tags_normal');
 $systemTagCatalog = $this->getVar('system_tag_catalog');
 $collectionNames = $this->getVar('collection_names');
 $categoryList = $this->getVar('category_list');
+$featureOwnMetadata = (bool) $this->getVar('feature_own_metadata');
 $featureTagging = (bool) $this->getVar('feature_tagging');
 $featureCollections = (bool) $this->getVar('feature_collections');
-$featureLegacyMetainfo = (bool) $this->getVar('feature_legacy_metainfo');
-$featureMetainfoFormPrototype = (bool) $this->getVar('feature_metainfo_form_prototype');
+$featureMetainfoEditing = (bool) $this->getVar('feature_metainfo_editing');
+$altTextMissing = (bool) $this->getVar('alt_text_missing');
 
 $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
 ?>
@@ -63,12 +65,15 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
             'title' => $info['title'],
         ]); ?>
 
-        <?php if ($featureMetainfoFormPrototype): ?>
+        <?php if ($featureMetainfoEditing): ?>
             <button type="button" class="mp3-metainfo-native-edit-btn mp3-metainfo-canvas-open"
                     data-canvas-file="<?= rex_escape($info['filename']) ?>"
                     data-canvas-label="<?= rex_escape($info['filename']) ?>">
                 <i class="fa-solid fa-lemon"></i> <?= rex_escape($this->i18n('mediaplace_metainfo_edit_native')) ?>
             </button>
+            <?php if ($altTextMissing): ?>
+                <p class="mp3-alt-missing-hint"><i class="fa-solid fa-triangle-exclamation"></i> <?= rex_escape($this->i18n('mediaplace_alt_text_missing')) ?></p>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php if ($featureTagging): ?>
@@ -79,18 +84,25 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
         <?php endif; ?>
 
         <?php if (!empty($fields)): ?>
-            <?php foreach ($fields as $field): ?>
-                <?php
-                $fieldKey = (string) $field['key'];
-                $fieldValue = array_key_exists($fieldKey, $data) ? $data[$fieldKey] : null;
-                $this->subfragment('mediaplace/detail_field.php', [
-                    'field' => $field,
-                    'value' => $fieldValue,
-                    'info' => $info,
-                    'clangs' => $clangs,
-                ]);
-                ?>
-            <?php endforeach; ?>
+            <?php /* Bewusst per CSS statt if/endif ausgeblendet (nicht $featureOwnMetadata
+                     in die Bedingung oben): die data-json-field-Elemente muessen im DOM
+                     bleiben, sonst liest collectJsonValuesFromDetail() beim naechsten
+                     Speichern (z.B. nur Titel geaendert) fuer diese Felder nichts mehr aus
+                     und wuerde bereits gespeicherte Werte mit null ueberschreiben. */ ?>
+            <div class="mp3-own-metadata-fields"<?= $featureOwnMetadata ? '' : ' style="display:none"' ?>>
+                <?php foreach ($fields as $field): ?>
+                    <?php
+                    $fieldKey = (string) $field['key'];
+                    $fieldValue = array_key_exists($fieldKey, $data) ? $data[$fieldKey] : null;
+                    $this->subfragment('mediaplace/detail_field.php', [
+                        'field' => $field,
+                        'value' => $fieldValue,
+                        'info' => $info,
+                        'clangs' => $clangs,
+                    ]);
+                    ?>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -100,20 +112,6 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
         'category_list' => $categoryList,
         'feature_collections' => $featureCollections,
     ]); ?>
-
-    <?php
-    $legacyEditUrl = rex_url::backendController(['page' => 'mediapool/media', 'file_name' => $info['filename'], 'rex_file_category' => $info['category_id']], false);
-    ?>
-    <?php if ($featureLegacyMetainfo): ?>
-        <div class="mp3-legacy-section">
-            <button type="button" class="mp3-legacy-toggle-btn"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n('mediaplace_legacy_metadata')) ?></button>
-            <button type="button" class="mp3-legacy-edit-link btn btn-default btn-xs"
-                    onclick="newPoolWindow(<?= rex_escape(json_encode($legacyEditUrl)) ?>); return false;">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> <?= rex_escape($this->i18n('mediaplace_legacy_edit_classic')) ?>
-            </button>
-            <div class="mp3-legacy-content" style="display:none"></div>
-        </div>
-    <?php endif; ?>
 
     <?php $this->subfragment('mediaplace/detail_actions.php', [
         'info' => $info,

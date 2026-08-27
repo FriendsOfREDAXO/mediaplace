@@ -31,9 +31,9 @@ class rex_api_mediaplace_metainfo_form extends rex_api_function
             exit;
         }
 
-        if (!rex_config::get('mediaplace', 'enable_metainfo_form_prototype', false)) {
+        if (!rex_config::get('mediaplace', 'enable_metainfo_editing', false)) {
             rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-            rex_response::sendJson(['error' => 'metainfo form prototype is disabled']);
+            rex_response::sendJson(['error' => 'metainfo editing is disabled']);
             exit;
         }
 

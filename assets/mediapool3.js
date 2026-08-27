@@ -62,7 +62,7 @@
     // Feature-Toggles (Einstellungsseite), gelesen von #mp3-root in build() --
     // gate Tagging-UI (System-Tags-Feld, Sidebar-Tag-Filter) bzw. Sammlungen-UI
     // (Sidebar-Sektion, Merken-Button, Drag&Drop) unabhaengig voneinander.
-    var features = { tagging: true, collections: true, legacyMetainfo: false, metainfoFormPrototype: false };
+    var features = { tagging: true, collections: true, metainfoEditing: false };
     var activeCollectionId = null;
     var darkModeEnabled = false; // true = dark mode, false = light mode
     var mediaLinkPickFieldKey = null; // active media_link field key while picking from file grid
@@ -78,6 +78,7 @@
     var ckeCanvasEditor = null;      // aktive CKEditor5-Instanz im Canvas (ueber rex:cke5IsInit eingesammelt)
     var metainfoCanvasOpen = false;
     var metainfoCanvasFilename = null;
+    var metainfoPickTarget = null; // { type: 'media', input } | { type: 'medialist', select, listId } while picking from the grid for a classic widget inside the metainfo canvas
     // Fokuspunkt-Canvas (Integration mit dem separaten focuspoint-Addon, nur
     // aktiv wenn canFocuspoint -- siehe #mp3-root data-focuspoint-available).
     // Speicherung laeuft bewusst weiter ueber das klassische Metainfo-Feld
@@ -1122,7 +1123,6 @@
     var detailFieldDefs = [];
     var detailClangs = [];
     var detailSystemTagCatalog = [];
-    var detailLegacyLoaded = false;
     // widget_type -> function(key, panelEl) fuer Feldtypen, die ein anderes Addon
     // per MP3.registerFieldCollector() angemeldet hat (siehe collectJsonValuesFromDetail()
     // und MetainfoWidget::getRegisteredTypes() in PHP).
@@ -1493,7 +1493,7 @@
         if (canvas) canvas.style.display = 'none';
     }
 
-    // ---- Native Metainfo-Feld-Bearbeitung (Prototyp) ----
+    // ---- Metainfo-Feld-Bearbeitung ----
     function openMetainfoCanvas(filename, label) {
         if (!overlay || !filename) return;
         if (focuspointCanvasOpen) closeFocuspointCanvas();
@@ -1507,6 +1507,13 @@
 
         var canvas = qs('#mp3-metainfo-canvas', overlay);
         if (canvas) canvas.style.display = '';
+
+        var saveBtn = qs('.mp3-metainfo-canvas-save', canvas);
+        if (saveBtn) {
+            saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
+            saveBtn.title = '';
+            saveBtn.classList.remove('mp3-detail-save-success', 'mp3-detail-save-error');
+        }
 
         var titleEl = qs('.mp3-metainfo-canvas-title', canvas);
         if (titleEl) titleEl.textContent = label || filename;
@@ -1541,13 +1548,31 @@
 
         apiSaveMetainfoForm(metainfoCanvasFilename, new FormData(formEl))
             .then(function () {
-                if (saveBtn) saveBtn.disabled = false;
-                closeMetainfoCanvas();
-                detailLegacyLoaded = false;
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' + t('mediaplace_saved');
+                    saveBtn.classList.add('mp3-detail-save-success');
+                }
+                // Kurze Erfolgs-Rueckmeldung, bevor der Canvas schliesst -- ohne die
+                // wechselt die Ansicht sofort zurueck ins Grid, was wie ein Fehlschlag
+                // wirken kann (siehe Feedback: "es wechselt sofort in den browse mode").
+                setTimeout(function () {
+                    closeMetainfoCanvas();
+                }, 700);
             })
             .catch(function (err) {
-                if (saveBtn) saveBtn.disabled = false;
-                alert(t('mediaplace_error_saving', { msg: err.message }));
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error');
+                    saveBtn.title = t('mediaplace_error_saving', { msg: err.message });
+                    saveBtn.classList.add('mp3-detail-save-error');
+                    setTimeout(function () {
+                        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
+                        saveBtn.title = '';
+                        saveBtn.classList.remove('mp3-detail-save-error');
+                    }, 1800);
+                }
+                console.error('MP3 metainfo save failed:', err);
             });
     }
 
@@ -1559,6 +1584,90 @@
         if (content) content.classList.remove('mp3-editor-mode');
         var canvas = qs('#mp3-metainfo-canvas', overlay);
         if (canvas) canvas.style.display = 'none';
+    }
+
+    // Klick auf "Oeffnen"/"Hinzufuegen" eines klassischen REX_MEDIA[n]/
+    // REX_MEDIALIST[n]-Widgets innerhalb des Metainfo-Canvas: statt REDAXOs
+    // natives Popup blendet MP3 den Canvas kurz aus, zeigt das eigene Grid
+    // zum Auswaehlen, und kehrt danach zum (unveraendert im DOM verbliebenen,
+    // nicht neu geladenen) Formular zurueck.
+    function startMetainfoPick(wrapper, isList) {
+        if (!wrapper || !metainfoCanvasOpen) return;
+
+        if (isList) {
+            var select = qs('select[id^="REX_MEDIALIST_SELECT_"]', wrapper);
+            if (!select) return;
+            metainfoPickTarget = { type: 'medialist', select: select, listId: select.id.slice('REX_MEDIALIST_SELECT_'.length) };
+            multiMode = true;
+            multiSelected = {};
+            overlay.classList.add('mp3-multi-mode');
+            if (multiFooter) multiFooter.style.display = '';
+            updateMultiUI();
+        } else {
+            var input = qs('input[id^="REX_MEDIA_"]', wrapper);
+            if (!input) return;
+            metainfoPickTarget = { type: 'media', input: input };
+        }
+
+        var canvas = qs('#mp3-metainfo-canvas', overlay);
+        if (canvas) canvas.style.display = 'none';
+        var content = qs('.mp3-content', overlay);
+        if (content) content.classList.remove('mp3-editor-mode');
+        overlay.classList.add('mp3-metainfo-pick-mode');
+
+        var banner = qs('#mp3-metainfo-pick-banner', overlay);
+        if (banner) {
+            var text = qs('.mp3-metainfo-pick-banner-text', banner);
+            if (text) text.textContent = t(isList ? 'mediaplace_metainfo_pick_hint_multi' : 'mediaplace_metainfo_pick_hint');
+            banner.style.display = '';
+        }
+    }
+
+    function endMetainfoPick() {
+        var wasMedialist = !!metainfoPickTarget && 'medialist' === metainfoPickTarget.type;
+        metainfoPickTarget = null;
+        multiMode = false;
+        multiSelected = {};
+        overlay.classList.remove('mp3-multi-mode');
+        overlay.classList.remove('mp3-metainfo-pick-mode');
+        if (multiFooter) multiFooter.style.display = 'none';
+        if (wasMedialist) updateMultiUI();
+        var banner = qs('#mp3-metainfo-pick-banner', overlay);
+        if (banner) banner.style.display = 'none';
+
+        var canvas = qs('#mp3-metainfo-canvas', overlay);
+        if (canvas) canvas.style.display = '';
+        var content = qs('.mp3-content', overlay);
+        if (content) content.classList.add('mp3-editor-mode');
+    }
+
+    function finishMetainfoMediaPick(filename) {
+        if (!metainfoPickTarget || 'media' !== metainfoPickTarget.type) return;
+        var input = metainfoPickTarget.input;
+        input.value = filename;
+        if (window.jQuery) {
+            window.jQuery(input).trigger('change');
+        } else {
+            var evt;
+            try { evt = new Event('change', { bubbles: true }); }
+            catch (e) { evt = document.createEvent('Event'); evt.initEvent('change', true, true); }
+            input.dispatchEvent(evt);
+        }
+        endMetainfoPick();
+    }
+
+    function finishMetainfoMedialistPick(filenames) {
+        if (!metainfoPickTarget || 'medialist' !== metainfoPickTarget.type) return;
+        var select = metainfoPickTarget.select;
+        var listId = metainfoPickTarget.listId;
+        filenames.forEach(function (filename) {
+            var exists = Array.prototype.some.call(select.options, function (o) { return o.value === filename; });
+            if (!exists) select.add(new Option(filename, filename));
+        });
+        if (typeof window.writeREXMedialist === 'function') {
+            window.writeREXMedialist(listId);
+        }
+        endMetainfoPick();
     }
 
     // ---- Fokuspunkt-Canvas (Integration mit dem focuspoint-Addon) ----
@@ -2122,28 +2231,6 @@
         qsa('.mp3-edit-field-inline, .mp3-json-field', detailPanel).forEach(updateInlineDisplay);
     }
 
-    function renderLegacyMetainfo(contentEl, values) {
-        var keys = Object.keys(values || {}).filter(function (k) {
-            return k !== 'med_json_data';
-        }).sort();
-        if (!keys.length) {
-            contentEl.innerHTML = '<div class="mp3-metainfo-hint">' + t('mediaplace_no_legacy_fields') + '</div>';
-            return;
-        }
-
-        var html = '<table class="mp3-detail-table">';
-        for (var i = 0; i < keys.length; i++) {
-            var key = keys[i];
-            var val = values[key];
-            if (Array.isArray(val) || isObj(val)) {
-                try { val = JSON.stringify(val); } catch (e) { val = String(val); }
-            }
-            html += '<tr><td>' + escAttr(key) + '</td><td>' + escAttr(val === null || val === undefined ? '' : String(val)) + '</td></tr>';
-        }
-        html += '</table>';
-        contentEl.innerHTML = html;
-    }
-
     function saveDetail() {
         if (!selectedFile || !detailPanel) return;
         var saveBtn = detailPanel.querySelector('.mp3-detail-save-btn');
@@ -2349,7 +2436,16 @@
         detailOriginalCollectionSystemTags = deepClone(splitSystem.collections);
         detailOriginalTitle = String((jsonPayload && jsonPayload.title) || '');
         detailOriginalJson = deepClone(jsonData);
-        detailLegacyLoaded = false;
+        // Checkbox-Felder liefern in collectJsonValuesFromDetail() immer ein echtes
+        // Bool (nie null), damit "explizit Nein" von "nie gesetzt" unterscheidbar
+        // bleibt. Ein Feld, das fuer diese Datei noch nie gespeichert wurde, fehlt
+        // im Server-Datensatz dagegen komplett -- ohne dieses Nachziehen wuerde der
+        // Dirty-Check das faelschlich als Aenderung werten (false vs. fehlender Key).
+        detailFieldDefs.forEach(function (field) {
+            if ('checkbox' === field.widget_type && !Object.prototype.hasOwnProperty.call(detailOriginalJson, field.key)) {
+                detailOriginalJson[field.key] = false;
+            }
+        });
 
         detailPanel.innerHTML = (jsonPayload && jsonPayload.detail_html) || '';
 
@@ -3872,8 +3968,7 @@
         // ohne Cache-Neuaufbau).
         features.tagging = !root.dataset.featureTagging || root.dataset.featureTagging === '1';
         features.collections = !root.dataset.featureCollections || root.dataset.featureCollections === '1';
-        features.legacyMetainfo = root.dataset.featureLegacyMetainfo === '1';
-        features.metainfoFormPrototype = root.dataset.featureMetainfoFormPrototype === '1';
+        features.metainfoEditing = root.dataset.featureMetainfoEditing === '1';
         canFilterUnused = root.dataset.canFilterUnused === '1';
         canFocuspoint = root.dataset.focuspointAvailable === '1';
 
@@ -3968,6 +4063,10 @@
                                     '</button>' +
                                 '</div>' +
                                 tagFilterHtml +
+                            '</div>' +
+                            '<div class="mp3-metainfo-pick-banner" id="mp3-metainfo-pick-banner" style="display:none">' +
+                                '<span class="mp3-metainfo-pick-banner-text"></span>' +
+                                '<button type="button" class="mp3-metainfo-pick-cancel"><i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') + '</button>' +
                             '</div>' +
                             '<div class="mp3-breadcrumb" id="mp3-breadcrumb"></div>' +
                             '<div class="mp3-status" id="mp3-status"></div>' +
@@ -4403,6 +4502,10 @@
             if (e.key === 'Escape' && overlay.classList.contains('mp3-open')) {
                 if (lightboxOpen) {
                     closeLightbox();
+                    return;
+                }
+                if (metainfoPickTarget) {
+                    endMetainfoPick();
                     return;
                 }
                 close();
@@ -4890,6 +4993,11 @@
             var filename = card.getAttribute('data-filename');
             if (!filename) return;
 
+            if (metainfoPickTarget && 'media' === metainfoPickTarget.type) {
+                finishMetainfoMediaPick(filename);
+                return;
+            }
+
             if (mediaLinkPickFieldKey && detailPanel) {
                 var targetInput = detailPanel.querySelector('[data-json-field="' + mediaLinkPickFieldKey + '"]');
                 if (targetInput) {
@@ -5015,6 +5123,10 @@
 
             var confirmBtn = e.target.closest('.mp3-multi-confirm');
             if (confirmBtn) {
+                if (metainfoPickTarget && 'medialist' === metainfoPickTarget.type) {
+                    finishMetainfoMedialistPick(Object.keys(multiSelected));
+                    return;
+                }
                 if (onMultiSelect) onMultiSelect(Object.keys(multiSelected));
                 close();
                 return;
@@ -5195,33 +5307,6 @@
             var fieldSaveBtn = e.target.closest('.mp3-field-save-btn');
             if (fieldSaveBtn) {
                 saveDetail();
-                return;
-            }
-
-            var legacyToggleBtn = e.target.closest('.mp3-legacy-toggle-btn');
-            if (legacyToggleBtn && selectedFile) {
-                var legacyContent = detailPanel.querySelector('.mp3-legacy-content');
-                if (!legacyContent) return;
-                var isOpen = legacyContent.style.display !== 'none';
-                if (isOpen) {
-                    legacyContent.style.display = 'none';
-                    legacyToggleBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i> ' + t('mediaplace_legacy_metadata');
-                    return;
-                }
-
-                legacyContent.style.display = '';
-                legacyToggleBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> ' + t('mediaplace_legacy_metadata_hide');
-                if (detailLegacyLoaded) return;
-
-                legacyContent.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_legacy_metadata_loading') + '</div>';
-                apiFetch('media/' + encodeURIComponent(selectedFile) + '/metainfo')
-                    .then(function (legacyValues) {
-                        detailLegacyLoaded = true;
-                        renderLegacyMetainfo(legacyContent, legacyValues || {});
-                    })
-                    .catch(function (err) {
-                        legacyContent.innerHTML = '<div class="mp3-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
-                    });
                 return;
             }
 
@@ -5834,6 +5919,13 @@
             if (mf) openMetainfoCanvas(mf, mLbl);
         });
 
+        // Zurueck-Button des Grid-Auswahl-Banners (startMetainfoPick())
+        overlay.addEventListener('click', function (e) {
+            if (e.target.closest('.mp3-metainfo-pick-cancel') && metainfoPickTarget) {
+                endMetainfoPick();
+            }
+        });
+
         // Upload via button
         var uploadInput = qs('.mp3-upload-btn input[type="file"]', overlay);
         uploadInput.addEventListener('change', function (e) {
@@ -6228,11 +6320,13 @@
             overlay.classList.remove('mp3-open');
             overlay.classList.remove('mp3-multi-mode');
             overlay.classList.remove('mp3-media-link-pick-mode');
+            overlay.classList.remove('mp3-metainfo-pick-mode');
         }
         multiMode = false;
         multiSelected = {};
         collectionDragSelected = {};
         mediaLinkPickFieldKey = null;
+        metainfoPickTarget = null;
         destroyDetailTinyEditors();
         onSelect = null;
         onMultiSelect = null;
@@ -6259,6 +6353,13 @@
         registerFieldCollector: function (widgetType, collector) {
             if (!widgetType || typeof collector !== 'function') return;
             fieldCollectors[widgetType] = collector;
+        },
+        // Aufgerufen von mediapool3_classic.js, wenn im Metainfo-Canvas ein
+        // klassisches REX_MEDIA[n]/REX_MEDIALIST[n]-Widget geklickt wird --
+        // Auswahl laeuft ueber das eigene Grid statt REDAXOs Popup, siehe
+        // startMetainfoPick() oben.
+        startMetainfoPick: function (wrapper, isList) {
+            startMetainfoPick(wrapper, !!isList);
         }
     };
 

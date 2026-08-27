@@ -93,8 +93,17 @@
         var link = e.target.closest('a.btn-popup');
         if (!link) return;
 
-        // Im Metainfo-Canvas nicht abfangen, sonst oeffnet sich rekursiv unser eigener Overlay.
-        if (link.closest('#mp3-metainfo-canvas')) return;
+        // Im Metainfo-Canvas: eigenes Grid statt REDAXOs Popup nutzen (MP3.startMetainfoPick()
+        // in mediapool3.js), sonst wuerde das Popup unseren gerade offenen Overlay verdecken.
+        if (link.closest('#mp3-metainfo-canvas')) {
+            var mcWrapper = link.closest('.rex-js-widget-media, .rex-js-widget-medialist');
+            if (mcWrapper && actionFromLink(link) && window.MP3 && typeof window.MP3.startMetainfoPick === 'function') {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                window.MP3.startMetainfoPick(mcWrapper, mcWrapper.classList.contains('rex-js-widget-medialist'));
+            }
+            return;
+        }
 
         var wrapper = link.closest('.rex-js-widget-media, .rex-js-widget-medialist');
         if (!wrapper) return;

@@ -243,10 +243,12 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
         $fragment->setVar('category_list', rex_api_mediaplace_categories::getFlatCategoryList(), false);
         // Feature-Toggles (Einstellungsseite) -- siehe features-Objekt in mediapool3.js
         // bzw. den entsprechenden Kommentar in boot.php (disable_*-Speicherung).
+        $fragment->setVar('feature_own_metadata', (bool) rex_config::get('mediaplace', 'enable_own_metadata', false), false);
         $fragment->setVar('feature_tagging', !rex_config::get('mediaplace', 'disable_tagging', false), false);
         $fragment->setVar('feature_collections', !rex_config::get('mediaplace', 'disable_collections', false), false);
-        $fragment->setVar('feature_legacy_metainfo', (bool) rex_config::get('mediaplace', 'enable_legacy_metainfo', false), false);
-        $fragment->setVar('feature_metainfo_form_prototype', (bool) rex_config::get('mediaplace', 'enable_metainfo_form_prototype', false), false);
+        $featureMetainfoEditing = (bool) rex_config::get('mediaplace', 'enable_metainfo_editing', false);
+        $fragment->setVar('feature_metainfo_editing', $featureMetainfoEditing, false);
+        $fragment->setVar('alt_text_missing', $featureMetainfoEditing && \FriendsOfRedaxo\Mediaplace\AltTextStatus::isMissing($media, $data), false);
 
         return $fragment->parse('mediaplace/detail_panel.php');
     }
