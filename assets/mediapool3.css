@@ -854,8 +854,8 @@ body.rex-theme-dark {
 #mp3-overlay .mp3-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px 8px 16px;
+    gap: 8px;
+    padding: 8px 10px 8px 14px;
     background: var(--mp3-header-bg);
     color: #fff;
     flex-shrink: 0;
@@ -933,7 +933,7 @@ body.rex-theme-dark {
 #mp3-overlay .mp3-header-tools {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     flex: 1;
     min-width: 0;
     justify-content: flex-end;
@@ -1526,8 +1526,8 @@ body.rex-theme-dark {
 #mp3-overlay .mp3-search-wrap {
     flex: 1;
     position: relative;
-    min-width: 120px;
-    max-width: 280px;
+    min-width: 90px;
+    max-width: 220px;
 }
 
 #mp3-overlay .mp3-search-wrap > i {
@@ -1565,8 +1565,8 @@ body.rex-theme-dark {
 #mp3-overlay .mp3-upload-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
+    gap: 4px;
+    padding: 5px 8px;
     background: rgba(255, 255, 255, 0.15);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1625,7 +1625,7 @@ body.rex-theme-dark {
     align-items: center;
     justify-content: space-between;
     gap: 6px;
-    padding: 6px 15px;
+    padding: 6px 10px;
     border-bottom: 1px solid var(--mp3-filter-bar-border);
     flex-shrink: 0;
     background: var(--mp3-filter-bar-bg);
@@ -1636,14 +1636,14 @@ body.rex-theme-dark {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
 }
 
 #mp3-overlay .mp3-filter-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    gap: 4px;
+    padding: 4px 8px;
     border: 1px solid var(--mp3-filter-btn-border);
     border-radius: 0;
     background: var(--mp3-filter-btn-bg);
@@ -1690,7 +1690,7 @@ body.rex-theme-dark {
 #mp3-overlay .mp3-tag-filter-wrap {
     position: relative;
     margin-left: auto;
-    min-width: 170px;
+    min-width: 150px;
 }
 
 #mp3-overlay .mp3-tag-filter-toggle {
@@ -1698,8 +1698,8 @@ body.rex-theme-dark {
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 4px 10px;
+    gap: 6px;
+    padding: 4px 8px;
     border: 1px solid var(--mp3-filter-btn-border);
     border-radius: 0;
     background: var(--mp3-filter-btn-bg);

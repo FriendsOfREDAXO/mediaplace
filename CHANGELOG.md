@@ -1,5 +1,24 @@
 # Changelog
 
+## Version 1.1.0 – 2026-08-27
+
+### Echte Metainfo-Felder (Prototyp)
+- Neuer, experimenteller Modus zum nativen Bearbeiten echter, über das REDAXO-Metainfo-Addon angelegter `med_*`-Felder direkt im MediaPlace-Detail-Panel: ein eigener Canvas rendert das Formular über REDAXOs eigenen `MEDIA_FORM_EDIT`-Erweiterungspunkt und speichert über `rex_media_service::updateMedia()` – inklusive Widgets wie dem klassischen Medienlisten-Feld, ohne eigene Nachbau-Logik.
+- Eigener Einstellungen-Schalter (Standard: aus), unabhängig vom bestehenden „Klassische Metainfo-Felder verlinken“-Schalter; der API-Endpunkt verweigert Auslieferung/Speichern serverseitig, wenn der Schalter aus ist.
+- „Nativ bearbeiten“-Button sitzt jetzt direkt unter dem Titelfeld, im gleichen Button-Stil wie der TinyMCE/CKEditor5-„Bearbeiten“-Button, mit dem Icon des klassischen Metainfo-Addons.
+- Die schreibgeschützte „MediaPlace Metadaten“-Anzeige im klassischen Medienpool-Formular entfernt jetzt HTML-Tags aus TinyMCE/CKEditor5-Feldwerten, statt sie roh als Text anzuzeigen.
+
+### Medien nach Tags/Sammlungen auslesen
+- Neue Methoden in `SystemTagManager`: `getFilenamesForTag()`, `getFilenamesForCollection()`, `getTags()`/`getCollections()` (Katalog nach Sammlungen gefiltert) und `isCollectionTagName()` – für Entwickler, die Medien programmatisch nach Tag oder Sammlung auslesen wollen, ohne eigenes SQL zu schreiben.
+- README dokumentiert diesen Anwendungsfall neu.
+
+### Technik & Bugfixes
+- Default-Config-Werte (`replace_classic_mediapool`, `disable_tagging`, …) kommen jetzt aus `package.yml` (`default_config:`), nicht mehr aus manuellem Code in `install.php`.
+- Tastaturkürzel „F“ für Vollbild löste versehentlich aus, während man innerhalb von TinyMCE tippte (Iframe-Fokus wurde von der bisherigen Eingabefeld-Prüfung nicht erkannt).
+- Klick auf klassische `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets innerhalb des neuen Metainfo-Canvas öffnete versehentlich rekursiv den MediaPlace-Overlay statt des erwarteten klassischen Popups.
+- Vereinheitlichtes Erscheinungsbild: Alle Canvas-Header (Editor, Fokuspunkt, Metainfo) teilen sich jetzt dieselben Styles, alle „Speichern“-Buttons sind einheitlich grün.
+- Kompaktere Abstände in Kopfzeile und Filterleiste, damit Toolbar-Buttons und Tag-Filter auch bei der Standardgröße des Overlays ohne Umbruch passen.
+
 ## Version 1.0.0 – 2026-08-26
 
 Erste Version von **MediaPlace**: ein vollständiger, moderner Medienpool für das REDAXO-Backend als Ersatz für den klassischen Medienpool.
