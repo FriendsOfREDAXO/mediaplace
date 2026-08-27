@@ -131,7 +131,7 @@ class rex_api_mediaplace_media_list extends rex_api_function
             'SELECT ' . implode(',', self::MEDIA_FIELDS) . '
             FROM ' . rex::getTable('media') . '
             ' . $whereClause . '
-            ORDER BY filename ASC
+            ORDER BY ' . self::buildOrderBy((string) rex_request('sort', 'string', '')) . '
             LIMIT ' . (int) $offset . ', ' . (int) $perPage,
             $sqlParams,
         );
@@ -146,5 +146,40 @@ class rex_api_mediaplace_media_list extends rex_api_function
             ],
         ]);
         exit;
+    }
+
+    /**
+     * Gleiche Sort-Syntax wie api's ListHelper::parseSort(): "feld:richtung"
+     * (Default "asc"), kommasepariert fuer mehrere Felder. mediapool3.js
+     * schickt sie ueber SORT_API_MAP (buildMediaEndpoint()). Ohne dieses
+     * Mapping bliebe es immer bei "filename ASC" (wie beim api-Addon-Default),
+     * wodurch neu hochgeladene Dateien bei "Neueste zuerst" und vielen
+     * vorhandenen Medien gar nicht erst auf der ersten Seite mitgeladen
+     * wuerden -- die Sortierung im Client wirkt nur auf bereits geladene
+     * Seiten, nicht rueckwirkend auf die Server-Pagination.
+     */
+    private static function buildOrderBy(string $sort): string
+    {
+        $allowedFields = ['filename', 'category_id', 'filetype', 'filesize', 'title', 'createdate', 'updatedate', 'width', 'height'];
+        $default = 'filename ASC';
+
+        if ('' === $sort) {
+            return $default;
+        }
+
+        $orderParts = [];
+        foreach (explode(',', $sort) as $part) {
+            $segments = explode(':', trim($part), 2);
+            $field = trim($segments[0]);
+            $direction = isset($segments[1]) ? strtolower(trim($segments[1])) : 'asc';
+
+            if (!in_array($field, $allowedFields, true) || !in_array($direction, ['asc', 'desc'], true)) {
+                continue;
+            }
+
+            $orderParts[] = '`' . $field . '` ' . strtoupper($direction);
+        }
+
+        return [] !== $orderParts ? implode(', ', $orderParts) : $default;
     }
 }

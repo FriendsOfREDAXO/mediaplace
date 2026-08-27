@@ -3040,6 +3040,24 @@
         updateHeaderInfo(count);
     }
 
+    // currentSort -> api-Addon-Sortsyntax "feld:richtung" (ListHelper::parseSort()).
+    // Ohne dieses Mapping sortiert der Server IMMER nach filename asc (Default
+    // sowohl im api-Addon als auch im eigenen Fallback) und die Sortier-Auswahl
+    // im UI wirkt nur auf die eine bereits geladene Seite -- bei mehr Dateien
+    // als mediaPerPage kann die "neueste" Datei alphabetisch weit hinten liegen
+    // und dadurch in "Alle Medien" gar nicht erst mitgeladen werden, obwohl sie
+    // im Sortier-Ergebnis eigentlich ganz oben stehen muesste.
+    var SORT_API_MAP = {
+        date_desc: 'createdate:desc',
+        date_asc: 'createdate:asc',
+        filename_asc: 'filename:asc',
+        filename_desc: 'filename:desc',
+        title_asc: 'title:asc',
+        title_desc: 'title:desc',
+        size_desc: 'filesize:desc',
+        size_asc: 'filesize:asc'
+    };
+
     function buildMediaEndpoint() {
         // filter[term] durchsucht serverseitig Dateiname UND Titel (inkl.
         // "quoted phrases" und type:jpg,png) -- api-Addon CHANGELOG 1.3 (#64).
@@ -3050,6 +3068,9 @@
         }
         if (mediaQuery) {
             endpoint += '&filter[term]=' + encodeURIComponent(mediaQuery);
+        }
+        if (SORT_API_MAP[currentSort]) {
+            endpoint += '&sort=' + encodeURIComponent(SORT_API_MAP[currentSort]);
         }
         return endpoint;
     }

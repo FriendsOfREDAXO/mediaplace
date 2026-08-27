@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.1 – 2026-08-27
+
+### Bugfix
+- Sortierung ("Neueste zuerst" etc.) wirkte bisher nur auf die bereits geladene Seite: `buildMediaEndpoint()` schickte nie einen `sort`-Parameter mit, Server (sowohl das `api`-Addon als auch der eigene Fallback-Endpunkt) sortierten deshalb immer nach Dateiname aufsteigend. Bei mehr Dateien als `mediaPerPage` (Standard 30) konnte dadurch z. B. eine gerade erst hochgeladene Datei alphabetisch weit hinten liegen und in "Alle Medien" gar nicht erst mitgeladen werden, obwohl sie bei "Neueste zuerst" ganz oben stehen müsste. `buildMediaEndpoint()` schickt jetzt den tatsächlich gewählten Sortmodus als `sort=feld:richtung` mit (`ListHelper::parseSort()`-Syntax), beide Endpunkte respektieren ihn serverseitig.
+
 ## Version 1.3.0 – 2026-08-27
 
 ### Widget: Direkt-Upload, Mehrfachmarkierung, Ansichten
