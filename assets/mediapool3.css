@@ -1331,6 +1331,18 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     font-weight: 600;
 }
 
+/* Kategorie 0 ("kein Ordner"/"Medienpool"-Wurzel) ohne hasCategoryPerm(0) --
+   als <span> statt <a> gerendert (siehe renderCategories()/renderBreadcrumb()
+   in mediapool3.js), hier nur visuell als nicht anklickbar kennzeichnen. */
+#mp3-overlay .mp3-cat.mp3-cat-disabled {
+    cursor: not-allowed;
+    color: var(--mp3-cat-toggle);
+    opacity: 0.6;
+}
+#mp3-overlay .mp3-cat.mp3-cat-disabled:hover {
+    background: transparent;
+}
+
 #mp3-overlay .mp3-cat-toggle {
     font-size: 10px;
     width: 16px;
@@ -1527,6 +1539,15 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     background: var(--mp3-bc-item-hover-bg);
     color: var(--mp3-bc-item-hover);
     text-decoration: none;
+}
+
+#mp3-overlay .mp3-bc-item.mp3-bc-item-disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+#mp3-overlay .mp3-bc-item.mp3-bc-item-disabled:hover {
+    background: transparent;
+    color: var(--mp3-bc-item);
 }
 
 #mp3-overlay .mp3-bc-sep {

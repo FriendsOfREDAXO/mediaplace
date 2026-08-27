@@ -101,6 +101,7 @@ mediaplace_no_category_found = No category found
 mediaplace_search_category_placeholder = Find category...
 mediaplace_all_media = All media
 mediaplace_root_media = Mediapool
+mediaplace_root_media_no_access = No access to "No folder" – your media can be found in your categories.
 mediaplace_new_category = New category
 mediaplace_rename = Rename
 mediaplace_move = Move

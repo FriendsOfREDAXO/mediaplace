@@ -16,7 +16,7 @@
     var overlay, sidebar, grid, gridWrap, searchInput, statusBar, breadcrumb, detailPanel, multiFooter, batchFooter;
     var scrollPillTrack, scrollPillThumb;
     var lightboxLayer, lightboxImage, lightboxCaption;
-    var currentCat = 0;
+    var currentCat = -1;
     var onSelect = null;
     var onMultiSelect = null;  // callback for multi-select mode: receives array of filenames
     var multiMode = false;     // true when opened with multiple: true
@@ -46,6 +46,14 @@
     // wird inkrementell pro geladener Seite befuellt (loadFiles()), true = bekannt
     // unbenutzt, false = bekannt in Verwendung, Key fehlt = noch nicht geprueft.
     var canFilterUnused = false;
+    // Kategorie 0 ("kein Ordner"/"Medienpool"-Wurzel) braucht ein eigenes
+    // hasCategoryPerm(0), das viele auf einzelne Kategorien eingeschraenkte
+    // User nicht haben (siehe MediaPermission::hasCategoryAccess(0) +
+    // data-can-access-root-category am #mp3-root). Steuert, ob der
+    // "Medienpool"-Sidebar-Link anklickbar ist -- ohne dieses Recht landete
+    // man sonst zuverlaessig in einem 403, den loadFiles() zwar inzwischen
+    // sauber auf "Alle Medien" abfaengt, aber besser gar nicht erst anbieten.
+    var canAccessRootCategory = true;
     var unusedOnlyFilter = false;
     var unusedStatusCache = {};
     var currentSort = 'date_desc'; // date_desc | date_asc | filename_asc | filename_desc | title_asc | title_desc
@@ -2822,10 +2830,15 @@
                         '<i class="fa-solid fa-layer-group"></i> ' + t('mediaplace_all_media') + '</a>' +
                 '</div>' +
                 '<div class="mp3-cat-header">' +
-                    '<a class="mp3-cat' + (currentCat === 0 ? ' mp3-cat-active' : '') + '" data-cat="0">' +
-                        '<i class="fa-solid fa-house"></i> ' + t('mediaplace_root_media') + '</a>' +
-                    '<button class="mp3-cat-add-btn" data-add-parent="0" title="' + escAttr(t('mediaplace_new_category')) + '">' +
-                        '<i class="fa-solid fa-folder-plus"></i></button>' +
+                    (canAccessRootCategory
+                        ? '<a class="mp3-cat' + (currentCat === 0 ? ' mp3-cat-active' : '') + '" data-cat="0">' +
+                            '<i class="fa-solid fa-house"></i> ' + t('mediaplace_root_media') + '</a>'
+                        : '<span class="mp3-cat mp3-cat-disabled" title="' + escAttr(t('mediaplace_root_media_no_access')) + '">' +
+                            '<i class="fa-solid fa-house"></i> ' + t('mediaplace_root_media') + '</span>') +
+                    (canAccessRootCategory
+                        ? '<button class="mp3-cat-add-btn" data-add-parent="0" title="' + escAttr(t('mediaplace_new_category')) + '">' +
+                            '<i class="fa-solid fa-folder-plus"></i></button>'
+                        : '') +
                 '</div>' +
                 (treeHtml || '') +
             '</div>' +
@@ -3034,7 +3047,9 @@
 
     function renderBreadcrumb() {
         if (!breadcrumb) return;
-        var html = '<a class="mp3-bc-item" data-cat="0"><i class="fa-solid fa-house"></i></a>';
+        var html = canAccessRootCategory
+            ? '<a class="mp3-bc-item" data-cat="0"><i class="fa-solid fa-house"></i></a>'
+            : '<span class="mp3-bc-item mp3-bc-item-disabled" title="' + escAttr(t('mediaplace_root_media_no_access')) + '"><i class="fa-solid fa-house"></i></span>';
         for (var i = 0; i < catPath.length; i++) {
             html += ' <i class="fa-solid fa-chevron-right mp3-bc-sep"></i> ';
             html += '<a class="mp3-bc-item" data-cat="' + catPath[i].id + '">' + escAttr(catPath[i].name) + '</a>';
@@ -3277,6 +3292,12 @@
                 // der User landet also direkt bei seinen Dateien statt vor
                 // einem Fehler zu stehen.
                 if (err && 403 === err.status && -1 !== currentCat) {
+                    // mediaLoading wird erst im Cleanup-.then() NACH diesem
+                    // catch() zurueckgesetzt -- ein synchroner Retry hier waere
+                    // sonst durch die eigene mediaLoading-Guard oben blockiert
+                    // (kein Fetch, kein refreshDisplay(), Grid haengt dauerhaft
+                    // im Spinner-Zustand fest). Deshalb hier vorab freigeben.
+                    mediaLoading = false;
                     loadFiles(-1, true);
                     return;
                 }
@@ -4059,6 +4080,7 @@
         uploadResizeHeight = parseInt(root.dataset.uploadResizeHeight, 10) || 2000;
         canFilterUnused = root.dataset.canFilterUnused === '1';
         canFocuspoint = root.dataset.focuspointAvailable === '1';
+        canAccessRootCategory = !root.dataset.canAccessRootCategory || root.dataset.canAccessRootCategory === '1';
 
         // Menu-Inhalt lebt NICHT mehr inline in .mp3-tag-filter-wrap, sondern
         // als Portal (#mp3-tag-filter-menu-portal, siehe setTagFilterMenuOpen())
@@ -4904,7 +4926,10 @@
 
             // Category name click: navigate to that category (exit collection mode)
             var cat = e.target.closest('.mp3-cat');
-            if (!cat) return;
+            // mp3-cat-disabled (z.B. "Medienpool" ohne hasCategoryPerm(0)) ist
+            // ein <span> ohne data-cat -- ohne diese Pruefung wuerde catId
+            // unten zu NaN werden und currentCat kaputt setzen.
+            if (!cat || cat.classList.contains('mp3-cat-disabled') || !cat.hasAttribute('data-cat')) return;
             var catId = parseInt(cat.getAttribute('data-cat'), 10);
             currentCat = catId;
             localStorage.setItem('mp3_cat', catId);
@@ -4958,7 +4983,7 @@
                 return;
             }
             var catRow = e.target.closest('.mp3-cat');
-            if (catRow) {
+            if (catRow && !catRow.classList.contains('mp3-cat-disabled')) {
                 e.preventDefault();
                 catRow.classList.add('mp3-cat-drop-target');
             }
@@ -5013,7 +5038,9 @@
 
             // Medien per Drag&Drop einer anderen Kategorie zuordnen
             var catRow = e.target.closest('.mp3-cat');
-            if (catRow) {
+            // mp3-cat-disabled hat kein data-cat -- ohne diese Pruefung wuerde
+            // "|| 0" unten das Ziel faelschlich auf Kategorie 0 setzen.
+            if (catRow && !catRow.classList.contains('mp3-cat-disabled') && catRow.hasAttribute('data-cat')) {
                 e.preventDefault();
                 catRow.classList.remove('mp3-cat-drop-target');
 
@@ -5041,7 +5068,9 @@
         // Breadcrumb clicks (event delegation)
         breadcrumb.addEventListener('click', function (e) {
             var item = e.target.closest('.mp3-bc-item');
-            if (!item) return;
+            // mp3-bc-item-disabled (Medienpool-Wurzel ohne hasCategoryPerm(0))
+            // ist ein <span> ohne data-cat -- siehe Kategorie-Klick-Handler oben.
+            if (!item || item.classList.contains('mp3-bc-item-disabled') || !item.hasAttribute('data-cat')) return;
             e.preventDefault();
             var catId = parseInt(item.getAttribute('data-cat'), 10);
             currentCat = catId;
@@ -6332,7 +6361,12 @@
             focusWithoutScroll(overlay);
         }, 50);
         searchInput.value = '';
-        currentCat = parseInt(localStorage.getItem('mp3_cat') || '0', 10);
+        // Default -1 ("Alle Medien"): sicherer Startpunkt fuer jeden User,
+        // unabhaengig von individuellen Kategorie-Rechten -- "Medienpool"
+        // (Kategorie 0, "kein Ordner") braucht ein eigenes Recht, das viele
+        // auf einzelne Kategorien eingeschraenkte User gar nicht haben (siehe
+        // loadFiles()-Fallback weiter unten).
+        currentCat = parseInt(localStorage.getItem('mp3_cat') || '-1', 10);
         catCache = {};
         catPath = [];
         lastLoadedFiles = [];

@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 1.3.3 – 2026-08-27
+
+### Verbesserungen
+- Startet ein User das Overlay zum ersten Mal (noch keine gespeicherte Kategorie-Präferenz), landet er jetzt bei „Alle Medien" statt bei Kategorie „Kein Ordner" – letztere braucht ein eigenes Recht (`hasCategoryPerm(0)`), das viele auf einzelne Kategorien eingeschränkte User gar nicht haben.
+- Der „Medienpool"-Link (Sidebar-Wurzel und Breadcrumb-Icon) ist jetzt nicht mehr anklickbar, wenn der User keinen Zugriff auf Kategorie „Kein Ordner" hat – vorher führte ein Klick dort zuverlässig in eine Sackgasse. Mit Tooltip, der erklärt, wo die eigenen Medien stattdessen zu finden sind.
+
+### Bugfix
+- Der automatische Ausweich-Mechanismus auf „Alle Medien" bei fehlendem Kategorie-Zugriff (siehe 1.3.2) blieb in einem Fall hängen: löste er selbst aus, während bereits eine Anfrage lief, blockierte die eigene `mediaLoading`-Sperre den Ausweich-Versuch stillschweigend – das Grid zeigte dauerhaft den Lade-Spinner, obwohl die Daten längst geladen waren.
+
 ## Version 1.3.2 – 2026-08-27
 
 ### Sicherheit

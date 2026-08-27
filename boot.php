@@ -109,13 +109,24 @@ if (rex::isBackend() && rex::getUser()) {
         $categoriesUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_categories']);
         $unusedUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_unused']);
         // Uebergangs-Fallback, solange die installierte FriendsOfRedaxo/api-Version
-        // media/list noch nicht nach Kategorie-Rechten filtert (behoben ab api 1.3.1,
-        // siehe rex_api_mediaplace_media_list.php). Sobald api >=1.3.1 ueberall
-        // installiert ist, kann diese Weiche inkl. Fallback-Endpunkt entfernt werden.
+        // media/list noch keinen filter[permitted_only]-Parameter unterstuetzt
+        // (Opt-in fuer Kategorie-Rechte-Filterung, api-Addon PR #78 -- der
+        // klassische Medienpool gibt traditionell jedem Basis-Medienrecht
+        // Leserecht auf alle Kategorien, daher bewusst kein neues Default-
+        // Verhalten der Route). buildMediaEndpoint() schickt permitted_only
+        // immer mit; eine aeltere api-Version wuerde den unbekannten Parameter
+        // aber stillschweigend ignorieren und dadurch wieder ungefiltert
+        // liefern -- deshalb der eigene, rechte-gepruefte Fallback-Endpunkt
+        // hier. Sobald api >=1.3.1 ueberall installiert ist, kann diese
+        // Weiche inkl. Fallback-Endpunkt entfernt werden.
         $apiVersion = (string) (rex_addon::get('api')->getVersion() ?: '0');
         $apiMediaListSecure = version_compare($apiVersion, '1.3.1', '>=') ? '1' : '0';
         $mediaListFallbackUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_media_list']);
         $canFilterUnused = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasUnusedFilterAccess() ? '1' : '0';
+        // Kategorie 0 ("kein Ordner") ist ein eigenes Recht (hasCategoryPerm(0)),
+        // das viele auf einzelne Kategorien eingeschraenkte User nicht haben --
+        // steuert, ob der "Medienpool"-Sidebar-/Breadcrumb-Link anklickbar ist.
+        $canAccessRootCategory = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess(0) ? '1' : '0';
         $focuspointUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_focuspoint']);
         $focuspointAvailable = \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit() ? '1' : '0';
         $metainfoFormUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_metainfo_form']);
@@ -158,7 +169,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
+        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);
