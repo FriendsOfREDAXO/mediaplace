@@ -127,28 +127,4 @@ class DetailPanelFormatter
         $url = \rex_url::media(rawurlencode($filename));
         return $token ? $url . '?mp3v=' . rawurlencode($token) : $url;
     }
-
-    /**
-     * Tag-Text fuer eine Sprache in einem TinyMCE-Feld: HTML-Tags entfernt,
-     * auf 120 Zeichen gekuerzt (Vorschau im "Bearbeiten"-Canvas-Button-Modus,
-     * siehe tinyPreviewText() in mediapool3.js).
-     */
-    public static function tinyPreviewText(?string $value): string
-    {
-        $text = trim((string) $value);
-        if ('' === $text) {
-            return '–';
-        }
-        $text = preg_replace('/<br\s*\/?>/i', "\n", $text) ?? $text;
-        $text = preg_replace('/<\/p>\s*<p[^>]*>/i', "\n\n", $text) ?? $text;
-        $text = preg_replace('/<\/div>\s*<div[^>]*>/i', "\n", $text) ?? $text;
-        $text = strip_tags($text);
-        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $text = str_replace("\u{00A0}", ' ', $text);
-        $text = trim($text);
-        if ('' === $text) {
-            return '–';
-        }
-        return mb_substr($text, 0, 120);
-    }
 }

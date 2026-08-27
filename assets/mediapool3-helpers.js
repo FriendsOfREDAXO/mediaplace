@@ -58,35 +58,6 @@
         return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     }
 
-    function richTextToPlainText(raw) {
-        var s = String(raw || '');
-        if (!s) return '';
-
-        // Preserve visible line breaks before stripping tags.
-        s = s.replace(/<br\s*\/?>/gi, '\n');
-        s = s.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n');
-        s = s.replace(/<\/div>\s*<div[^>]*>/gi, '\n');
-
-        if (s.indexOf('<') !== -1 && typeof document !== 'undefined') {
-            var tmp = document.createElement('div');
-            tmp.innerHTML = s;
-            s = tmp.textContent || tmp.innerText || '';
-        }
-
-        // Normalize nbsp artifacts from TinyMCE and pasted content.
-        s = s.replace(/&nbsp;/gi, ' ');
-        s = s.replace(/\u00a0/g, ' ');
-        s = s.replace(/\r\n?/g, '\n');
-        s = s.replace(/^[ \t\u00a0]+/, '');
-
-        return s;
-    }
-
-    function tinyPreviewText(value) {
-        var text = richTextToPlainText(value);
-        return text ? text.slice(0, 120) : '–';
-    }
-
     function formatDate(v) {
         if (!v) return '–';
         var d = (typeof v === 'number' || /^\d{9,}$/.test(String(v)))
@@ -312,8 +283,6 @@
     Core.helpers.isImage = isImage;
     Core.helpers.fileIcon = fileIcon;
     Core.helpers.escAttr = escAttr;
-    Core.helpers.richTextToPlainText = richTextToPlainText;
-    Core.helpers.tinyPreviewText = tinyPreviewText;
     Core.helpers.formatDate = formatDate;
     Core.helpers.getFilenameExtension = getFilenameExtension;
     Core.helpers.normalizeReplacementExtension = normalizeReplacementExtension;

@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.5 – 2026-08-27
+
+### Entfernt
+- Die Feldtypen „TinyMCE" und „CKEditor5" für eigene JSON-Metainfo-Felder (MediaPlace → Metainfo Felder) sind entfallen, inklusive des dafür eingeführten Vollbild-Editor-Canvas im Overlay. Bereits gespeicherte Felder dieses Typs werden jetzt als einfaches Textfeld angezeigt statt zu crashen. Betrifft ausschließlich MediaPlace' eigenes JSON-Feldsystem (`med_json_data`) – die Metainfo-Canvas-Bearbeitung echter REDAXO-Kernfelder (`med_*`) sowie die TinyMCE/CKEditor5-Integration als Bild-/Medien-Picker (siehe 1.3.4 und früher) sind davon nicht betroffen.
+
 ## Version 1.3.4 – 2026-08-27
 
 ### Bugfix

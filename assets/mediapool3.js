@@ -81,16 +81,8 @@
     var activeCollectionId = null;
     var darkModeEnabled = false; // true = dark mode, false = light mode
     var mediaLinkPickFieldKey = null; // active media_link field key while picking from file grid
-    var detailTinyEditorIds = []; // TinyMCE editor ids initialized by the detail panel
     var fullscreenMode = false;
     var lightboxOpen = false;
-    // Editor canvas state
-    var editorCanvasOpen = false;
-    var editorCanvasTinyId = null;  // TinyMCE editor id in canvas
-    var editorCanvasFieldKey = null; // field key being edited
-    var editorCanvasClangId = null;  // clang id (null = no translation)
-    var editorCanvasEngine = null;   // 'tinymce' | 'cke5' -- welche Engine der (gemeinsame) Canvas gerade zeigt
-    var ckeCanvasEditor = null;      // aktive CKEditor5-Instanz im Canvas (ueber rex:cke5IsInit eingesammelt)
     var metainfoCanvasOpen = false;
     var metainfoCanvasFilename = null;
     var metainfoPickTarget = null; // { type: 'media', input } | { type: 'medialist', select, listId } while picking from the grid for a classic widget inside the metainfo canvas
@@ -153,8 +145,6 @@
     var isImage = MP3Core.helpers.isImage;
     var fileIcon = MP3Core.helpers.fileIcon;
     var escAttr = MP3Core.helpers.escAttr;
-    var richTextToPlainText = MP3Core.helpers.richTextToPlainText;
-    var tinyPreviewText = MP3Core.helpers.tinyPreviewText;
     var formatDate = MP3Core.helpers.formatDate;
     var getFilenameExtension = MP3Core.helpers.getFilenameExtension;
     var normalizeReplacementExtension = MP3Core.helpers.normalizeReplacementExtension;
@@ -1247,289 +1237,16 @@
 
 
 
-    function destroyDetailTinyEditors() {
-        if (typeof tinymce === 'undefined') {
-            detailTinyEditorIds = [];
-            return;
-        }
-
-        for (var i = 0; i < detailTinyEditorIds.length; i++) {
-            var editor = tinymce.get(detailTinyEditorIds[i]);
-            if (editor) {
-                editor.remove();
-            }
-        }
-        detailTinyEditorIds = [];
-    }
-
-    function getTinyLightOptions() {
-        var fallback = {
-            license_key: 'gpl',
-            language: 'de',
-            branding: false,
-            menubar: false,
-            statusbar: true,
-            plugins: 'autolink lists link charmap code',
-            toolbar: 'blocks | bold italic | bullist numlist | link unlink | code | undo redo',
-            height: 260,
-            paste_as_text: true
-        };
-
-        if (typeof tinyprofiles !== 'undefined' && tinyprofiles && tinyprofiles.light) {
-            return Object.assign({}, tinyprofiles.light);
-        }
-
-        return fallback;
-    }
-
-    function initDetailTinyEditors(container) {
-        if (typeof tinymce === 'undefined') return;
-        if (!container) return;
-
-        var editors = qsa('textarea.mp3-tinymce-input', container);
-        for (var i = 0; i < editors.length; i++) {
-            var textarea = editors[i];
-
-            // Initialize only visible editors; hidden language sections are initialized when expanded.
-            if (textarea.offsetParent === null) {
-                continue;
-            }
-
-            if (!textarea.id) {
-                textarea.id = 'mp3-tiny-' + Math.random().toString(36).slice(2, 10);
-            }
-
-            if (tinymce.get(textarea.id)) {
-                if (detailTinyEditorIds.indexOf(textarea.id) === -1) {
-                    detailTinyEditorIds.push(textarea.id);
-                }
-                continue;
-            }
-
-            var options = getTinyLightOptions();
-            var originalSetup = options.setup;
-            options.selector = '#' + textarea.id;
-            options.license_key = 'gpl';
-            options.setup = (function (setupFn) {
-                return function (editor) {
-                    if (typeof setupFn === 'function') {
-                        setupFn(editor);
-                    }
-                    editor.on('change input keyup undo redo setcontent', function () {
-                        if (typeof tinymce !== 'undefined' && typeof tinymce.triggerSave === 'function') {
-                            tinymce.triggerSave();
-                        }
-                        updateDetailSaveState();
-                    });
-                };
-            })(originalSetup);
-
-            tinymce.init(options);
-            detailTinyEditorIds.push(textarea.id);
-        }
-    }
-
-    // ---- TinyMCE Editor Canvas ----
-
-    function getTinyFullOptions() {
-        var base = {
-            license_key: 'gpl',
-            language: 'de',
-            branding: false,
-            menubar: false,
-            statusbar: true,
-            toolbar_sticky: true,
-            toolbar_sticky_offset: 0,
-            plugins: 'autolink lists link image charmap code fullscreen searchreplace wordcount autoresize',
-            toolbar: 'undo redo | blocks | bold italic underline strikethrough | bullist numlist | link image | removeformat code fullscreen',
-            min_height: 400,
-            autoresize_bottom_margin: 20,
-            paste_as_text: false,
-            entity_encoding: 'raw',
-            relative_urls: false,
-            skin: (typeof redaxo !== 'undefined' && redaxo.theme && redaxo.theme.current === 'dark') ? 'oxide-dark' : 'oxide',
-            content_css: (typeof redaxo !== 'undefined' && redaxo.theme && redaxo.theme.current === 'dark') ? 'dark' : 'default'
-        };
-
-        // Use "default" profile from tinyprofiles if available
-        if (typeof tinyprofiles !== 'undefined' && tinyprofiles && tinyprofiles['default']) {
-            base = Object.assign({}, tinyprofiles['default']);
-            base.license_key = 'gpl';
-            base.skin = (typeof redaxo !== 'undefined' && redaxo.theme && redaxo.theme.current === 'dark') ? 'oxide-dark' : 'oxide';
-            base.content_css = (typeof redaxo !== 'undefined' && redaxo.theme && redaxo.theme.current === 'dark') ? 'dark' : 'default';
-        }
-
-        return base;
-    }
-
-    function openEditorCanvas(fieldKey, clangId, label, engine) {
-        if (!overlay) return;
-        if (focuspointCanvasOpen) closeFocuspointCanvas();
-        if (metainfoCanvasOpen) closeMetainfoCanvas();
-
-        var selector = clangId !== null
-            ? '.mp3-tiny-canvas-value[data-json-field="' + fieldKey + '"][data-clang="' + clangId + '"]'
-            : '.mp3-tiny-canvas-value[data-json-field="' + fieldKey + '"]:not([data-clang])';
-
-        var hiddenInput = detailPanel ? detailPanel.querySelector(selector) : null;
-        var currentValue = hiddenInput ? hiddenInput.value : '';
-
-        editorCanvasOpen = true;
-        editorCanvasFieldKey = fieldKey;
-        editorCanvasClangId = clangId;
-        editorCanvasEngine = engine || 'tinymce';
-        // Steuert die TinyMCE/CKE5-Dialog-Stapelung in mediapool3.css: nur
-        // waehrend der eigene eingebettete Feld-Editor aktiv ist, sollen
-        // dessen Dialoge (.tox-tinymce-aux/.ck-body-wrapper) ueber #mp3-overlay
-        // liegen. Ohne diese Bedingung wuerde ein von AUSSEN (z.B. TinyMCE im
-        // Artikel-Inhalt) via MP3.open() geoeffnetes Overlay faelschlich unter
-        // dem eigentlich fremden TinyMCE-Dialog verschwinden.
-        document.body.classList.add('mp3-embedded-editor-active');
-
-        var content = qs('.mp3-content', overlay);
-        content.classList.add('mp3-editor-mode');
-
-        var canvas = qs('#mp3-editor-canvas', overlay);
-        canvas.style.display = '';
-
-        // Set header title
-        var titleEl = qs('.mp3-editor-canvas-title', canvas);
-        if (titleEl) titleEl.textContent = label || fieldKey;
-
-        // Prepare textarea
-        var ta = qs('#mp3-editor-canvas-textarea', canvas);
-        ta.value = currentValue;
-
-        if ('cke5' === editorCanvasEngine) {
-            // CKEditor5 -- offizielles Integrationsmuster des cke5-Addons
-            // (siehe builder-Addon): Textarea per Klasse/data-Attribut markieren,
-            // cke5_init_ready() aufrufen, Instanz ueber das globale jQuery-Event
-            // "rex:cke5IsInit" einsammeln (dort kommt die fertige Editor-Instanz
-            // mit, kein Registry-Polling noetig).
-            ta.className = 'mp3-editor-canvas-textarea cke5-editor';
-            ta.setAttribute('data-profile', 'default');
-            if (!ta.id) ta.id = 'mp3-editor-canvas-textarea';
-            ckeCanvasEditor = null;
-
-            if (typeof window.cke5_init_ready === 'function' && window.jQuery) {
-                var taId = ta.id;
-                window.jQuery(window).off('rex:cke5IsInit.mp3').on('rex:cke5IsInit.mp3', function (e, editor, uniqueId) {
-                    if (uniqueId === taId) {
-                        ckeCanvasEditor = editor;
-                    }
-                });
-                window.cke5_init_ready(window.jQuery(ta));
-            }
-            // Ohne cke5-Addon: Textarea bleibt ein normales Plain-Text-Feld,
-            // kein Fehler -- gleiche Graceful-Degradation wie beim TinyMCE-Zweig.
-        } else {
-            ta.className = 'mp3-editor-canvas-textarea';
-            ta.removeAttribute('data-profile');
-
-            // Init TinyMCE
-            if (typeof tinymce !== 'undefined') {
-                if (editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
-                    tinymce.get(editorCanvasTinyId).remove();
-                }
-                if (!ta.id) ta.id = 'mp3-editor-canvas-textarea';
-                editorCanvasTinyId = ta.id;
-
-                var opts = getTinyFullOptions();
-                opts.selector = '#' + ta.id;
-                opts.license_key = 'gpl';
-                // Remove conflicting keys
-                delete opts.height;
-                opts.setup = (function (origSetup) {
-                    return function (editor) {
-                        if (typeof origSetup === 'function') origSetup(editor);
-                        editor.on('keydown', function (e) {
-                            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-                                e.preventDefault();
-                                commitEditorCanvas();
-                            }
-                        });
-                    };
-                })(opts.setup || null);
-                tinymce.init(opts);
-            }
-        }
-
-        // Focus canvas
-        canvas.scrollTop = 0;
-    }
-
-    function commitEditorCanvas() {
-        if (!editorCanvasOpen) return;
-        var val = '';
-        if ('cke5' === editorCanvasEngine && ckeCanvasEditor) {
-            val = ckeCanvasEditor.getData();
-        } else if (typeof tinymce !== 'undefined' && editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
-            val = tinymce.get(editorCanvasTinyId).getContent();
-        } else {
-            var ta = qs('#mp3-editor-canvas-textarea', overlay);
-            if (ta) val = ta.value;
-        }
-
-        // Write back to hidden input in detail panel
-        if (detailPanel && editorCanvasFieldKey !== null) {
-            var selector = editorCanvasClangId !== null
-                ? '.mp3-tiny-canvas-value[data-json-field="' + editorCanvasFieldKey + '"][data-clang="' + editorCanvasClangId + '"]'
-                : '.mp3-tiny-canvas-value[data-json-field="' + editorCanvasFieldKey + '"]:not([data-clang])';
-            var hi = detailPanel.querySelector(selector);
-            if (hi) {
-                hi.value = val;
-                // Update preview
-                var row = hi.nextElementSibling;
-                if (row && row.classList.contains('mp3-tiny-canvas-row')) {
-                    var preview = row.querySelector('.mp3-tiny-canvas-preview');
-                    if (preview) preview.textContent = tinyPreviewText(val);
-                }
-            }
-            updateDetailSaveState();
-        }
-
-        closeEditorCanvas();
-    }
-
-    function closeEditorCanvas() {
-        editorCanvasOpen = false;
-        editorCanvasFieldKey = null;
-        editorCanvasClangId = null;
-        if (!metainfoCanvasOpen) document.body.classList.remove('mp3-embedded-editor-active');
-
-        if ('cke5' === editorCanvasEngine) {
-            var ckeTa = qs('#mp3-editor-canvas-textarea', overlay);
-            if (ckeTa && window.jQuery && typeof window.cke5_destroy === 'function') {
-                window.cke5_destroy(window.jQuery(ckeTa));
-            }
-            if (ckeTa) {
-                ckeTa.className = 'mp3-editor-canvas-textarea';
-                ckeTa.removeAttribute('data-profile');
-            }
-            ckeCanvasEditor = null;
-        } else if (typeof tinymce !== 'undefined' && editorCanvasTinyId && tinymce.get(editorCanvasTinyId)) {
-            tinymce.get(editorCanvasTinyId).remove();
-        }
-        editorCanvasTinyId = null;
-        editorCanvasEngine = null;
-
-        var content = qs('.mp3-content', overlay);
-        if (content) content.classList.remove('mp3-editor-mode');
-        var canvas = qs('#mp3-editor-canvas', overlay);
-        if (canvas) canvas.style.display = 'none';
-    }
-
     // ---- Metainfo-Feld-Bearbeitung ----
     function openMetainfoCanvas(filename, label) {
         if (!overlay || !filename) return;
         if (focuspointCanvasOpen) closeFocuspointCanvas();
-        if (editorCanvasOpen) closeEditorCanvas();
 
         metainfoCanvasOpen = true;
         metainfoCanvasFilename = filename;
-        // Siehe openEditorCanvas(): REDAXOs Metainfo-Formular kann eigene
-        // TinyMCE-Feldtypen rendern, deren Dialoge ebenfalls ueber #mp3-overlay
-        // liegen muessen.
+        // REDAXOs Metainfo-Formular kann eigene TinyMCE-Feldtypen rendern
+        // (klassisches Metainfo-Addon, nicht unser JSON-Feldsystem), deren
+        // Dialoge ebenfalls ueber #mp3-overlay liegen muessen.
         document.body.classList.add('mp3-embedded-editor-active');
 
         var content = qs('.mp3-content', overlay);
@@ -1616,7 +1333,7 @@
     function closeMetainfoCanvas() {
         metainfoCanvasOpen = false;
         metainfoCanvasFilename = null;
-        if (!editorCanvasOpen) document.body.classList.remove('mp3-embedded-editor-active');
+        document.body.classList.remove('mp3-embedded-editor-active');
 
         var content = qs('.mp3-content', overlay);
         if (content) content.classList.remove('mp3-editor-mode');
@@ -1709,10 +1426,10 @@
     }
 
     // ---- Fokuspunkt-Canvas (Integration mit dem focuspoint-Addon) ----
-    // Eigenstaendiger Canvas-Block (nicht der TinyMCE-Editor-Canvas oben) --
-    // andere Body-Struktur (Bild+Crosshair+Live-Vorschau statt Textarea),
-    // teilt aber dasselbe "Hauptbereich uebernehmen"-Konzept (Grid wird
-    // verdeckt, Header mit Zurueck/Titel/Speichern).
+    // Eigenstaendiger Canvas-Block (nicht der Metainfo-Canvas oben) -- andere
+    // Body-Struktur (Bild+Crosshair+Live-Vorschau statt Formular), teilt aber
+    // dasselbe "Hauptbereich uebernehmen"-Konzept (Grid wird verdeckt, Header
+    // mit Zurueck/Titel/Speichern).
 
     function focuspointTypeNames() {
         return Object.keys(focuspointTypes).sort(function (a, b) {
@@ -1821,7 +1538,6 @@
 
     function openFocuspointCanvas(filename) {
         if (!overlay || !canFocuspoint || !filename) return;
-        if (editorCanvasOpen) closeEditorCanvas();
         if (metainfoCanvasOpen) closeMetainfoCanvas();
 
         focuspointCanvasOpen = true;
@@ -2097,10 +1813,6 @@
 
 
     function collectJsonValuesFromDetail() {
-        if (typeof tinymce !== 'undefined' && typeof tinymce.triggerSave === 'function') {
-            tinymce.triggerSave();
-        }
-
         var json = {};
         detailFieldDefs.forEach(function (field) {
             var key = field.key;
@@ -2180,24 +1892,6 @@
                     json[key] = chosen.length ? chosen : null;
                 } else {
                     json[key] = selEl.value || null;
-                }
-                return;
-            }
-
-            if (widget === 'tinymce' || widget === 'cke5') {
-                if (field.translatable) {
-                    var tinyInputs = qsa('.mp3-tiny-canvas-value[data-json-field="' + key + '"][data-clang]', detailPanel);
-                    var tinyMap = {};
-                    for (var ti = 0; ti < tinyInputs.length; ti++) {
-                        var tv = String(tinyInputs[ti].value || '').trim();
-                        var tcid = String(tinyInputs[ti].getAttribute('data-clang') || '');
-                        if (tv) tinyMap[tcid] = tv;
-                    }
-                    json[key] = Object.keys(tinyMap).length ? tinyMap : null;
-                } else {
-                    var tinyEl = detailPanel.querySelector('.mp3-tiny-canvas-value[data-json-field="' + key + '"]');
-                    var tinyScalar = tinyEl ? String(tinyEl.value || '').trim() : '';
-                    json[key] = tinyScalar || null;
                 }
                 return;
             }
@@ -2397,7 +2091,6 @@
 
     function showDetail(filename) {
         selectedFile = filename;
-        destroyDetailTinyEditors();
         if (!detailPanel) return;
 
         qsa('.mp3-card', grid).forEach(function (c) {
@@ -2431,7 +2124,6 @@
 
     function hideDetail() {
         selectedFile = null;
-        destroyDetailTinyEditors();
         setMediaLinkPickMode(null);
         if (detailPanel) {
             detailPanel.classList.remove('mp3-detail-open');
@@ -2509,7 +2201,6 @@
         var selectBtn = qs('.mp3-detail-select-btn', detailPanel);
         if (selectBtn) selectBtn.style.display = (onSelect || onMultiSelect) ? '' : 'none';
 
-        initDetailTinyEditors(detailPanel);
         updateDetailSaveState();
     }
 
@@ -4208,20 +3899,6 @@
                                 '<button type="button" class="mp3-load-more-btn" style="display:none"><i class="fa-solid fa-angles-down"></i> ' + t('mediaplace_load_more') + '</button>' +
                                 '<span class="mp3-page-info"></span>' +
                             '</div>' +
-                            '<div class="mp3-editor-canvas" id="mp3-editor-canvas" style="display:none">' +
-                                '<div class="mp3-editor-canvas-header">' +
-                                    '<button type="button" class="mp3-editor-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
-                                        '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
-                                    '</button>' +
-                                    '<div class="mp3-editor-canvas-title"></div>' +
-                                    '<button type="button" class="mp3-editor-canvas-save">' +
-                                        '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save') +
-                                    '</button>' +
-                                '</div>' +
-                                '<div class="mp3-editor-canvas-body">' +
-                                    '<textarea id="mp3-editor-canvas-textarea" class="mp3-editor-canvas-textarea"></textarea>' +
-                                '</div>' +
-                            '</div>' +
                             '<div class="mp3-focuspoint-canvas" id="mp3-focuspoint-canvas" style="display:none">' +
                                 '<div class="mp3-focuspoint-canvas-header">' +
                                     '<button type="button" class="mp3-focuspoint-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
@@ -5537,7 +5214,6 @@
                 } else {
                     extra.style.display = '';
                     langToggleBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Weitere Sprachen ausblenden';
-                    initDetailTinyEditors(extra);
                 }
                 return;
             }
@@ -5930,9 +5606,6 @@
             if (e.key === 'Escape') {
                 setTagFilterMenuOpen(false);
                 setFilterDropdownMenuOpen(false);
-                if (editorCanvasOpen) {
-                    closeEditorCanvas();
-                }
                 if (focuspointCanvasOpen) {
                     closeFocuspointCanvas();
                 }
@@ -5944,18 +5617,6 @@
         });
 
         updateTagFilterOptions();
-
-        // Editor Canvas events
-        var editorCanvas = qs('#mp3-editor-canvas', overlay);
-        if (editorCanvas) {
-            editorCanvas.addEventListener('click', function (e) {
-                if (e.target.closest('.mp3-editor-canvas-back')) {
-                    closeEditorCanvas();
-                } else if (e.target.closest('.mp3-editor-canvas-save')) {
-                    commitEditorCanvas();
-                }
-            });
-        }
 
         // Metainfo-Canvas events
         var metainfoCanvas = qs('#mp3-metainfo-canvas', overlay);
@@ -6021,17 +5682,6 @@
                 }
             });
         }
-
-        // "Bearbeiten" button in detail panel (event delegation on overlay)
-        overlay.addEventListener('click', function (e) {
-            var btn = e.target.closest('.mp3-tiny-canvas-open');
-            if (!btn) return;
-            var fk = String(btn.getAttribute('data-canvas-field') || '').trim();
-            var cl = btn.hasAttribute('data-canvas-clang') ? String(btn.getAttribute('data-canvas-clang')) : null;
-            var lbl = String(btn.getAttribute('data-canvas-label') || fk);
-            var eng = String(btn.getAttribute('data-canvas-engine') || 'tinymce');
-            if (fk) openEditorCanvas(fk, cl, lbl, eng);
-        });
 
         // "Nativ bearbeiten"-Button (echte Metainfo-Felder im eigenen Canvas)
         overlay.addEventListener('click', function (e) {
@@ -6334,7 +5984,6 @@
         mediaLinkPickFieldKey = null;
         closeLightbox();
         setFullscreenMode(false);
-        destroyDetailTinyEditors();
         onSelect = (!multiMode && typeof callback === 'function') ? callback : null;
         onMultiSelect = (multiMode && typeof callback === 'function') ? callback : null;
 
@@ -6402,7 +6051,6 @@
         }
         setActiveCollection(features.collections ? (localStorage.getItem('mp3_active_collection') || null) : null);
         setDarkMode(localStorage.getItem('mp3_dark_mode') === '1');
-        closeEditorCanvas();
         closeFocuspointCanvas();
 
         // Show/hide multi footer
@@ -6459,7 +6107,6 @@
         collectionDragSelected = {};
         mediaLinkPickFieldKey = null;
         metainfoPickTarget = null;
-        destroyDetailTinyEditors();
         onSelect = null;
         onMultiSelect = null;
     }
