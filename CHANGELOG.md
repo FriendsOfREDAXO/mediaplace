@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.2 – 2026-08-27
+
+### Sicherheit
+- Der klassische Medienpool gibt traditionell jedem Backend-User mit Basis-Medienrecht Leserecht auf **alle** Kategorien – nur Schreibaktionen (verschieben/löschen) prüfen die Kategorie-Rechte. Der zugehörige Fix im `api`-Addon ([PR #78](https://github.com/FriendsOfREDAXO/api/pull/78)) spiegelt dieses Verhalten deshalb per Default weiterhin exakt, um bestehende Aufrufer nicht zu brechen – die strengere Kategorie-Filterung, die MediaPlace will, ist dort jetzt ein expliziter Opt-in (`filter[permitted_only]=1`). MediaPlace schickt dieses Flag ab sofort bei jeder Medienlisten-Anfrage automatisch mit, damit die gewünschte strikte Filterung erhalten bleibt, sobald die installierte `api`-Version den Fix mitbringt und der eigene Fallback-Endpunkt nicht mehr greift.
+
 ## Version 1.3.1 – 2026-08-27
 
 ### Bugfix

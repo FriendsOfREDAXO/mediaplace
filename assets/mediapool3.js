@@ -3074,7 +3074,14 @@
     function buildMediaEndpoint() {
         // filter[term] durchsucht serverseitig Dateiname UND Titel (inkl.
         // "quoted phrases" und type:jpg,png) -- api-Addon CHANGELOG 1.3 (#64).
-        var endpoint = 'media?per_page=' + mediaPerPage + '&page=' + mediaPage;
+        // filter[permitted_only]=1: der klassische Medienpool gibt jedem
+        // Backend-User mit Basis-Medienrecht Leserecht auf ALLE Kategorien
+        // (siehe api-Addon PR #78), das api-Addon spiegelt das seit dessen
+        // Fix per Default exakt nach. MediaPlace will bewusst die strengere
+        // Kategorie-Rechtefilterung -- ohne dieses Flag wuerde ab der Version,
+        // die den Fix bringt, sonst still wieder der permissive Default
+        // greifen (data-api-media-list-secure="1", kein Fallback mehr aktiv).
+        var endpoint = 'media?per_page=' + mediaPerPage + '&page=' + mediaPage + '&filter[permitted_only]=1';
         // catId -1 = alle Medien (kein Kategorie-Filter)
         if (currentCat >= 0) {
             endpoint += '&filter[category_id]=' + currentCat;
