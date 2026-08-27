@@ -29,7 +29,19 @@ class MediaPermission
     }
 
     /**
-     * Zugriff auf eine konkrete Kategorie (inkl. "Alle Kategorien"-Recht).
+     * Zugriff auf eine konkrete Kategorie (inkl. "Alle Kategorien"-Recht) --
+     * KASKADIEREND: ist ein VORFAHRE der Kategorie freigegeben, gilt das auch
+     * fuer ihren gesamten Unterbaum. Bewusste Abweichung vom klassischen
+     * Medienpool, dessen Rechte-Widget (rex_media_category_select mit
+     * checkPerms=false) jede Kategorie unabhaengig/flach behandelt -- ein
+     * Admin muesste dort jede Unterkategorie einzeln ankreuzen. MediaPlace
+     * behandelt "Zugriff auf X" bewusst als "Zugriff auf X und alles
+     * darunter", konsequente Fortsetzung von hasParentCategoryAccess()'s
+     * Modell ("frei arbeiten innerhalb einer freigegebenen Kategorie"): eine
+     * dort neu angelegte -- oder bereits vorhandene, vom Admin nicht separat
+     * freigegebene -- Unterkategorie muss fuer denselben User auch
+     * sichtbar/durchsuchbar sein, sonst waere "frei anlegen/verwalten"
+     * halbfertig (siehe CHANGELOG fuer die Diskussion der Kompromisse).
      */
     public static function hasCategoryAccess(int $categoryId): bool
     {
@@ -41,7 +53,28 @@ class MediaPermission
             return true;
         }
 
-        return $user->getComplexPerm('media')->hasCategoryPerm($categoryId);
+        $perm = $user->getComplexPerm('media');
+        if ($perm->hasCategoryPerm($categoryId)) {
+            return true;
+        }
+
+        if (0 === $categoryId) {
+            return false; // "kein Ordner" hat keine Vorfahren zum Kaskadieren
+        }
+        $category = \rex_media_category::get($categoryId);
+        if (!$category) {
+            return false;
+        }
+        foreach (explode('|', trim($category->getPath(), '|')) as $ancestorId) {
+            if ('' === $ancestorId) {
+                continue;
+            }
+            if ($perm->hasCategoryPerm((int) $ancestorId)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -70,17 +103,52 @@ class MediaPermission
             ));
         }
 
-        $perm = $user->getComplexPerm('media');
         $allCategoryIds = array_map('intval', array_column(
             \rex_sql::factory()->getArray('SELECT id FROM ' . \rex::getTable('media_category')),
             'id',
         ));
         $allCategoryIds[] = 0; // "kein Ordner" ist ein eigenes Recht, siehe hasCategoryPerm(0)
 
+        // hasCategoryAccess() statt rohem $perm->hasCategoryPerm(): kaskadiert
+        // auf Vorfahren, siehe dortiger Kommentar -- sonst waeren Unterkategorien
+        // einer freigegebenen Kategorie hier faelschlich nicht enthalten.
         return array_values(array_filter(
             $allCategoryIds,
-            static fn (int $id): bool => $perm->hasCategoryPerm($id),
+            static fn (int $id): bool => self::hasCategoryAccess($id),
         ));
+    }
+
+    /**
+     * Zugriff auf die ELTERN-Kategorie einer Kategorie -- massgeblich fuer
+     * Operationen, die die Kategorie selbst aus ihrem Elternverzeichnis
+     * entfernen/veraendern (umbenennen, loeschen, Verschieben als Quelle).
+     *
+     * Bewusst NICHT hasCategoryAccess() auf die Kategorie selbst: ein User
+     * mit Zugriff nur auf Kategorie X soll innerhalb von X frei arbeiten
+     * koennen (Unterkategorien anlegen/umbenennen/loeschen/verschieben),
+     * X selbst aber nicht umbenennen/loeschen/verschieben koennen -- sonst
+     * koennte er die ihm zugewiesene Ordnergrenze selbst aufloesen. Klassisches
+     * REDAXO ist hier zum Vergleich strenger: Kategorieverwaltung ist komplett
+     * PERMALL-only (mediapool/pages/structure.php, $PERMALL = hasCategoryPerm(0)),
+     * ein auf einzelne Kategorien eingeschraenkter User kann dort ueberhaupt
+     * keine Kategorie anlegen/umbenennen/loeschen, auch nicht innerhalb der
+     * eigenen. MediaPlace erlaubt das bewusst (bessere UX fuer Redakteure, die
+     * ihren Bereich selbst organisieren sollen) -- schuetzt dafuer aber die
+     * Grenze selbst ueber diese Methode.
+     *
+     * $parentId 0 = echte Wurzel (rex_media_category.parent_id bei
+     * Top-Level-Kategorien). Trotz identischer Zahl technisch etwas anderes
+     * als categoryId 0 ("kein Ordner", Dateien ohne Kategorie) -- REDAXO-Core
+     * verwendet fuer die Kategorieverwaltungs-Berechtigung an der Wurzel aber
+     * exakt dasselbe Recht ($PERMALL = hasCategoryPerm(0), siehe
+     * mediapool/pages/structure.php), das inkludiert hasAll() bereits selbst
+     * (rex_media_perm::hasCategoryPerm() = hasAll() || in_array(...)).
+     * hasCategoryAccess(0) deckt genau das schon korrekt ab -- keine
+     * Sonderbehandlung noetig.
+     */
+    public static function hasParentCategoryAccess(int $parentId): bool
+    {
+        return self::hasCategoryAccess($parentId);
     }
 
     /**

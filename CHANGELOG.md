@@ -1,5 +1,44 @@
 # Changelog
 
+## Version 1.3.13 – 2026-08-28
+
+### Übergangslösung für Installationen ohne den kaskadierenden `api`-Fix
+Die eigentliche Behebung von 1.3.9–1.3.12 liegt teils im `api`-Addon (PR [#78](https://github.com/FriendsOfREDAXO/api/pull/78), noch offen). Bis das dort released ist, betreffen die folgenden zwei Punkte alle Installationen, die noch eine `api`-Version ohne diesen Fix einsetzen:
+
+- **Durchsuchen selbst behoben, nicht mehr auf `api` angewiesen**: Die Medienliste nutzt jetzt in jedem Fall (bis `api` die Kaskadierung tatsächlich released hat) MediaPlace's eigenen, rechte-geprüften Fallback-Endpunkt (`rex_api_mediaplace_media_list.php`) statt der direkten `api`-Route – der Fallback kaskadiert bereits seit 1.3.9 korrekt über `MediaPermission`, war aber bisher nur bei `api <1.3.1` aktiv. Damit sind Unterkategorien einer freigegebenen Kategorie beim Durchsuchen jetzt unabhängig von der installierten `api`-Version korrekt sichtbar.
+- **Hochladen/Löschen/Verschieben-Ziel bleibt vorerst von `api` abhängig**: Für diese Operationen bietet MediaPlace bewusst keinen eigenen Ersatz-Endpunkt (kein Duplizieren der Schreiblogik). Schlägt eine dieser Aktionen serverseitig mit HTTP 403 fehl (typischerweise beim Arbeiten in einer Unterkategorie einer freigegebenen Kategorie auf einer `api`-Version ohne den Fix), zeigt MediaPlace jetzt statt einer rohen Fehlermeldung einen verständlichen Hinweis auf die Rechte-Grenze – beim Hochladen als Tooltip auf dem fehlgeschlagenen Datei-Icon, sonst als Fehlermeldung im jeweiligen Dialog. Sobald die installierte `api`-Version den Fix enthält, funktionieren diese Aktionen ohne weiteres Update dieses Addons.
+
+## Version 1.3.12 – 2026-08-28
+
+### Bugfix
+- Löschen, Titel/Kategorie ändern und Datei ersetzen schlugen für Dateien in einer Unterkategorie einer freigegebenen Kategorie mit HTTP 403 fehl – gleiche Ursache wie beim Durchsuchen (1.3.10) und Hochladen (1.3.11). Nutzt jetzt die kaskadierende `permitted_only`-Option des `api`-Addons auch bei diesen Operationen.
+- ~~Bekannte verbleibende Lücke (im `api`-Addon, siehe [api#79](https://github.com/FriendsOfREDAXO/api/issues/79)): Beim Verschieben einer Datei in eine andere Kategorie über das Detail-Panel prüft der Server bislang nur die *aktuelle* Kategorie der Datei, nicht die neue Zielkategorie.~~ Inzwischen im `api`-Addon behoben (Ziel-Kategorie wird jetzt ebenfalls geprüft, unabhängig von `permitted_only`) – kein Update dieses Addons nötig, sobald die `api`-Addon-Version mit dem Fix installiert ist.
+
+## Version 1.3.11 – 2026-08-28
+
+### Bugfix
+- Hochladen in eine Unterkategorie einer freigegebenen Kategorie schlug mit HTTP 403 fehl (Datei-Icon in der Upload-Warteschlange blieb rot) – gleiche Ursache wie beim Durchsuchen in 1.3.10: das `api`-Addon prüfte die Ziel-Kategorie beim Hochladen nur auf exakten Treffer, nicht auf Vorfahren. Nutzt jetzt dessen neue kaskadierende `permitted_only`-Option auch beim Hochladen (Direkt-Upload und Chunk-Upload für große Dateien).
+
+## Version 1.3.10 – 2026-08-28
+
+### Bugfix
+- Eine leere Unterkategorie innerhalb einer freigegebenen Kategorie wurde als befüllt angezeigt und zeigte Dateien aus „Alle Medien" – Ursache war eine Rechte-Lücke im `api`-Addon (`filter[permitted_only]` prüfte beim Durchsuchen einer Kategorie nur exakten Treffer, nicht Vorfahren, siehe [api#79](https://github.com/FriendsOfREDAXO/api/issues/79)/dortiger Fix). Beim Fehlschlagen fiel MediaPlace automatisch auf „Alle Medien" zurück, aktualisierte dabei aber Breadcrumb und Sidebar-Markierung nicht – die Kategorie blieb optisch ausgewählt, obwohl bereits eine andere Ansicht geladen war. Breadcrumb/Sidebar werden jetzt beim automatischen Ausweichen korrekt mit aktualisiert, als zusätzliche Absicherung unabhängig vom eigentlichen Fix im `api`-Addon.
+
+## Version 1.3.9 – 2026-08-28
+
+### Bugfix
+- 1.3.8 machte Umbenennen/Löschen/Verschieben einer freigegebenen Kategorie selbst zu Recht unmöglich – aber `MediaPermission::hasCategoryAccess()` prüfte weiterhin nur exakte Treffer, nicht Vorfahren. Dadurch waren Unterkategorien einer freigegebenen Kategorie (egal ob selbst neu angelegt oder bereits vorhanden) weder im Kategoriebaum sichtbar noch beim Durchsuchen erreichbar, obwohl der User sie laut 1.3.8 frei verwalten können soll. `hasCategoryAccess()` kaskadiert jetzt: Zugriff auf eine Kategorie gilt automatisch für ihren gesamten Unterbaum (bewusste, dokumentierte Abweichung vom klassischen Medienpool, dessen Rechte-Widget jede Kategorie unabhängig behandelt).
+
+### Verbesserungen
+- Das Kategorie-Aktionsmenü ("...") zeigt „Umbenennen"/„Verschieben"/„Löschen" jetzt nur noch an, wenn der User dafür tatsächlich Zugriff auf die Elternkategorie hat – „Unterkategorie" bleibt immer verfügbar. Vorher wurden alle vier Aktionen immer angeboten und liefen bei einer geschützten Kategorie serverseitig mit 403 ins Leere.
+- „Kategorie verschieben" bietet „(Hauptverzeichnis)" als Ziel nicht mehr an, wenn der User dorthin ohnehin nicht verschieben darf.
+- Kategorie anlegen/umbenennen/verschieben/löschen zeigt Fehler nicht mehr per rohem `alert()` mit unverständlichem "Permission denied", sondern inline im jeweiligen Dialog mit einer verständlichen Meldung, wenn die Rechte-Grenze der Grund ist.
+
+## Version 1.3.8 – 2026-08-27
+
+### Sicherheit
+- Ein Backend-User mit auf einzelne Kategorien eingeschränkten Medienrechten konnte eine ihm zugewiesene Kategorie selbst umbenennen, löschen oder verschieben (das `api`-Addon prüfte für diese drei Operationen nur Zugriff auf die Kategorie selbst, nicht auf deren Elternkategorie) – die vom Admin festgelegte Ordner-Hauptstruktur war damit vom zugewiesenen User selbst auflösbar. Kategorie anlegen/umbenennen/löschen/verschieben laufen jetzt über einen eigenen, rechte-geprüften Endpunkt (`rex_api_mediaplace_categories`): Umbenennen/Löschen/Verschieben-als-Quelle brauchen jetzt Zugriff auf die **Elternkategorie**, nicht auf die Kategorie selbst – ein User mit Zugriff auf Kategorie X kann weiterhin frei innerhalb von X arbeiten (Unterkategorien anlegen/umbenennen/löschen/verschieben), X selbst bleibt aber vor ihm geschützt. Anlegen unter X bleibt unverändert erlaubt (das war bereits korrekt).
+
 ## Version 1.3.7 – 2026-08-27
 
 ### Bugfix

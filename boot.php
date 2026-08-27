@@ -128,10 +128,23 @@ if (rex::isBackend() && rex::getUser()) {
         // immer mit; eine aeltere api-Version wuerde den unbekannten Parameter
         // aber stillschweigend ignorieren und dadurch wieder ungefiltert
         // liefern -- deshalb der eigene, rechte-gepruefte Fallback-Endpunkt
-        // hier. Sobald api >=1.3.1 ueberall installiert ist, kann diese
-        // Weiche inkl. Fallback-Endpunkt entfernt werden.
+        // hier. Schwelle bewusst auf 1.3.2 gesetzt (noch keine reale
+        // api-Release-Version, Platzhalter fuer die erste Version, die PR #78
+        // MIT der spaeter ergaenzten Kaskadierung enthaelt): der eigene
+        // Fallback-Endpunkt (rex_api_mediaplace_media_list.php) nutzt
+        // MediaPermission::getAccessibleCategoryIds(), das bereits kaskadiert
+        // (Zugriff auf X gilt fuer den ganzen Unterbaum) -- ohne die Anhebung
+        // wuerden Installationen mit reinem api 1.3.1 (Kategorie-Filterung,
+        // aber noch exakt statt kaskadierend) den direkten, nicht
+        // kaskadierenden media/list-Endpunkt nutzen und Unterkategorien einer
+        // freigegebenen Kategorie faelschlich leer/gefiltert sehen. Sobald
+        // api die Kaskadierung tatsaechlich released hat, hier die echte
+        // Versionsnummer eintragen (dann kann fuer >= diese Version wieder
+        // direkt auf media/list gegangen werden); bis api ueberall >= dieser
+        // Version installiert ist, bleibt die Weiche inkl. Fallback-Endpunkt
+        // noetig.
         $apiVersion = (string) (rex_addon::get('api')->getVersion() ?: '0');
-        $apiMediaListSecure = version_compare($apiVersion, '1.3.1', '>=') ? '1' : '0';
+        $apiMediaListSecure = version_compare($apiVersion, '1.3.2', '>=') ? '1' : '0';
         $mediaListFallbackUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_media_list']);
         $canFilterUnused = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasUnusedFilterAccess() ? '1' : '0';
         // Kategorie 0 ("kein Ordner") ist ein eigenes Recht (hasCategoryPerm(0)),

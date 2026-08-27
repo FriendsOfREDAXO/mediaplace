@@ -4662,6 +4662,12 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     color: #c9302c;
 }
 
+.mp3-cat-new-error {
+    margin: 2px 0 4px;
+    font-size: 12px;
+    color: #c9302c;
+}
+
 /* ---- File category dropdown in Detail Panel ---- */
 #mp3-overlay .mp3-move-file-wrap {
     display: flex;

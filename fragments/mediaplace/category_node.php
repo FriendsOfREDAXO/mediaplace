@@ -26,6 +26,13 @@ $name = $category->getName();
 $children = rex_api_mediaplace_categories::filterVisibleCategories($category->getChildren());
 $hasKids = count($children) > 0;
 $indent = ($depth + 1) * 16;
+// Umbenennen/Verschieben/Loeschen brauchen Zugriff auf die ELTERN-Kategorie,
+// nicht auf die Kategorie selbst -- siehe MediaPermission::hasParentCategoryAccess().
+// Steuert, welche Aktionen das "..."-Menue ueberhaupt anbietet (openCatMenu()
+// liest data-can-manage) -- Unterkategorie-Anlegen bleibt davon unberuehrt,
+// da die Kategorie ueberhaupt nur sichtbar ist, wenn hasCategoryAccess($id)
+// bereits zutrifft.
+$canManage = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasParentCategoryAccess($category->getParentId());
 ?>
 <div class="mp3-cat-node" data-cat-id="<?= $id ?>">
     <div class="mp3-cat-row">
@@ -36,7 +43,7 @@ $indent = ($depth + 1) * 16;
             <i class="fa-solid fa-folder mp3-cat-folder-icon"></i>
 <?php endif; ?>
             <?= rex_escape($name) ?></a>
-        <button class="mp3-cat-menu-btn" data-cat-menu-toggle="<?= $id ?>" data-cat-menu-name="<?= rex_escape($name) ?>" title="<?= rex_escape($this->i18n('mediaplace_cat_actions')) ?>">
+        <button class="mp3-cat-menu-btn" data-cat-menu-toggle="<?= $id ?>" data-cat-menu-name="<?= rex_escape($name) ?>" data-can-manage="<?= $canManage ? '1' : '0' ?>" title="<?= rex_escape($this->i18n('mediaplace_cat_actions')) ?>">
             <i class="fa-solid fa-ellipsis-vertical"></i></button>
     </div>
 <?php if ($hasKids): ?>

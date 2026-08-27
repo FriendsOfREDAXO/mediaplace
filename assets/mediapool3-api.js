@@ -105,7 +105,7 @@
         })
         .then(function (r) {
             return r.json().then(function (body) {
-                if (!r.ok) throw new Error(body.error || 'HTTP ' + r.status);
+                if (!r.ok || body.error) throwCategoryApiError(r, body);
                 return body;
             });
         });
@@ -267,21 +267,25 @@
         fd.append('file', file);
         // catId -1 means collection mode (no real category) → upload to root (0)
         fd.append('category_id', (catId && catId > 0) ? catId : 0);
+        // Kaskadierende Rechtepruefung (Zugriff auf eine Kategorie gilt auch
+        // fuer ihren Unterbaum) statt exaktem Treffer -- sonst laesst sich in
+        // eine Unterkategorie einer freigegebenen Kategorie nicht hochladen.
+        // Siehe filter[permitted_only] bei buildMediaEndpoint()/fetchTypeCounts().
+        fd.append('permitted_only', '1');
         return fetch(API_BASE + 'media', {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: fd
-        }).then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-        });
+        }).then(apiUploadJsonOrError);
     }
 
     function apiUploadJsonOrError(r) {
         if (r.ok) return r.json();
         return r.json().catch(function () { return {}; }).then(function (body) {
-            throw new Error(body.error || ('HTTP ' + r.status));
+            var err = new Error(body.error || ('HTTP ' + r.status));
+            err.status = r.status;
+            throw err;
         });
     }
 
@@ -297,7 +301,10 @@
             body: JSON.stringify({
                 filename: file.name,
                 size: file.size,
-                category_id: (catId && catId > 0) ? catId : 0
+                category_id: (catId && catId > 0) ? catId : 0,
+                // Siehe apiUpload() -- gilt hier zusaetzlich fuer handleFinalize()
+                // (aus dem Manifest uebernommen, muss dort nicht erneut mitgeschickt werden).
+                permitted_only: 1
             })
         }).then(apiUploadJsonOrError);
     }
@@ -360,7 +367,11 @@
     }
 
     function apiUpdate(filename, data) {
-        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update', {
+        // permitted_only=1: siehe apiDelete() -- gilt hier nur fuer die
+        // AKTUELLE Kategorie der Datei, nicht fuer eine per data.category_id
+        // evtl. mitgeschickte neue Kategorie (das prueft der Server bislang
+        // gar nicht, siehe FriendsOfREDAXO/api#79).
+        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update?permitted_only=1', {
             method: 'PATCH',
             credentials: 'same-origin',
             headers: {
@@ -370,13 +381,23 @@
             },
             body: JSON.stringify(data)
         }).then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
+            if (!r.ok) {
+                return r.json().catch(function () { return null; }).then(function (body) {
+                    var err = new Error((body && body.error) || ('HTTP ' + r.status));
+                    err.status = r.status;
+                    throw err;
+                });
+            }
             return r.json();
         });
     }
 
     function apiDelete(filename) {
-        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/delete', {
+        // permitted_only=1: kaskadierende Rechtepruefung (Zugriff auf eine
+        // Kategorie gilt auch fuer ihren Unterbaum) statt exaktem Treffer --
+        // sonst laesst sich eine Datei in einer Unterkategorie einer
+        // freigegebenen Kategorie nicht loeschen. Siehe apiUpload().
+        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/delete?permitted_only=1', {
             method: 'DELETE',
             credentials: 'same-origin',
             headers: {
@@ -385,8 +406,10 @@
             }
         }).then(function (r) {
             if (!r.ok) {
-                return r.json().then(function (body) {
-                    throw new Error(body.error || 'HTTP ' + r.status);
+                return r.json().catch(function () { return {}; }).then(function (body) {
+                    var err = new Error(body.error || 'HTTP ' + r.status);
+                    err.status = r.status;
+                    throw err;
                 });
             }
             return r.json();
@@ -513,8 +536,25 @@
         });
     }
 
+    // Gemeinsame Fehlerbehandlung fuer die vier Kategorie-Endpunkte (Create/
+    // Rename/Delete/Move) -- haengt err.status an (wie handleJsonResponse()
+    // fuer die Medienliste), damit Aufrufer speziell auf 403 (Rechte-Grenze,
+    // siehe MediaPermission::hasParentCategoryAccess()) reagieren und statt
+    // des rohen Server-Texts eine verstaendliche Meldung zeigen koennen.
+    function throwCategoryApiError(r, body) {
+        var err = new Error((body && body.error) || ('HTTP ' + r.status));
+        err.status = r.status;
+        throw err;
+    }
+
+    // Läuft bewusst NICHT über das api-Addon (media/category), sondern über
+    // MediaPlace's eigenen Endpunkt (siehe rex_api_mediaplace_categories.php,
+    // handleAdd()/handleRename()/handleDelete()) -- dessen Rechtepruefung
+    // schuetzt die freigegebene Ordnergrenze selbst (Umbenennen/Loeschen
+    // braucht Zugriff auf die ELTERN-Kategorie, nicht auf die Kategorie
+    // selbst), waehrend das api-Addon nur die Kategorie selbst prueft.
     function apiCreateCategory(name, parentId) {
-        return fetch(API_BASE + 'media/category', {
+        return fetch(getCategoriesApiUrl(), {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -525,8 +565,10 @@
             body: JSON.stringify({ name: name, parent_id: parentId || 0 })
         })
         .then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
+            return r.json().then(function (body) {
+                if (!r.ok || body.error) throwCategoryApiError(r, body);
+                return body;
+            });
         });
     }
 
@@ -584,8 +626,10 @@
         });
     }
 
+    // Siehe apiCreateCategory() -- läuft über MediaPlace's eigenen Endpunkt,
+    // nicht das api-Addon.
     function apiRenameCategory(catId, name) {
-        return fetch(API_BASE + 'media/category/' + encodeURIComponent(catId), {
+        return fetch(getCategoriesApiUrl(), {
             method: 'PATCH',
             credentials: 'same-origin',
             headers: {
@@ -593,16 +637,23 @@
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ name: name })
+            // Kein parent_id-Feld: unterscheidet fuer den Server (execute()'s
+            // Dispatch) Rename von Move, die dasselbe PATCH nutzen.
+            body: JSON.stringify({ id: catId, name: name })
         })
         .then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
+            return r.json().then(function (body) {
+                if (!r.ok || body.error) throwCategoryApiError(r, body);
+                return body;
+            });
         });
     }
 
+    // Siehe apiCreateCategory() -- läuft über MediaPlace's eigenen Endpunkt,
+    // nicht das api-Addon.
     function apiDeleteCategory(catId) {
-        return fetch(API_BASE + 'media/category/' + encodeURIComponent(catId), {
+        var sep = getCategoriesApiUrl().indexOf('?') === -1 ? '?' : '&';
+        return fetch(getCategoriesApiUrl() + sep + 'id=' + encodeURIComponent(catId), {
             method: 'DELETE',
             credentials: 'same-origin',
             headers: {
@@ -611,12 +662,10 @@
             }
         })
         .then(function (r) {
-            if (!r.ok) {
-                return r.json().then(function (body) {
-                    throw new Error((body && body.error) || ('HTTP ' + r.status));
-                });
-            }
-            return r.json();
+            return r.json().then(function (body) {
+                if (!r.ok || body.error) throwCategoryApiError(r, body);
+                return body;
+            });
         });
     }
 
@@ -624,7 +673,8 @@
         var fd = new FormData();
         fd.append('file', file);
 
-        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update', {
+        // permitted_only=1: siehe apiDelete().
+        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update?permitted_only=1', {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -634,8 +684,10 @@
             body: fd
         }).then(function (r) {
             if (!r.ok) {
-                return r.json().then(function (body) {
-                    throw new Error((body && body.error) || ('HTTP ' + r.status));
+                return r.json().catch(function () { return null; }).then(function (body) {
+                    var err = new Error((body && body.error) || ('HTTP ' + r.status));
+                    err.status = r.status;
+                    throw err;
                 });
             }
             return r.json();
