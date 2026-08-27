@@ -117,6 +117,7 @@ mediaplace_visible_summary = {count} sichtbar ({size}) | {loaded} / {total} gela
 mediaplace_no_category = Keine Kategorie
 mediaplace_api_error = API-Fehler: {msg}
 mediaplace_api_check_hint = Ist das API-Addon installiert und aktiviert?
+mediaplace_no_category_access = Für diese Kategorie hast du keinen Zugriff. Deine Medien findest du in der Seitenleiste links.
 mediaplace_error_creating_folder_categories = Fehler beim Anlegen der Ordner-Kategorien: {msg}
 mediaplace_confirm = Bestätigen
 mediaplace_ok = OK

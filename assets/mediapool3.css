@@ -769,22 +769,43 @@ body.rex-theme-dark {
 
 /* TinyMCE haengt alle Dialoge/Menues/Tooltips an einen einzigen globalen
    Wrapper (.tox-tinymce-aux), Standard z-index 1201 -- weit unter #mp3-overlay
-   (10500), macht sie im Editor-Canvas unsichtbar/unbedienbar. !important
-   noetig, da der Selektor sonst dieselbe Spezifitaet wie TinyMCEs eigene
-   Basisregel hat. */
-.tox-tinymce-aux {
+   (10500), macht sie im Editor-Canvas unsichtbar/unbedienbar, WENN sie aus
+   einem in #mp3-overlay eingebetteten Feld-Editor stammen (openEditorCanvas()/
+   openMetainfoCanvas() setzen dafuer body.mp3-embedded-editor-active).
+   !important noetig, da der Selektor sonst dieselbe Spezifitaet wie TinyMCEs
+   eigene Basisregel hat. OHNE diese Klasse bleibt .tox-tinymce-aux bei ihrem
+   nativen 1201 -- wichtig fuer den umgekehrten Fall: ein STANDALONE-TinyMCE
+   auf der Seite (Artikel-Inhalt) oeffnet seinen eigenen Bild-Dialog und ruft
+   von dort aus MP3.open() auf (siehe tinymce-Addon, assets/scripts/base.js)
+   -- dort muss #mp3-overlay (10500) UEBER dem TinyMCE-Dialog liegen, nicht
+   umgekehrt; mit einer unbedingten Regel waere das Overlay in diesem Fall
+   unsichtbar hinter dem Dialog verschwunden. */
+body.mp3-embedded-editor-active .tox-tinymce-aux {
     z-index: 10600 !important;
 }
 
 /* CKEditor5 haengt Panels/Dialoge/Balloons unter .ck-body-wrapper und
    bezieht deren Hoehe ueber diese CSS-Variablen (oeffentliche Theming-API,
    siehe ckeditor-editor.css) -- Override hier statt an jedem einzelnen
-   .ck-*-Element, damit es unabhaengig von internen Klassennamen bleibt. */
-.ck-body-wrapper {
+   .ck-*-Element, damit es unabhaengig von internen Klassennamen bleibt.
+   Gleiche Bedingung wie bei .tox-tinymce-aux oben, aus demselben Grund. */
+body.mp3-embedded-editor-active .ck-body-wrapper {
     --ck-z-default: 10600;
     --ck-z-panel: 10650;
     --ck-z-dialog: 10700;
     --ck-z-fullscreen: 10750;
+}
+
+/* tinymce-Addon, custom_plugins/for_a11y: eigenes, an document.body
+   angehaengtes Panel (.for-a11y-panel, position:fixed, Standard z-index 1300),
+   kein TinyMCE-Dialog ueber .tox-tinymce-aux und daher von der Regel oben
+   nicht erfasst. Anders als bei eingebetteten Feld-Editoren UNBEDINGT (nicht
+   auf body.mp3-embedded-editor-active beschraenkt): das Panel bleibt waehrend
+   der gesamten Pruefung als Checkliste sichtbar, auch wenn der User darueber
+   z.B. ein Bild per MediaPlace austauscht -- es soll deshalb immer ueber
+   #mp3-overlay liegen, unabhaengig davon, woher dessen Aufruf kam. */
+.for-a11y-panel {
+    z-index: 10800 !important;
 }
 
 #mp3-overlay.mp3-open {

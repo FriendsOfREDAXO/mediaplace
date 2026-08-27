@@ -117,6 +117,7 @@ mediaplace_visible_summary = {count} visible ({size}) | {loaded} / {total} loade
 mediaplace_no_category = No category
 mediaplace_api_error = API error: {msg}
 mediaplace_api_check_hint = Is the api addon installed and activated?
+mediaplace_no_category_access = You don't have access to this category. Your media can be found in the sidebar on the left.
 mediaplace_error_creating_folder_categories = Error creating folder categories: {msg}
 mediaplace_confirm = Confirm
 mediaplace_ok = OK

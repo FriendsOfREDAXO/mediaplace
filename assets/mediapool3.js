@@ -1365,6 +1365,13 @@
         editorCanvasFieldKey = fieldKey;
         editorCanvasClangId = clangId;
         editorCanvasEngine = engine || 'tinymce';
+        // Steuert die TinyMCE/CKE5-Dialog-Stapelung in mediapool3.css: nur
+        // waehrend der eigene eingebettete Feld-Editor aktiv ist, sollen
+        // dessen Dialoge (.tox-tinymce-aux/.ck-body-wrapper) ueber #mp3-overlay
+        // liegen. Ohne diese Bedingung wuerde ein von AUSSEN (z.B. TinyMCE im
+        // Artikel-Inhalt) via MP3.open() geoeffnetes Overlay faelschlich unter
+        // dem eigentlich fremden TinyMCE-Dialog verschwinden.
+        document.body.classList.add('mp3-embedded-editor-active');
 
         var content = qs('.mp3-content', overlay);
         content.classList.add('mp3-editor-mode');
@@ -1475,6 +1482,7 @@
         editorCanvasOpen = false;
         editorCanvasFieldKey = null;
         editorCanvasClangId = null;
+        if (!metainfoCanvasOpen) document.body.classList.remove('mp3-embedded-editor-active');
 
         if ('cke5' === editorCanvasEngine) {
             var ckeTa = qs('#mp3-editor-canvas-textarea', overlay);
@@ -1506,6 +1514,10 @@
 
         metainfoCanvasOpen = true;
         metainfoCanvasFilename = filename;
+        // Siehe openEditorCanvas(): REDAXOs Metainfo-Formular kann eigene
+        // TinyMCE-Feldtypen rendern, deren Dialoge ebenfalls ueber #mp3-overlay
+        // liegen muessen.
+        document.body.classList.add('mp3-embedded-editor-active');
 
         var content = qs('.mp3-content', overlay);
         if (content) content.classList.add('mp3-editor-mode');
@@ -1591,6 +1603,7 @@
     function closeMetainfoCanvas() {
         metainfoCanvasOpen = false;
         metainfoCanvasFilename = null;
+        if (!editorCanvasOpen) document.body.classList.remove('mp3-embedded-editor-active');
 
         var content = qs('.mp3-content', overlay);
         if (content) content.classList.remove('mp3-editor-mode');
@@ -3246,13 +3259,33 @@
             })
             .catch(function (err) {
                 if (err === MP3_STALE_SESSION) return;
+
+                // Kein Zugriff auf die aktuell gewaehlte Kategorie (z.B.
+                // Erstaufruf landet per Default auf Kategorie 0 "kein Ordner",
+                // die viele auf einzelne Kategorien eingeschraenkte User gar
+                // nicht haben -- siehe MediaPermission::hasCategoryAccess()).
+                // Statt der generischen "API nicht erreichbar"-Meldung
+                // automatisch auf "Alle Medien" ausweichen: dank serverseitiger
+                // Rechtefilterung zeigt das ohnehin nur die eigenen Kategorien,
+                // der User landet also direkt bei seinen Dateien statt vor
+                // einem Fehler zu stehen.
+                if (err && 403 === err.status && -1 !== currentCat) {
+                    loadFiles(-1, true);
+                    return;
+                }
+
                 if (reset) {
                     lastLoadedFiles = [];
                     currentTagCatalog = [];
                     updateTagFilterOptions();
-                    grid.innerHTML = '<div style="padding:40px;text-align:center;color:#c9302c;">' +
-                        '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_api_error', { msg: escAttr(err.message) }) +
-                        '<br><small style="color:#6c757d;">' + t('mediaplace_api_check_hint') + '</small></div>';
+                    if (err && 403 === err.status) {
+                        grid.innerHTML = '<div style="padding:40px;text-align:center;color:#6c757d;">' +
+                            '<i class="fa-solid fa-folder-open"></i> ' + t('mediaplace_no_category_access') + '</div>';
+                    } else {
+                        grid.innerHTML = '<div style="padding:40px;text-align:center;color:#c9302c;">' +
+                            '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_api_error', { msg: escAttr(err.message) }) +
+                            '<br><small style="color:#6c757d;">' + t('mediaplace_api_check_hint') + '</small></div>';
+                    }
                 }
                 console.error('MP3 loadFiles error:', err);
             })
@@ -6302,7 +6335,11 @@
         mediaLoading = false;
         mediaQuery = '';
         mediaPerPage = normalizeMediaPerPage(localStorage.getItem('mp3_per_page'));
-        currentFilter = 'all';
+        // options.filter: Typ-Tab vorauswaehlen (z.B. 'images' fuers Bild-Einfuegen
+        // in TinyMCE), rein als Startwert -- Nutzer kann jederzeit auf einen
+        // anderen Tab wechseln, keine harte Beschraenkung der Auswahl.
+        var VALID_OPEN_FILTERS = ['all', 'images', 'videos', 'audio', 'documents', 'other'];
+        currentFilter = (options.filter && VALID_OPEN_FILTERS.indexOf(options.filter) !== -1) ? options.filter : 'all';
         currentTagFilters = {};
         currentTagCatalog = [];
         unusedOnlyFilter = false;

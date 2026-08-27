@@ -14,6 +14,23 @@
 
     var API_BASE = '/api/backend/';
 
+    // Gemeinsame Response-Behandlung fuer die Medienliste (apiFetchRaw() und
+    // apiFetchMediaList()): bei Fehlern den HTTP-Status als err.status
+    // anhaengen, damit Aufrufer z.B. 403 (keine Kategorie-Berechtigung)
+    // gezielt anders behandeln koennen als "API nicht erreichbar" -- ein
+    // reiner Error('HTTP 403') liesse sich vom Aufrufer nicht mehr vom
+    // Status unterscheiden.
+    function handleJsonResponse(r) {
+        if (!r.ok) {
+            return r.json().catch(function () { return null; }).then(function (body) {
+                var err = new Error((body && body.error) || ('HTTP ' + r.status));
+                err.status = r.status;
+                throw err;
+            });
+        }
+        return r.json();
+    }
+
     // Ab dieser Groesse wird chunked hochgeladen statt in einem Request. Der
     // einfache Weg (POST media, multipart) haengt an upload_max_filesize/
     // post_max_size, die das JS nicht kennt (kein Extra-Request zur Erkennung) --
@@ -187,10 +204,7 @@
                 'Accept': 'application/json'
             }
         })
-        .then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-        });
+        .then(handleJsonResponse);
     }
 
     // Uebergangs-Fallback: solange die installierte FriendsOfRedaxo/api-Version
@@ -242,10 +256,7 @@
                 'Accept': 'application/json'
             }
         })
-        .then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-        });
+        .then(handleJsonResponse);
     }
 
     function apiUpload(file, catId, onProgress) {
