@@ -1,5 +1,21 @@
 # Changelog
 
+## Version 1.1.1 – 2026-08-27
+
+### Metadaten bearbeiten
+- Umbenannt von „Nativ bearbeiten (Prototyp)" zu **„Metadaten bearbeiten"** – nicht mehr als experimentell/Prototyp gekennzeichnet, eigener „Experimentell"-Bereich in den Einstellungen entfernt und in „Funktionen" zusammengeführt.
+- Klick auf ein klassisches `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widget innerhalb des Canvas öffnet jetzt das eigene Grid zum Auswählen statt REDAXOs natives Popup – Canvas blendet sich kurz aus, nach der Auswahl (bzw. „Übernehmen" bei Mehrfachauswahl) geht es zurück zum Formular, ohne dass unsauber gespeicherte Eingaben verloren gehen.
+- Speichern zeigt jetzt eine kurze Erfolgs-/Fehler-Rückmeldung im Button, statt kommentarlos ins Grid zu wechseln.
+- Kompatibilität mit dem `metainfo_lang_fields`-Addon: dessen Sprachfelder werden jetzt korrekt im Canvas gerendert (siehe auch `metainfo_lang_fields` 1.0.8).
+
+### Eigene Metadaten-Felder
+- Neuer Schalter „Eigene Metadaten-Felder aktivieren" – **Opt-in, standardmäßig aus** (vorher standardmäßig an). Titel, System-Tags und Sammlungen sind davon unabhängig und bleiben immer verfügbar.
+- Neuer Hinweis „Bitte ALT-Text hinterlegen" unter dem „Metadaten bearbeiten"-Button, wenn kein ALT-Text vorhanden ist. Eigenes ALT-Feld hat Vorrang, wenn eigene Metadaten aktiv sind, sonst zählt das klassische `med_alt`-Feld.
+- Den vorherigen Übergangsmodus „Klassische Metainfo-Felder verlinken" (Link zur klassischen Medienpool-Bearbeitung) entfernt – durch „Metadaten bearbeiten" abgelöst.
+
+### Bugfixes
+- Checkbox-Felder lösten den Speichern-Button fälschlich sofort nach dem Laden aus (Dirty-Check verglich ein nie gesetztes Feld gegen `false`).
+
 ## Version 1.1.0 – 2026-08-27
 
 ### Echte Metainfo-Felder (Prototyp)

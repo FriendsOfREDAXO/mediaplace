@@ -1529,6 +1529,13 @@
                 if (window.jQuery && window.jQuery.fn && window.jQuery.fn.selectpicker) {
                     window.jQuery('.selectpicker', formEl).selectpicker();
                 }
+                // metainfo_lang_fields: Klick-/Input-Handler sind auf document delegiert und
+                // funktionieren bereits, aber das versteckte JSON-Feld jedes Sprachfelds wird
+                // nur beim initialen Seitenladen befuellt (rex:ready) -- ohne diesen Aufruf
+                // waere es hier leer und wuerde beim Speichern bestehende Uebersetzungen loeschen.
+                if (typeof window.initializeRepeaterFields === 'function') {
+                    window.initializeRepeaterFields();
+                }
             })
             .catch(function (err) {
                 if (!formEl) return;
