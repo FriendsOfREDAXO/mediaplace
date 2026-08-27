@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.6 – 2026-08-27
+
+### Neu
+- `MP3.open(callback, { allowedExtensions: [...] })`: neue, harte Auswahl-Einschränkung für Aufrufer, die bereits klassisch eine Dateiendungs-Beschränkung durchgesetzt haben (z. B. `mform`s Custom-Link-/Medialisten-Widgets mit `types="jpg,png"`). Anders als `filter` (nur Start-Tab, jederzeit umschaltbar) blendet dies nicht passende Dateien komplett aus dem Grid aus und blockiert die Auswahl auch über die Mehrfachauswahl-Bestätigung.
+
 ## Version 1.3.5 – 2026-08-27
 
 ### Entfernt

@@ -38,6 +38,11 @@
     var catPath = [];      // breadcrumb path: [{ id, name }, ...]
     var lastLoadedFiles = [];  // raw API result for client-side filter/sort
     var currentFilter = 'all'; // all | images | videos | audio | documents | other
+    // Harte Endungs-Beschraenkung ueber MP3.open(cb, {allowedExtensions:[...]})
+    // -- anders als currentFilter (nur Start-Tab, jederzeit umschaltbar) blendet
+    // dies passende Dateien komplett aus dem Grid aus UND blockiert die Auswahl,
+    // siehe applyFilterSort()/isFileSelectable(). null = keine Einschraenkung.
+    var allowedExtensions = null;
     var currentTagFilters = {}; // tagName -> true
     var currentTagCatalog = []; // [{name,color}]
     // "Nur unbenutzte Medien"-Filter (eigenes Recht, siehe MediaPermission::
@@ -768,8 +773,27 @@
         }
     };
 
+    function fileExtension(filename) {
+        var name = String(filename || '');
+        var dot = name.lastIndexOf('.');
+        return dot > -1 ? name.substring(dot + 1).toLowerCase() : '';
+    }
+
+    // Zentrale Pruefung fuer die harte Endungs-Beschraenkung (allowedExtensions,
+    // siehe open()) -- von applyFilterSort() (Grid-Sichtbarkeit) UND den
+    // Auswahl-Bestaetigungen (Auswaehlen-Button/Mehrfachauswahl-Bestaetigen)
+    // genutzt, damit eine nicht erlaubte Datei weder anzeigbar noch waehlbar ist.
+    function isFileSelectable(filename) {
+        if (!allowedExtensions) return true;
+        return allowedExtensions.indexOf(fileExtension(filename)) !== -1;
+    }
+
     function applyFilterSort(files) {
         var result = applyCollectionFilter(files.slice());
+
+        if (allowedExtensions) {
+            result = result.filter(function (f) { return isFileSelectable(f.filename); });
+        }
 
         // Tag filter (independent from type filter)
         var selectedTags = Object.keys(currentTagFilters);
@@ -4927,7 +4951,7 @@
                     finishMetainfoMedialistPick(Object.keys(multiSelected));
                     return;
                 }
-                if (onMultiSelect) onMultiSelect(Object.keys(multiSelected));
+                if (onMultiSelect) onMultiSelect(Object.keys(multiSelected).filter(isFileSelectable));
                 close();
                 return;
             }
@@ -5017,7 +5041,7 @@
                     else multiSelected[fn] = true;
                     updateMultiUI();
                     hideDetail();
-                } else if (onSelect && fn) {
+                } else if (onSelect && fn && isFileSelectable(fn)) {
                     onSelect(fn);
                     close();
                 }
@@ -6036,6 +6060,15 @@
         // anderen Tab wechseln, keine harte Beschraenkung der Auswahl.
         var VALID_OPEN_FILTERS = ['all', 'images', 'videos', 'audio', 'documents', 'other'];
         currentFilter = (options.filter && VALID_OPEN_FILTERS.indexOf(options.filter) !== -1) ? options.filter : 'all';
+        // options.allowedExtensions: im Gegensatz zu options.filter eine harte
+        // Einschraenkung -- nicht passende Dateien werden aus dem Grid entfernt
+        // und koennen nicht ausgewaehlt werden (siehe isFileSelectable()).
+        allowedExtensions = Array.isArray(options.allowedExtensions)
+            ? options.allowedExtensions
+                .map(function (ext) { return String(ext || '').trim().toLowerCase().replace(/^\./, ''); })
+                .filter(Boolean)
+            : null;
+        if (allowedExtensions && !allowedExtensions.length) allowedExtensions = null;
         currentTagFilters = {};
         currentTagCatalog = [];
         unusedOnlyFilter = false;
