@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 1.3.4 – 2026-08-27
+
+### Bugfix
+- Die Lightbox-Großansicht im Detail-Panel zeigte bislang dieselbe verkleinerte `rex_media_medium`-Vorschau wie das kleine Bild daneben, statt die Original-Datei in Upload-Qualität – genau der Zweck des Vergrößerns. Nutzt jetzt die Original-Datei.
+- SVG-Vorschaubilder (Grid, Detail-Panel, Widget) referenzierten die Original-Datei bislang über einen geratenen Pfad (`../media/`, relativ zur aktuellen Backend-Seite) statt über REDAXOs eigene `rex_url::media()` – funktioniert zuverlässig nur, solange die Seite in einer ganz bestimmten Verzeichnistiefe liegt, und wäre bei Unterordner-Installationen mit abweichender Struktur oder einem späteren Frontend-Einsatz zerbrochen. Die Basis-URL wird jetzt serverseitig berechnet und über `#mp3-root` an den Client durchgereicht.
+
 ## Version 1.3.3 – 2026-08-27
 
 ### Verbesserungen

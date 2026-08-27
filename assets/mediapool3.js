@@ -54,6 +54,11 @@
     // man sonst zuverlaessig in einem 403, den loadFiles() zwar inzwischen
     // sauber auf "Alle Medien" abfaengt, aber besser gar nicht erst anbieten.
     var canAccessRootCategory = true;
+    // rex_url::media() (PHP, boot.php -> #mp3-root data-media-base-url) --
+    // Basis-URL fuer Original-Mediendateien (SVGs im Grid/Detail-Panel,
+    // siehe mediaThumbSrc()), installationsunabhaengig berechnet statt per
+    // relativem Pfad geraten. Siehe SKILL.md, Punkt zu absoluten "/media/"-Pfaden.
+    var mediaBaseUrl = '';
     var unusedOnlyFilter = false;
     var unusedStatusCache = {};
     var currentSort = 'date_desc'; // date_desc | date_asc | filename_asc | filename_desc | title_asc | title_desc
@@ -1839,7 +1844,7 @@
         if (titleEl) titleEl.textContent = 'Fokuspunkt: ' + filename;
 
         var img = qs('.mp3-focuspoint-image', canvas);
-        if (img) img.src = mediaThumbSrc(filename, 'rex_media_large', filename, mediaForceCacheTokens, lastLoadedFiles);
+        if (img) img.src = mediaThumbSrc(filename, 'rex_media_large', filename, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
 
         updateFocuspointFieldSelect();
         updateFocuspointTypeSelect();
@@ -2078,7 +2083,7 @@
             if (preview) preview.remove();
             return;
         }
-        var previewSrc = mediaThumbSrc(filename, 'rex_media_small', filename, mediaForceCacheTokens, lastLoadedFiles);
+        var previewSrc = mediaThumbSrc(filename, 'rex_media_small', filename, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
         var previewHtml = '<img src="' + escAttr(previewSrc) + '" alt="">';
         if (preview) {
             preview.innerHTML = previewHtml;
@@ -2530,7 +2535,7 @@
      */
     function previewHtml(file, ratioOverride) {
         if (isImage(file.filename)) {
-            var src = mediaThumbSrc(file.filename, 'mediaplace_thumb', file, mediaForceCacheTokens, lastLoadedFiles);
+            var src = mediaThumbSrc(file.filename, 'mediaplace_thumb', file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
             var ratio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
             var style = ratio ? ' style="aspect-ratio:' + ratio + '"' : '';
             return '<img src="' + escAttr(src) + '" alt="' + escAttr(file.title || file.filename) + '"' + style + '>';
@@ -2668,7 +2673,7 @@
             }
             html += '<td class="mp3-list-cell-preview">';
             if (isImage(f.filename)) {
-                var src = mediaThumbSrc(f.filename, 'rex_media_small', f, mediaForceCacheTokens, lastLoadedFiles);
+                var src = mediaThumbSrc(f.filename, 'rex_media_small', f, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
                 html += '<img src="' + escAttr(src) + '" alt="">';
             } else {
                 html += '<i class="' + fileIcon(f.filename) + '"></i>';
@@ -4081,6 +4086,7 @@
         canFilterUnused = root.dataset.canFilterUnused === '1';
         canFocuspoint = root.dataset.focuspointAvailable === '1';
         canAccessRootCategory = !root.dataset.canAccessRootCategory || root.dataset.canAccessRootCategory === '1';
+        mediaBaseUrl = root.dataset.mediaBaseUrl || '';
 
         // Menu-Inhalt lebt NICHT mehr inline in .mp3-tag-filter-wrap, sondern
         // als Portal (#mp3-tag-filter-menu-portal, siehe setTagFilterMenuOpen())

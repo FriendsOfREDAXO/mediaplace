@@ -186,9 +186,17 @@
         return url + (url.indexOf('?') === -1 ? '?' : '&') + 'mp3v=' + encodeURIComponent(token);
     }
 
-    function mediaThumbSrc(filename, mmType, cacheTokenSource, forceTokens, loadedFiles) {
+    // mediaBaseUrl kommt von rex_url::media() (PHP, boot.php -> #mp3-root
+    // data-media-base-url) statt clientseitig geraten zu werden -- ein
+    // relativer Pfad wie "../media/" oder ein Split auf "/redaxo/" im
+    // aktuellen URL-Pfad (siehe filepond_uploader) waere nur zuverlaessig,
+    // solange die aufrufende Seite im Backend in exakt einer bestimmten
+    // Verzeichnistiefe liegt -- bricht z.B. bei Unterordner-Installationen
+    // oder falls MediaPlace mal aus dem Frontend heraus genutzt wird.
+    function mediaThumbSrc(filename, mmType, cacheTokenSource, forceTokens, loadedFiles, mediaBaseUrl) {
         if (/\.svg$/i.test(filename || '')) {
-            return withMediaCacheBuster('../media/' + encodeURIComponent(filename), cacheTokenSource, forceTokens, loadedFiles);
+            var base = mediaBaseUrl || '../media/';
+            return withMediaCacheBuster(base + encodeURIComponent(filename), cacheTokenSource, forceTokens, loadedFiles);
         }
         return withMediaCacheBuster('index.php?rex_media_type=' + mmType + '&rex_media_file=' + encodeURIComponent(filename), cacheTokenSource, forceTokens, loadedFiles);
     }

@@ -47,6 +47,18 @@
         };
     }
 
+    // rex_url::media() (PHP, boot.php -> #mp3-root data-media-base-url) --
+    // installationsunabhaengig berechnete Basis-URL fuer Original-Mediendateien,
+    // statt sie clientseitig zu raten (z.B. per relativem "../media/"-Pfad oder
+    // Split auf "/redaxo/" im aktuellen URL-Pfad, siehe filepond_uploader) --
+    // waere nur zuverlaessig, solange die Seite im Backend in exakt einer
+    // bestimmten Verzeichnistiefe liegt. Gleiches unabhaengiges Lesen wie
+    // uploadResizeConfig() oben, aus demselben Grund.
+    function mediaBaseUrl() {
+        var root = document.getElementById('mp3-root');
+        return (root && root.dataset.mediaBaseUrl) || '../media/';
+    }
+
     function maybeResizeFile(file) {
         var cfg = uploadResizeConfig();
         if (!cfg.enabled || !resizeImageFile || !isResizableImageType || !isResizableImageType(file.type)) {
@@ -121,9 +133,11 @@
         return 'fa-solid ' + (icons[ext] || 'fa-file');
     }
     function thumbUrl(filename) {
-        // SVGs werden vom Media Manager nicht zuverlaessig gerendert -> Original referenzieren.
+        // SVGs werden vom Media Manager nicht zuverlaessig gerendert -> Original
+        // referenzieren, ueber die serverseitig berechnete Basis-URL (siehe
+        // mediaBaseUrl() oben), nicht per geratenem relativem Pfad.
         if (/\.svg$/i.test(filename || '')) {
-            return '/media/' + encodeURIComponent(filename);
+            return mediaBaseUrl() + encodeURIComponent(filename);
         }
         return 'index.php?rex_media_type=rex_media_small&rex_media_file=' + encodeURIComponent(filename);
     }

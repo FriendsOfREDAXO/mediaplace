@@ -20,9 +20,14 @@ $info = $this->getVar('info');
 $filename = $info['filename'];
 ?>
 <?php if ($info['is_image']): ?>
-    <?php $src = DetailPanelFormatter::mediaThumbUrl($filename, 'rex_media_medium', $info['updatedate'], $info['filesize']); ?>
+    <?php
+    $src = DetailPanelFormatter::mediaThumbUrl($filename, 'rex_media_medium', $info['updatedate'], $info['filesize']);
+    // Lightbox zeigt die Original-Datei in Upload-Qualitaet, nicht die kleine
+    // rex_media_medium-Vorschau -- dafuer will man vergroessern.
+    $lightboxSrc = DetailPanelFormatter::mediaFileUrl($filename, $info['updatedate'], $info['filesize']);
+    ?>
     <div class="mp3-detail-preview">
-        <button type="button" class="mp3-lightbox-open-btn" data-lightbox-src="<?= rex_escape($src) ?>" data-lightbox-caption="<?= rex_escape($info['title'] !== '' ? $info['title'] : $filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_open_lightbox')) ?>"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+        <button type="button" class="mp3-lightbox-open-btn" data-lightbox-src="<?= rex_escape($lightboxSrc) ?>" data-lightbox-caption="<?= rex_escape($info['title'] !== '' ? $info['title'] : $filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_open_lightbox')) ?>"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
         <?php if (!empty($info['focuspoint_available'])): ?>
             <button type="button" class="mp3-focuspoint-edit-btn" data-focuspoint-file="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_edit_focuspoint')) ?>"><i class="fa-solid fa-crosshairs"></i></button>
         <?php endif; ?>
