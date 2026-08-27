@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.8 – 2026-08-27
+
+### Sicherheit
+- Ein Backend-User mit auf einzelne Kategorien eingeschränkten Medienrechten konnte eine ihm zugewiesene Kategorie selbst umbenennen, löschen oder verschieben (das `api`-Addon prüfte für diese drei Operationen nur Zugriff auf die Kategorie selbst, nicht auf deren Elternkategorie) – die vom Admin festgelegte Ordner-Hauptstruktur war damit vom zugewiesenen User selbst auflösbar. Kategorie anlegen/umbenennen/löschen/verschieben laufen jetzt über einen eigenen, rechte-geprüften Endpunkt (`rex_api_mediaplace_categories`): Umbenennen/Löschen/Verschieben-als-Quelle brauchen jetzt Zugriff auf die **Elternkategorie**, nicht auf die Kategorie selbst – ein User mit Zugriff auf Kategorie X kann weiterhin frei innerhalb von X arbeiten (Unterkategorien anlegen/umbenennen/löschen/verschieben), X selbst bleibt aber vor ihm geschützt. Anlegen unter X bleibt unverändert erlaubt (das war bereits korrekt).
+
 ## Version 1.3.7 – 2026-08-27
 
 ### Bugfix

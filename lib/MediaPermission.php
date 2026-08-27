@@ -84,6 +84,39 @@ class MediaPermission
     }
 
     /**
+     * Zugriff auf die ELTERN-Kategorie einer Kategorie -- massgeblich fuer
+     * Operationen, die die Kategorie selbst aus ihrem Elternverzeichnis
+     * entfernen/veraendern (umbenennen, loeschen, Verschieben als Quelle).
+     *
+     * Bewusst NICHT hasCategoryAccess() auf die Kategorie selbst: ein User
+     * mit Zugriff nur auf Kategorie X soll innerhalb von X frei arbeiten
+     * koennen (Unterkategorien anlegen/umbenennen/loeschen/verschieben),
+     * X selbst aber nicht umbenennen/loeschen/verschieben koennen -- sonst
+     * koennte er die ihm zugewiesene Ordnergrenze selbst aufloesen. Klassisches
+     * REDAXO ist hier zum Vergleich strenger: Kategorieverwaltung ist komplett
+     * PERMALL-only (mediapool/pages/structure.php, $PERMALL = hasCategoryPerm(0)),
+     * ein auf einzelne Kategorien eingeschraenkter User kann dort ueberhaupt
+     * keine Kategorie anlegen/umbenennen/loeschen, auch nicht innerhalb der
+     * eigenen. MediaPlace erlaubt das bewusst (bessere UX fuer Redakteure, die
+     * ihren Bereich selbst organisieren sollen) -- schuetzt dafuer aber die
+     * Grenze selbst ueber diese Methode.
+     *
+     * $parentId 0 = echte Wurzel (rex_media_category.parent_id bei
+     * Top-Level-Kategorien). Trotz identischer Zahl technisch etwas anderes
+     * als categoryId 0 ("kein Ordner", Dateien ohne Kategorie) -- REDAXO-Core
+     * verwendet fuer die Kategorieverwaltungs-Berechtigung an der Wurzel aber
+     * exakt dasselbe Recht ($PERMALL = hasCategoryPerm(0), siehe
+     * mediapool/pages/structure.php), das inkludiert hasAll() bereits selbst
+     * (rex_media_perm::hasCategoryPerm() = hasAll() || in_array(...)).
+     * hasCategoryAccess(0) deckt genau das schon korrekt ab -- keine
+     * Sonderbehandlung noetig.
+     */
+    public static function hasParentCategoryAccess(int $parentId): bool
+    {
+        return self::hasCategoryAccess($parentId);
+    }
+
+    /**
      * Uneingeschraenkter Medienzugriff -- fuer kategorieuebergreifende
      * Operationen (z.B. globaler Sammlungs-Katalog).
      */

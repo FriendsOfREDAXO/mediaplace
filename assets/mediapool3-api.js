@@ -513,8 +513,14 @@
         });
     }
 
+    // Läuft bewusst NICHT über das api-Addon (media/category), sondern über
+    // MediaPlace's eigenen Endpunkt (siehe rex_api_mediaplace_categories.php,
+    // handleAdd()/handleRename()/handleDelete()) -- dessen Rechtepruefung
+    // schuetzt die freigegebene Ordnergrenze selbst (Umbenennen/Loeschen
+    // braucht Zugriff auf die ELTERN-Kategorie, nicht auf die Kategorie
+    // selbst), waehrend das api-Addon nur die Kategorie selbst prueft.
     function apiCreateCategory(name, parentId) {
-        return fetch(API_BASE + 'media/category', {
+        return fetch(getCategoriesApiUrl(), {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -525,8 +531,10 @@
             body: JSON.stringify({ name: name, parent_id: parentId || 0 })
         })
         .then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
+            return r.json().then(function (body) {
+                if (!r.ok || body.error) throw new Error((body && body.error) || ('HTTP ' + r.status));
+                return body;
+            });
         });
     }
 
@@ -584,8 +592,10 @@
         });
     }
 
+    // Siehe apiCreateCategory() -- läuft über MediaPlace's eigenen Endpunkt,
+    // nicht das api-Addon.
     function apiRenameCategory(catId, name) {
-        return fetch(API_BASE + 'media/category/' + encodeURIComponent(catId), {
+        return fetch(getCategoriesApiUrl(), {
             method: 'PATCH',
             credentials: 'same-origin',
             headers: {
@@ -593,16 +603,23 @@
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({ name: name })
+            // Kein parent_id-Feld: unterscheidet fuer den Server (execute()'s
+            // Dispatch) Rename von Move, die dasselbe PATCH nutzen.
+            body: JSON.stringify({ id: catId, name: name })
         })
         .then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
+            return r.json().then(function (body) {
+                if (!r.ok || body.error) throw new Error((body && body.error) || ('HTTP ' + r.status));
+                return body;
+            });
         });
     }
 
+    // Siehe apiCreateCategory() -- läuft über MediaPlace's eigenen Endpunkt,
+    // nicht das api-Addon.
     function apiDeleteCategory(catId) {
-        return fetch(API_BASE + 'media/category/' + encodeURIComponent(catId), {
+        var sep = getCategoriesApiUrl().indexOf('?') === -1 ? '?' : '&';
+        return fetch(getCategoriesApiUrl() + sep + 'id=' + encodeURIComponent(catId), {
             method: 'DELETE',
             credentials: 'same-origin',
             headers: {
@@ -611,12 +628,10 @@
             }
         })
         .then(function (r) {
-            if (!r.ok) {
-                return r.json().then(function (body) {
-                    throw new Error((body && body.error) || ('HTTP ' + r.status));
-                });
-            }
-            return r.json();
+            return r.json().then(function (body) {
+                if (!r.ok || body.error) throw new Error((body && body.error) || ('HTTP ' + r.status));
+                return body;
+            });
         });
     }
 
