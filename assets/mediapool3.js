@@ -3535,6 +3535,20 @@
         return t(fallbackKey, { msg: err.message });
     }
 
+    // Gleiches Prinzip wie categoryErrorMessage(), fuer Datei- statt
+    // Kategorie-Operationen (Upload/Loeschen/Verschieben). Faengt insbesondere
+    // den Fall ab, dass die installierte FriendsOfRedaxo/api-Version
+    // permitted_only noch nicht kaskadierend auswertet (siehe apiUpload()/
+    // apiDelete()/apiUpdate() in mediapool3-api.js) -- ein 403 beim Arbeiten
+    // in einer Unterkategorie einer freigegebenen Kategorie ist dann kein
+    // unerwarteter Fehler, sondern genau dieser (bekannte, temporaere) Fall.
+    function mediaErrorMessage(err, fallbackKey) {
+        if (err && 403 === err.status) {
+            return t('mediaplace_media_permission_denied');
+        }
+        return t(fallbackKey, { msg: err.message });
+    }
+
     /**
      * Gleiches Modal-Muster wie showMoveCategoryModal() (Textfeld statt
      * Auswahlliste) -- kein prompt(), damit Umbenennen/Verschieben optisch
@@ -3903,6 +3917,11 @@
                     if (itemEl) {
                         var st = itemEl.querySelector('.mp3-upload-item-status');
                         st.innerHTML = '<i class="fa-solid fa-circle-xmark mp3-upload-fail"></i>';
+                        // Titel statt sichtbarem Text -- die Zeile ist fuer den
+                        // Icon-only-Status ausgelegt, ein 403 in einer
+                        // Unterkategorie (siehe mediaErrorMessage()) soll aber
+                        // beim Hover erklaerbar sein statt nur "fehlgeschlagen".
+                        st.title = mediaErrorMessage(err, 'mediaplace_error_uploading');
                         itemEl.classList.remove('mp3-upload-active');
                         itemEl.classList.add('mp3-upload-failed');
                     }
@@ -4948,7 +4967,7 @@
                         if (selectedFile && catFilenames.indexOf(selectedFile) !== -1) showDetail(selectedFile);
                     })
                     .catch(function (err) {
-                        alert(t('mediaplace_error_moving_to_category', { msg: err.message }));
+                        alert(mediaErrorMessage(err, 'mediaplace_error_moving_to_category'));
                     });
             }
         });
@@ -5257,7 +5276,7 @@
                             })
                             .catch(function (err) {
                                 ctx.setBusy(false);
-                                ctx.showError(t('mediaplace_error_deleting', { msg: err.message }));
+                                ctx.showError(mediaErrorMessage(err, 'mediaplace_error_deleting'));
                             });
                     }
                 });
@@ -5514,7 +5533,7 @@
                         }
                     })
                     .catch(function (err) {
-                        alert(t('mediaplace_error_moving', { msg: err.message }));
+                        alert(mediaErrorMessage(err, 'mediaplace_error_moving'));
                         moveCatSelect.value = prevValue;
                     })
                     .then(function () {

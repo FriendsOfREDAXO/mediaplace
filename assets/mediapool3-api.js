@@ -283,7 +283,9 @@
     function apiUploadJsonOrError(r) {
         if (r.ok) return r.json();
         return r.json().catch(function () { return {}; }).then(function (body) {
-            throw new Error(body.error || ('HTTP ' + r.status));
+            var err = new Error(body.error || ('HTTP ' + r.status));
+            err.status = r.status;
+            throw err;
         });
     }
 
@@ -379,7 +381,13 @@
             },
             body: JSON.stringify(data)
         }).then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
+            if (!r.ok) {
+                return r.json().catch(function () { return null; }).then(function (body) {
+                    var err = new Error((body && body.error) || ('HTTP ' + r.status));
+                    err.status = r.status;
+                    throw err;
+                });
+            }
             return r.json();
         });
     }
@@ -398,8 +406,10 @@
             }
         }).then(function (r) {
             if (!r.ok) {
-                return r.json().then(function (body) {
-                    throw new Error(body.error || 'HTTP ' + r.status);
+                return r.json().catch(function () { return {}; }).then(function (body) {
+                    var err = new Error(body.error || 'HTTP ' + r.status);
+                    err.status = r.status;
+                    throw err;
                 });
             }
             return r.json();
@@ -674,8 +684,10 @@
             body: fd
         }).then(function (r) {
             if (!r.ok) {
-                return r.json().then(function (body) {
-                    throw new Error((body && body.error) || ('HTTP ' + r.status));
+                return r.json().catch(function () { return null; }).then(function (body) {
+                    var err = new Error((body && body.error) || ('HTTP ' + r.status));
+                    err.status = r.status;
+                    throw err;
                 });
             }
             return r.json();

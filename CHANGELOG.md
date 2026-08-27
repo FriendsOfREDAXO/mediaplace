@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 1.3.13 – 2026-08-28
+
+### Übergangslösung für Installationen ohne den kaskadierenden `api`-Fix
+Die eigentliche Behebung von 1.3.9–1.3.12 liegt teils im `api`-Addon (PR [#78](https://github.com/FriendsOfREDAXO/api/pull/78), noch offen). Bis das dort released ist, betreffen die folgenden zwei Punkte alle Installationen, die noch eine `api`-Version ohne diesen Fix einsetzen:
+
+- **Durchsuchen selbst behoben, nicht mehr auf `api` angewiesen**: Die Medienliste nutzt jetzt in jedem Fall (bis `api` die Kaskadierung tatsächlich released hat) MediaPlace's eigenen, rechte-geprüften Fallback-Endpunkt (`rex_api_mediaplace_media_list.php`) statt der direkten `api`-Route – der Fallback kaskadiert bereits seit 1.3.9 korrekt über `MediaPermission`, war aber bisher nur bei `api <1.3.1` aktiv. Damit sind Unterkategorien einer freigegebenen Kategorie beim Durchsuchen jetzt unabhängig von der installierten `api`-Version korrekt sichtbar.
+- **Hochladen/Löschen/Verschieben-Ziel bleibt vorerst von `api` abhängig**: Für diese Operationen bietet MediaPlace bewusst keinen eigenen Ersatz-Endpunkt (kein Duplizieren der Schreiblogik). Schlägt eine dieser Aktionen serverseitig mit HTTP 403 fehl (typischerweise beim Arbeiten in einer Unterkategorie einer freigegebenen Kategorie auf einer `api`-Version ohne den Fix), zeigt MediaPlace jetzt statt einer rohen Fehlermeldung einen verständlichen Hinweis auf die Rechte-Grenze – beim Hochladen als Tooltip auf dem fehlgeschlagenen Datei-Icon, sonst als Fehlermeldung im jeweiligen Dialog. Sobald die installierte `api`-Version den Fix enthält, funktionieren diese Aktionen ohne weiteres Update dieses Addons.
+
 ## Version 1.3.12 – 2026-08-28
 
 ### Bugfix
