@@ -5,6 +5,17 @@
 // auflisten koennen, deshalb ausserhalb der isBackend()/getUser()-Bedingung.
 rex_perm::register('mediaplace[view_unused_media]', 'Filter "Nur unbenutzte Medien" nutzen');
 
+// YForm-Werttyp "mediaplace" (lib/yform/value/yform_value_mediaplace.php, per
+// Klassennamenskonvention automatisch von YForm erkannt -- keine explizite
+// Feldtyp-Registrierung noetig, nur das Template-Verzeichnis und der
+// MEDIA_IS_IN_USE-Hook). Unconditional wie bei filepond_uploader/boot.php,
+// nicht auf isBackend() beschraenkt, da der Loeschen-Check auch aus anderen
+// Kontexten heraus feuern kann.
+if (rex_addon::get('yform')->isAvailable()) {
+    rex_yform::addTemplatePath($this->getPath('ytemplates'));
+    rex_extension::register('MEDIA_IS_IN_USE', ['rex_yform_value_mediaplace', 'isMediaInUse']);
+}
+
 if (rex::isBackend() && rex::getUser()) {
     // Pro-Datei-Cache-Buster, damit ein Deploy einzelner JS/CSS-Dateien nicht
     // durch Browser-Caching unbemerkt ausbleibt.
@@ -97,6 +108,13 @@ if (rex::isBackend() && rex::getUser()) {
         $tagsUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_tags']);
         $categoriesUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_categories']);
         $unusedUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_unused']);
+        // Uebergangs-Fallback, solange die installierte FriendsOfRedaxo/api-Version
+        // media/list noch nicht nach Kategorie-Rechten filtert (behoben ab api 1.3.1,
+        // siehe rex_api_mediaplace_media_list.php). Sobald api >=1.3.1 ueberall
+        // installiert ist, kann diese Weiche inkl. Fallback-Endpunkt entfernt werden.
+        $apiVersion = (string) (rex_addon::get('api')->getVersion() ?: '0');
+        $apiMediaListSecure = version_compare($apiVersion, '1.3.1', '>=') ? '1' : '0';
+        $mediaListFallbackUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_media_list']);
         $canFilterUnused = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasUnusedFilterAccess() ? '1' : '0';
         $focuspointUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_focuspoint']);
         $focuspointAvailable = \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit() ? '1' : '0';
@@ -140,7 +158,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
+        $inject = '<div id="mp3-root" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);

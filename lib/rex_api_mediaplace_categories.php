@@ -72,23 +72,65 @@ class rex_api_mediaplace_categories extends rex_api_function
      * (id/name/parent_id/label/depth). Genutzt fuer Auswahllisten (Kategorie
      * verschieben, Detail-Panel-Info-Tabelle) -- Gegenstueck zu renderTreeHtml(),
      * das dieselbe Struktur als verschachteltes HTML fuer den Sidebar-Baum liefert.
+     * Beide teilen sich filterVisibleCategories() fuer die Rechtepruefung.
      *
      * @return list<array{id:int,name:string,parent_id:int,label:string,depth:int}>
      */
     public static function getFlatCategoryList(): array
     {
-        $sql = rex_sql::factory();
-        $cats = $sql->getArray(
-            'SELECT id, name, parent_id FROM ' . rex::getTablePrefix() . 'media_category ORDER BY parent_id, name',
-        );
+        $result = [];
+        self::collectFlatCategories(self::filterVisibleCategories(rex_media_category::getRootCategories()), 0, $result, '', 0);
 
-        $byId = [];
-        foreach ($cats as $c) {
-            $byId[(int) $c['id']] = $c;
+        return $result;
+    }
+
+    /**
+     * @param list<rex_media_category>   $categories
+     * @param list<array<string, mixed>> $result
+     */
+    private static function collectFlatCategories(array $categories, int $parentId, array &$result, string $prefix, int $depth): void
+    {
+        foreach ($categories as $category) {
+            $id = $category->getId();
+            $label = $prefix . $category->getName();
+            $result[] = [
+                'id' => $id,
+                'name' => $category->getName(),
+                'parent_id' => $parentId,
+                'label' => $label,
+                'depth' => $depth,
+            ];
+            self::collectFlatCategories(self::filterVisibleCategories($category->getChildren()), $id, $result, $prefix . '  ', $depth + 1);
+        }
+    }
+
+    /**
+     * Filtert eine Kategorienliste auf die fuer den aktuellen User sichtbaren
+     * Eintraege: nicht erlaubte Kategorien werden uebersprungen, ihre erlaubten
+     * Nachfahren aber trotzdem eingesammelt (an dieser Stelle "hochgezogen"),
+     * damit z.B. eine erlaubte Unterkategorie unter einer nicht erlaubten
+     * Elternkategorie nicht unerreichbar wird. Exakt das Muster aus
+     * mediapool/lib/media_category_select.php::addCatOption() (dort wird beim
+     * Ueberspringen ebenfalls der aeussere $parentId an die Kinder weitergereicht),
+     * nur hier fuer eine Liste statt fuer eine einzelne Select-Box.
+     *
+     * @param list<rex_media_category> $categories
+     * @return list<rex_media_category>
+     */
+    public static function filterVisibleCategories(array $categories): array
+    {
+        if (\FriendsOfRedaxo\Mediaplace\MediaPermission::hasFullAccess()) {
+            return $categories;
         }
 
         $result = [];
-        self::collectChildrenStatic($byId, 0, $result, '', 0);
+        foreach ($categories as $category) {
+            if (\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($category->getId())) {
+                $result[] = $category;
+            } else {
+                $result = array_merge($result, self::filterVisibleCategories($category->getChildren()));
+            }
+        }
 
         return $result;
     }
@@ -106,33 +148,11 @@ class rex_api_mediaplace_categories extends rex_api_function
     private function renderTreeHtml(int $currentCat): string
     {
         $fragment = new rex_fragment();
-        $fragment->setVar('categories', rex_media_category::getRootCategories(), false);
+        $fragment->setVar('categories', self::filterVisibleCategories(rex_media_category::getRootCategories()), false);
         $fragment->setVar('depth', 0, false);
         $fragment->setVar('current_cat', $currentCat, false);
 
         return $fragment->parse('mediaplace/category_children.php');
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $byId
-     * @param list<array<string, mixed>>       $result
-     */
-    private static function collectChildrenStatic(array $byId, int $parentId, array &$result, string $prefix, int $depth): void
-    {
-        foreach ($byId as $id => $c) {
-            if ((int) $c['parent_id'] !== $parentId) {
-                continue;
-            }
-            $label = $prefix . (string) $c['name'];
-            $result[] = [
-                'id' => $id,
-                'name' => (string) $c['name'],
-                'parent_id' => (int) $c['parent_id'],
-                'label' => $label,
-                'depth' => $depth,
-            ];
-            self::collectChildrenStatic($byId, $id, $result, $prefix . '  ', $depth + 1);
-        }
     }
 
     private function handleMove(): void

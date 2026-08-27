@@ -4580,7 +4580,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     padding: 7px 16px;
     border-radius: 0;
     border: none;
-    background: var(--mp3-select-btn-bg);
+    background: var(--mp3-confirm-btn-bg);
     color: #fff;
     cursor: pointer;
     font-size: 13px;
@@ -4588,7 +4588,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 }
 
 #mp3-overlay .mp3-catpick-confirm:hover {
-    background: var(--mp3-select-btn-hover);
+    background: var(--mp3-confirm-btn-hover-bg);
 }
 
 

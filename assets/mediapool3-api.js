@@ -193,6 +193,61 @@
         });
     }
 
+    // Uebergangs-Fallback: solange die installierte FriendsOfRedaxo/api-Version
+    // media/list noch nicht nach Kategorie-Rechten filtert (boot.php setzt
+    // data-api-media-list-secure="0" fuer api <1.3.1, siehe dortiges Changelog
+    // und rex_api_mediaplace_media_list.php), wird die Medienliste ueber den
+    // eigenen Endpunkt statt direkt ueber /api/backend/media geladen -- gleiche
+    // Query-Parameter (filter[category_id], filter[term], page, per_page) und
+    // gleiche Antwortstruktur ({data, meta}), daher hier nur die Basis-URL
+    // ausgetauscht, kein Aufrufer muss angepasst werden. RUECKBAU-TODO: sobald
+    // api ueberall >=1.3.1 ist, kann diese Funktion durch apiFetchRaw() ersetzt
+    // und der Fallback-Endpunkt entfernt werden.
+    function apiFetchMediaList(endpoint) {
+        var root = document.getElementById('mp3-root');
+        var secure = root ? root.dataset.apiMediaListSecure === '1' : true;
+        var fallbackUrl = root ? root.dataset.mediaListFallbackUrl : null;
+
+        if (secure || !fallbackUrl) {
+            return apiFetchRaw(endpoint);
+        }
+
+        // Reines String-Anhaengen wie bei getCategoriesApiUrl()/getUnusedApiUrl();
+        // URLSearchParams() kodiert "[" / "]" in filter[category_id]/filter[term]
+        // dabei korrekt, ohne eine Basis-URL zu brauchen.
+        var query = endpoint.indexOf('?') === -1 ? '' : endpoint.slice(endpoint.indexOf('?') + 1);
+        var params = new URLSearchParams(query);
+        // "page" ist bei einem rex-api-call-Request (anders als bei der echten
+        // api-Addon-Route) reserviert -- rex_be_controller liest $_GET['page']
+        // selbst, um die Backend-Seite zu waehlen. Ein &page=1 im Query-String
+        // wuerde deshalb als "zeig Backend-Seite '1'" interpretiert und auf die
+        // Standardseite umleiten (HTML statt JSON). Server-seitig entsprechend
+        // in rex_api_mediaplace_media_list.php als mp3_page/mp3_per_page erwartet.
+        if (params.has('page')) {
+            params.set('mp3_page', params.get('page'));
+            params.delete('page');
+        }
+        if (params.has('per_page')) {
+            params.set('mp3_per_page', params.get('per_page'));
+            params.delete('per_page');
+        }
+        var extraQuery = params.toString();
+        var separator = fallbackUrl.indexOf('?') === -1 ? '?' : '&';
+        var url = fallbackUrl + (extraQuery ? separator + extraQuery : '');
+
+        return fetch(url, {
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        });
+    }
+
     function apiUpload(file, catId, onProgress) {
         if (file.size > CHUNK_UPLOAD_THRESHOLD) {
             return apiUploadChunked(file, catId, onProgress);
@@ -645,6 +700,7 @@
     Core.api.apiLoadSystemTagsForFiles = apiLoadSystemTagsForFiles;
     Core.api.apiFetch = apiFetch;
     Core.api.apiFetchRaw = apiFetchRaw;
+    Core.api.apiFetchMediaList = apiFetchMediaList;
     Core.api.apiUpload = apiUpload;
     Core.api.apiUploadJsonOrError = apiUploadJsonOrError;
     Core.api.apiUploadInit = apiUploadInit;

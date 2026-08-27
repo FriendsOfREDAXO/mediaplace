@@ -23,7 +23,7 @@ $currentCat = (int) $this->getVar('current_cat');
 
 $id = $category->getId();
 $name = $category->getName();
-$children = $category->getChildren();
+$children = rex_api_mediaplace_categories::filterVisibleCategories($category->getChildren());
 $hasKids = count($children) > 0;
 $indent = ($depth + 1) * 16;
 ?>

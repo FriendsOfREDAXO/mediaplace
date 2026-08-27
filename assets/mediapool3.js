@@ -111,6 +111,7 @@
     var apiLoadSystemTagsForFiles = MP3Core.api.apiLoadSystemTagsForFiles;
     var apiFetch = MP3Core.api.apiFetch;
     var apiFetchRaw = MP3Core.api.apiFetchRaw;
+    var apiFetchMediaList = MP3Core.api.apiFetchMediaList;
     var apiUpload = MP3Core.api.apiUpload;
     var apiUploadJsonOrError = MP3Core.api.apiUploadJsonOrError;
     var apiUploadInit = MP3Core.api.apiUploadInit;
@@ -156,6 +157,8 @@
     var normalizeCompare = MP3Core.helpers.normalizeCompare;
     var hasChanged = MP3Core.helpers.hasChanged;
     var isImageFile = MP3Core.helpers.isImageFile;
+    var isResizableImageType = MP3Core.helpers.isResizableImageType;
+    var resizeImageFile = MP3Core.helpers.resizeImageFile;
 
     // ---- Helpers ----
 
@@ -3153,7 +3156,7 @@
 
         var endpoint = buildMediaEndpoint();
 
-        apiFetchRaw(endpoint)
+        apiFetchMediaList(endpoint)
             .then(function (payload) {
                 if (mySession !== loadSessionId) throw MP3_STALE_SESSION;
                 var files = (payload && Array.isArray(payload.data)) ? payload.data : [];
@@ -3810,69 +3813,8 @@
         });
     }
 
-    // GIFs (koennten animiert sein) und SVGs (kein Rasterbild) werden nie
-    // angefasst, auch bei aktivem Resize.
-    function isResizableImageType(type) {
-        return !!type && 0 === type.indexOf('image/') && 'image/gif' !== type && 'image/svg+xml' !== type;
-    }
-
-    // Skaliert eine Bilddatei im Browser auf maxWidth/maxHeight herunter (Seiten-
-    // verhaeltnis erhalten, kein Hochskalieren), Dateiformat bleibt durch
-    // canvas.toBlob(cb, file.type) unveraendert. Bei jedem Fehlschlag (Decode-
-    // Fehler, canvas.toBlob liefert nichts) wird die Originaldatei durchgereicht,
-    // der Upload darf daran nie scheitern.
-    function resizeImageFile(file, maxWidth, maxHeight) {
-        return new Promise(function (resolve) {
-            var url = URL.createObjectURL(file);
-            var img = new Image();
-            img.onload = function () {
-                URL.revokeObjectURL(url);
-                var w = img.naturalWidth;
-                var h = img.naturalHeight;
-                if (!w || !h || (w <= maxWidth && h <= maxHeight)) {
-                    resolve(file);
-                    return;
-                }
-                var ratio = Math.min(maxWidth / w, maxHeight / h);
-                var targetW = Math.max(1, Math.round(w * ratio));
-                var targetH = Math.max(1, Math.round(h * ratio));
-                var canvas = document.createElement('canvas');
-                canvas.width = targetW;
-                canvas.height = targetH;
-                var ctx = canvas.getContext('2d');
-                if (!ctx) { resolve(file); return; }
-                ctx.drawImage(img, 0, 0, targetW, targetH);
-                canvas.toBlob(function (blob) {
-                    // canvas.toBlob() faellt laut Spec still auf image/png zurueck,
-                    // wenn der Browser den angeforderten Typ nicht encodieren kann
-                    // (z.B. AVIF praktisch ueberall, WebP in aelterem Safari) -- ohne
-                    // diesen Check wuerde die Datei mit falschem .type-Label (Original-
-                    // Format), aber tatsaechlich PNG-kodiertem Inhalt hochgeladen.
-                    // Lieber die Originaldatei unveraendert lassen als das Format
-                    // stillschweigend vertauschen.
-                    if (!blob || blob.type !== file.type) { resolve(file); return; }
-                    var resized;
-                    try {
-                        resized = new File([blob], file.name, { type: file.type, lastModified: file.lastModified });
-                    } catch (e) {
-                        resized = blob;
-                    }
-                    // Ordner-Upload haengt die Ziel-Kategorie als Eigenschaft an die
-                    // File-Instanz (siehe doFolderUpload()) -- beim Ersetzen mitnehmen.
-                    if (file.__mp3CategoryId != null) {
-                        resized.__mp3CategoryId = file.__mp3CategoryId;
-                    }
-                    resolve(resized);
-                }, file.type);
-            };
-            img.onerror = function () {
-                URL.revokeObjectURL(url);
-                resolve(file);
-            };
-            img.src = url;
-        });
-    }
-
+    // isResizableImageType()/resizeImageFile() leben in MP3Core.helpers (geteilt
+    // mit mediapool3_widget.js fuer dessen eigenen Direkt-Upload).
     function maybeResizeUploadFile(file) {
         if (!features.uploadResize || !isResizableImageType(file.type)) {
             return Promise.resolve(file);

@@ -35,6 +35,25 @@
     font-size: 16px;
 }
 
+/* Leerzustand mit aktivem Direkt-Upload: groesser, klickbar, wie die frueher
+   separate Dropzone -- ist jetzt der Leerzustand selbst statt eines eigenen
+   Elements. */
+.mp3w-empty-upload {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.mp3w-empty-upload i {
+    margin-right: 6px;
+    font-size: 16px;
+    color: #4b9ad9;
+    vertical-align: -1px;
+}
+.mp3w-empty-upload:hover {
+    border-color: #4b9ad9;
+    background: #f3f6fb;
+}
+
 /* ---- Single Item ---- */
 .mp3w-item {
     position: relative;
@@ -73,16 +92,24 @@
     color: #9ca5b2;
 }
 
-/* Filename */
+/* Untere Leiste (Auge-Button + Dateiname) */
+.mp3w-item-bottom {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 2px;
+    border-top: 1px solid #dfe3e9;
+}
 .mp3w-item-name {
-    padding: 4px 6px;
+    flex: 1;
+    min-width: 0;
+    padding: 4px 4px;
     font-size: 10px;
     line-height: 1.2;
     color: #324050;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    border-top: 1px solid #dfe3e9;
 }
 
 /* Remove button */
@@ -144,6 +171,157 @@
     background: #4b9ad9;
 }
 
+/* Auge-Button -- staendig sichtbar in der unteren Leiste (nicht nur bei
+   Hover wie die kleine Lupe oben links, die leicht uebersehen wird),
+   gleiche Aktion. */
+.mp3w-item-eye {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    color: #9ca5b2;
+    font-size: 11px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.mp3w-item-eye:hover {
+    color: #fff;
+    background: #4b9ad9;
+}
+.mp3w-view-list .mp3w-item-bottom {
+    display: contents;
+}
+.mp3w-view-list .mp3w-item-eye {
+    display: none;
+}
+
+/* ---- Direkt-Upload: ganzer Container ist die Drop-Zone ---- */
+.mp3w-container-dragover {
+    border-color: #4b9ad9;
+    background: #f3f6fb;
+    box-shadow: 0 0 0 2px rgba(75, 154, 217, 0.25);
+}
+.mp3w-upload-progress {
+    width: 100%;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: #4b9ad9;
+    background: #f3f6fb;
+    border: 1px solid #dfe3e9;
+}
+
+/* ---- Listenansicht (Umschalter im Toolbar) ---- */
+.mp3w-previews.mp3w-view-list {
+    flex-direction: column;
+}
+.mp3w-view-list .mp3w-item {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+.mp3w-view-list .mp3w-item-preview {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+.mp3w-view-list .mp3w-item-name {
+    flex: 1;
+    min-width: 0;
+    border-top: none;
+    padding: 0 8px;
+}
+.mp3w-view-list .mp3w-item-view,
+.mp3w-view-list .mp3w-item-remove {
+    position: static;
+    opacity: 1;
+    flex-shrink: 0;
+    margin-right: 4px;
+    background: transparent;
+    color: #9ca5b2;
+}
+.mp3w-view-list .mp3w-item-view:hover,
+.mp3w-view-list .mp3w-item-remove:hover {
+    color: #fff;
+}
+
+/* ---- Kategorie-Auswahl-Dialog (Direkt-Upload) ----
+   An document.body angehaengt statt #mp3-overlay -- dieses Skript laeuft
+   unabhaengig vom Overlay-Kern, dessen Root existiert ggf. noch gar nicht. */
+.mp3w-catpick-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+}
+.mp3w-catpick-box {
+    width: 90%;
+    max-width: 420px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+.mp3w-catpick-title {
+    margin-bottom: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #324050;
+}
+.mp3w-catpick-info {
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #777;
+}
+.mp3w-catpick-select {
+    width: 100%;
+    padding: 6px 8px;
+    margin-bottom: 16px;
+    border: 1px solid #dfe3e9;
+    border-radius: 0;
+    background: #fff;
+    color: #324050;
+}
+.mp3w-catpick-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.mp3w-catpick-cancel {
+    padding: 7px 16px;
+    border: 1px solid #dfe3e9;
+    border-radius: 0;
+    background: transparent;
+    color: #324050;
+    cursor: pointer;
+    font-size: 13px;
+}
+.mp3w-catpick-confirm {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 0;
+    background: var(--mp3-confirm-btn-bg, #5bb585);
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+.mp3w-catpick-confirm:hover {
+    opacity: 0.88;
+}
+
 /* ---- Toolbar ---- */
 .mp3w-toolbar {
     display: flex;
@@ -156,6 +334,24 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+.mp3w-btn-clear-all {
+    gap: 5px;
+    margin-left: auto;
+}
+.mp3w-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.mp3w-btn-clear-marked {
+    color: #d9534f;
+    border-color: #d9534f;
+}
+
+/* ---- Mehrfachauswahl zum gemeinsamen Loeschen (Cmd/Ctrl-Klick) ---- */
+.mp3w-item-marked {
+    border-color: #d9534f !important;
+    box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.25);
 }
 
 /* ---- Drag & Drop Sort (Multi) ---- */
@@ -196,15 +392,56 @@ body.rex-theme-dark .mp3w-item:hover {
 body.rex-theme-dark .mp3w-item-preview {
     background: #1a2636;
 }
+body.rex-theme-dark .mp3w-item-bottom {
+    border-top-color: #2d3e50;
+}
 body.rex-theme-dark .mp3w-item-name {
     color: #8fa8c0;
-    border-top-color: #2d3e50;
 }
 body.rex-theme-dark .mp3w-item-icon {
     color: #6c8ea8;
 }
+body.rex-theme-dark .mp3w-item-eye {
+    color: #6c8ea8;
+}
+body.rex-theme-dark .mp3w-item-eye:hover {
+    color: #fff;
+    background: #3c8dbc;
+}
 body.rex-theme-dark .mp3w-toolbar {
     border-top-color: #2d3e50;
+}
+body.rex-theme-dark .mp3w-container-dragover {
+    border-color: #3c8dbc;
+    background: #253344;
+}
+body.rex-theme-dark .mp3w-empty-upload:hover {
+    border-color: #3c8dbc;
+    background: #253344;
+}
+body.rex-theme-dark .mp3w-upload-progress {
+    background: #253344;
+    border-color: #2d3e50;
+    color: #8ab8e8;
+}
+body.rex-theme-dark .mp3w-catpick-box {
+    background: #1e2a3a;
+    color: #cfe0ee;
+}
+body.rex-theme-dark .mp3w-catpick-title {
+    color: #cfe0ee;
+}
+body.rex-theme-dark .mp3w-catpick-info {
+    color: #8fa8c0;
+}
+body.rex-theme-dark .mp3w-catpick-select {
+    background: #253344;
+    border-color: #2d3e50;
+    color: #cfe0ee;
+}
+body.rex-theme-dark .mp3w-catpick-cancel {
+    border-color: #2d3e50;
+    color: #cfe0ee;
 }
 
 /* Auto dark mode */
@@ -227,14 +464,55 @@ body.rex-theme-dark .mp3w-toolbar {
     body.rex-has-theme:not(.rex-theme-light) .mp3w-item-preview {
         background: #1a2636;
     }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-bottom {
+        border-top-color: #2d3e50;
+    }
     body.rex-has-theme:not(.rex-theme-light) .mp3w-item-name {
         color: #8fa8c0;
-        border-top-color: #2d3e50;
     }
     body.rex-has-theme:not(.rex-theme-light) .mp3w-item-icon {
         color: #6c8ea8;
     }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-eye {
+        color: #6c8ea8;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-eye:hover {
+        color: #fff;
+        background: #3c8dbc;
+    }
     body.rex-has-theme:not(.rex-theme-light) .mp3w-toolbar {
         border-top-color: #2d3e50;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-container-dragover {
+        border-color: #3c8dbc;
+        background: #253344;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-empty-upload:hover {
+        border-color: #3c8dbc;
+        background: #253344;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-upload-progress {
+        background: #253344;
+        border-color: #2d3e50;
+        color: #8ab8e8;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-box {
+        background: #1e2a3a;
+        color: #cfe0ee;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-title {
+        color: #cfe0ee;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-info {
+        color: #8fa8c0;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-select {
+        background: #253344;
+        border-color: #2d3e50;
+        color: #cfe0ee;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-cancel {
+        border-color: #2d3e50;
+        color: #cfe0ee;
     }
 }

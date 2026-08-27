@@ -1,5 +1,26 @@
 # Changelog
 
+## Version 1.3.0 – 2026-08-27
+
+### Widget: Direkt-Upload, Mehrfachmarkierung, Ansichten
+- Neu: `data-mp3-upload="true"` erlaubt Direkt-Upload per Drag&Drop/Klick direkt im Widget (ganzer Container ist Drop-Zone), inklusive Kategorie-Auswahl-Dialog vor dem Hochladen und optionaler Dateityp-Beschränkung (`data-mp3-types`, wie das native `accept`-Attribut).
+- Neu: `data-mp3-max` begrenzt die Anzahl Dateien bei Mehrfachauswahl.
+- Neu: Klick markiert genau ein Medium (hebt andere Markierungen auf), Cmd/Ctrl-Klick fügt es zu einer Mehrfachmarkierung hinzu/entfernt es daraus. Zwei getrennte Aktionen dafür: Papierkorb entfernt nur die markierten Dateien (deaktiviert ohne Markierung), separater roter „Leeren"-Button (REDAXOs `.btn-delete`-Konvention) entfernt nach Bestätigung alle Dateien.
+- Neu: Kacheln/Liste-Umschalter, jetzt auch bei Einzelauswahl-Widgets verfügbar; `data-mp3-view="grid"|"list"` legt die Start-Ansicht eines einzelnen Widgets fest (ohne Angabe gilt die geteilte Nutzer-Präferenz), ein späterer Umschalter-Klick wirkt weiterhin global für alle Widgets der Seite.
+- Neu: Auge-Button in der unteren Leiste jedes Grid-Elements (immer sichtbar, öffnet die Detailansicht in MediaPlace) zusätzlich zur bestehenden, nur bei Hover sichtbaren Lupe.
+
+### YForm-Integration
+- Neuer nativer YForm-Werttyp `mediaplace` (`lib/yform/value/yform_value_mediaplace.php`), modelliert nach `yform/lib/Field/value/be_media.php`: bindet das Widget direkt inkl. Direkt-Upload, Typ-/Mengen-Beschränkung und Start-Ansicht als Feld-Optionen. Registriert sich automatisch per Klassennamens-Konvention bei YForm und meldet referenzierte Dateien korrekt beim „Datei in Verwendung"-Check von REDAXO (`MEDIA_IS_IN_USE`), damit sie nicht versehentlich gelöscht werden können.
+
+### Demo-Seite
+- Überarbeitet: Einleitung, nummerierte Abschnitte (Overlay → Einzelmedium → Mehrfachauswahl → Direkt-Upload → API-Referenz), neue Attribut-Tabelle (inkl. `data-mp3-max`/`data-mp3-view`), YForm-Abschnitt zeigt jetzt zuerst den empfohlenen nativen Feldtyp (inkl. echtem, verifiziertem JSON-Export-Beispiel) und danach die ältere HTML-Feldtyp-Alternative.
+
+## Version 1.2.2 – 2026-08-27
+
+### Sicherheit
+- Kategoriebaum und flache Kategorienliste (`rex_api_mediaplace_categories`) zeigten bisher **alle** Medienkategorien, unabhängig von den tatsächlichen Medienordner-Rechten des Users – ein auf einzelne Kategorien eingeschränkter Backend-User sah trotzdem den kompletten Kategoriebaum. Kategorienliste und Sidebar-Baum filtern jetzt per `MediaPermission::hasCategoryAccess()`; eine nicht erlaubte Kategorie wird übersprungen, ihre erlaubten Unterkategorien aber weiterhin angezeigt (an der nächsthöheren sichtbaren Stelle "hochgezogen"), analog zu `mediapool/lib/media_category_select.php::addCatOption()`.
+- Die eigentliche Medienliste läuft über das `api`-Addon (`media`/`backend/media`), dessen `handleMediaList()` bislang ebenfalls keinerlei Kategorie-Rechte prüfte – ein eingeschränkter User bekam dort trotzdem sämtliche Dateien aller Kategorien zurück (separater Fix im `api`-Repository, [PR #78](https://github.com/FriendsOfREDAXO/api/pull/78), ab Version 1.3.1). Solange die installierte `api`-Version das noch nicht mitbringt, weicht MediaPlace automatisch auf einen eigenen, rechte-geprüften Fallback-Endpunkt aus (`rex_api_mediaplace_media_list`, Versionserkennung in `boot.php`) – kein manuelles Eingreifen nötig, die Weiche greift automatisch und entfällt von selbst, sobald `api` >=1.3.1 installiert ist.
+
 ## Version 1.2.1 – 2026-08-27
 
 ### Bugfix

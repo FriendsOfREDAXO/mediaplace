@@ -1,11 +1,21 @@
 # MediaPlace – Copilot Instructions
 
+## Leitprinzipien
+
+1. **API-Addon first** – Medien-CRUD (Liste/Upload/Update/Delete/Kategorien) läuft über `FriendsOfREDAXO/api` (`/api/backend/media/...`). Vor jedem Eigenbau erst prüfen, ob das api-Addon die Route schon hat (`src/addons/api/lib/RoutePackage/Media.php`) — nicht blind annehmen, dass eine Fähigkeit fehlt. Bestehende Eigenbauten/Fallbacks (z.B. `rex_api_mediaplace_media_list.php`) sind kein einmaliges Urteil: bei API-Arbeit die installierte `api`-Version (`rex_addon::get('api')->getVersion()`) und deren Changelog aktiv gegenprüfen und den Workaround in Frage stellen, sobald sich die Version geändert hat.
+2. **REDAXO-eigene Methoden nutzen, kein Parallel-Code** – Wo REDAXO schon eine Fähigkeit hat (`rex_media`, `rex_mediapool::mediaIsInUse()`, Metainfo-Rendering/Speichern über `MEDIA_FORM_EDIT`/`MEDIA_UPDATED`, YForm-Feldtyp-Konventionen), diese wiederverwenden statt nachzubauen.
+3. **Modularisieren** – neue, in sich geschlossene Fähigkeiten als eigene Dateien/Klassen (`lib/`, `lib/Widgets/`, `lib/yform/value/`), nicht alles in `mediapool3.js`/`boot.php` anhäufen.
+4. **Kommentare knapp halten** – pre-1.0, kein Fix-Verlauf im Code dokumentieren, das gehört in Commit-Messages.
+
 ## Projekt-Überblick
 
-Dieses REDAXO-AddOn implementiert einen modernen Medienpool-Overlay-Picker als Ersatz für das Standard-REDAXO-Medienpool-Widget. Es besteht aus zwei Schichten:
+Dieses REDAXO-AddOn implementiert einen modernen Medienpool-Overlay-Picker als Ersatz für das Standard-REDAXO-Medienpool-Widget. Fünf Teile, unabhängig voneinander (de)aktivierbar (Einstellungsseite / `default_config` in `package.yml`):
 
-1. **Overlay-Picker** (`mediapool3.js` / `mediapool3.css`) – Vollbild-Overlay mit Kategoriebaum, Grid/Listen-Ansicht, Suche, Filter, Sortierung, Detail-Panel, Multi-Upload, Multi-Select
-2. **Widget** (`mediapool3_widget.js` / `mediapool3_widget.css`) – Wandelt `<input class="mp3-widget">` in visuelle Medien-Picker mit Vorschau um
+1. **Overlay-Picker** (`mediapool3.js` / `mediapool3.css`) – Vollbild-Overlay mit Kategoriebaum, Grid/Listen-/Media-Wall-Ansicht, Suche, Tag-/Typ-Filter, Sammlungen, Multi-Select, Detail-Panel mit eigenen JSON-Metadaten-Feldern.
+2. **Widget** (`mediapool3_widget.js` / `mediapool3_widget.css`) – wandelt `<input class="mp3-widget">` in visuellen Picker um; optional Direkt-Upload (`data-mp3-upload`), Typ-Beschränkung (`data-mp3-types`), Maximal-Anzahl (`data-mp3-max`), Start-Ansicht Kacheln/Liste (`data-mp3-view`).
+3. **Klassische Integration** (`mediapool3_classic.js`) – klassische `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets und der Medienpool-Menüpunkt öffnen wahlweise den Overlay.
+4. **Metainfo-Canvas** (`openMetainfoCanvas()` in `mediapool3.js`, `lib/rex_api_mediaplace_metainfo_form.php`) – natives Bearbeiten echter `med_*`-Metainfo-Felder im Overlay über REDAXOs eigene Extension Points, kein eigenes Feldtyp-System dafür.
+5. **YForm-Integration** (`lib/yform/value/yform_value_mediaplace.php`) – eigener YForm-Werttyp `mediaplace`.
 
 ## Architektur
 
@@ -13,91 +23,78 @@ Dieses REDAXO-AddOn implementiert einen modernen Medienpool-Overlay-Picker als E
 
 ```
 assets/
-  mediapool3.js          – Overlay IIFE (~1800 Zeilen), exponiert window.MP3
-  mediapool3.css         – Overlay Styles mit CSS Custom Properties (~2000 Zeilen)
-  mediapool3_widget.js   – Widget IIFE (~350 Zeilen), exponiert window.MP3Widget
-  mediapool3_widget.css  – Widget Styles (~210 Zeilen)
-boot.php                 – Lädt Assets, injiziert <div id="mp3-root"> via OUTPUT_FILTER
+  mediapool3-i18n.js      – geteilte i18n-Basis (window.MP3Core.i18n)
+  mediapool3-helpers.js   – geteilte Utility-Funktionen (window.MP3Core.helpers), inkl. Bild-Resize
+  mediapool3-api.js       – geteilte API-Fetch-Wrapper (window.MP3Core.api)
+  mediapool3.js           – Overlay IIFE, exponiert window.MP3
+  mediapool3.css          – Overlay Styles, CSS Custom Properties
+  mediapool3_widget.js    – Widget IIFE, exponiert window.MP3Widget
+  mediapool3_widget.css   – Widget Styles
+  mediapool3_classic.js   – fängt klassische Widget-Klicks ab, leitet auf MP3.open() um
+boot.php                  – Lädt Assets, PAGES_PREPARED/METAINFO_CUSTOM_FIELD/OUTPUT_FILTER-Hooks,
+                             YForm-Templatepfad + MEDIA_IS_IN_USE-Registrierung
+lib/
+  rex_api_mediaplace_*.php   – eigene rex_api_function-Endpunkte
+  MediaPermission.php        – zentrale Rechteprüfung
+  SystemTagManager.php       – Tags/Sammlungen (Sammlung = Tag mit "collection:"-Präfix)
+  MetainfoFieldGroup.php, Widgets/*.php – eigenes JSON-Metadatensystem (med_json_data)
+  ClassicMetainfoFormatter.php, AltTextStatus.php – klassische Formular-Anzeige, ALT-Text-Priorität
+  FocuspointIntegration.php  – Fokuspunkt-Editor (nur mit focuspoint-Addon)
+  yform/value/yform_value_mediaplace.php – YForm-Werttyp
+ytemplates/bootstrap/value.mediaplace.tpl.php – Backend-Formular-Template für den YForm-Werttyp
 pages/
-  demo.php               – Demo-Seite mit Widget-Beispielen
-  debug.php              – Debug-Seite für API-Tests
+  demo.php, settings.php, metainfo_fields.php
 ```
 
 ### JavaScript-Muster
 
-- **Vanilla JS, kein Framework** – Kein jQuery, kein React. Alles in IIFEs gekapselt.
-- **ES5-kompatibel** – Kein `let`/`const`, keine Arrow Functions, kein Template Literals, keine Destructuring, keine Klassen-Syntax (`class`). Verwende `var`, `function`, String-Concatenation.
-- **IIFE-Pattern**: Jede Datei ist in `(function() { 'use strict'; ... })();` gekapselt.
-- **Public API** wird über `window.MP3` und `window.MP3Widget` exponiert.
-- **Helper-Funktionen**: `qs(sel, ctx)` und `qsa(sel, ctx)` als Wrapper für `querySelector`/`querySelectorAll`.
-- **Keine globalen Variablen** außer `window.MP3` und `window.MP3Widget`.
+- **Vanilla JS, kein Framework** – kein React. jQuery nur dort genutzt, wo REDAXO/Bootstrap-Komponenten es verlangen (`selectpicker`, `rex:ready`-Events).
+- **ES5-kompatibel** – kein `let`/`const`, keine Arrow Functions, keine Template Literals, kein Destructuring, keine `class`-Syntax. `var`, `function`, String-Concatenation.
+- **IIFE-Pattern**: jede Datei in `(function() { 'use strict'; ... })();` gekapselt.
+- **Geteilte Basis über `window.MP3Core`**: `mediapool3-i18n.js`/`-helpers.js`/`-api.js` laden zuerst, `mediapool3.js` UND `mediapool3_widget.js` aliasen daraus (`var apiUpload = MP3Core.api.apiUpload;` usw.), statt Code zu duplizieren. Neue geteilte Logik (z.B. Bild-Resize) gehört dorthin, nicht in eine der beiden Verbraucher-Dateien.
+- **Public API** über `window.MP3` und `window.MP3Widget`.
+- **Helper**: `qs(sel, ctx)`/`qsa(sel, ctx)` als `querySelector`/`querySelectorAll`-Wrapper.
 
 ### CSS-Architektur
 
 #### Spezifitäts-Strategie
 
-Alle Selektoren sind unter `#mp3-overlay` (ID-Selektor) geschachtelt, um Bootstrap 3 und REDAXO-Backend-Styles zuverlässig zu überschreiben:
+Overlay-Selektoren unter `#mp3-overlay` (ID) geschachtelt, um Bootstrap 3/REDAXO-Backend-Styles sicher zu überschreiben:
 
 ```css
-/* Richtig – hohe Spezifität durch ID */
+/* Richtig */
 #mp3-overlay .mp3-card { ... }
-
 /* Falsch – wird von Bootstrap überschrieben */
 .mp3-card { ... }
 ```
 
-#### CSS Custom Properties (`--mp3-` Prefix)
+Widget-Styles (`mp3w-`-Prefix) leben im normalen Seiten-DOM, daher **kein** `#mp3-overlay`-Scoping.
 
-Alle Farben und Theme-Werte als CSS-Variablen mit `--mp3-`-Prefix:
+#### CSS Custom Properties (`--mp3-` Prefix, nur Overlay)
 
-```css
-:root {
-    --mp3-modal-bg: #fff;
-    --mp3-sidebar-bg: #f8f9fa;
-    /* ~100+ Variablen */
-}
-```
+#### Dark Mode – Overlay: vierstufiges Pattern
 
-#### Dark Mode – Dreistufiges Pattern
-
-**IMMER** alle drei Blöcke pflegen:
+**IMMER alle vier Blöcke pflegen**, sonst fällt eine neue Variable in einem Dark-Mode-Pfad auf den Light-Fallback zurück:
 
 ```css
-/* 1. Light-Defaults in :root */
-:root {
-    --mp3-modal-bg: #fff;
-}
-
-/* 2. Expliziter Dark Mode */
-body.rex-theme-dark {
-    --mp3-modal-bg: #1a2636;
-}
-
-/* 3. Auto Dark Mode (System-Präferenz) */
+:root { --mp3-modal-bg: #fff; }                                    /* 1. Light-Default */
+body.rex-theme-dark { --mp3-modal-bg: #1a2636; }                   /* 2. Explizites Dark-Theme */
 @media (prefers-color-scheme: dark) {
-    body.rex-has-theme:not(.rex-theme-light) {
-        --mp3-modal-bg: #1a2636;
-    }
+    body.rex-has-theme:not(.rex-theme-light) { --mp3-modal-bg: #1a2636; }  /* 3. System-Präferenz */
 }
+#mp3-overlay.mp3-dark-mode { --mp3-modal-bg: #1a2636; }             /* 4. Eigener In-Overlay-Toggle */
 ```
 
-**Block 2 und 3 MÜSSEN identische Werte haben.**
+Block 2, 3 und 4 MÜSSEN identische Werte haben. Vor jeder CSS-Änderung:
 
-#### Header-Tools: Transparent-White-Pattern
-
-Elemente im Header (Suche, Sort-Select, View-Toggle, Upload-Button) verwenden `rgba(255,255,255,...)` auf dem dunklen Header-Hintergrund. Dadurch sind **keine Dark-Mode-Overrides** nötig:
-
-```css
-#mp3-overlay .mp3-search {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-}
+```bash
+grep -oE -- '--mp3-[a-z0-9-]+\s*:' assets/mediapool3.css | sed 's/\s*:$//' | sort -u > /tmp/defined.txt
+grep -oE -- 'var\(--mp3-[a-z0-9-]+' assets/mediapool3.css | sed 's/^var(//' | sort -u > /tmp/used.txt
+comm -23 /tmp/used.txt /tmp/defined.txt   # muss leer sein
+python3 -c "c=open('assets/mediapool3.css').read(); print(c.count('{'), c.count('}'))"
 ```
 
-### Widget CSS (`mediapool3_widget.css`)
-
-Widget-Styles verwenden `mp3w-`-Prefix (ohne `#mp3-overlay`-Scoping, da Widgets im normalen DOM leben). Dark Mode hier mit direkten Property-Werten (keine Variablen):
+#### Widget CSS – nur zwei Dark-Mode-Blöcke, direkte Werte
 
 ```css
 body.rex-theme-dark .mp3w-container { ... }
@@ -106,114 +103,99 @@ body.rex-theme-dark .mp3w-container { ... }
 }
 ```
 
+Keine `--mp3w-*`-Variablen, direkte Hex-Werte, beide Blöcke synchron halten.
+
+#### Weitere Theming-Fallen
+
+- REDAXO/Bootstrap: `table { background-color: #fff }` global – eigene `<table>` braucht `background: transparent`.
+- Native `<select>` braucht `-webkit-appearance: none; appearance: none;` + eigenes SVG-Pfeil-Icon.
+- Wird ein `<select>` per `.selectpicker()` initialisiert (Kategorie-Auswahl-Dialoge), rendert es Optionen in eigenen `<a>`-Elementen – normale führende Leerzeichen zur Tiefen-Einrückung werden dabei kollabiert. `&nbsp;` verwenden, nicht `' '.repeat(depth)`.
+- Muted-Text-Grau ist `#777`, nicht `#9ca5b2` (das ist Rand-/Icon-Grau, nur ~2.5:1 Kontrast).
+- Kein `border-radius` außer bei echten Kreisen (REDAXOs `$border-radius-base` ist `0`).
+
 ## API-Anbindung
 
-Das AddOn nutzt die **FriendsOfREDAXO/api** REST-API:
-
 ```
-GET  /api/backend/media                     – Medienliste (mit Filter/Sort)
-GET  /api/backend/media/{filename}/info     – Detailinformationen
-GET  /api/backend/media/{filename}/file     – Datei-Download
-POST /api/backend/media                     – Upload (FormData)
-PATCH/PUT /api/backend/media/{filename}/update – Metadaten aktualisieren
-DELETE /api/backend/media/{filename}/delete  – Datei löschen
+GET  /api/backend/media                       – Medienliste (Filter/Sort)
+GET  /api/backend/media/{filename}/info       – Detailinformationen
+POST /api/backend/media                       – Upload (FormData)
+POST /api/backend/media/upload                – Chunk-Init (Dateien > 20 MB)
+PATCH /api/backend/media/{filename}/update    – Metadaten aktualisieren
+DELETE /api/backend/media/{filename}/delete   – Datei löschen
 ```
 
-**Endpunkte immer über `API_BASE`-Variable aufrufen** (definiert am Anfang der IIFE).
+Immer über die Alias-Funktionen in `MP3Core.api` aufrufen, nicht direkt `fetch()`. Chunk-Upload-Entscheidung (`apiUpload()` vs. `apiUploadChunked()`) läuft anhand `file.size` automatisch – eigene Vorverarbeitung (z.B. Bild-Resize) muss **vor** diesem Aufruf passieren, damit die Größenprüfung die tatsächlich zu sendende Datei sieht.
 
-Thumbnails kommen über den REDAXO Media Manager:
-```
-index.php?rex_media_type=rex_media_small&rex_media_file={filename}
-```
+Eigene `rex_api_function`-Endpunkte (`mediaplace_categories`, `_tags`, `_json_metainfo`, `_schema`, `_unused`, `_focuspoint`, `_metainfo_form`) brauchen **immer** eine explizite Rechteprüfung über `MediaPermission` – `rex::getUser()` prüft nur "eingeloggt", nicht REDAXOs Medien-Berechtigungen.
+
+Thumbnails über den Media Manager: `index.php?rex_media_type=rex_media_small&rex_media_file={filename}`.
+
+## Metainfo-Canvas: Extension Points werden lazy geladen
+
+`metainfo/lib/handler/media_handler.php` registriert `MEDIA_FORM_EDIT`/`MEDIA_UPDATED` nur, wenn REDAXO selbst erkennt, dass die aktuelle Seite `mediapool` ist – ein eigener `rex-api-call`-Endpunkt löst das nie aus. `rex_api_mediaplace_metainfo_form.php` lädt die Handler-Datei deshalb manuell nach (`@internal`, kein öffentlicher Vertrag). Drittanbieter-Feldtypen können dieselbe Lücke haben – vor Arbeit daran deren `boot.php` auf ähnliche Seiten-Erkennung prüfen.
+
+## Upload-Resize: Format-Fallback-Falle
+
+`canvas.toBlob(cb, type)` fällt bei nicht unterstützten Ausgabeformaten (AVIF fast überall, WebP in älterem Safari) laut Spezifikation still auf PNG zurück. `MP3Core.helpers.resizeImageFile()` prüft deshalb `blob.type !== file.type` und verwirft die Verkleinerung in dem Fall, statt eine Datei mit falschem `.type`-Label hochzuladen. GIFs/SVGs werden immer ausgeschlossen (`isResizableImageType()`).
+
+## YForm-Integration: `MEDIA_IS_IN_USE` ist Pflicht
+
+YForm entdeckt eigene Werttypen (`rex_yform_value_<name>`) automatisch per Klassennamens-Konvention – der "Datei in Verwendung"-Check ist aber ein **separater**, expliziter Mechanismus. Ohne eigene `rex_extension::register('MEDIA_IS_IN_USE', [...])`-Registrierung in `boot.php` würden über das `mediaplace`-YForm-Feld referenzierte Dateien fälschlich als löschbar gemeldet. Siehe `yform_value_mediaplace::isMediaInUse()`, modelliert nach `yform/lib/Field/value/be_media.php`.
 
 ## MBlock-Kompatibilität (KRITISCH)
 
 Das Widget MUSS mit dem MBlock-AddOn funktionieren. MBlock klont DOM-Elemente und triggert `rex:ready`.
 
-### Regeln
-
-1. **`initWidgets(scope)`** akzeptiert einen optionalen DOM-Container als Scope
-2. **Clone-Cleanup**: Bei `rex:ready` werden geklonte `.mp3w-container` entfernt und `data-mp3-initialized` zurückgesetzt, bevor Widgets neu gebaut werden
-3. **`rex:ready`-Handler** muss den Container-Parameter von jQuery nutzen:
+1. `initWidgets(scope)` akzeptiert einen optionalen DOM-Container als Scope.
+2. Clone-Cleanup: bei `rex:ready` werden geklonte `.mp3w-container` entfernt und `data-mp3-initialized` zurückgesetzt, bevor Widgets neu gebaut werden.
+3. `rex:ready`-Handler nutzt den Container-Parameter von jQuery:
    ```javascript
    jQuery(document).on('rex:ready', function (e, container) {
        var scope = container && container.length ? container[0] : null;
        initWidgets(scope);
    });
    ```
-4. **Keine IDs in Widget-HTML** – MBlock ändert IDs/Names, daher nur Klassen und relative DOM-Traversierung verwenden
-5. **Events am Widget** werden lokal am Container gebunden, nicht am Document (keine Event-Delegation für Widgets)
-6. **`data-mp3-initialized`** Flag verhindert doppelte Initialisierung – muss bei Clone-Cleanup entfernt werden
-
-### MBlock-Ablauf
-
-```
-MBlock klont Block → Input + alter .mp3w-container werden kopiert
-  → MBlock triggert rex:ready auf dem neuen Block
-  → initWidgets(scope) findet Input mit data-mp3-initialized
-  → Entfernt geklonten .mp3w-container
-  → Löscht data-mp3-initialized
-  → Baut frisches Widget mit eigenem State
-```
-
-## Overlay-Verhalten
-
-### Drag & Resize
-
-- Header ist Drag-Handle (ausgenommen: `.mp3-close`, `.mp3-header-tools`, `input`, `select`, `button`, `label`)
-- Unten-rechts-Ecke ist Resize-Handle (`.mp3-resize-handle`)
-- **`interacting`-Flag**: Während Drag/Resize wird `interacting = true` gesetzt. Der Backdrop-Click-Handler prüft `!interacting` bevor er schließt. Flag wird via `setTimeout(..., 0)` nach `mouseup` zurückgesetzt.
-
-### Multi-Select-Modus
-
-- Aktiviert via `MP3.open(callback, { multiple: true })`
-- Dateien werden über `multiSelected`-Object verwaltet (filename → true)
-- Footer-Bar zeigt Anzahl + „Übernehmen"-Button
-- Callback erhält Array von Dateinamen
-
-### State-Management
-
-- Kein externer Store – alles in Closure-Variablen der IIFE
-- `lastLoadedFiles` – Rohdaten vom API, client-seitig gefiltert/sortiert
-- `catCache` – Kategorie-Baum mit Lazy Loading
-- `currentCat`, `currentFilter`, `currentSort`, `viewMode` – UI-State
+4. Keine IDs in Widget-HTML – MBlock ändert IDs/Names, nur Klassen/relative DOM-Traversierung.
+5. Events am Widget lokal am Container binden, nicht am Document.
+6. `data-mp3-initialized`-Flag verhindert Doppel-Init, muss bei Clone-Cleanup entfernt werden.
 
 ## Deploy-Workflow
 
-Assets müssen nach Änderungen manuell in den öffentlichen Assets-Ordner kopiert werden:
+Alle Kommandos vom REDAXO-Root aus (ggf. je nach Setup in Container-Exec/SSH einbetten):
 
 ```bash
-docker exec coreweb bash -c "cd /var/www/html/public && \
-  cp redaxo/src/addons/mediaplace/assets/mediapool3.js assets/addons/mediaplace/mediapool3.js && \
-  cp redaxo/src/addons/mediaplace/assets/mediapool3.css assets/addons/mediaplace/mediapool3.css && \
-  cp redaxo/src/addons/mediaplace/assets/mediapool3_widget.js assets/addons/mediaplace/mediapool3_widget.js && \
-  cp redaxo/src/addons/mediaplace/assets/mediapool3_widget.css assets/addons/mediaplace/mediapool3_widget.css && \
-  php redaxo/bin/console cache:clear"
+php bin/console assets:sync     # nach jeder assets/*.js|css-Änderung
+php bin/console cache:clear     # nach package.yml/lang-Änderungen
+# nach jeder PHP-Änderung ggf. Opcache-Reset/Prozess-Reload (z.B. apache2ctl graceful, PHP-FPM-Reload)
+tail -n 5 var/log/system.log    # nach jedem Deploy pruefen
 ```
+
+**CLI/Console-Kontext führt kein `boot.php` aus** – `bin/console`-Kommandos und eigene Testskripte (`rex_package::require($id)->enlist()`) laden zwar Autoload/Klassen, aber keine Addon-`boot.php`. `rex_extension::register()`-Aufrufe daraus greifen in CLI-Tests nicht; für isolierte Logik-Tests die Registrierung im Testskript selbst nachholen, für echte End-to-End-Verifikation über HTTP (`curl` mit Session-Cookie) testen.
 
 ## Häufige Fehlerquellen
 
 ### CSS
-
-- **Bootstrap 3 Override vergessen** – Immer `#mp3-overlay` im Selektor verwenden
-- **`!important` vermeiden** – Lieber Spezifität durch ID erhöhen (`#mp3-overlay .klasse`)
-- **Dark Mode nur in einem Block geändert** – Immer `body.rex-theme-dark` UND `@media (prefers-color-scheme: dark)` synchron halten
-- **`:has()`-Selektor** – Wird verwendet (z.B. für List-View), hat guten Browser-Support aber kein IE11
+- Bootstrap-3-Override vergessen – immer `#mp3-overlay` im Selektor (Overlay-Dateien).
+- `!important` vermeiden – Spezifität durch ID erhöhen.
+- Dark Mode nur in einem Block geändert.
 
 ### JavaScript
+- ES5-Syntax beibehalten.
+- `window.MP3` und `window.MP3Widget` sind die einzigen globalen Exports.
+- API-Fehler abfangen – alle `apiFetch`/`apiUpload`/etc. brauchen `.catch()`.
+- Geteilte Logik (Resize, Helpers, API) gehört in `mediapool3-*.js`, nicht dupliziert in Overlay UND Widget.
 
-- **ES5-Syntax beibehalten** – Kein `const`/`let`, kein `=>`, kein Template-Literal, kein `class`
-- **`window.MP3` und `window.MP3Widget`** sind die einzigen globalen Exports
-- **Event-Handler im Overlay**: Am Overlay-Element oder seinen Kindern binden, nicht am Document (außer `mousemove`/`mouseup` für Drag/Resize und `keydown` für ESC)
-- **API-Fehler abfangen** – Alle `apiFetch`/`apiUpload`/etc. haben `.catch()`-Handler
+### PHP
+- Eigene API-Endpunkte ohne `MediaPermission`-Check.
+- Extension-Point-Registrierung vergessen (Metainfo-Handler-Lazy-Loading, YForm `MEDIA_IS_IN_USE`).
+- Opcache: PHP-Änderung ohne `apache2ctl graceful` wirkt bis zu 60s "stale".
 
 ### MBlock
+- Widget-Container nach Clone entfernen – sonst doppelte UI.
+- Keine Widget-Referenzen über den Scope hinaus cachen.
+- `change`-Events dispatchen nach Wertänderung.
 
-- **Widget-Container nach Clone entfernen** – Sonst doppelte UI
-- **Keine Widget-Referenzen cachen** die über den Scope hinausgehen – MBlock kann jederzeit DOM entfernen/hinzufügen
-- **`change`-Events dispatchen** nach Wertänderung – MBlock und andere Listener brauchen das
-
-## Bennenungs-Konventionen
+## Benennungs-Konventionen
 
 | Kontext | Prefix | Beispiel |
 |---------|--------|----------|
@@ -221,11 +203,11 @@ docker exec coreweb bash -c "cd /var/www/html/public && \
 | Overlay CSS-Variablen | `--mp3-` | `--mp3-modal-bg` |
 | Widget CSS-Klassen | `mp3w-` | `.mp3w-container`, `.mp3w-item` |
 | Overlay JS-Funktionen | camelCase | `showDetail()`, `renderFiles()` |
-| Widget Daten-Attribute | `data-mp3-` | `data-mp3-multiple`, `data-mp3-initialized` |
+| Widget Daten-Attribute | `data-mp3-` | `data-mp3-multiple`, `data-mp3-upload`, `data-mp3-max`, `data-mp3-view` |
 
 ## Abhängigkeiten
 
-- **REDAXO ≥ 5.10** mit Backend-Login
-- **FriendsOfREDAXO/api** AddOn für REST-Endpunkte
-- **Font Awesome** (im REDAXO-Backend enthalten)
-- **Bootstrap 3** (im REDAXO-Backend enthalten – daher die hohe CSS-Spezifität)
+- REDAXO ≥ 5.20, PHP ≥ 8.4.
+- **FriendsOfREDAXO/api** ≥ 1.3 (REST-Endpunkte, Pflicht).
+- Optional: `metainfo` (Metainfo-Canvas), `focuspoint` (Fokuspunkt-Editor), `yform` (YForm-Werttyp), `metainfo_lang_fields` (mehrsprachige Metainfo-Felder).
+- Font Awesome, Bootstrap 3 (im REDAXO-Backend enthalten – daher die hohe CSS-Spezifität).

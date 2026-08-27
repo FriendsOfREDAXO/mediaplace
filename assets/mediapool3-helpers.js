@@ -242,6 +242,61 @@
         return /\.(jpe?g|png|gif|webp|svg|avif|bmp)$/i.test(filename || '');
     }
 
+    // GIFs (koennten animiert sein) und SVGs (kein Rasterbild) werden nie
+    // angefasst, auch bei aktivem Upload-Resize.
+    function isResizableImageType(type) {
+        return !!type && 0 === type.indexOf('image/') && 'image/gif' !== type && 'image/svg+xml' !== type;
+    }
+
+    // Skaliert eine Bilddatei im Browser auf maxWidth/maxHeight herunter (Seiten-
+    // verhaeltnis erhalten, kein Hochskalieren), Dateiformat bleibt durch
+    // canvas.toBlob(cb, file.type) unveraendert. Bei jedem Fehlschlag (Decode-
+    // Fehler, canvas.toBlob liefert nichts oder ein anderes Format als angefragt
+    // -- toBlob() faellt bei nicht unterstuetzten Typen still auf image/png
+    // zurueck) wird die Originaldatei durchgereicht, der Upload darf daran nie
+    // scheitern.
+    function resizeImageFile(file, maxWidth, maxHeight) {
+        return new Promise(function (resolve) {
+            var url = URL.createObjectURL(file);
+            var img = new Image();
+            img.onload = function () {
+                URL.revokeObjectURL(url);
+                var w = img.naturalWidth;
+                var h = img.naturalHeight;
+                if (!w || !h || (w <= maxWidth && h <= maxHeight)) {
+                    resolve(file);
+                    return;
+                }
+                var ratio = Math.min(maxWidth / w, maxHeight / h);
+                var targetW = Math.max(1, Math.round(w * ratio));
+                var targetH = Math.max(1, Math.round(h * ratio));
+                var canvas = document.createElement('canvas');
+                canvas.width = targetW;
+                canvas.height = targetH;
+                var ctx = canvas.getContext('2d');
+                if (!ctx) { resolve(file); return; }
+                ctx.drawImage(img, 0, 0, targetW, targetH);
+                canvas.toBlob(function (blob) {
+                    if (!blob || blob.type !== file.type) { resolve(file); return; }
+                    var resized;
+                    try {
+                        resized = new File([blob], file.name, { type: file.type, lastModified: file.lastModified });
+                    } catch (e) {
+                        resized = blob;
+                    }
+                    if (file.__mp3CategoryId != null) {
+                        resized.__mp3CategoryId = file.__mp3CategoryId;
+                    }
+                    resolve(resized);
+                }, file.type);
+            };
+            img.onerror = function () {
+                URL.revokeObjectURL(url);
+                resolve(file);
+            };
+            img.src = url;
+        });
+    }
 
     Core.helpers.qs = qs;
     Core.helpers.qsa = qsa;
@@ -266,4 +321,6 @@
     Core.helpers.normalizeCompare = normalizeCompare;
     Core.helpers.hasChanged = hasChanged;
     Core.helpers.isImageFile = isImageFile;
+    Core.helpers.isResizableImageType = isResizableImageType;
+    Core.helpers.resizeImageFile = resizeImageFile;
 })(window.MP3Core = window.MP3Core || {});

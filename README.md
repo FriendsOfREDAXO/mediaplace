@@ -66,9 +66,15 @@ Unter **MediaPlace → Einstellungen → Upload** lässt sich „Bilder beim Upl
 
 <!-- Galerie (mehrere Dateien, kommasepariert) -->
 <input class="mp3-widget" data-mp3-multiple="true" name="REX_INPUT_VALUE[2]" value="REX_VALUE[2]">
+
+<!-- Mit Direkt-Upload: Dateien per Drag&Drop oder Klick direkt hochladen
+     (Kategorie-Auswahl-Dialog vor dem Upload), zusätzlich zum normalen
+     Picker. Nur Bilder erlauben mit data-mp3-types (Syntax wie natives
+     <input accept>). -->
+<input class="mp3-widget" data-mp3-multiple="true" data-mp3-upload="true" data-mp3-types="image/*" name="REX_INPUT_VALUE[3]" value="REX_VALUE[3]">
 ```
 
-Klick auf ➕ öffnet den Picker. Werden Felder dynamisch nachgeladen (z. B. MBlock), einfach `MP3Widget.init()` erneut aufrufen.
+Klick auf ➕ öffnet den Picker. Werden Felder dynamisch nachgeladen (z. B. MBlock), einfach `MP3Widget.init()` erneut aufrufen. Bei Mehrfachauswahl lässt sich die Galerie per Umschalter im Toolbar zwischen Kacheln- und Listenansicht wechseln (Einstellung gilt geteilt für alle Widgets auf der Seite).
 
 ### Den Picker direkt per JavaScript öffnen
 

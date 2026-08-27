@@ -1,5 +1,8 @@
 <?php
 
+// ---- Intro ----
+echo '<p style="margin:0 0 20px;max-width:900px;">' . rex_i18n::msg('mediaplace_demo_page_intro') . '</p>';
+
 // ---- Section 1: Overlay Demo ----
 $chosenLabel = rex_i18n::msg('mediaplace_demo_chosen');
 $content1 = '
@@ -101,6 +104,32 @@ $fragment->setVar('title', rex_i18n::msg('mediaplace_demo_section_widget_multi_t
 $fragment->setVar('body', $content3, false);
 echo $fragment->parse('core/page/section.php');
 
+// ---- Section 3b: Upload Widget ----
+$content3b = '
+<p>' . rex_i18n::msg('mediaplace_demo_upload_widget_intro') . '</p>
+
+<div class="form-group">
+    <label>' . rex_i18n::msg('mediaplace_demo_gallery_label_upload') . '</label>
+    <input class="mp3-widget form-control" name="demo_upload_gallery" data-mp3-multiple="true" data-mp3-upload="true" data-mp3-types="image/*" value="">
+</div>
+
+<h4 style="margin-top:25px;">' . rex_i18n::msg('mediaplace_demo_usage') . '</h4>
+<pre style="font-size:12px;background:#f5f5f5;padding:12px;border-radius:4px;"><code>&lt;!-- data-mp3-upload="true" fuer Direkt-Upload per Drag&amp;Drop/Klick,
+     data-mp3-types schraenkt die erlaubten Dateitypen ein (wie &lt;input accept&gt;) --&gt;
+&lt;input class="mp3-widget" name="REX_INPUT_VALUE[3]"
+       data-mp3-multiple="true"
+       data-mp3-upload="true"
+       data-mp3-types="image/*"
+       value="REX_VALUE[3]"&gt;</code></pre>
+
+<p style="margin-top:10px;"><small class="text-muted">' . rex_i18n::msg('mediaplace_demo_upload_widget_hint') . '</small></p>
+';
+
+$fragment = new rex_fragment();
+$fragment->setVar('title', rex_i18n::msg('mediaplace_demo_section_widget_upload_title') . ' <code>data-mp3-upload="true"</code>', false);
+$fragment->setVar('body', $content3b, false);
+echo $fragment->parse('core/page/section.php');
+
 // ---- Section 4: API Reference ----
 $content4 = '
 <table class="table table-striped">
@@ -120,6 +149,26 @@ $content4 = '
     <td><code>value="datei.jpg"</code></td>
     <td>' . rex_i18n::msg('mediaplace_demo_attr_value') . '</td>
     <td><code>value="a.jpg,b.png"</code></td>
+</tr>
+<tr>
+    <td><code>data-mp3-upload="true"</code></td>
+    <td>' . rex_i18n::msg('mediaplace_demo_attr_upload') . '</td>
+    <td><code>&lt;input class="mp3-widget" data-mp3-upload="true"&gt;</code></td>
+</tr>
+<tr>
+    <td><code>data-mp3-types="image/*"</code></td>
+    <td>' . rex_i18n::msg('mediaplace_demo_attr_types') . '</td>
+    <td><code>data-mp3-types=".jpg,.png"</code></td>
+</tr>
+<tr>
+    <td><code>data-mp3-max="5"</code></td>
+    <td>' . rex_i18n::msg('mediaplace_demo_attr_max') . '</td>
+    <td><code>&lt;input class="mp3-widget" data-mp3-multiple="true" data-mp3-max="5"&gt;</code></td>
+</tr>
+<tr>
+    <td><code>data-mp3-view="list"</code></td>
+    <td>' . rex_i18n::msg('mediaplace_demo_attr_view') . '</td>
+    <td><code>data-mp3-view="grid"</code> ' . rex_i18n::msg('mediaplace_demo_or') . ' <code>data-mp3-view="list"</code></td>
 </tr>
 </tbody>
 </table>
@@ -177,6 +226,38 @@ foreach ($gallery as $file) {
     echo \'&lt;img src="\' . rex_url::media(trim($file)) . \'"&gt;\';
 }
 ?&gt;</code></pre>
+
+<h4 style="margin-top:25px;">' . rex_i18n::msg('mediaplace_demo_yform_heading') . '</h4>
+
+<p><strong>' . rex_i18n::msg('mediaplace_demo_yform_native_heading') . '</strong></p>
+<p><small class="text-muted">' . rex_i18n::msg('mediaplace_demo_yform_native_intro') . '</small></p>
+<pre style="font-size:12px;background:#f5f5f5;padding:12px;border-radius:4px;"><code>' . rex_escape('mediaplace|gallery|Galerie|') . '</code></pre>
+<p style="margin-top:10px;"><small class="text-muted">' . rex_i18n::msg('mediaplace_demo_yform_native_json_intro') . '</small></p>
+<pre style="font-size:12px;background:#f5f5f5;padding:12px;border-radius:4px;"><code>' . rex_escape('{
+    "table_name": "meine_tabelle",
+    "prio": 1,
+    "type_id": "value",
+    "type_name": "mediaplace",
+    "name": "gallery",
+    "label": "Galerie",
+    "multiple": 1,
+    "upload": 1,
+    "types": "image/*"
+}') . '</code></pre>
+
+<p style="margin-top:25px;"><strong>' . rex_i18n::msg('mediaplace_demo_yform_html_heading') . '</strong></p>
+<p><small class="text-muted">' . rex_i18n::msg('mediaplace_demo_yform_intro') . '</small></p>
+<pre style="font-size:12px;background:#f5f5f5;padding:12px;border-radius:4px;"><code>' . rex_escape('html|gallery||<input class="mp3-widget" data-mp3-multiple="true" data-mp3-upload="true">') . '</code></pre>
+
+<p style="margin-top:10px;"><small class="text-muted">' . rex_i18n::msg('mediaplace_demo_yform_json_intro') . '</small></p>
+<pre style="font-size:12px;background:#f5f5f5;padding:12px;border-radius:4px;"><code>' . rex_escape('{
+    "table_name": "meine_tabelle",
+    "prio": 1,
+    "type_id": "value",
+    "type_name": "html",
+    "name": "gallery",
+    "label": "<input class=\"mp3-widget\" data-mp3-multiple=\"true\" data-mp3-upload=\"true\">"
+}') . '</code></pre>
 ';
 
 $fragment = new rex_fragment();
