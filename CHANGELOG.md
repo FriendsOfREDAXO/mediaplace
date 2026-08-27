@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.11 – 2026-08-28
+
+### Bugfix
+- Hochladen in eine Unterkategorie einer freigegebenen Kategorie schlug mit HTTP 403 fehl (Datei-Icon in der Upload-Warteschlange blieb rot) – gleiche Ursache wie beim Durchsuchen in 1.3.10: das `api`-Addon prüfte die Ziel-Kategorie beim Hochladen nur auf exakten Treffer, nicht auf Vorfahren. Nutzt jetzt dessen neue kaskadierende `permitted_only`-Option auch beim Hochladen (Direkt-Upload und Chunk-Upload für große Dateien).
+
 ## Version 1.3.10 – 2026-08-28
 
 ### Bugfix

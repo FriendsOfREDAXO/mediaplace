@@ -267,15 +267,17 @@
         fd.append('file', file);
         // catId -1 means collection mode (no real category) → upload to root (0)
         fd.append('category_id', (catId && catId > 0) ? catId : 0);
+        // Kaskadierende Rechtepruefung (Zugriff auf eine Kategorie gilt auch
+        // fuer ihren Unterbaum) statt exaktem Treffer -- sonst laesst sich in
+        // eine Unterkategorie einer freigegebenen Kategorie nicht hochladen.
+        // Siehe filter[permitted_only] bei buildMediaEndpoint()/fetchTypeCounts().
+        fd.append('permitted_only', '1');
         return fetch(API_BASE + 'media', {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: fd
-        }).then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-        });
+        }).then(apiUploadJsonOrError);
     }
 
     function apiUploadJsonOrError(r) {
@@ -297,7 +299,10 @@
             body: JSON.stringify({
                 filename: file.name,
                 size: file.size,
-                category_id: (catId && catId > 0) ? catId : 0
+                category_id: (catId && catId > 0) ? catId : 0,
+                // Siehe apiUpload() -- gilt hier zusaetzlich fuer handleFinalize()
+                // (aus dem Manifest uebernommen, muss dort nicht erneut mitgeschickt werden).
+                permitted_only: 1
             })
         }).then(apiUploadJsonOrError);
     }
