@@ -4,7 +4,7 @@
 
 ### Bugfix
 - Löschen, Titel/Kategorie ändern und Datei ersetzen schlugen für Dateien in einer Unterkategorie einer freigegebenen Kategorie mit HTTP 403 fehl – gleiche Ursache wie beim Durchsuchen (1.3.10) und Hochladen (1.3.11). Nutzt jetzt die kaskadierende `permitted_only`-Option des `api`-Addons auch bei diesen Operationen.
-- Bekannte verbleibende Lücke (im `api`-Addon, siehe [api#79](https://github.com/FriendsOfREDAXO/api/issues/79)): Beim Verschieben einer Datei in eine andere Kategorie über das Detail-Panel prüft der Server bislang nur die *aktuelle* Kategorie der Datei, nicht die neue Zielkategorie.
+- ~~Bekannte verbleibende Lücke (im `api`-Addon, siehe [api#79](https://github.com/FriendsOfREDAXO/api/issues/79)): Beim Verschieben einer Datei in eine andere Kategorie über das Detail-Panel prüft der Server bislang nur die *aktuelle* Kategorie der Datei, nicht die neue Zielkategorie.~~ Inzwischen im `api`-Addon behoben (Ziel-Kategorie wird jetzt ebenfalls geprüft, unabhängig von `permitted_only`) – kein Update dieses Addons nötig, sobald die `api`-Addon-Version mit dem Fix installiert ist.
 
 ## Version 1.3.11 – 2026-08-28
 
