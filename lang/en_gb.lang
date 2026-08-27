@@ -182,6 +182,7 @@ mediaplace_error_deleting_collection = Error deleting collection: {msg}
 mediaplace_delete_category = Delete category
 mediaplace_confirm_delete_category = Really delete category {name}? This only works if it is empty (no subcategories/files).
 mediaplace_error_deleting = Error deleting: {msg}
+mediaplace_cat_permission_denied = You don't have permission to edit this category – only within your assigned categories.
 mediaplace_confirm_delete_files = Really delete {count} {unit}? Files still in use are automatically skipped.
 mediaplace_file_singular = file
 mediaplace_file_plural = files

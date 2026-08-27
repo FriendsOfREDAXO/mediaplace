@@ -2638,11 +2638,22 @@
         var portal = document.getElementById('mp3-cat-menu-portal');
         if (!portal || !anchorBtn) return;
 
-        portal.innerHTML =
-            '<button class="mp3-cat-rename-btn" data-rename-cat="' + id + '"><i class="fa-solid fa-pen"></i> ' + t('mediaplace_rename') + '</button>' +
-            '<button class="mp3-cat-move-btn" data-move-cat="' + id + '"><i class="fa-solid fa-folder-tree"></i> ' + t('mediaplace_move') + '</button>' +
-            '<button class="mp3-cat-add-btn mp3-cat-add-sub" data-add-parent="' + id + '"><i class="fa-solid fa-plus"></i> ' + t('mediaplace_subcategory') + '</button>' +
-            '<button class="mp3-cat-delete-btn" data-delete-cat="' + id + '" data-delete-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete') + '</button>';
+        // Umbenennen/Verschieben/Loeschen brauchen Zugriff auf die
+        // Elternkategorie (siehe category_node.php/data-can-manage) -- ohne
+        // diesen Zugriff nur "Unterkategorie" anbieten, statt Aktionen zu
+        // zeigen, die serverseitig ohnehin mit 403 abgelehnt wuerden.
+        var canManage = anchorBtn.getAttribute('data-can-manage') !== '0';
+
+        var html = '';
+        if (canManage) {
+            html += '<button class="mp3-cat-rename-btn" data-rename-cat="' + id + '"><i class="fa-solid fa-pen"></i> ' + t('mediaplace_rename') + '</button>' +
+                '<button class="mp3-cat-move-btn" data-move-cat="' + id + '"><i class="fa-solid fa-folder-tree"></i> ' + t('mediaplace_move') + '</button>';
+        }
+        html += '<button class="mp3-cat-add-btn mp3-cat-add-sub" data-add-parent="' + id + '"><i class="fa-solid fa-plus"></i> ' + t('mediaplace_subcategory') + '</button>';
+        if (canManage) {
+            html += '<button class="mp3-cat-delete-btn" data-delete-cat="' + id + '" data-delete-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete') + '</button>';
+        }
+        portal.innerHTML = html;
         portal.classList.add('mp3-cat-menu-portal-open');
         portal.setAttribute('data-open-for', String(id));
         anchorBtn.classList.add('mp3-cat-menu-btn-active');
@@ -2701,7 +2712,8 @@
                     'placeholder="' + escAttr(t('mediaplace_category_name_placeholder')) + '" autocomplete="off">' +
                 '<button type="button" class="mp3-cat-new-confirm" title="' + escAttr(t('mediaplace_create')) + '"><i class="fa-solid fa-check"></i></button>' +
                 '<button type="button" class="mp3-cat-new-cancel" title="' + escAttr(t('mediaplace_cancel')) + '"><i class="fa-solid fa-xmark"></i></button>' +
-            '</div>';
+            '</div>' +
+            '<p class="mp3-cat-new-error" style="display:none;padding-left:' + indent + 'px;"></p>';
 
         // Insert at the right position
         if (parentId === 0) {
@@ -2758,7 +2770,11 @@
             })
             .catch(function (err) {
                 console.error('MP3 createCategory error:', err);
-                alert(t('mediaplace_error_creating', { msg: err.message }));
+                var errorEl = wrap ? qs('.mp3-cat-new-error', wrap) : null;
+                if (errorEl) {
+                    errorEl.textContent = categoryErrorMessage(err, 'mediaplace_error_creating');
+                    errorEl.style.display = '';
+                }
                 input.disabled = false;
                 if (confirmBtn) confirmBtn.disabled = false;
                 input.focus();
@@ -3494,6 +3510,21 @@
     }
 
     /**
+     * Verstaendliche Fehlermeldung fuer Kategorie-Aktionen (Umbenennen/
+     * Verschieben/Loeschen): 403 kommt ausschliesslich von
+     * MediaPermission::hasParentCategoryAccess() (siehe rex_api_mediaplace_categories.php)
+     * -- dafuer eine feste, erklaerende Meldung statt des rohen "Permission
+     * denied"-Servertexts. Andere Fehler (z.B. "Kategorie nicht leer")
+     * bleiben unveraendert mit ihrem eigentlichen Text.
+     */
+    function categoryErrorMessage(err, fallbackKey) {
+        if (err && 403 === err.status) {
+            return t('mediaplace_cat_permission_denied');
+        }
+        return t(fallbackKey, { msg: err.message });
+    }
+
+    /**
      * Gleiches Modal-Muster wie showMoveCategoryModal() (Textfeld statt
      * Auswahlliste) -- kein prompt(), damit Umbenennen/Verschieben optisch
      * konsistent sind und keine System-Dialoge im Overlay auftauchen.
@@ -3541,7 +3572,7 @@
                     loadCategories();
                 })
                 .catch(function (err) {
-                    errorEl.textContent = t('mediaplace_error_renaming', { msg: err.message });
+                    errorEl.textContent = categoryErrorMessage(err, 'mediaplace_error_renaming');
                     errorEl.style.display = '';
                     okBtn.disabled = false;
                     okBtn.innerHTML = t('mediaplace_rename');
@@ -3632,6 +3663,7 @@
             '<select class="mp3-cat-move-modal-select">' +
             '<option value="">' + t('mediaplace_loading_ellipsis') + '</option>' +
             '</select>' +
+            '<p class="mp3-cat-move-modal-error" style="display:none"></p>' +
             '<div class="mp3-cat-move-modal-actions">' +
             '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">' + t('mediaplace_move') + '</button>' +
             '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
@@ -3640,6 +3672,13 @@
         document.body.appendChild(overlay);
 
         var select = overlay.querySelector('.mp3-cat-move-modal-select');
+        var errorEl = overlay.querySelector('.mp3-cat-move-modal-error');
+
+        // "(Hauptverzeichnis)" nur anbieten, wenn der User ueberhaupt dorthin
+        // verschieben darf (hasParentCategoryAccess(0), siehe canAccessRootCategory) --
+        // sonst waere das Ziel im Picker waehlbar, das Verschieben serverseitig
+        // aber immer mit 403 abgelehnt.
+        var rootOption = canAccessRootCategory ? ('<option value="0">' + t('mediaplace_root_category') + '</option>') : '';
 
         // Collect all sub-ids of catId to exclude them from picker. catCache
         // ist seit dem serverseitig gerenderten Baum nur noch eine flache
@@ -3659,7 +3698,7 @@
         var excludeIds = collectSubIds(catId);
 
         apiFetchAllCategoriesFlat().then(function (cats) {
-            var opts = '<option value="0">' + t('mediaplace_root_category') + '</option>';
+            var opts = rootOption;
             for (var i = 0; i < cats.length; i++) {
                 var cat = cats[i];
                 if (excludeIds.indexOf(cat.id) !== -1) continue;
@@ -3669,7 +3708,7 @@
             }
             select.innerHTML = opts;
         }).catch(function () {
-            select.innerHTML = '<option value="0">' + t('mediaplace_root_category') + '</option>';
+            select.innerHTML = rootOption;
         });
 
         function close() {
@@ -3685,6 +3724,7 @@
             var okBtn = overlay.querySelector('.mp3-cat-move-modal-ok');
             okBtn.disabled = true;
             okBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            errorEl.style.display = 'none';
             apiMoveCategory(catId, newParentId)
                 .then(function () {
                     catCache = {};
@@ -3693,7 +3733,8 @@
                     loadCategories();
                 })
                 .catch(function (err) {
-                    alert(t('mediaplace_error_moving', { msg: err.message }));
+                    errorEl.textContent = categoryErrorMessage(err, 'mediaplace_error_moving');
+                    errorEl.style.display = '';
                     okBtn.disabled = false;
                     okBtn.innerHTML = t('mediaplace_move');
                 });
@@ -4656,7 +4697,7 @@
                             })
                             .catch(function (err) {
                                 ctx.setBusy(false);
-                                ctx.showError(t('mediaplace_error_deleting', { msg: err.message }));
+                                ctx.showError(categoryErrorMessage(err, 'mediaplace_error_deleting'));
                             });
                     }
                 });

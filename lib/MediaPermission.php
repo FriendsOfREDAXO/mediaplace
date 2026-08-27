@@ -29,7 +29,19 @@ class MediaPermission
     }
 
     /**
-     * Zugriff auf eine konkrete Kategorie (inkl. "Alle Kategorien"-Recht).
+     * Zugriff auf eine konkrete Kategorie (inkl. "Alle Kategorien"-Recht) --
+     * KASKADIEREND: ist ein VORFAHRE der Kategorie freigegeben, gilt das auch
+     * fuer ihren gesamten Unterbaum. Bewusste Abweichung vom klassischen
+     * Medienpool, dessen Rechte-Widget (rex_media_category_select mit
+     * checkPerms=false) jede Kategorie unabhaengig/flach behandelt -- ein
+     * Admin muesste dort jede Unterkategorie einzeln ankreuzen. MediaPlace
+     * behandelt "Zugriff auf X" bewusst als "Zugriff auf X und alles
+     * darunter", konsequente Fortsetzung von hasParentCategoryAccess()'s
+     * Modell ("frei arbeiten innerhalb einer freigegebenen Kategorie"): eine
+     * dort neu angelegte -- oder bereits vorhandene, vom Admin nicht separat
+     * freigegebene -- Unterkategorie muss fuer denselben User auch
+     * sichtbar/durchsuchbar sein, sonst waere "frei anlegen/verwalten"
+     * halbfertig (siehe CHANGELOG fuer die Diskussion der Kompromisse).
      */
     public static function hasCategoryAccess(int $categoryId): bool
     {
@@ -41,7 +53,28 @@ class MediaPermission
             return true;
         }
 
-        return $user->getComplexPerm('media')->hasCategoryPerm($categoryId);
+        $perm = $user->getComplexPerm('media');
+        if ($perm->hasCategoryPerm($categoryId)) {
+            return true;
+        }
+
+        if (0 === $categoryId) {
+            return false; // "kein Ordner" hat keine Vorfahren zum Kaskadieren
+        }
+        $category = \rex_media_category::get($categoryId);
+        if (!$category) {
+            return false;
+        }
+        foreach (explode('|', trim($category->getPath(), '|')) as $ancestorId) {
+            if ('' === $ancestorId) {
+                continue;
+            }
+            if ($perm->hasCategoryPerm((int) $ancestorId)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -70,16 +103,18 @@ class MediaPermission
             ));
         }
 
-        $perm = $user->getComplexPerm('media');
         $allCategoryIds = array_map('intval', array_column(
             \rex_sql::factory()->getArray('SELECT id FROM ' . \rex::getTable('media_category')),
             'id',
         ));
         $allCategoryIds[] = 0; // "kein Ordner" ist ein eigenes Recht, siehe hasCategoryPerm(0)
 
+        // hasCategoryAccess() statt rohem $perm->hasCategoryPerm(): kaskadiert
+        // auf Vorfahren, siehe dortiger Kommentar -- sonst waeren Unterkategorien
+        // einer freigegebenen Kategorie hier faelschlich nicht enthalten.
         return array_values(array_filter(
             $allCategoryIds,
-            static fn (int $id): bool => $perm->hasCategoryPerm($id),
+            static fn (int $id): bool => self::hasCategoryAccess($id),
         ));
     }
 

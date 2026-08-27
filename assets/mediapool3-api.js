@@ -105,7 +105,7 @@
         })
         .then(function (r) {
             return r.json().then(function (body) {
-                if (!r.ok) throw new Error(body.error || 'HTTP ' + r.status);
+                if (!r.ok || body.error) throwCategoryApiError(r, body);
                 return body;
             });
         });
@@ -513,6 +513,17 @@
         });
     }
 
+    // Gemeinsame Fehlerbehandlung fuer die vier Kategorie-Endpunkte (Create/
+    // Rename/Delete/Move) -- haengt err.status an (wie handleJsonResponse()
+    // fuer die Medienliste), damit Aufrufer speziell auf 403 (Rechte-Grenze,
+    // siehe MediaPermission::hasParentCategoryAccess()) reagieren und statt
+    // des rohen Server-Texts eine verstaendliche Meldung zeigen koennen.
+    function throwCategoryApiError(r, body) {
+        var err = new Error((body && body.error) || ('HTTP ' + r.status));
+        err.status = r.status;
+        throw err;
+    }
+
     // Läuft bewusst NICHT über das api-Addon (media/category), sondern über
     // MediaPlace's eigenen Endpunkt (siehe rex_api_mediaplace_categories.php,
     // handleAdd()/handleRename()/handleDelete()) -- dessen Rechtepruefung
@@ -532,7 +543,7 @@
         })
         .then(function (r) {
             return r.json().then(function (body) {
-                if (!r.ok || body.error) throw new Error((body && body.error) || ('HTTP ' + r.status));
+                if (!r.ok || body.error) throwCategoryApiError(r, body);
                 return body;
             });
         });
@@ -609,7 +620,7 @@
         })
         .then(function (r) {
             return r.json().then(function (body) {
-                if (!r.ok || body.error) throw new Error((body && body.error) || ('HTTP ' + r.status));
+                if (!r.ok || body.error) throwCategoryApiError(r, body);
                 return body;
             });
         });
@@ -629,7 +640,7 @@
         })
         .then(function (r) {
             return r.json().then(function (body) {
-                if (!r.ok || body.error) throw new Error((body && body.error) || ('HTTP ' + r.status));
+                if (!r.ok || body.error) throwCategoryApiError(r, body);
                 return body;
             });
         });

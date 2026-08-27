@@ -182,6 +182,7 @@ mediaplace_error_deleting_collection = Fehler beim Löschen der Sammlung: {msg}
 mediaplace_delete_category = Kategorie löschen
 mediaplace_confirm_delete_category = Kategorie {name} wirklich löschen? Das geht nur, wenn sie leer ist (keine Unterkategorien/Dateien).
 mediaplace_error_deleting = Fehler beim Löschen: {msg}
+mediaplace_cat_permission_denied = Du hast keine Berechtigung, diese Kategorie zu bearbeiten – nur innerhalb deiner freigegebenen Kategorien.
 mediaplace_confirm_delete_files = {count} {unit} wirklich löschen? Dateien, die noch verwendet werden, werden dabei automatisch übersprungen.
 mediaplace_file_singular = Datei
 mediaplace_file_plural = Dateien

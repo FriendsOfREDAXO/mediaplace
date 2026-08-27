@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 1.3.9 – 2026-08-28
+
+### Bugfix
+- 1.3.8 machte Umbenennen/Löschen/Verschieben einer freigegebenen Kategorie selbst zu Recht unmöglich – aber `MediaPermission::hasCategoryAccess()` prüfte weiterhin nur exakte Treffer, nicht Vorfahren. Dadurch waren Unterkategorien einer freigegebenen Kategorie (egal ob selbst neu angelegt oder bereits vorhanden) weder im Kategoriebaum sichtbar noch beim Durchsuchen erreichbar, obwohl der User sie laut 1.3.8 frei verwalten können soll. `hasCategoryAccess()` kaskadiert jetzt: Zugriff auf eine Kategorie gilt automatisch für ihren gesamten Unterbaum (bewusste, dokumentierte Abweichung vom klassischen Medienpool, dessen Rechte-Widget jede Kategorie unabhängig behandelt).
+
+### Verbesserungen
+- Das Kategorie-Aktionsmenü ("...") zeigt „Umbenennen"/„Verschieben"/„Löschen" jetzt nur noch an, wenn der User dafür tatsächlich Zugriff auf die Elternkategorie hat – „Unterkategorie" bleibt immer verfügbar. Vorher wurden alle vier Aktionen immer angeboten und liefen bei einer geschützten Kategorie serverseitig mit 403 ins Leere.
+- „Kategorie verschieben" bietet „(Hauptverzeichnis)" als Ziel nicht mehr an, wenn der User dorthin ohnehin nicht verschieben darf.
+- Kategorie anlegen/umbenennen/verschieben/löschen zeigt Fehler nicht mehr per rohem `alert()` mit unverständlichem "Permission denied", sondern inline im jeweiligen Dialog mit einer verständlichen Meldung, wenn die Rechte-Grenze der Grund ist.
+
 ## Version 1.3.8 – 2026-08-27
 
 ### Sicherheit
