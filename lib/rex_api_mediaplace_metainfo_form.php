@@ -77,7 +77,57 @@ class rex_api_mediaplace_metainfo_form extends rex_api_function
             'media' => $gf,
         ]));
 
-        rex_response::sendJson(['success' => true, 'html' => $html]);
+        rex_response::sendJson(['success' => true, 'html' => $this->stripCropperField((string) $html)]);
+    }
+
+    /**
+     * Das separate cropper-Addon haengt sich ueber denselben MEDIA_FORM_EDIT-
+     * Punkt einen eigenen "Zuschneiden"-Link auf die klassische Seite
+     * mediapool/cropper an (siehe cropper/boot.php). MediaPlace hat dafuer
+     * einen eigenen, im Overlay eingebetteten Zuschneiden-Button (siehe
+     * CropperIntegration, Detail-Vorschau-Icon) -- ein zweiter Link, der aus
+     * dem Overlay heraus auf die klassische Seite navigieren wuerde (und
+     * damit das Overlay verlassen), waere nur verwirrend/kaputt. Wird hier
+     * gefiltert statt cropper's Extension-Point-Handler zu deaktivieren --
+     * andere Aufrufer der klassischen Seite (falls "MediaPlace ersetzt
+     * klassischen Medienpool" deaktiviert ist) behalten den Link.
+     */
+    private function stripCropperField(string $html): string
+    {
+        if (!str_contains($html, 'page=mediapool/cropper')) {
+            return $html;
+        }
+
+        $doc = new DOMDocument();
+        $prevErrorHandling = libxml_use_internal_errors(true);
+        $doc->loadHTML('<?xml encoding="utf-8" ?><div>' . $html . '</div>', LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_use_internal_errors($prevErrorHandling);
+
+        $xpath = new DOMXPath($doc);
+        foreach ($xpath->query('//a[contains(@href, "page=mediapool/cropper")]') as $link) {
+            $removeNode = $link;
+            $ancestor = $link->parentNode;
+            while ($ancestor instanceof DOMElement) {
+                if ('dl' === strtolower($ancestor->nodeName)) {
+                    $removeNode = $ancestor;
+                    break;
+                }
+                $ancestor = $ancestor->parentNode;
+            }
+            $removeNode->parentNode?->removeChild($removeNode);
+        }
+
+        $wrapper = $doc->getElementsByTagName('div')->item(0);
+        if (!$wrapper) {
+            return $html;
+        }
+
+        $result = '';
+        foreach ($wrapper->childNodes as $child) {
+            $result .= (string) $doc->saveHTML($child);
+        }
+
+        return $result;
     }
 
     private function handleSave(rex_media $media): void

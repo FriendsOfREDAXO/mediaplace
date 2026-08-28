@@ -536,6 +536,127 @@
         });
     }
 
+    // Zuschneiden (cropper-Addon-Integration), siehe rex_api_mediaplace_crop.php
+    // (boot.php liefert die URL ueber #mp3-root[data-cropper-url]).
+    function getCropApiUrl(filename) {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.cropperUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_crop';
+        }
+        if (filename) {
+            baseUrl += (baseUrl.indexOf('?') === -1 ? '?' : '&') + 'file=' + encodeURIComponent(filename);
+        }
+        return baseUrl;
+    }
+
+    // Liefert cropper's eigenes Panel-Markup (Bild + Toolbar + Formularfelder)
+    // als String, siehe rex_api_mediaplace_crop.php::handleForm().
+    function apiLoadCropPanel(filename) {
+        return fetch(getCropApiUrl(filename), {
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || !json.success) throw new Error(json.error || 'HTTP ' + r.status);
+                return typeof json.html === 'string' ? json.html : '';
+            });
+        });
+    }
+
+    // formData = ein FormData-Objekt aus dem #mp3-crop-canvas-Formular (echtes
+    // multipart/form-data -- cropper's eigener CropperExecutor liest $_POST
+    // direkt, siehe rex_api_mediaplace_crop.php::handleSave()).
+    function apiSaveCrop(filename, formData) {
+        return fetch(getCropApiUrl(filename), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || !json.success) throw new Error(json.error || 'HTTP ' + r.status);
+                return json;
+            });
+        });
+    }
+
+    // "Video optimieren" (ffmpeg-Integration), siehe
+    // rex_api_mediaplace_video_optimize.php. Antwortform kommt 1:1 von
+    // ffmpeg's eigener Job-Engine durch (status/job/progress/message/log --
+    // kein {success:true}-Wrapper wie bei Crop/Metainfo), daher hier nur auf
+    // r.ok bzw. ein "error"-Feld pruefen.
+    function getOptimizeVideoApiUrl(func, params) {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.optimizeVideoUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_video_optimize';
+        }
+        var query = 'func=' + encodeURIComponent(func);
+        for (var key in params) {
+            if (Object.prototype.hasOwnProperty.call(params, key)) {
+                query += '&' + key + '=' + encodeURIComponent(params[key]);
+            }
+        }
+        return baseUrl + (baseUrl.indexOf('?') === -1 ? '?' : '&') + query;
+    }
+
+    function apiStartOptimizeVideo(filename) {
+        return fetch(getOptimizeVideoApiUrl('start', { file: filename }), {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || json.error) throw new Error(json.error || 'HTTP ' + r.status);
+                return json;
+            });
+        });
+    }
+
+    function apiPollOptimizeVideo(jobId) {
+        return fetch(getOptimizeVideoApiUrl('status', { job: jobId }), {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || (json.error && !json.status)) throw new Error(json.error || 'HTTP ' + r.status);
+                return json;
+            });
+        });
+    }
+
+    // Lazy nachgeladene Video-Technikdaten fuer den "Technische Details"-
+    // Bereich, siehe rex_api_mediaplace_video_info.php.
+    function apiLoadVideoDetails(filename) {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.videoInfoUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_video_info';
+        }
+        baseUrl += (baseUrl.indexOf('?') === -1 ? '?' : '&') + 'file=' + encodeURIComponent(filename);
+
+        return fetch(baseUrl, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || !json.success) throw new Error(json.error || 'HTTP ' + r.status);
+                return json.details;
+            });
+        });
+    }
+
     // Gemeinsame Fehlerbehandlung fuer die vier Kategorie-Endpunkte (Create/
     // Rename/Delete/Move) -- haengt err.status an (wie handleJsonResponse()
     // fuer die Medienliste), damit Aufrufer speziell auf 403 (Rechte-Grenze,
@@ -778,6 +899,11 @@
     Core.api.apiSaveJsonMetainfo = apiSaveJsonMetainfo;
     Core.api.apiLoadMetainfoForm = apiLoadMetainfoForm;
     Core.api.apiSaveMetainfoForm = apiSaveMetainfoForm;
+    Core.api.apiLoadCropPanel = apiLoadCropPanel;
+    Core.api.apiSaveCrop = apiSaveCrop;
+    Core.api.apiStartOptimizeVideo = apiStartOptimizeVideo;
+    Core.api.apiPollOptimizeVideo = apiPollOptimizeVideo;
+    Core.api.apiLoadVideoDetails = apiLoadVideoDetails;
     Core.api.apiCreateCategory = apiCreateCategory;
     Core.api.resolveFolderCategories = resolveFolderCategories;
     Core.api.apiRenameCategory = apiRenameCategory;

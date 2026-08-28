@@ -1,5 +1,77 @@
 # Changelog
 
+## Version 1.5.3 – 2026-08-28
+
+### Bugfix
+- Badge "Bereits optimiert (X% kleiner)" zeigte im Detail-Panel wörtlich `%s%%` statt der Prozentzahl – REDAXOs `rex_i18n`/`rex_fragment::i18n()` nutzen `{0}`, `{1}`, … als Platzhalter-Syntax, nicht `sprintf`s `%s`. Lang-Datei entsprechend korrigiert.
+- Nebenbei gefunden: Button-Beschriftung und Badge-Text im Detail-Panel wurden doppelt escaped (`rex_escape()` um einen bereits von `$this->i18n()` escapten Wert) – behoben.
+
+## Version 1.5.2 – 2026-08-28
+
+### Bugfix
+- Der "Video optimieren"-Button zeigte nie an, dass eine Datei bereits optimiert wurde – anders als ffmpeg's eigene Video-Tools-Seite (siehe dortiges Changelog 4.6.0), die dieselbe Registry bereits auswertet. Button-Beschriftung wechselt jetzt zu "Erneut optimieren" und ein kleines Badge zeigt die erreichte Kompressionsrate, sobald eine Datei per Overwrite-Modus optimiert wurde.
+
+## Version 1.5.1 – 2026-08-28
+
+### Neu
+- Aufklappbarer "Technische Details"-Bereich im Detail-Panel bei Videos (Auflösung, Dauer, Seitenverhältnis, Framerate, Format, Bitrate, Video-/Audio-Codec) – nutzt ffmpeg's vorhandene `VideoInfo`-Klasse, lazy nachgeladen erst beim Aufklappen (ffprobe-Aufruf kostet spürbar Zeit, soll das normale Öffnen des Detail-Panels nicht verzögern).
+
+### Bugfix
+- Läuft gerade eine Videooptimierung (auch von einer anderen Session oder über ffmpeg's eigene Video-Tools-Seite gestartet), zeigte das Detail-Panel beim (Wieder-)Öffnen keinen Status – erst ein erneuter Klick auf "optimieren" hätte das bemerkt (und dabei nur "läuft bereits" gemeldet, ohne den echten Fortschritt zu zeigen). Das Detail-Panel prüft jetzt beim Rendern, ob für die geöffnete Datei bereits ein Job aktiv ist, und nimmt das Live-Polling automatisch wieder auf.
+- Die Video-Vorschau im Grid und der "Video optimieren"-Button prüften bisher nur, ob das `ffmpeg`-Addon installiert ist – nicht, ob das `ffmpeg`-Programm auf dem Server tatsächlich vorhanden/lauffähig ist (viele Webspaces haben es nicht). Alle drei Fähigkeiten (Vorschau/Optimieren/Technische Details) prüfen jetzt einheitlich die echte Verfügbarkeit (gecacht, 1x pro Stunde), Fallback bleibt konsequent das bisherige Datei-Icon bzw. ausgeblendete Buttons.
+
+## Version 1.5.0 – 2026-08-28
+
+### Neu (ffmpeg-Integration)
+- Ist das separate `ffmpeg`-Addon installiert, zeigt das Grid für Videos jetzt eine echte, animierte Vorschau (Media-Manager-Typ `mediaplace_video_thumb`, nutzt ffmpeg's `rex_effect_video_to_webp`) statt des Datei-Icons – nativ lazy geladen (`loading="lazy"`), wird also erst beim Sichtbarwerden der Kachel angefordert.
+- Neuer "Video optimieren"-Button im Detail-Panel: stößt eine Konvertierung über ffmpeg's Job-Engine an (siehe dortiges Changelog 4.5.0, neuer `overwrite`-Modus) – die Original-Mediendatei wird direkt ersetzt (gleicher Dateiname), Titel/Kategorie/Metainfo-Felder bleiben automatisch erhalten. Läuft im Hintergrund weiter, das Detail-Panel bleibt währenddessen bedienbar; eine kleine Statuszeile unter dem Button zeigt Fortschritt/Ergebnis.
+- Neues Rollenrecht `mediaplace[optimize_video]` – ohne dieses Recht ist der "Video optimieren"-Button nicht sichtbar, der Server-Endpunkt lehnt den Aufruf zusätzlich unabhängig vom UI ab. Bestehende Rollen haben das Recht nicht automatisch.
+
+## Version 1.4.4 – 2026-08-28
+
+### Bugfix
+- Zurück-Button und Titel im Zuschneiden-Canvas-Header blieben ungestylt (Browser-Default statt des einheitlichen Buttons/Titels wie bei Metadaten und Fokuspunkt) – die entsprechenden CSS-Regeln fehlten für die Zuschneiden-Klassen. Jetzt auf dieselben Regeln gemappt, optisch identisch zu den anderen beiden Canvas-Headern.
+
+## Version 1.4.3 – 2026-08-28
+
+### Bugfix
+- Die Zuschneiden-UI zeigte cropper's Info-Sidebar (Vorschau/Zuschnittdaten) immer eingeblendet und nahm dadurch unnötig Platz weg – der eigene Ein-/Ausblenden-Button dafür (`#cropper_sidebar_toggle`) fehlte im eingebetteten Canvas, ohne den bleibt die Sidebar laut cropper's eigener Logik immer sichtbar. Button jetzt im Canvas-Header ergänzt (cropper's `rex_cropper.js` steuert Ein-/Ausblenden und merkt sich die Wahl selbst) – startet standardmäßig eingeklappt.
+
+## Version 1.4.2 – 2026-08-28
+
+### Bugfix
+- Die native Metainfo-Bearbeitung (siehe 1.4.0) zeigte auch den vom `cropper`-Addon selbst eingehängten "Zuschneiden"-Link auf die klassische Seite `mediapool/cropper` – ein Klick hätte das Overlay verlassen. Wird jetzt aus dem geladenen Formular-HTML herausgefiltert; der eigene, im Overlay eingebettete Zuschneiden-Button (Detail-Vorschau-Icon) bleibt die einzige Zuschneiden-Möglichkeit.
+
+## Version 1.4.1 – 2026-08-28
+
+### Bugfix
+- Das Backend war für jeden User mit dem Recht `cropper[]` komplett unerreichbar (`rex_exception`: "cropper.css ... is already added"). Ursache: das separate `cropper`-Addon lädt seine eigene `cropper.css`/`cropper_ui_fix.css` bereits unconditional für jeden Backend-User mit diesem Recht – MediaPlace hat dieselben Dateien in der eigenen Cropper-Integration (siehe 1.4.0) ein zweites Mal eingebunden, was REDAXOs Asset-Verwaltung ablehnt. MediaPlace bindet die cropper-CSS jetzt nicht mehr selbst ein (JS weiterhin, da cropper das nur auf eigenen Seiten lädt).
+
+## Version 1.4.0 – 2026-08-28
+
+### Neu
+- Ist das separate `cropper`-Addon (FriendsOfRedaxo/cropper) installiert und hat der User das Recht `cropper[]`, zeigt das Detail-Panel bei Bildern jetzt einen "Zuschneiden"-Button. Öffnet cropper's eigene UI (Ratio-Presets, Zoom/Rotate/Flip, Live-Vorschau) direkt im MediaPlace-Overlay statt einer eigenen Nachimplementierung – Speichern läuft über cropper's eigenen `CropperExecutor`, ohne Seitenwechsel. Ohne das Recht `cropper[overwrite]` kann nur eine neue Kopie erzeugt werden, nie das Original überschrieben (spiegelt cropper's eigene Rechte-Logik).
+
+## Version 1.3.17 – 2026-08-28
+
+### Neu
+- Neues Rollenrecht "Ordner (Kategorien) umbenennen, verschieben oder löschen" (`mediaplace[manage_categories]`, in der Rollenverwaltung als eigene Checkbox). Ohne dieses Recht können User zwar weiterhin innerhalb ihrer freigegebenen Kategorien neue Unterkategorien anlegen, aber keine bestehende Kategorie mehr umbenennen, verschieben oder löschen – unabhängig davon, welche Kategorien ihnen zugewiesen sind. Admins sind wie üblich ausgenommen. Bestehende Rollen haben das Recht nicht automatisch (muss für Redakteure, die Ordner verwalten dürfen sollen, einmalig in der Rollenverwaltung gesetzt werden).
+
+## Version 1.3.16 – 2026-08-28
+
+### Bugfix
+- Das Verwaltungsmenü am Zahnrad-Icon konnte auf schmalen Bildschirmen über den rechten Bildschirmrand hinausragen (rein CSS-relativ zum Button positioniert, ohne Rücksicht auf den verfügbaren Platz). Positioniert sich jetzt wie das Tag-Filter- und Kategorie-Aktionsmenü am Viewport geklemmt.
+
+## Version 1.3.15 – 2026-08-28
+
+### Bugfix
+- Metadaten- und Fokuspunkt-Bearbeitung öffneten auf schmalen Bildschirmen (Smartphone, oder ein manuell auf Compact-Breite verkleinertes Modal) hinter dem weiterhin sichtbaren Detail-Panel – beide sind dort als Bottom-Sheet über demselben Bereich implementiert. Das Detail-Panel blendet sich jetzt beim Öffnen des jeweiligen Canvas automatisch aus und beim Zurückgehen wieder ein – nur auf schmalen Bildschirmen, auf Desktop-Breite bleiben Detail-Panel und Canvas wie bisher nebeneinander sichtbar.
+
+## Version 1.3.14 – 2026-08-28
+
+### Bugfix
+- Auf manchen Backend-Themes/Setups schien auf schmalen Viewports (iPhone) ein fixes Icon (z.B. ein mobiles Nav-Toggle der umgebenden Backend-Seite) durch den Overlay hindurch und verdeckte Bedienelemente – u.a. den "Metadaten bearbeiten"-Button im Detail-Panel. `#mp3-overlay` lag mit `z-index: 10500` nicht immer über solchen Elementen. Auf `999999` angehoben (die separat an `document.body` angehängten Kategorie-Dialoge entsprechend auf `1000000`).
+
 ## Version 1.3.13 – 2026-08-28
 
 ### Übergangslösung für Installationen ohne den kaskadierenden `api`-Fix

@@ -4,6 +4,8 @@
 // Overlay -- Rollen-Verwaltung muss es unabhaengig vom eingeloggten User
 // auflisten koennen, deshalb ausserhalb der isBackend()/getUser()-Bedingung.
 rex_perm::register('mediaplace[view_unused_media]', 'Filter "Nur unbenutzte Medien" nutzen');
+rex_perm::register('mediaplace[manage_categories]', 'Ordner (Kategorien) umbenennen, verschieben oder löschen');
+rex_perm::register('mediaplace[optimize_video]', 'Videos optimieren (ffmpeg-Addon)');
 
 // YForm-Werttyp "mediaplace" (lib/yform/value/yform_value_mediaplace.php, per
 // Klassennamenskonvention automatisch von YForm erkannt -- keine explizite
@@ -37,6 +39,28 @@ if (rex::isBackend() && rex::getUser()) {
 
     // Klassische REX_MEDIA[n]/REX_MEDIALIST[n]-Widgets auf den neuen Overlay umleiten
     rex_view::addJsFile($this->getAssetsUrl('mediapool3_classic.js') . $bust('mediapool3_classic.js'));
+
+    // Zuschneiden-Canvas nutzt cropper's eigene Assets 1:1 (siehe CropperIntegration) --
+    // nur laden, wenn das Addon installiert ist und der User das Recht hat.
+    if (\FriendsOfRedaxo\Mediaplace\CropperIntegration::isAvailable() && rex::getUser()->hasPerm('cropper[]')) {
+        $cropperAssets = \FriendsOfRedaxo\Mediaplace\CropperIntegration::assetUrls();
+        foreach ($cropperAssets['css'] as $cssUrl) {
+            rex_view::addCssFile($cssUrl);
+        }
+        foreach ($cropperAssets['js'] as $jsUrl) {
+            rex_view::addJsFile($jsUrl);
+        }
+        rex_view::setJsProperty('cropperI18n', [
+            'savingMessage' => rex_i18n::msg('cropper_saving_message'),
+        ]);
+    }
+
+    // Video-Vorschau-Typ (ffmpeg-Integration, siehe FfmpegIntegration) --
+    // idempotente Existenzpruefung, legt den Typ bei Bedarf an (z.B. wenn
+    // ffmpeg erst nach MediaPlace installiert wurde).
+    if (\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable()) {
+        \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::ensureVideoThumbType();
+    }
 
     // Biegt den klassischen "Medienpool"-Menuepunkt auf unseren Overlay um,
     // abschaltbar ueber die Einstellungsseite.
@@ -155,6 +179,21 @@ if (rex::isBackend() && rex::getUser()) {
         $focuspointAvailable = \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit() ? '1' : '0';
         $metainfoFormUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_metainfo_form']);
         $metainfoFormAvailable = rex_addon::get('metainfo')->isAvailable() ? '1' : '0';
+        // Globale Verfuegbarkeit (Addon + Recht) -- ob eine KONKRETE Datei
+        // zuschneidbar ist (Bild-Endung), entscheidet der Client anhand des
+        // Dateinamens, siehe CropperIntegration::isSupportedMedia()/mediapool3.js.
+        $cropperUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_crop']);
+        $cropperAvailable = \FriendsOfRedaxo\Mediaplace\CropperIntegration::isAvailable()
+            && null !== rex::getUser() && rex::getUser()->hasPerm('cropper[]') ? '1' : '0';
+
+        // ffmpeg-Integration (siehe FfmpegIntegration): Video-Vorschau im Grid
+        // (Typ-Name direkt, kein API-Umweg -- Grid baut die Thumb-URL genauso
+        // wie fuer mediaplace_thumb selbst) + "Video optimieren"-Button.
+        $videoThumbAvailable = \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable() ? '1' : '0';
+        $optimizeVideoUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_video_optimize']);
+        $optimizeVideoAvailable = null !== rex::getUser() && rex::getUser()->hasPerm('mediaplace[optimize_video]')
+            && \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable() ? '1' : '0';
+        $videoInfoUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_video_info']);
 
         // Feature-Toggles der Einstellungsseite, siehe features-Objekt in mediapool3.js.
         $featureTagging = rex_config::get($addonName, 'disable_tagging', false) ? '0' : '1';
@@ -193,7 +232,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
+        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-available="' . $videoThumbAvailable . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);

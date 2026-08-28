@@ -104,6 +104,23 @@
     var focuspointActiveField = null;
     var focuspointActiveType = '';
     var focuspointPos = [50, 50]; // aktuelle [x,y] fuer focuspointActiveField
+    // Zuschneiden-Canvas (Integration mit dem separaten cropper-Addon, nur
+    // aktiv wenn canCropper -- siehe #mp3-root data-cropper-available). Anders
+    // als Fokuspunkt wird hier NICHT neu gebaut: cropper's eigenes UI/JS
+    // (rex_cropper.js) wird per fetch() eingebettet und per "rex:ready"
+    // initialisiert, siehe openCropCanvas()/CropperIntegration.
+    var canCropper = false;
+    var cropCanvasOpen = false;
+    var cropCanvasFilename = null;
+    // ffmpeg-Integration (siehe FfmpegIntegration.php): canVideoThumb steuert,
+    // ob Videos im Grid eine echte (per Media-Manager-Typ generierte,
+    // ffmpeg-gestuetzte) animierte Vorschau statt des Datei-Icons bekommen;
+    // canOptimizeVideo steuert den "Video optimieren"-Button im Detail-Panel
+    // (eigenes Recht mediaplace[optimize_video], siehe optimizeVideoJobId).
+    var canVideoThumb = false;
+    var canOptimizeVideo = false;
+    var optimizeVideoJobId = null;
+    var optimizeVideoPoll = null;
     var pageScrollTopBeforeOpen = 0;
     var pageMainScrollTopBeforeOpen = 0;
     var scrollPinRAF = null;
@@ -136,6 +153,11 @@
     var apiSaveJsonMetainfo = MP3Core.api.apiSaveJsonMetainfo;
     var apiLoadMetainfoForm = MP3Core.api.apiLoadMetainfoForm;
     var apiSaveMetainfoForm = MP3Core.api.apiSaveMetainfoForm;
+    var apiLoadCropPanel = MP3Core.api.apiLoadCropPanel;
+    var apiSaveCrop = MP3Core.api.apiSaveCrop;
+    var apiStartOptimizeVideo = MP3Core.api.apiStartOptimizeVideo;
+    var apiPollOptimizeVideo = MP3Core.api.apiPollOptimizeVideo;
+    var apiLoadVideoDetails = MP3Core.api.apiLoadVideoDetails;
     var apiCreateCategory = MP3Core.api.apiCreateCategory;
     var resolveFolderCategories = MP3Core.api.resolveFolderCategories;
     var apiRenameCategory = MP3Core.api.apiRenameCategory;
@@ -148,6 +170,7 @@
     var qsa = MP3Core.helpers.qsa;
     var formatBytes = MP3Core.helpers.formatBytes;
     var isImage = MP3Core.helpers.isImage;
+    var isVideo = MP3Core.helpers.isVideo;
     var fileIcon = MP3Core.helpers.fileIcon;
     var escAttr = MP3Core.helpers.escAttr;
     var formatDate = MP3Core.helpers.formatDate;
@@ -1295,6 +1318,16 @@
 
 
 
+    // Mobile/schmal verkleinertes Modal (.mp3-compact, siehe initDragResize()):
+    // Detail-Panel UND Metainfo-/Fokuspunkt-Canvas sind dort beide als
+    // Bottom-Sheet ueber demselben Bereich implementiert (siehe CSS) -- ohne
+    // das Ausblenden des Detail-Panels wuerde der Canvas dahinter verdeckt
+    // bleiben. Auf Desktop-Breite liegen sie nebeneinander, dort bleibt das
+    // Detail-Panel bewusst sichtbar.
+    function isCompactLayout() {
+        return (overlay && overlay.classList.contains('mp3-compact')) || window.innerWidth <= 768;
+    }
+
     // ---- Metainfo-Feld-Bearbeitung ----
     function openMetainfoCanvas(filename, label) {
         if (!overlay || !filename) return;
@@ -1312,6 +1345,8 @@
 
         var canvas = qs('#mp3-metainfo-canvas', overlay);
         if (canvas) canvas.style.display = '';
+
+        if (isCompactLayout() && detailPanel) detailPanel.classList.remove('mp3-detail-open');
 
         var saveBtn = qs('.mp3-metainfo-canvas-save', canvas);
         if (saveBtn) {
@@ -1397,6 +1432,233 @@
         if (content) content.classList.remove('mp3-editor-mode');
         var canvas = qs('#mp3-metainfo-canvas', overlay);
         if (canvas) canvas.style.display = 'none';
+
+        if (isCompactLayout() && detailPanel && selectedFile) detailPanel.classList.add('mp3-detail-open');
+    }
+
+    // ---- Zuschneiden (cropper-Addon-Integration, siehe CropperIntegration.php) ----
+    // Anders als Metadaten/Fokuspunkt wird hier NICHT neu gebaut: cropper's
+    // eigenes UI (Ratio-Presets, Zoom/Rotate/Flip, Live-Vorschau) kommt 1:1
+    // vom Server (rex_api_mediaplace_crop.php) und wird per "rex:ready"
+    // (REDAXOs Standard-Konvention fuer nachtraeglich eingefuegten Inhalt,
+    // siehe mp3-widget.js/metainfo_lang_fields) selbst initialisiert.
+    function openCropCanvas(filename) {
+        if (!overlay || !canCropper || !filename) return;
+        if (metainfoCanvasOpen) closeMetainfoCanvas();
+        if (focuspointCanvasOpen) closeFocuspointCanvas();
+
+        cropCanvasOpen = true;
+        cropCanvasFilename = filename;
+
+        var content = qs('.mp3-content', overlay);
+        if (content) content.classList.add('mp3-crop-mode');
+
+        var canvas = qs('#mp3-crop-canvas', overlay);
+        if (canvas) canvas.style.display = '';
+
+        var titleEl = qs('.mp3-crop-canvas-title', canvas);
+        if (titleEl) titleEl.textContent = filename;
+
+        var bodyEl = document.getElementById('mp3-crop-canvas-body');
+        if (bodyEl) bodyEl.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_loading_more') + '</div>';
+
+        apiLoadCropPanel(filename)
+            .then(function (html) {
+                if (!bodyEl || cropCanvasFilename !== filename) return;
+                bodyEl.innerHTML = html || '';
+                if (window.jQuery) {
+                    window.jQuery(document).trigger('rex:ready', [window.jQuery(bodyEl)]);
+                }
+                var form = qs('.mp3-crop-form', bodyEl);
+                if (form) initCropFormSubmit(form, filename);
+            })
+            .catch(function (err) {
+                if (!bodyEl) return;
+                bodyEl.innerHTML = '<div class="mp3-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
+            });
+    }
+
+    function closeCropCanvas() {
+        cropCanvasOpen = false;
+        cropCanvasFilename = null;
+
+        var content = qs('.mp3-content', overlay);
+        if (content) content.classList.remove('mp3-crop-mode');
+        var canvas = qs('#mp3-crop-canvas', overlay);
+        if (canvas) canvas.style.display = 'none';
+        var bodyEl = document.getElementById('mp3-crop-canvas-body');
+        if (bodyEl) bodyEl.innerHTML = '';
+    }
+
+    // Fetch-basiertes Speichern statt echter Formular-Navigation (cropper's
+    // eigenes <form action> wuerde das Overlay per vollem Seiten-Reload
+    // verlassen) -- preventDefault() + apiSaveCrop() stattdessen. rex_cropper.js's
+    // eigener submit-Handler (initSaveGuard(), zeigt den "Speichern..."-Overlay)
+    // laeuft unabhaengig weiter -- jeder der beiden preventDefault()-Aufrufe
+    // reicht, die Listener-Reihenfolge spielt keine Rolle.
+    function initCropFormSubmit(form, filename) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var reloadCat = currentCat;
+            apiSaveCrop(filename, new FormData(form))
+                .then(function (result) {
+                    var resultFilename = result.filename || filename;
+                    mediaForceCacheTokens[resultFilename] = Date.now();
+                    mediaForceCacheTokens[filename] = Date.now();
+                    closeCropCanvas();
+                    currentCat = reloadCat;
+                    loadFiles(reloadCat, true);
+                    showDetail(resultFilename);
+                })
+                .catch(function (err) {
+                    form.dataset.cropperSaving = '0';
+                    form.classList.remove('cropper-is-saving');
+                    var savingOverlay = form.querySelector('.cropper-save-overlay');
+                    if (savingOverlay) savingOverlay.remove();
+                    alert(t('mediaplace_error_cropping', { msg: err.message }));
+                });
+        });
+    }
+
+    // ---- Video optimieren (ffmpeg-Addon-Integration, siehe FfmpegIntegration.php) ----
+    // Kein eigener Canvas wie bei Crop/Metainfo -- der Job laeuft im
+    // Hintergrund (ffmpeg's eigene Job-Engine), das Detail-Panel bleibt
+    // waehrenddessen normal sichtbar/bedienbar, nur der Button + eine kleine
+    // Statuszeile darunter zeigen den Fortschritt.
+    function startOptimizeVideo(filename, btn) {
+        var statusEl = btn ? btn.parentNode.querySelector('.mp3-video-optimize-status') : null;
+        var setStatus = function (html) {
+            if (!statusEl) return;
+            statusEl.style.display = '';
+            statusEl.innerHTML = html;
+        };
+
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('is-loading');
+        }
+        setStatus('<i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_optimize_video_starting'));
+
+        apiStartOptimizeVideo(filename)
+            .then(function (data) {
+                if ('busy' === data.status) {
+                    setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + (data.message || t('mediaplace_optimize_video_busy')));
+                    if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+                    return;
+                }
+                if (!data.job) {
+                    throw new Error(data.error || 'no job id');
+                }
+                optimizeVideoJobId = data.job;
+                pollOptimizeVideo(filename, data.job, btn, statusEl);
+            })
+            .catch(function (err) {
+                setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_optimizing_video', { msg: err.message }));
+                if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+            });
+    }
+
+    function pollOptimizeVideo(filename, jobId, btn, statusEl) {
+        if (optimizeVideoPoll) clearInterval(optimizeVideoPoll);
+
+        var setStatus = function (html) {
+            if (!statusEl) return;
+            statusEl.style.display = '';
+            statusEl.innerHTML = html;
+        };
+
+        var tick = function () {
+            apiPollOptimizeVideo(jobId)
+                .then(function (data) {
+                    if ('done' === data.status) {
+                        clearInterval(optimizeVideoPoll);
+                        optimizeVideoPoll = null;
+                        optimizeVideoJobId = null;
+                        setStatus('<i class="fa-solid fa-check"></i> ' + t('mediaplace_optimize_video_done'));
+                        mediaForceCacheTokens[filename] = Date.now();
+                        loadFiles(currentCat, true);
+                        if (selectedFile === filename) showDetail(filename);
+                        if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+                        return;
+                    }
+                    if ('error' === data.status) {
+                        clearInterval(optimizeVideoPoll);
+                        optimizeVideoPoll = null;
+                        optimizeVideoJobId = null;
+                        setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + (data.message || t('mediaplace_optimize_video_failed')));
+                        if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+                        return;
+                    }
+                    var progress = 'finalizing' === data.status ? 99 : (parseInt(data.progress, 10) || 0);
+                    setStatus('<i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_optimize_video_progress', { percent: progress }));
+                })
+                .catch(function (err) {
+                    clearInterval(optimizeVideoPoll);
+                    optimizeVideoPoll = null;
+                    optimizeVideoJobId = null;
+                    setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_optimizing_video', { msg: err.message }));
+                    if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+                });
+        };
+
+        tick();
+        optimizeVideoPoll = setInterval(tick, 1500);
+    }
+
+    // "Technische Details" (ffprobe-Daten via ffmpeg-Addon, siehe
+    // FfmpegIntegration::getVideoDetails()) -- lazy nachgeladen erst beim
+    // ersten Aufklappen, danach nur noch lokal ein-/ausgeblendet.
+    function toggleVideoDetails(btn) {
+        var body = btn.parentNode.querySelector('.mp3-video-details-body');
+        if (!body) return;
+        var expanded = btn.getAttribute('aria-expanded') === 'true';
+
+        if (expanded) {
+            btn.setAttribute('aria-expanded', 'false');
+            btn.querySelector('i').className = 'fa-solid fa-chevron-right';
+            body.style.display = 'none';
+            return;
+        }
+
+        btn.setAttribute('aria-expanded', 'true');
+        btn.querySelector('i').className = 'fa-solid fa-chevron-down';
+        body.style.display = '';
+
+        if (body.dataset.loaded === '1') return;
+
+        var filename = btn.getAttribute('data-video-details-file') || '';
+        body.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_loading_more') + '</div>';
+
+        apiLoadVideoDetails(filename)
+            .then(function (details) {
+                body.dataset.loaded = '1';
+                body.innerHTML = renderVideoDetailsTable(details);
+            })
+            .catch(function (err) {
+                body.innerHTML = '<div class="mp3-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
+            });
+    }
+
+    function renderVideoDetailsTable(d) {
+        var rows = [
+            ['mediaplace_video_details_duration', d.duration],
+            ['mediaplace_video_details_dimensions', d.width && d.height ? (d.width + ' × ' + d.height + ' px') : ''],
+            ['mediaplace_video_details_aspect_ratio', d.aspect_ratio],
+            ['mediaplace_video_details_framerate', d.framerate ? (d.framerate + ' fps') : ''],
+            ['mediaplace_video_details_format', d.format],
+            ['mediaplace_video_details_bitrate', d.bitrate],
+            ['mediaplace_video_details_video_codec', d.video_profile ? (d.video_codec + ' (' + d.video_profile + ')') : d.video_codec],
+            ['mediaplace_video_details_audio_codec', d.audio_codec],
+            ['mediaplace_video_details_audio_samplerate', d.audio_samplerate ? (d.audio_samplerate + ' Hz') : ''],
+            ['mediaplace_video_details_audio_channels', d.audio_channels || '']
+        ];
+        var html = '<table class="mp3-detail-table">';
+        rows.forEach(function (row) {
+            if (!row[1]) return;
+            html += '<tr><td>' + escAttr(t(row[0])) + '</td><td>' + escAttr(String(row[1])) + '</td></tr>';
+        });
+        html += '</table>';
+        return html;
     }
 
     // Klick auf "Oeffnen"/"Hinzufuegen" eines klassischen REX_MEDIA[n]/
@@ -1614,6 +1876,8 @@
         if (!canvas) return;
         canvas.style.display = '';
 
+        if (isCompactLayout() && detailPanel) detailPanel.classList.remove('mp3-detail-open');
+
         var titleEl = qs('.mp3-focuspoint-canvas-title', canvas);
         if (titleEl) titleEl.textContent = 'Fokuspunkt: ' + filename;
 
@@ -1704,6 +1968,8 @@
         if (content) content.classList.remove('mp3-focuspoint-mode');
         var canvas = qs('#mp3-focuspoint-canvas', overlay);
         if (canvas) canvas.style.display = 'none';
+
+        if (isCompactLayout() && detailPanel && selectedFile) detailPanel.classList.add('mp3-detail-open');
     }
 
     function updateAltHint(wrap) {
@@ -2259,6 +2525,28 @@
         var selectBtn = qs('.mp3-detail-select-btn', detailPanel);
         if (selectBtn) selectBtn.style.display = (onSelect || onMultiSelect) ? '' : 'none';
 
+        // Laeuft GERADE eine Videooptimierung fuer diese Datei (server-seitig
+        // im HTML mitgegeben, siehe optimize_video_job in
+        // rex_api_mediaplace_json_metainfo.php) -- Polling sofort fortsetzen
+        // statt erst nach einem erneuten Klick auf "optimieren" (der Job kann
+        // auch in einer anderen Session/ueber ffmpeg's eigene Seite gestartet
+        // worden sein).
+        var optimizeBtn = qs('.mp3-video-optimize-btn', detailPanel);
+        if (optimizeBtn) {
+            var activeJobRaw = optimizeBtn.getAttribute('data-optimize-video-job');
+            if (activeJobRaw) {
+                try {
+                    var activeJob = JSON.parse(activeJobRaw);
+                    if (activeJob && activeJob.id) {
+                        var optimizeFile = optimizeBtn.getAttribute('data-optimize-video-file') || '';
+                        optimizeBtn.disabled = true;
+                        optimizeBtn.classList.add('is-loading');
+                        pollOptimizeVideo(optimizeFile, activeJob.id, optimizeBtn, optimizeBtn.parentNode.querySelector('.mp3-video-optimize-status'));
+                    }
+                } catch (e) { /* malformed/missing -- kein aktiver Job */ }
+            }
+        }
+
         updateDetailSaveState();
     }
 
@@ -2288,6 +2576,18 @@
             var ratio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
             var style = ratio ? ' style="aspect-ratio:' + ratio + '"' : '';
             return '<img src="' + escAttr(src) + '" alt="' + escAttr(file.title || file.filename) + '"' + style + '>';
+        }
+        // ffmpeg-Integration: animierte Vorschau (Media-Manager-Typ
+        // "mediaplace_video_thumb", siehe FfmpegIntegration::ensureVideoThumbType())
+        // statt des Datei-Icons, wenn das ffmpeg-Addon installiert ist. Nativ
+        // lazy geladen (loading="lazy") -- ohne ffmpeg entsprechend teure
+        // Server-seitige Konvertierung soll sie nicht eager fuer jede Kachel
+        // im Grid sofort angefordert werden, sondern erst beim Sichtbarwerden.
+        if (canVideoThumb && isVideo(file.filename)) {
+            var videoSrc = mediaThumbSrc(file.filename, 'mediaplace_video_thumb', file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
+            var videoRatio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
+            var videoStyle = videoRatio ? ' style="aspect-ratio:' + videoRatio + '"' : '';
+            return '<img src="' + escAttr(videoSrc) + '" alt="' + escAttr(file.title || file.filename) + '" loading="lazy"' + videoStyle + '>';
         }
         return '<div class="mp3-icon"><i class="' + fileIcon(file.filename) + '"></i></div>';
     }
@@ -4000,6 +4300,9 @@
         uploadResizeHeight = parseInt(root.dataset.uploadResizeHeight, 10) || 2000;
         canFilterUnused = root.dataset.canFilterUnused === '1';
         canFocuspoint = root.dataset.focuspointAvailable === '1';
+        canCropper = root.dataset.cropperAvailable === '1';
+        canVideoThumb = root.dataset.videoThumbAvailable === '1';
+        canOptimizeVideo = root.dataset.optimizeVideoAvailable === '1';
         canAccessRootCategory = !root.dataset.canAccessRootCategory || root.dataset.canAccessRootCategory === '1';
         mediaBaseUrl = root.dataset.mediaBaseUrl || '';
 
@@ -4169,6 +4472,23 @@
                                 '<div class="mp3-editor-canvas-body">' +
                                     '<form id="mp3-metainfo-form" class="mp3-metainfo-canvas-form"></form>' +
                                 '</div>' +
+                            '</div>' +
+                            '<div class="mp3-editor-canvas" id="mp3-crop-canvas" style="display:none">' +
+                                '<div class="mp3-editor-canvas-header">' +
+                                    '<button type="button" class="mp3-crop-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
+                                        '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
+                                    '</button>' +
+                                    '<div class="mp3-crop-canvas-title"></div>' +
+                                    // id="cropper_sidebar_toggle" ist bewusst cropper's eigene ID --
+                                    // rex_cropper.js sucht danach im ganzen Dokument (nicht nur im
+                                    // gefetchten Panel) und steuert Ein-/Ausblenden + Merken der
+                                    // Info-Sidebar (Vorschau/Zuschnittdaten) komplett selbst, siehe
+                                    // initSidebarToggle() dort -- kein eigener Handler noetig.
+                                    '<button type="button" id="cropper_sidebar_toggle" class="mp3-crop-sidebar-toggle" aria-expanded="true" aria-controls="cropper-sidebar" data-expanded-label="' + escAttr(t('mediaplace_crop_sidebar_collapse')) + '" data-collapsed-label="' + escAttr(t('mediaplace_crop_sidebar_expand')) + '" title="' + escAttr(t('mediaplace_crop_sidebar_collapse')) + '">' +
+                                        '<i class="fa fa-info-circle"></i>' +
+                                    '</button>' +
+                                '</div>' +
+                                '<div class="mp3-editor-canvas-body" id="mp3-crop-canvas-body"></div>' +
                             '</div>' +
                         '</div>' +
                         '<div class="mp3-detail-resize-handle" id="mp3-detail-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '" style="display:none"></div>' +
@@ -4490,9 +4810,26 @@
                 wrap.classList.remove('mp3-admin-menu-open');
             });
 
+            // position:fixed + am Viewport geklemmte left/top statt reinem CSS
+            // "position:absolute; right:0" (gleiches Prinzip wie openCatMenu()/
+            // setTagFilterMenuOpen()): der Button steht im Header oft nah am
+            // rechten Rand, ein 220px breites Menue rein relativ zum Button
+            // positioniert kann dadurch ueber den Viewport-Rand hinausragen,
+            // v.a. auf schmalen Bildschirmen.
+            function positionAdminMenu() {
+                var rect = btn.getBoundingClientRect();
+                var menuW = Math.max(menu.offsetWidth, 220);
+                var left = Math.max(8, Math.min(rect.right - menuW, window.innerWidth - menuW - 8));
+                var top = rect.bottom + 1;
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+            }
+
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                wrap.classList.toggle('mp3-admin-menu-open');
+                var willOpen = !wrap.classList.contains('mp3-admin-menu-open');
+                wrap.classList.toggle('mp3-admin-menu-open', willOpen);
+                if (willOpen) positionAdminMenu();
             });
 
             document.addEventListener('click', function (e) {
@@ -5125,6 +5462,25 @@
             var openFpBtn = e.target.closest('.mp3-focuspoint-edit-btn');
             if (openFpBtn) {
                 openFocuspointCanvas(openFpBtn.getAttribute('data-focuspoint-file') || '');
+                return;
+            }
+
+            var openCropBtn = e.target.closest('.mp3-cropper-edit-btn');
+            if (openCropBtn) {
+                openCropCanvas(openCropBtn.getAttribute('data-cropper-file') || '');
+                return;
+            }
+
+            var optimizeVideoBtn = e.target.closest('.mp3-video-optimize-btn');
+            if (optimizeVideoBtn) {
+                var optimizeFile = optimizeVideoBtn.getAttribute('data-optimize-video-file') || '';
+                if (optimizeFile) startOptimizeVideo(optimizeFile, optimizeVideoBtn);
+                return;
+            }
+
+            var videoDetailsToggle = e.target.closest('.mp3-video-details-toggle');
+            if (videoDetailsToggle) {
+                toggleVideoDetails(videoDetailsToggle);
                 return;
             }
 
@@ -5903,6 +6259,18 @@
                 var fieldSel = e.target.closest('.mp3-focuspoint-field-select');
                 if (fieldSel) {
                     setFocuspointActiveField(fieldSel.value || null);
+                }
+            });
+        }
+
+        // Zuschneiden-Canvas: nur der Zurueck-Button liegt in unserem eigenen
+        // Header -- Speichern laeuft ueber cropper's eigenes Formular
+        // (initCropFormSubmit()), nicht ueber einen zweiten Button hier.
+        var cropCanvas = qs('#mp3-crop-canvas', overlay);
+        if (cropCanvas) {
+            cropCanvas.addEventListener('click', function (e) {
+                if (e.target.closest('.mp3-crop-canvas-back')) {
+                    closeCropCanvas();
                 }
             });
         }

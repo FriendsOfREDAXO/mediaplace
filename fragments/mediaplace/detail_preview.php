@@ -31,6 +31,9 @@ $filename = $info['filename'];
         <?php if (!empty($info['focuspoint_available'])): ?>
             <button type="button" class="mp3-focuspoint-edit-btn" data-focuspoint-file="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_edit_focuspoint')) ?>"><i class="fa-solid fa-crosshairs"></i></button>
         <?php endif; ?>
+        <?php if (!empty($info['cropper_available'])): ?>
+            <button type="button" class="mp3-cropper-edit-btn" data-cropper-file="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_edit_crop')) ?>"><i class="fa-solid fa-crop"></i></button>
+        <?php endif; ?>
         <img src="<?= rex_escape($src) ?>" alt="<?= rex_escape($info['title'] !== '' ? $info['title'] : $filename) ?>">
     </div>
 <?php elseif (DetailPanelFormatter::isVideoFilename($filename)): ?>
@@ -40,6 +43,24 @@ $filename = $info['filename'];
             <source src="<?= rex_escape($vidSrc) ?>" type="<?= rex_escape($info['filetype'] ?: 'video/mp4') ?>">
         </video>
     </div>
+    <?php if (!empty($info['optimize_video_available'])): ?>
+        <?php $optimizedStatus = $info['optimize_video_status'] ?? null; ?>
+        <button type="button" class="mp3-video-optimize-btn<?= $optimizedStatus ? ' mp3-video-optimize-btn-secondary' : '' ?>" data-optimize-video-file="<?= rex_escape($filename) ?>"
+                <?php if (!empty($info['optimize_video_job'])): ?>data-optimize-video-job="<?= rex_escape((string) json_encode($info['optimize_video_job'])) ?>"<?php endif; ?>
+        ><i class="fa-solid fa-arrows-rotate"></i> <?= $optimizedStatus ? $this->i18n('mediaplace_reoptimize_video') : $this->i18n('mediaplace_optimize_video') ?></button>
+        <?php if ($optimizedStatus): ?>
+            <p class="mp3-video-optimize-badge"><i class="fa-solid fa-check"></i> <?= $optimizedStatus['compressionRate'] > 0
+                ? $this->i18n('mediaplace_video_already_optimized_rate', $optimizedStatus['compressionRate'])
+                : $this->i18n('mediaplace_video_already_optimized') ?></p>
+        <?php endif; ?>
+        <div class="mp3-video-optimize-status" style="display:none"></div>
+    <?php endif; ?>
+    <?php if (!empty($info['video_details_available'])): ?>
+        <button type="button" class="mp3-video-details-toggle" data-video-details-file="<?= rex_escape($filename) ?>" aria-expanded="false">
+            <i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n('mediaplace_video_details_toggle')) ?>
+        </button>
+        <div class="mp3-video-details-body" style="display:none"></div>
+    <?php endif; ?>
 <?php elseif (DetailPanelFormatter::isAudioFilename($filename)): ?>
     <?php $audSrc = DetailPanelFormatter::mediaFileUrl($filename, $info['updatedate'], $info['filesize']); ?>
     <div class="mp3-detail-preview mp3-detail-preview-audio">

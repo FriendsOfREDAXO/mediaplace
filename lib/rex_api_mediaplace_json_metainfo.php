@@ -162,6 +162,19 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
             'file_exists' => (bool) $media->fileExists(),
             'category_id' => (int) $media->getCategoryId(),
             'focuspoint_available' => $media->isImage() && \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit(),
+            'cropper_available' => \FriendsOfRedaxo\Mediaplace\CropperIntegration::canEdit($media->getFileName()),
+            'optimize_video_available' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::canOptimize($media->getFileName()),
+            // Nur die (billige, keine ffprobe-Kosten) Sichtbarkeits-Flag hier --
+            // die eigentlichen Technikdaten werden erst beim Aufklappen lazy
+            // nachgeladen, siehe rex_api_mediaplace_video_info.php.
+            'video_details_available' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable() && \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isSupportedVideo($media->getFileName()),
+            // Laeuft GERADE eine Optimierung fuer diese Datei (auch wenn nicht
+            // in dieser Browser-Session gestartet, z.B. ueber ffmpeg's eigene
+            // Video-Tools-Seite oder von einem anderen User) -- damit das
+            // Detail-Panel beim (Wieder-)Oeffnen sofort den Status zeigt statt
+            // erst nach einem erneuten Klick auf "optimieren".
+            'optimize_video_job' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getActiveJobForFile($media->getFileName()),
+            'optimize_video_status' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getOptimizedStatus($media->getFileName()),
         ];
     }
 
@@ -230,6 +243,11 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
             'file_exists' => (bool) ($apiInfo['file_exists'] ?? $media->fileExists()),
             'category_id' => (int) ($apiInfo['category_id'] ?? $media->getCategoryId()),
             'focuspoint_available' => (bool) ($apiInfo['focuspoint_available'] ?? false),
+            'cropper_available' => (bool) ($apiInfo['cropper_available'] ?? false),
+            'optimize_video_available' => (bool) ($apiInfo['optimize_video_available'] ?? false),
+            'video_details_available' => (bool) ($apiInfo['video_details_available'] ?? false),
+            'optimize_video_job' => $apiInfo['optimize_video_job'] ?? null,
+            'optimize_video_status' => $apiInfo['optimize_video_status'] ?? null,
         ];
 
         $fragment = new rex_fragment();

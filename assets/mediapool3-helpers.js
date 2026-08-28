@@ -37,6 +37,12 @@
         return /\.(jpe?g|png|gif|webp|svg|avif|bmp|ico)$/i.test(filename || '');
     }
 
+    // Deckungsgleich mit FfmpegIntegration::SUPPORTED_EXTENSIONS (mediaplace)
+    // bzw. rex_effect_video_to_webp::VIDEO_TYPES (ffmpeg-Addon).
+    function isVideo(filename) {
+        return /\.(mp4|m4v|avi|mov|webm)$/i.test(filename || '');
+    }
+
     function fileIcon(filename) {
         var ext = (filename || '').split('.').pop().toLowerCase();
         var icons = {
@@ -281,6 +287,7 @@
     Core.helpers.qsa = qsa;
     Core.helpers.formatBytes = formatBytes;
     Core.helpers.isImage = isImage;
+    Core.helpers.isVideo = isVideo;
     Core.helpers.fileIcon = fileIcon;
     Core.helpers.escAttr = escAttr;
     Core.helpers.formatDate = formatDate;

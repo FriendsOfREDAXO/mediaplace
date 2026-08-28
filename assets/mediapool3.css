@@ -681,13 +681,14 @@ body.rex-theme-dark {
     background: rgba(255, 255, 255, 0.15);
 }
 
+/* position:fixed statt absolute -- left/top werden von positionAdminMenu()
+   (mediapool3.js) gesetzt und am Viewport geklemmt, damit das Menue auf
+   schmalen Bildschirmen nicht ueber den Rand hinausragt (der Button steht im
+   Header oft nah am rechten Rand). */
 #mp3-overlay .mp3-admin-menu {
     display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
+    position: fixed;
     min-width: 220px;
-    margin-top: 1px;
     background: var(--mp3-toolbar-bg);
     border: 1px solid var(--mp3-toolbar-border);
     border-radius: 0;
@@ -760,7 +761,11 @@ body.rex-theme-dark {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 10500;
+    /* Muss ueber JEDEM fixed-position-Element der umgebenden Backend-Seite
+       liegen (z.B. ein mobiles Nav-Toggle-Icon des Backend-Themes, das sonst
+       auf schmalen Viewports durch den Overlay durchscheint und Bedienelemente
+       verdeckt) -- 10500 reichte dafuer nicht in jedem Theme/Setup. */
+    z-index: 999999;
     background: var(--mp3-overlay-bg);
     align-items: center;
     justify-content: center;
@@ -2427,6 +2432,29 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     background: rgba(0, 0, 0, 0.65);
 }
 
+/* Gleiches Muster wie .mp3-focuspoint-edit-btn, naechster Slot in der Reihe. */
+#mp3-overlay .mp3-cropper-edit-btn {
+    position: absolute;
+    left: 78px;
+    top: 10px;
+    z-index: 2;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#mp3-overlay .mp3-cropper-edit-btn:hover {
+    background: rgba(0, 0, 0, 0.65);
+}
+
 /* Analog zum Lightbox-Button, aber echter Link statt JS-Handler -- oeffnet
    die PDF-Datei direkt (rel="noopener": kein window.opener-Zugriff fuer die
    neue Tab, Standard-Absicherung fuer target="_blank"). */
@@ -3026,6 +3054,89 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 #mp3-overlay .mp3-metainfo-native-edit-btn:hover {
     border-color: var(--mp3-filter-active-border);
     background: var(--mp3-filter-hover-bg);
+}
+
+/* "Video optimieren" (ffmpeg-Integration) -- gleiches Muster wie
+   .mp3-metainfo-native-edit-btn, direkt unter der Video-Vorschau statt im
+   Edit-Bereich, da es kein Metadaten-Feld ist. */
+#mp3-overlay .mp3-video-optimize-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin: 8px 0 4px;
+    padding: 8px 14px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-video-optimize-btn:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-video-optimize-btn:disabled,
+#mp3-overlay .mp3-video-optimize-btn.is-loading {
+    opacity: 0.6;
+    cursor: default;
+}
+
+#mp3-overlay .mp3-video-optimize-status {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: var(--mp3-table-td-label);
+}
+
+/* Bereits per Overwrite-Modus optimiert (siehe FfmpegIntegration::getOptimizedStatus()) --
+   Button bleibt bedienbar (erneut optimieren), aber optisch zurueckgenommen. */
+#mp3-overlay .mp3-video-optimize-btn-secondary {
+    opacity: 0.75;
+}
+
+#mp3-overlay .mp3-video-optimize-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: -2px 0 8px;
+    font-size: 12px;
+    color: #27ae60;
+}
+
+/* "Technische Details" (ffprobe-Daten, ffmpeg-Integration) -- schlichter
+   Aufklapp-Trigger statt eines vollen Buttons wie beim Optimieren, da rein
+   informativ (keine Aktion). */
+#mp3-overlay .mp3-video-details-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    margin: 4px 0;
+    padding: 6px 4px;
+    border: none;
+    background: none;
+    color: var(--mp3-table-td-label);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+}
+
+#mp3-overlay .mp3-video-details-toggle:hover {
+    color: var(--mp3-card-name);
+}
+
+#mp3-overlay .mp3-video-details-toggle i {
+    width: 12px;
+    font-size: 11px;
+}
+
+#mp3-overlay .mp3-video-details-body {
+    margin: 0 0 8px;
 }
 
 #mp3-overlay .mp3-alt-missing-hint {
@@ -4128,7 +4239,12 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 #mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-breadcrumb,
 #mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-status,
 #mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-grid-wrap,
-#mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-page-footer {
+#mp3-overlay .mp3-content.mp3-focuspoint-mode .mp3-page-footer,
+#mp3-overlay .mp3-content.mp3-crop-mode .mp3-filter-bar,
+#mp3-overlay .mp3-content.mp3-crop-mode .mp3-breadcrumb,
+#mp3-overlay .mp3-content.mp3-crop-mode .mp3-status,
+#mp3-overlay .mp3-content.mp3-crop-mode .mp3-grid-wrap,
+#mp3-overlay .mp3-content.mp3-crop-mode .mp3-page-footer {
     display: none !important;
 }
 
@@ -4139,6 +4255,14 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
    .mp3-detail-open-Klasse noetig, da rein CSS-seitig ausgeblendet. */
 #mp3-overlay .mp3-content.mp3-focuspoint-mode ~ .mp3-detail-resize-handle,
 #mp3-overlay .mp3-content.mp3-focuspoint-mode ~ .mp3-detail {
+    display: none !important;
+}
+
+/* Gleiches Prinzip wie beim Fokuspunkt-Canvas -- cropper's UI (Bild + Toolbar +
+   Live-Vorschau-Sidebar) braucht die volle Breite, das Detail-Panel bleibt
+   bis zum Zurueck-Klick ausgeblendet. */
+#mp3-overlay .mp3-content.mp3-crop-mode ~ .mp3-detail-resize-handle,
+#mp3-overlay .mp3-content.mp3-crop-mode ~ .mp3-detail {
     display: none !important;
 }
 
@@ -4166,7 +4290,8 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     flex-shrink: 0;
 }
 
-#mp3-overlay .mp3-metainfo-canvas-back {
+#mp3-overlay .mp3-metainfo-canvas-back,
+#mp3-overlay .mp3-crop-canvas-back {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -4180,12 +4305,39 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     white-space: nowrap;
 }
 
-#mp3-overlay .mp3-metainfo-canvas-back:hover {
+#mp3-overlay .mp3-metainfo-canvas-back:hover,
+#mp3-overlay .mp3-crop-canvas-back:hover {
     border-color: var(--mp3-filter-active-border);
     background: var(--mp3-filter-hover-bg);
 }
 
-#mp3-overlay .mp3-metainfo-canvas-title {
+/* Steuert cropper's eigene Info-Sidebar (Vorschau/Zuschnittdaten) -- siehe
+   Kommentar bei der Markup-Erzeugung in mediapool3.js. Startet standardmaessig
+   eingeklappt (cropper-Einstellung "show_info_sidebar_initially"), damit sie
+   nicht unnoetig Platz wegnimmt. */
+#mp3-overlay .mp3-crop-sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-crop-sidebar-toggle:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-metainfo-canvas-title,
+#mp3-overlay .mp3-crop-canvas-title {
     flex: 1;
     font-size: 14px;
     font-weight: 600;
@@ -4568,7 +4720,10 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,.5);
-    z-index: 99999;
+    /* Ueber #mp3-overlay (siehe dortiger Kommentar) -- diese Modal haengt an
+       document.body, konkurriert also direkt mit #mp3-overlay im selben
+       Stacking-Context. */
+    z-index: 1000000;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -145,10 +145,40 @@ class MediaPermission
      * (rex_media_perm::hasCategoryPerm() = hasAll() || in_array(...)).
      * hasCategoryAccess(0) deckt genau das schon korrekt ab -- keine
      * Sonderbehandlung noetig.
+     *
+     * Zusaetzlich zur Eltern-Kategorie-Pruefung ist das eigene Rollenrecht
+     * hasCategoryManagePermission() erforderlich -- ohne dieses Recht bleibt
+     * Anlegen neuer Unterkategorien weiterhin moeglich (hasCategoryAccess()
+     * reicht dafuer, siehe handleAdd()), Umbenennen/Verschieben/Loeschen
+     * bestehender Kategorien aber gesperrt, unabhaengig von den zugewiesenen
+     * Kategorien selbst.
      */
     public static function hasParentCategoryAccess(int $parentId): bool
     {
-        return self::hasCategoryAccess($parentId);
+        return self::hasCategoryManagePermission() && self::hasCategoryAccess($parentId);
+    }
+
+    /**
+     * Eigenes, granulares Rollenrecht (nicht Teil von rex_media_perm) fuer
+     * Umbenennen/Verschieben/Loeschen von Kategorien -- registriert per
+     * rex_perm::register() in boot.php. Getrennt von den media-Komplexrechten
+     * (welche Kategorien ein User sehen/nutzen darf), weil das eine andere
+     * Frage ist als "darf dieser User ueberhaupt die Ordnerstruktur selbst
+     * veraendern" -- z.B. um Ordnerrechte redaktionellen Usern grundsaetzlich
+     * zu entziehen, ohne dafuer jede einzelne Kategorie-Berechtigung
+     * anzufassen. Siehe hasParentCategoryAccess().
+     */
+    public static function hasCategoryManagePermission(): bool
+    {
+        $user = \rex::getUser();
+        if (!$user) {
+            return false;
+        }
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return $user->hasPerm('mediaplace[manage_categories]');
     }
 
     /**
