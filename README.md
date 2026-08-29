@@ -5,34 +5,37 @@
 
 ![REDAXO](https://img.shields.io/badge/REDAXO-%3E%3D5.20-red) ![PHP](https://img.shields.io/badge/PHP-%3E%3D8.4-blue) ![API](https://img.shields.io/badge/API_AddOn-%3E%3D1.3-green)
 
-Hey! Ihr wünscht Euch den Medienpool 3, das können wir nicht bieten. Aber hier ist **MediaPlace** – ein moderner Medienpool-Ersatz fürs REDAXO-Backend, mit dem sich das Warten schon mal ganz gut aushalten lässt.
+Hey! Ihr wünscht Euch den Medienpool 3? Das können wir nicht bieten. Aber hier ist **MediaPlace** – ein moderner Medienpool-Ersatz fürs REDAXO-Backend, mit dem sich das Warten schon mal ganz gut aushalten lässt.
 
 Vollbild-Overlay statt Popup-Gefrickel, dazu ein Eingabe-Widget für Module/Formulare und eine nahtlose Übernahme aller klassischen Zugangspunkte (Hauptmenü, `REX_MEDIA[n]`/`REX_MEDIALIST[n]`). Unter der Haube läuft die REST-API des [FriendsOfREDAXO/api](https://github.com/FriendsOfREDAXO/api)-Addons.
+
+Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chunked Uploads via API-AddOn. Einfach Dateien in die aktuell geöffnete Kategorie ziehen oder mit STRG+V / CMD+V einfügen. 
+
 
 ## Features
 
 **Overlay & Medienverwaltung**
-- 📁 Kategorie-Baum mit Suche, Verschieben, Anlegen/Umbenennen
-- 🔍 Serverseitige Suche über Titel, Dateiname, Originalname und Metadaten
-- 🏷️ Typ- und Tag-Filter, „Nur unbenutzte Medien“-Filter, 8 Sortieroptionen
-- 🖼️ Grid, Liste & Media Wall (Masonry), Kachelgröße per Slider
-- 📄 Detail-Panel mit editierbarem Titel, eigenen Metadaten-Feldern, Verwendungsstatus, Datei tauschen/löschen/downloaden
-- 🎯 Fokuspunkt-Editor direkt im Detail-Panel, sobald das [focuspoint](https://github.com/FriendsOfREDAXO/focuspoint)-Addon installiert ist
-- ☁️ Upload per Drag & Drop, Button oder einfach **Cmd+V/Ctrl+V** pasten
-- 📱 Responsive Compact-Mode fürs schmale Fenster, Dark Mode Toggle
-- 🎨 Sieht aus wie REDAXO, weil es sich an `be_style` orientiert
+- Kategorie-Baum mit Suche, Verschieben, Anlegen/Umbenennen
+- Serverseitige Suche über Titel, Dateiname, Originalname und Metadaten
+- Typ- und Tag-Filter, „Nur unbenutzte Medien“-Filter, 8 Sortieroptionen
+- Grid, Liste & Media Wall (Masonry), Kachelgröße per Slider
+- Detail-Panel mit editierbarem Titel, eigenen Metadaten-Feldern, Verwendungsstatus, Datei tauschen/löschen/downloaden
+- Fokuspunkt-Editor direkt im Detail-Panel, sobald das [focuspoint](https://github.com/FriendsOfREDAXO/focuspoint)-Addon installiert ist
+- Upload per Drag & Drop, Button oder einfach **Cmd+V/Ctrl+V** pasten
+- Responsive Compact-Mode fürs schmale Fenster, Dark Mode Toggle
+- Sieht aus wie REDAXO, weil es sich an `be_style` orientiert
 
 **Sammlungen**
-- 📚 Eigene Sammlungen anlegen, Medien per Lesezeichen-Button oder Drag & Drop zuordnen
-- 🎯 Auch als Batch: mehrere Medien mit Cmd/Ctrl+Klick markieren und gemeinsam ziehen
+- Eigene Sammlungen anlegen, Medien per Lesezeichen-Button oder Drag & Drop zuordnen
+- Auch als Batch: mehrere Medien mit Cmd/Ctrl+Klick markieren und gemeinsam ziehen
 
 **Mehrfachauswahl**
-- ☑️ Im Picker-Modus: Dateien markieren, „Übernehmen“ liefert die Auswahl als Array zurück
-- 🖱️ Im Normalmodus: Cmd/Ctrl+Klick markiert mehrere Medien für Batch-Löschen oder Sammlungs-Zuordnung
+- Im Picker-Modus: Dateien markieren, „Übernehmen“ liefert die Auswahl als Array zurück
+- Im Normalmodus: Cmd/Ctrl+Klick markiert mehrere Medien für Batch-Löschen oder Sammlungs-Zuordnung
 
 **Input-Widget**
-- 🖼️ Vorschau, Hinzufügen/Entfernen, Drag & Drop-Sortierung bei Mehrfachauswahl
-- 🔄 Initialisiert sich automatisch, auch bei dynamisch nachgeladenen Feldern (MBlock & Co.)
+- Vorschau, Hinzufügen/Entfernen, Drag & Drop-Sortierung bei Mehrfachauswahl
+- Initialisiert sich automatisch, auch bei dynamisch nachgeladenen Feldern (MBlock & Co.)
 
 ## Anwenderhilfe
 
@@ -220,6 +223,6 @@ Wichtig: Das gilt nur für den MediaPlace-Overlay selbst (`#mp3-overlay`). Die k
 ## Credits
 
 - [FriendsOfREDAXO](https://github.com/FriendsOfREDAXO)
-- Inspiriert von [MediaNeo](https://github.com/FriendsOfREDAXO/medianeo) und dem nativen REDAXO-Medienpool
+- Inspiriert von gängigen System-Filemanagern. 
 - Nutzt die [FriendsOfREDAXO/api](https://github.com/FriendsOfREDAXO/api)-REST-Schnittstelle
 - Lizenz: MIT
