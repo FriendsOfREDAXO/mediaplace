@@ -2559,6 +2559,32 @@
     // zeigt das echte Format.
     var GRID_TILE_RATIO = '4 / 3';
 
+    // Garantierter Datei-Icon-Fallback fuer Video-Vorschaubilder (siehe
+    // previewHtml()): das <img>-"error"-Event bubbelt NICHT, ein normaler
+    // $(document).on('error', selector, ...) delegierter Handler wuerde es
+    // also nie erreichen. Ein einzelner, einmalig gebundener Capture-Phase-
+    // Listener auf document sieht dagegen JEDES error-Event auf dem Weg zum
+    // Zielelement, unabhaengig davon, wie viele Video-Kacheln das Grid gerade
+    // rendert -- kein Listener pro Bild noetig. Greift bei jedem
+    // Fehlschlag (ffmpeg fehlt, Server-Fehler, Timeout), nicht nur, wenn
+    // canVideoThumb bereits beim Seitenaufbau false war.
+    document.addEventListener('error', function (e) {
+        var img = e.target;
+        if (!img || !img.classList || !img.classList.contains('mp3-video-thumb-img')) {
+            return;
+        }
+        var icon = img.getAttribute('data-fallback-icon') || 'fa-solid fa-file';
+        var div = document.createElement('div');
+        div.className = 'mp3-icon';
+        div.innerHTML = '<i class="' + icon + '"></i>';
+        if (videoThumbObserver) {
+            videoThumbObserver.unobserve(img);
+        }
+        if (img.parentNode) {
+            img.parentNode.replaceChild(div, img);
+        }
+    }, true);
+
     /**
      * Build preview HTML for a single media file. Genutzt von Grid- und Media-
      * Wall-Ansicht (renderFilesGrid()/renderFilesMediaWall()), beide per Slider
@@ -2575,21 +2601,81 @@
             var src = mediaThumbSrc(file.filename, 'mediaplace_thumb', file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
             var ratio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
             var style = ratio ? ' style="aspect-ratio:' + ratio + '"' : '';
-            return '<img src="' + escAttr(src) + '" alt="' + escAttr(file.title || file.filename) + '"' + style + '>';
+            // loading="lazy": bei grossen Kategorien/"Alle Medien" sollen nicht
+            // alle Kachel-Vorschaubilder gleichzeitig angefordert werden --
+            // Browser laedt nur, was (bald) sichtbar ist. Gleicher Grund wie
+            // beim Video-Thumb unten, hier zusaetzlich wichtig, weil Bilder die
+            // deutliche Mehrheit der Dateien sind.
+            return '<img src="' + escAttr(src) + '" alt="' + escAttr(file.title || file.filename) + '" loading="lazy"' + style + '>';
         }
         // ffmpeg-Integration: animierte Vorschau (Media-Manager-Typ
         // "mediaplace_video_thumb", siehe FfmpegIntegration::ensureVideoThumbType())
-        // statt des Datei-Icons, wenn das ffmpeg-Addon installiert ist. Nativ
-        // lazy geladen (loading="lazy") -- ohne ffmpeg entsprechend teure
-        // Server-seitige Konvertierung soll sie nicht eager fuer jede Kachel
-        // im Grid sofort angefordert werden, sondern erst beim Sichtbarwerden.
+        // statt des Datei-Icons, wenn das ffmpeg-Addon installiert ist. KEIN
+        // "src" hier (nur data-video-thumb-src) -- initVideoThumbObserver()
+        // setzt/entfernt src erst beim tatsaechlichen Sichtbarwerden bzw.
+        // Verlassen des Viewports. Natives loading="lazy" allein reicht bei
+        // grossen Video-Kategorien nicht: es LAEDT zwar nur nahe Kacheln, gibt
+        // aber einmal geladene animierte WebPs beim Weiterscrollen nie wieder
+        // frei -- der Speicherverbrauch waechst dann unbegrenzt mit der Anzahl
+        // je gesehener Videos und kann den Tab zum Abstuerzen bringen
+        // ("Diese Webseite wurde neu geladen, weil sie sehr viel Speicher
+        // benoetigte"). Der IntersectionObserver setzt src beim Reinscrollen
+        // und entfernt es wieder beim Rausscrollen -- der HTTP-Cache haelt die
+        // Bytes weiter vor, ein erneutes Sichtbarwerden ist praktisch instant.
         if (canVideoThumb && isVideo(file.filename)) {
             var videoSrc = mediaThumbSrc(file.filename, 'mediaplace_video_thumb', file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
             var videoRatio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
             var videoStyle = videoRatio ? ' style="aspect-ratio:' + videoRatio + '"' : '';
-            return '<img src="' + escAttr(videoSrc) + '" alt="' + escAttr(file.title || file.filename) + '" loading="lazy"' + videoStyle + '>';
+            // data-fallback-icon + globaler capture-phase "error"-Listener oben:
+            // garantiert das Datei-Icon als Fallback, egal WARUM die Generierung
+            // fehlschlaegt (ffmpeg fehlt, Server-Fehler, Timeout) -- nicht nur,
+            // wenn canVideoThumb bereits beim Seitenaufbau false war.
+            return '<img class="mp3-video-thumb-img" data-fallback-icon="' + escAttr(fileIcon(file.filename))
+                + '" data-video-thumb-src="' + escAttr(videoSrc) + '" alt="' + escAttr(file.title || file.filename) + '"' + videoStyle + '>';
         }
         return '<div class="mp3-icon"><i class="' + fileIcon(file.filename) + '"></i></div>';
+    }
+
+    // Einziger, wiederverwendeter IntersectionObserver fuer alle Video-Thumbs
+    // (siehe previewHtml()) -- lazy erzeugt, danach bei jedem Grid-/Media-Wall-
+    // Rendering (renderFilesGrid()/renderFilesMediaWall()) neu an die dann
+    // aktuellen .mp3-video-thumb-img-Elemente gebunden (disconnect() +
+    // erneutes observe() ist billig und robust, statt einzeln nachzuverfolgen,
+    // welche Kacheln zwischen Renders neu/entfernt wurden).
+    var videoThumbObserver = null;
+
+    function initVideoThumbObserver(container) {
+        var imgs = container.querySelectorAll('.mp3-video-thumb-img[data-video-thumb-src]');
+        if (!imgs.length) {
+            return;
+        }
+        if (typeof IntersectionObserver === 'undefined') {
+            // Kein IO-Support (sehr alter Browser): einfach sofort laden, kein
+            // Speicher-Fallback moeglich -- besser als eine leere Kachel.
+            for (var j = 0; j < imgs.length; j++) {
+                imgs[j].src = imgs[j].getAttribute('data-video-thumb-src');
+            }
+            return;
+        }
+        if (videoThumbObserver) {
+            videoThumbObserver.disconnect();
+        }
+        videoThumbObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                var img = entry.target;
+                if (entry.isIntersecting) {
+                    if (!img.getAttribute('src')) {
+                        img.src = img.getAttribute('data-video-thumb-src');
+                    }
+                } else if (img.getAttribute('src')) {
+                    img.removeAttribute('src');
+                }
+            });
+        }, { rootMargin: '300px 0px', threshold: 0.01 });
+
+        for (var i = 0; i < imgs.length; i++) {
+            videoThumbObserver.observe(imgs[i]);
+        }
     }
 
     /**
@@ -2697,6 +2783,7 @@
         }
         grid.className = 'mp3-grid';
         grid.innerHTML = html;
+        initVideoThumbObserver(grid);
     }
 
     function renderFilesList(files) {
@@ -2723,7 +2810,7 @@
             html += '<td class="mp3-list-cell-preview">';
             if (isImage(f.filename)) {
                 var src = mediaThumbSrc(f.filename, 'rex_media_small', f, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
-                html += '<img src="' + escAttr(src) + '" alt="">';
+                html += '<img src="' + escAttr(src) + '" alt="" loading="lazy">';
             } else {
                 html += '<i class="' + fileIcon(f.filename) + '"></i>';
             }
@@ -2789,6 +2876,7 @@
         }
         grid.className = 'mp3-grid mp3-view-mediawall';
         grid.innerHTML = html;
+        initVideoThumbObserver(grid);
     }
 
     function applyCategorySearchFilter() {

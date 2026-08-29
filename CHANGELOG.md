@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 1.6.0 – 2026-08-29
+
+### Neu
+- Neuer Cronjob-Typ "MediaPlace: Vorschaubilder vorwärmen" (nur sichtbar, wenn das `cronjob`-Addon installiert ist): erzeugt sowohl die normalen Bild- als auch die animierten Video-Vorschaubilder im Hintergrund vorab, statt sie ausschließlich beim ersten Betrachten im Grid zu generieren. Pro Lauf wird je Typ nur eine begrenzte, getrennt konfigurierbare Anzahl NEUER Vorschaubilder erzeugt (Standard 20 für Bilder, 5 für Videos – Video-Konvertierung ist ungleich teurer), der Rest folgt beim nächsten planmäßigen Lauf. Neueste Dateien zuerst, damit frisch hochgeladene Medien möglichst schnell eine Vorschau bekommen. Bereits gecachte Dateien werden übersprungen. Video-Vorwärmung läuft nur, wenn ffmpeg tatsächlich verfügbar ist.
+
+### Bugfix
+- Browser-Absturz ("Diese Webseite wurde neu geladen, weil sie sehr viel Speicher benötigte") beim Durchsuchen von Video-reichen Kategorien: animierte Video-Vorschaubilder wurden zwar per `loading="lazy"` erst beim Sichtbarwerden geladen, beim Herausscrollen aber nie wieder aus dem Speicher entfernt – der Speicherverbrauch wuchs beim Scrollen durch eine große Kategorie unbegrenzt. Video-Vorschaubilder werden jetzt über einen `IntersectionObserver` verwaltet: `src` wird erst beim Sichtbarwerden gesetzt und beim Verlassen des Viewports wieder entfernt (der HTTP-Cache hält die Bytes weiter vor, ein erneutes Sichtbarwerden ist praktisch instant).
+- Garantierter Datei-Icon-Fallback für Video-Vorschaubilder bei jedem Fehlschlag (ffmpeg nicht installiert, Server-Fehler, Timeout) – nicht mehr nur, wenn ffmpeg bereits beim Seitenaufbau als nicht verfügbar erkannt wurde. Ein fehlgeschlagenes `<img>` wird jetzt zuverlässig durch das übliche Datei-Icon ersetzt statt ein kaputtes Bild anzuzeigen.
+- Bild-Vorschaubilder im Grid/Media-Wall sowie in der Listenansicht luden bisher ohne `loading="lazy"` – bei großen Kategorien wurden dadurch alle sichtbaren UND unsichtbaren Bild-Kacheln gleichzeitig angefordert. Jetzt konsequent `loading="lazy"` wie bereits beim Video-Vorschaubild.
+
+## Version 1.5.4 – 2026-08-29
+
+### Bugfix
+- 500er (Fatal Error) bei Videos, wenn das separate `ffmpeg`-Addon nicht (mehr) installiert ist: der eigene Video-Vorschau-Typ `mediaplace_video_thumb` referenziert ffmpeg's Effekt `video_to_webp` – wird ffmpeg nach dem Anlegen dieses Typs deinstalliert, bleibt die Typ-/Effekt-Zeile in der Datenbank stehen. `media_manager` selbst hat vor dem Instanziieren eines Effekts keine `class_exists()`-Absicherung und stürzt hart ab, sobald irgendeine (auch eine alte/gecachte) Anfrage diesen Typ für ein Video anfordert. Neuer `MEDIA_MANAGER_FILTERSET`-Hook setzt das Effekt-Set für diesen Typ auf leer, sobald ffmpeg nicht mehr verfügbar ist – `media_manager` liefert dann sein eigenes "nicht gefunden"-Verhalten statt eines Fatal Errors. Live verifiziert (ffmpeg-Addon testweise deaktiviert): Crash reproduziert ohne den Hook, kein Crash mit dem Hook.
+
 ## Version 1.5.3 – 2026-08-28
 
 ### Bugfix

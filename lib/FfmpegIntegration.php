@@ -88,6 +88,14 @@ class FfmpegIntegration
     }
 
     /**
+     * @return list<string>
+     */
+    public static function supportedExtensions(): array
+    {
+        return self::SUPPORTED_EXTENSIONS;
+    }
+
+    /**
      * Steuert die Sichtbarkeit des "Video optimieren"-Buttons im Detail-Panel.
      */
     public static function canOptimize(string $filename): bool

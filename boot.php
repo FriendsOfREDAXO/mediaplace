@@ -18,6 +18,36 @@ if (rex_addon::get('yform')->isAvailable()) {
     rex_extension::register('MEDIA_IS_IN_USE', ['rex_yform_value_mediaplace', 'isMediaInUse']);
 }
 
+// Sicherheitsnetz fuer den eigenen Video-Vorschau-Typ (mediaplace_video_thumb,
+// siehe FfmpegIntegration::ensureVideoThumbType()): der referenziert ffmpeg's
+// Effekt "video_to_webp". Wird ffmpeg NACH dem Anlegen dieses Typs deinstalliert
+// (oder faellt das Binary weg), bleibt die Typ-/Effekt-Zeile in der DB stehen --
+// media_manager selbst hat vor dem Instanziieren eines Effekts keine
+// class_exists()-Absicherung (media_manager.php, applyEffects(): "new
+// $effectClass()") und stuerzt mit einem Fatal Error (500) ab, sobald
+// IRGENDEINE Anfrage (auch eine alte/gecachte <img>-URL) diesen Typ fuer ein
+// Video anfordert. Statt das crashen zu lassen, wird das Effekt-Set fuer
+// diesen einen Typ auf leer gesetzt, sobald ffmpeg nicht mehr verfuegbar ist --
+// media_manager liefert dann sein eigenes "nicht gefunden"-Verhalten statt
+// eines Fatal Errors. Unconditional (nicht nur im isBackend()-Block), da
+// Media-Manager-Anfragen auch anonym/frontend-seitig eintreffen koennen.
+rex_extension::register('MEDIA_MANAGER_FILTERSET', static function (rex_extension_point $ep) {
+    if ($ep->getParam('rex_media_type') === \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::VIDEO_THUMB_TYPE
+        && !\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable()) {
+        return [];
+    }
+
+    return $ep->getSubject();
+});
+
+// Cronjob-Typ "Vorschaubilder vorwaermen" (siehe ThumbWarmupCronjob) --
+// unconditional registrierbar, gleiches Muster wie activity_log/boot.php.
+// Bild-Vorschaubilder laufen immer, Video-Vorschaubilder nur wenn ffmpeg
+// verfuegbar ist -- entscheidet der Cronjob selbst zur Laufzeit.
+if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
+    rex_cronjob_manager::registerType(\FriendsOfRedaxo\Mediaplace\ThumbWarmupCronjob::class);
+}
+
 if (rex::isBackend() && rex::getUser()) {
     // Pro-Datei-Cache-Buster, damit ein Deploy einzelner JS/CSS-Dateien nicht
     // durch Browser-Caching unbemerkt ausbleibt.
