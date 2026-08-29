@@ -91,11 +91,9 @@
     var metainfoCanvasOpen = false;
     var metainfoCanvasFilename = null;
     var metainfoPickTarget = null; // { type: 'media', input } | { type: 'medialist', select, listId } while picking from the grid for a classic widget inside the metainfo canvas
-    // Fokuspunkt-Canvas (Integration mit dem separaten focuspoint-Addon, nur
-    // aktiv wenn canFocuspoint -- siehe #mp3-root data-focuspoint-available).
+    // Fokuspunkt-Canvas (Integration mit dem separaten focuspoint-Addon).
     // Speicherung laeuft bewusst weiter ueber das klassische Metainfo-Feld
     // (rex_media.med_focuspoint o.ae.), nicht ueber med_json_data.
-    var canFocuspoint = false;
     var focuspointCanvasOpen = false;
     var focuspointFilename = null;
     var focuspointFields = []; // Liste der Fokuspunkt-Metainfo-Felder (meist nur ["med_focuspoint"])
@@ -112,12 +110,16 @@
     var canCropper = false;
     var cropCanvasOpen = false;
     var cropCanvasFilename = null;
-    // ffmpeg-Integration (siehe FfmpegIntegration.php): canVideoThumb steuert,
-    // ob Videos im Grid eine echte (per Media-Manager-Typ generierte,
-    // ffmpeg-gestuetzte) animierte Vorschau statt des Datei-Icons bekommen;
-    // canOptimizeVideo steuert den "Video optimieren"-Button im Detail-Panel
-    // (eigenes Recht mediaplace[optimize_video], siehe optimizeVideoJobId).
-    var canVideoThumb = false;
+    // ffmpeg-Integration (siehe FfmpegIntegration.php): videoThumbType ist der
+    // zu verwendende Media-Manager-Typ-Name fuer die Video-Vorschau im Grid
+    // (haengt vom Einstellungen-Modus ab: aus/Standbild/animiert), leerer
+    // String bedeutet "aus" -- Videos bekommen dann konsequent nur das
+    // Datei-Icon. videoThumbStatic unterscheidet Standbild von animiert (fuer
+    // das Video-Icon-Overlay, siehe previewHtml()). canOptimizeVideo steuert
+    // den "Video optimieren"-Button im Detail-Panel (eigenes Recht
+    // mediaplace[optimize_video], siehe optimizeVideoJobId).
+    var videoThumbType = '';
+    var videoThumbStatic = false;
     var canOptimizeVideo = false;
     var optimizeVideoJobId = null;
     var optimizeVideoPoll = null;
@@ -1857,7 +1859,17 @@
     }
 
     function openFocuspointCanvas(filename) {
-        if (!overlay || !canFocuspoint || !filename) return;
+        // Kein canFocuspoint-Check hier (mehr): der Button selbst wird nur
+        // gerendert, wenn FocuspointIntegration::canEdit() zum Zeitpunkt der
+        // Detail-Panel-Anfrage bereits true war (siehe focuspoint_available
+        // in rex_api_mediaplace_json_metainfo.php) -- das ist die aktuelle,
+        // echte Pruefung. Ein zusaetzlicher client-seitiger Gate auf einem nur
+        // einmal beim Seitenaufbau gecachten Flag (frueher canFocuspoint,
+        // #mp3-root data-focuspoint-available) konnte veralten: legt ein
+        // Admin z.B. waehrend eine MediaPlace-Session bereits offen ist einen
+        // Media-Manager-Fokuspunkt-Effekt an, blieb der Button-Klick bis zum
+        // naechsten Seiten-Reload wirkungslos -- ganz ohne Fehlermeldung.
+        if (!overlay || !filename) return;
         if (metainfoCanvasOpen) closeMetainfoCanvas();
 
         focuspointCanvasOpen = true;
@@ -2619,30 +2631,41 @@
             return '<img data-fallback-icon="' + escAttr(fileIcon(file.filename)) + '" src="' + escAttr(src)
                 + '" alt="' + escAttr(file.title || file.filename) + '" loading="lazy"' + style + '>';
         }
-        // ffmpeg-Integration: animierte Vorschau (Media-Manager-Typ
-        // "mediaplace_video_thumb", siehe FfmpegIntegration::ensureVideoThumbType())
-        // statt des Datei-Icons, wenn das ffmpeg-Addon installiert ist. KEIN
-        // "src" hier (nur data-video-thumb-src) -- initVideoThumbObserver()
-        // setzt/entfernt src erst beim tatsaechlichen Sichtbarwerden bzw.
-        // Verlassen des Viewports. Natives loading="lazy" allein reicht bei
-        // grossen Video-Kategorien nicht: es LAEDT zwar nur nahe Kacheln, gibt
-        // aber einmal geladene animierte WebPs beim Weiterscrollen nie wieder
-        // frei -- der Speicherverbrauch waechst dann unbegrenzt mit der Anzahl
-        // je gesehener Videos und kann den Tab zum Abstuerzen bringen
-        // ("Diese Webseite wurde neu geladen, weil sie sehr viel Speicher
+        // ffmpeg-Integration: Video-Vorschau (Media-Manager-Typ je nach
+        // Einstellungen-Modus, siehe videoThumbType/FfmpegIntegration::
+        // getActiveVideoThumbType()) statt des Datei-Icons, wenn ffmpeg
+        // installiert ist UND die Video-Vorschau nicht auf "aus" steht (dann
+        // ist videoThumbType ein leerer String). KEIN "src" hier (nur
+        // data-video-thumb-src) -- initVideoThumbObserver() setzt/entfernt src
+        // erst beim tatsaechlichen Sichtbarwerden bzw. Verlassen des
+        // Viewports. Natives loading="lazy" allein reicht bei grossen Video-
+        // Kategorien nicht: es LAEDT zwar nur nahe Kacheln, gibt aber einmal
+        // geladene animierte WebPs beim Weiterscrollen nie wieder frei -- der
+        // Speicherverbrauch waechst dann unbegrenzt mit der Anzahl je
+        // gesehener Videos und kann den Tab zum Abstuerzen bringen ("Diese
+        // Webseite wurde neu geladen, weil sie sehr viel Speicher
         // benoetigte"). Der IntersectionObserver setzt src beim Reinscrollen
         // und entfernt es wieder beim Rausscrollen -- der HTTP-Cache haelt die
         // Bytes weiter vor, ein erneutes Sichtbarwerden ist praktisch instant.
-        if (canVideoThumb && isVideo(file.filename)) {
-            var videoSrc = mediaThumbSrc(file.filename, 'mediaplace_video_thumb', file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
+        // Gilt bewusst auch fuer den Standbild-Modus (dort waere es nicht
+        // zwingend noetig, ein einzelnes Bild ist deutlich billiger als eine
+        // Animation) -- ein einziger Mechanismus fuer beide Modi ist einfacher
+        // zu pflegen als zwei.
+        if (videoThumbType && isVideo(file.filename)) {
+            var videoSrc = mediaThumbSrc(file.filename, videoThumbType, file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
             var videoRatio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
             var videoStyle = videoRatio ? ' style="aspect-ratio:' + videoRatio + '"' : '';
             // data-fallback-icon + globaler capture-phase "error"-Listener oben:
             // garantiert das Datei-Icon als Fallback, egal WARUM die Generierung
             // fehlschlaegt (ffmpeg fehlt, Server-Fehler, Timeout) -- nicht nur,
-            // wenn canVideoThumb bereits beim Seitenaufbau false war.
+            // wenn videoThumbType bereits beim Seitenaufbau leer war.
+            // Standbild-Modus: kein animiertes Bewegtbild mehr erkennbar, ein
+            // kleines Video-Icon oben rechts als Overlay macht das trotzdem
+            // klar (gleiches Muster wie z.B. YouTube/Instagram-Grids).
+            var videoBadge = videoThumbStatic ? '<span class="mp3-video-badge"><i class="fa-solid fa-video"></i></span>' : '';
             return '<img class="mp3-video-thumb-img" data-fallback-icon="' + escAttr(fileIcon(file.filename))
-                + '" data-video-thumb-src="' + escAttr(videoSrc) + '" alt="' + escAttr(file.title || file.filename) + '"' + videoStyle + '>';
+                + '" data-video-thumb-src="' + escAttr(videoSrc) + '" alt="' + escAttr(file.title || file.filename) + '"' + videoStyle + '>'
+                + videoBadge;
         }
         return '<div class="mp3-icon"><i class="' + fileIcon(file.filename) + '"></i></div>';
     }
@@ -4398,9 +4421,9 @@
         uploadResizeWidth = parseInt(root.dataset.uploadResizeWidth, 10) || 2000;
         uploadResizeHeight = parseInt(root.dataset.uploadResizeHeight, 10) || 2000;
         canFilterUnused = root.dataset.canFilterUnused === '1';
-        canFocuspoint = root.dataset.focuspointAvailable === '1';
         canCropper = root.dataset.cropperAvailable === '1';
-        canVideoThumb = root.dataset.videoThumbAvailable === '1';
+        videoThumbType = root.dataset.videoThumbType || '';
+        videoThumbStatic = root.dataset.videoThumbStatic === '1';
         canOptimizeVideo = root.dataset.optimizeVideoAvailable === '1';
         canAccessRootCategory = !root.dataset.canAccessRootCategory || root.dataset.canAccessRootCategory === '1';
         mediaBaseUrl = root.dataset.mediaBaseUrl || '';

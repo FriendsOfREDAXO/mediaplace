@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 1.7.1 – 2026-08-29
+
+### Bugfix
+- Fokuspunkt-Button reagierte manchmal gar nicht auf Klicks (kein Dialog, keine Fehlermeldung, auch nicht in der Browser-Konsole), obwohl im Media-Manager bereits ein Fokuspunkt-Effekt eingerichtet war und der Button auch sichtbar war. Ursache: ein zusätzlicher client-seitiger Gate-Check auf ein Flag, das nur einmal beim Laden der Seite gesetzt wurde – wurde der Media-Manager-Effekt erst angelegt, während die MediaPlace-Sitzung bereits offen war, blieb dieses Flag bis zum nächsten Seiten-Reload veraltet auf "nicht verfügbar" stehen, obwohl der Button selbst (serverseitig live pro Datei geprüft) längst korrekt sichtbar war. Der veraltete Gate-Check ist entfernt – die Sichtbarkeit des Buttons selbst ist bereits die aktuelle, korrekte Prüfung.
+
+## Version 1.7.0 – 2026-08-29
+
+### Neu
+- Video-Vorschau im Grid ist jetzt optional und wahlweise animiert oder als Einzelbild (Einstellungen → "Video-Vorschau im Grid": Aus / Einzelbild / Animiert, nur sichtbar wenn ffmpeg installiert ist). "Aus" zeigt konsequent nur das Datei-Icon, keine Vorschau-Generierung. "Einzelbild" extrahiert nur ein einziges Standbild statt einer animierten Sequenz (nutzt ffmpeg's neuen "Animiert"-Parameter, siehe dortiges Changelog 4.8.0) – deutlich günstiger in Erzeugung und Dateigröße als die animierte Variante. Im Einzelbild-Modus zeigt ein kleines Video-Symbol unten links auf der Kachel, dass es sich trotz Standbild um ein Video handelt. Standard bleibt "Animiert" (bisheriges Verhalten), bestehende Installationen sind davon nicht betroffen. Der Warmup-Cronjob (siehe 1.6.0) respektiert die Einstellung automatisch.
+
 ## Version 1.6.0 – 2026-08-29
 
 ### Neu

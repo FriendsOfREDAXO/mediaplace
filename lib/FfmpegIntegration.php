@@ -6,11 +6,15 @@ namespace FriendsOfRedaxo\Mediaplace;
  * Konsumiert das separate "ffmpeg"-Addon (FriendsOfRedaxo/ffmpeg) fuer zwei
  * unabhaengige Faehigkeiten:
  *
- * 1. Video-Vorschau im Grid (ensureVideoThumbType()): registriert bei Bedarf
- *    einen eigenen Media-Manager-Typ, der ffmpeg's rex_effect_video_to_webp
- *    nutzt (animiertes WebP statt statischem Icon) -- gleiches Muster wie der
- *    eigene "mediaplace_thumb"-Typ fuer Bilder (siehe install.php), nur lazy
- *    zur Boot-Zeit statt beim Addon-Install, weil ffmpeg unabhaengig von
+ * 1. Video-Vorschau im Grid (ensureVideoThumbTypes()): registriert bei Bedarf
+ *    ZWEI eigene Media-Manager-Typen, die ffmpeg's rex_effect_video_to_webp
+ *    nutzen -- VIDEO_THUMB_TYPE (animiertes WebP) und VIDEO_THUMB_TYPE_STATIC
+ *    (einzelnes Standbild, deutlich billiger in Erzeugung/Groesse). Welcher
+ *    davon aktiv genutzt wird (oder gar keiner), steuert die Einstellung
+ *    "video_thumb_mode" (aus/static/animated, siehe getVideoThumbMode()/
+ *    getActiveVideoThumbType()) -- gleiches Muster wie der eigene
+ *    "mediaplace_thumb"-Typ fuer Bilder (siehe install.php), nur lazy zur
+ *    Boot-Zeit statt beim Addon-Install, weil ffmpeg unabhaengig von
  *    MediaPlace jederzeit (de)installiert werden kann.
  * 2. "Video optimieren"-Button im Detail-Panel (canOptimize()): nutzt
  *    ffmpeg's Job-Engine (Converter::startOverwriteJob()/pollJob()) direkt,
@@ -24,6 +28,7 @@ namespace FriendsOfRedaxo\Mediaplace;
 class FfmpegIntegration
 {
     public const VIDEO_THUMB_TYPE = 'mediaplace_video_thumb';
+    public const VIDEO_THUMB_TYPE_STATIC = 'mediaplace_video_thumb_static';
 
     /** Deckungsgleich mit ffmpeg's eigener VIDEO_TYPES-Liste (rex_effect_video_to_webp). */
     private const SUPPORTED_EXTENSIONS = ['mp4', 'm4v', 'avi', 'mov', 'webm'];
@@ -109,29 +114,73 @@ class FfmpegIntegration
     }
 
     /**
-     * Legt den eigenen Video-Thumbnail-Typ an, falls er noch fehlt (z.B. weil
-     * ffmpeg erst nach MediaPlace installiert wurde) -- idempotent, billige
-     * Existenzpruefung, aufrufbar bei jedem Boot ohne spuerbare Kosten. Gibt
-     * die Type-ID zurueck (0, wenn ffmpeg nicht verfuegbar ist).
+     * Video-Vorschau ist optional (Einstellungen) und wahlweise animiert oder
+     * ein einzelnes Standbild -- "off" zeigt konsequent nur das Datei-Icon
+     * (kein Media-Manager-Typ wird dafuer angefordert). Default "animated"
+     * erhaelt das bisherige Verhalten bestehender Installationen.
      */
-    public static function ensureVideoThumbType(): int
+    public static function getVideoThumbMode(): string
+    {
+        $mode = (string) \rex_addon::get('mediaplace')->getConfig('video_thumb_mode', 'animated');
+
+        return \in_array($mode, ['off', 'static', 'animated'], true) ? $mode : 'animated';
+    }
+
+    /**
+     * Media-Manager-Typ-Name, der fuer die aktuell eingestellte Vorschau-Art
+     * (getVideoThumbMode()) verwendet werden soll -- null bei "off" (dann
+     * wird client-seitig gar kein Typ angefordert, siehe previewHtml() in
+     * mediapool3.js).
+     */
+    public static function getActiveVideoThumbType(): ?string
+    {
+        return match (self::getVideoThumbMode()) {
+            'off' => null,
+            'static' => self::VIDEO_THUMB_TYPE_STATIC,
+            default => self::VIDEO_THUMB_TYPE,
+        };
+    }
+
+    /**
+     * Legt BEIDE Video-Thumbnail-Typen an, falls sie noch fehlen (z.B. weil
+     * ffmpeg erst nach MediaPlace installiert wurde, oder der Modus in den
+     * Einstellungen erst spaeter umgestellt wird) -- idempotent, billige
+     * Existenzpruefung, aufrufbar bei jedem Boot ohne spuerbare Kosten. Immer
+     * beide anlegen (unabhaengig vom aktuell gewaehlten Modus), damit ein
+     * Umschalten der Einstellung sofort wirkt statt erst beim naechsten Boot.
+     */
+    public static function ensureVideoThumbTypes(): void
     {
         if (!self::isAvailable()) {
-            return 0;
+            return;
         }
 
+        self::ensureVideoThumbTypeVariant(
+            self::VIDEO_THUMB_TYPE,
+            'MediaPlace – animierte Video-Vorschau im Grid (ffmpeg)',
+            true,
+        );
+        self::ensureVideoThumbTypeVariant(
+            self::VIDEO_THUMB_TYPE_STATIC,
+            'MediaPlace – Video-Vorschau im Grid, einzelnes Standbild (ffmpeg)',
+            false,
+        );
+    }
+
+    private static function ensureVideoThumbTypeVariant(string $typeName, string $description, bool $animated): int
+    {
         $typeSql = \rex_sql::factory();
         $existingType = $typeSql->getArray(
             'SELECT id FROM ' . \rex::getTable('media_manager_type') . ' WHERE name = :name',
-            [':name' => self::VIDEO_THUMB_TYPE],
+            [':name' => $typeName],
         );
         $now = date('Y-m-d H:i:s');
 
         if (empty($existingType)) {
             $typeSql->setTable(\rex::getTable('media_manager_type'));
             $typeSql->setValue('status', 1);
-            $typeSql->setValue('name', self::VIDEO_THUMB_TYPE);
-            $typeSql->setValue('description', 'MediaPlace – animierte Video-Vorschau im Grid (ffmpeg)');
+            $typeSql->setValue('name', $typeName);
+            $typeSql->setValue('description', $description);
             $typeSql->setValue('createdate', $now);
             $typeSql->setValue('createuser', 'mediaplace');
             $typeSql->setValue('updatedate', $now);
@@ -153,6 +202,7 @@ class FfmpegIntegration
             $effectSql->setValue('effect', 'video_to_webp');
             $effectSql->setValue('parameters', json_encode([
                 'rex_effect_video_to_webp' => [
+                    'rex_effect_video_to_webp_animated' => $animated ? '1' : '0',
                     'rex_effect_video_to_webp_position' => 'middle',
                     'rex_effect_video_to_webp_width' => '300',
                     'rex_effect_video_to_webp_compression_level' => '4',

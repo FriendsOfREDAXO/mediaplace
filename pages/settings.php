@@ -29,6 +29,20 @@ $field = $form->addCheckboxField('disable_collections');
 $field->addOption(rex_i18n::msg('mediaplace_settings_feature_collections_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_collections_hint'));
 
+// Nur relevant/sichtbar, wenn das ffmpeg-Addon installiert ist -- ohne ffmpeg
+// zeigt das Grid ohnehin immer nur das Datei-Icon, unabhaengig von dieser
+// Einstellung (siehe FfmpegIntegration::isAvailable()).
+if (rex_addon::get('ffmpeg')->isAvailable()) {
+    $field = $form->addSelectField('video_thumb_mode');
+    $field->setLabel(rex_i18n::msg('mediaplace_settings_video_thumb_mode_label'));
+    $select = $field->getSelect();
+    $select->addOption(rex_i18n::msg('mediaplace_settings_video_thumb_mode_off'), 'off');
+    $select->addOption(rex_i18n::msg('mediaplace_settings_video_thumb_mode_static'), 'static');
+    $select->addOption(rex_i18n::msg('mediaplace_settings_video_thumb_mode_animated'), 'animated');
+    $field->setAttribute('class', 'form-control');
+    $field->setNotice(rex_i18n::msg('mediaplace_settings_video_thumb_mode_hint'));
+}
+
 $form->addFieldset(rex_i18n::msg('mediaplace_settings_upload_legend'));
 
 $field = $form->addCheckboxField('enable_upload_resize');

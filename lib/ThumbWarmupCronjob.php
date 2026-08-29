@@ -14,11 +14,11 @@ use rex_sql;
  * sichtbaren Dateien (grosse Kategorie, breites Grid) waere das fuer einen
  * normalen (Shared-)Webserver zu viel gleichzeitige Last. Deckt beide eigenen
  * Grid-Vorschau-Typen ab: den Bild-Typ "mediaplace_thumb" (siehe install.php,
- * immer verfuegbar) und den animierten Video-Typ "mediaplace_video_thumb"
- * (siehe FfmpegIntegration::ensureVideoThumbType(), nur wenn ffmpeg
- * installiert UND lauffaehig ist -- Video-Generierung ist ungleich teurer als
- * ein Bild-Resize, deshalb pro Typ ein eigenes, unterschiedlich hoch
- * vorbelegtes Kontingent).
+ * immer verfuegbar) und den je nach Einstellungen aktiven Video-Typ (animiert
+ * oder Standbild, siehe FfmpegIntegration::getActiveVideoThumbType()), nur
+ * wenn ffmpeg installiert UND lauffaehig ist UND die Video-Vorschau nicht auf
+ * "aus" steht -- Video-Generierung ist ungleich teurer als ein Bild-Resize,
+ * deshalb pro Typ ein eigenes, unterschiedlich hoch vorbelegtes Kontingent.
  *
  * Pro Lauf wird je Typ nur eine begrenzte Anzahl NEUER Vorschaubilder erzeugt,
  * der Rest folgt beim naechsten planmaessigen Lauf -- bereits gecachte Dateien
@@ -67,10 +67,13 @@ class ThumbWarmupCronjob extends rex_cronjob
         $imageBatchSize = max(1, (int) $this->getParam('image_batch_size', 20));
         $imageResult = $this->warmupType(self::IMAGE_TYPE, self::IMAGE_EXTENSIONS, $imageBatchSize, self::IMAGE_SLOW_THRESHOLD_SECONDS, self::MAX_IMAGE_SOURCE_BYTES);
 
+        // Respektiert die Einstellungen (aus/Standbild/animiert) -- bei "aus"
+        // ist getActiveVideoThumbType() null, dann wird gar nichts angefasst.
         $videoResult = ['warmed' => 0, 'scanned' => 0];
-        if (FfmpegIntegration::isAvailable()) {
+        $activeVideoThumbType = FfmpegIntegration::getActiveVideoThumbType();
+        if (FfmpegIntegration::isAvailable() && null !== $activeVideoThumbType) {
             $videoBatchSize = max(1, (int) $this->getParam('video_batch_size', 5));
-            $videoResult = $this->warmupType(FfmpegIntegration::VIDEO_THUMB_TYPE, FfmpegIntegration::supportedExtensions(), $videoBatchSize, self::VIDEO_SLOW_THRESHOLD_SECONDS, null);
+            $videoResult = $this->warmupType($activeVideoThumbType, FfmpegIntegration::supportedExtensions(), $videoBatchSize, self::VIDEO_SLOW_THRESHOLD_SECONDS, null);
         }
 
         $this->setMessage(rex_i18n::msg(

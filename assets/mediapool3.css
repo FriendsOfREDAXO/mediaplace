@@ -2201,6 +2201,28 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     background: #3c8dbc;
 }
 
+/* Standbild-Modus der Video-Vorschau (siehe previewHtml()/FfmpegIntegration::
+   getVideoThumbMode()): kein animiertes Bewegtbild mehr erkennbar, dieses
+   Overlay-Icon macht trotzdem klar, dass es sich um ein Video handelt statt
+   um ein Foto. Unten links positioniert, damit es nicht mit dem Sammlungs-
+   Button (oben rechts) kollidiert. */
+#mp3-overlay .mp3-video-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    z-index: 3;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 11px;
+    pointer-events: none;
+}
+
 #mp3-overlay .mp3-card:hover {
     border-color: var(--mp3-card-hover-border);
     box-shadow: var(--mp3-card-hover-shadow);

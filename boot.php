@@ -18,21 +18,26 @@ if (rex_addon::get('yform')->isAvailable()) {
     rex_extension::register('MEDIA_IS_IN_USE', ['rex_yform_value_mediaplace', 'isMediaInUse']);
 }
 
-// Sicherheitsnetz fuer den eigenen Video-Vorschau-Typ (mediaplace_video_thumb,
-// siehe FfmpegIntegration::ensureVideoThumbType()): der referenziert ffmpeg's
-// Effekt "video_to_webp". Wird ffmpeg NACH dem Anlegen dieses Typs deinstalliert
-// (oder faellt das Binary weg), bleibt die Typ-/Effekt-Zeile in der DB stehen --
-// media_manager selbst hat vor dem Instanziieren eines Effekts keine
-// class_exists()-Absicherung (media_manager.php, applyEffects(): "new
-// $effectClass()") und stuerzt mit einem Fatal Error (500) ab, sobald
-// IRGENDEINE Anfrage (auch eine alte/gecachte <img>-URL) diesen Typ fuer ein
-// Video anfordert. Statt das crashen zu lassen, wird das Effekt-Set fuer
-// diesen einen Typ auf leer gesetzt, sobald ffmpeg nicht mehr verfuegbar ist --
-// media_manager liefert dann sein eigenes "nicht gefunden"-Verhalten statt
-// eines Fatal Errors. Unconditional (nicht nur im isBackend()-Block), da
-// Media-Manager-Anfragen auch anonym/frontend-seitig eintreffen koennen.
+// Sicherheitsnetz fuer die eigenen Video-Vorschau-Typen (animiert +
+// statisches Standbild, siehe FfmpegIntegration::ensureVideoThumbTypes()):
+// beide referenzieren ffmpeg's Effekt "video_to_webp". Wird ffmpeg NACH dem
+// Anlegen dieser Typen deinstalliert (oder faellt das Binary weg), bleiben
+// die Typ-/Effekt-Zeilen in der DB stehen -- media_manager selbst hat vor dem
+// Instanziieren eines Effekts keine class_exists()-Absicherung
+// (media_manager.php, applyEffects(): "new $effectClass()") und stuerzt mit
+// einem Fatal Error (500) ab, sobald IRGENDEINE Anfrage (auch eine alte/
+// gecachte <img>-URL) einen dieser Typen fuer ein Video anfordert. Statt das
+// crashen zu lassen, wird das Effekt-Set fuer beide Typen auf leer gesetzt,
+// sobald ffmpeg nicht mehr verfuegbar ist -- media_manager liefert dann sein
+// eigenes "nicht gefunden"-Verhalten statt eines Fatal Errors. Unconditional
+// (nicht nur im isBackend()-Block), da Media-Manager-Anfragen auch anonym/
+// frontend-seitig eintreffen koennen.
 rex_extension::register('MEDIA_MANAGER_FILTERSET', static function (rex_extension_point $ep) {
-    if ($ep->getParam('rex_media_type') === \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::VIDEO_THUMB_TYPE
+    $videoThumbTypes = [
+        \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::VIDEO_THUMB_TYPE,
+        \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::VIDEO_THUMB_TYPE_STATIC,
+    ];
+    if (in_array($ep->getParam('rex_media_type'), $videoThumbTypes, true)
         && !\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable()) {
         return [];
     }
@@ -85,12 +90,10 @@ if (rex::isBackend() && rex::getUser()) {
         ]);
     }
 
-    // Video-Vorschau-Typ (ffmpeg-Integration, siehe FfmpegIntegration) --
-    // idempotente Existenzpruefung, legt den Typ bei Bedarf an (z.B. wenn
-    // ffmpeg erst nach MediaPlace installiert wurde).
-    if (\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable()) {
-        \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::ensureVideoThumbType();
-    }
+    // Video-Vorschau-Typen (ffmpeg-Integration, siehe FfmpegIntegration) --
+    // idempotente Existenzpruefung, legt beide Typen (animiert + Standbild)
+    // bei Bedarf an (z.B. wenn ffmpeg erst nach MediaPlace installiert wurde).
+    \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::ensureVideoThumbTypes();
 
     // Biegt den klassischen "Medienpool"-Menuepunkt auf unseren Overlay um,
     // abschaltbar ueber die Einstellungsseite.
@@ -206,7 +209,6 @@ if (rex::isBackend() && rex::getUser()) {
         // steuert, ob der "Medienpool"-Sidebar-/Breadcrumb-Link anklickbar ist.
         $canAccessRootCategory = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess(0) ? '1' : '0';
         $focuspointUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_focuspoint']);
-        $focuspointAvailable = \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit() ? '1' : '0';
         $metainfoFormUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_metainfo_form']);
         $metainfoFormAvailable = rex_addon::get('metainfo')->isAvailable() ? '1' : '0';
         // Globale Verfuegbarkeit (Addon + Recht) -- ob eine KONKRETE Datei
@@ -219,7 +221,14 @@ if (rex::isBackend() && rex::getUser()) {
         // ffmpeg-Integration (siehe FfmpegIntegration): Video-Vorschau im Grid
         // (Typ-Name direkt, kein API-Umweg -- Grid baut die Thumb-URL genauso
         // wie fuer mediaplace_thumb selbst) + "Video optimieren"-Button.
-        $videoThumbAvailable = \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable() ? '1' : '0';
+        // Typ-Name statt reinem Flag: haengt vom Einstellungen-Modus ab (aus/
+        // Standbild/animiert, siehe getActiveVideoThumbType()) -- leerer
+        // String = Video-Vorschau aus, previewHtml() zeigt dann konsequent
+        // nur das Datei-Icon.
+        $videoThumbType = \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable()
+            ? (string) (\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getActiveVideoThumbType() ?? '')
+            : '';
+        $videoThumbStatic = \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getVideoThumbMode() === 'static' ? '1' : '0';
         $optimizeVideoUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_video_optimize']);
         $optimizeVideoAvailable = null !== rex::getUser() && rex::getUser()->hasPerm('mediaplace[optimize_video]')
             && \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable() ? '1' : '0';
@@ -262,7 +271,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-focuspoint-available="' . $focuspointAvailable . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-available="' . $videoThumbAvailable . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
+        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);

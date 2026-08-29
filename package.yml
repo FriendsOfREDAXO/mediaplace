@@ -1,5 +1,5 @@
 package: mediaplace
-version: '1.6.0'
+version: '1.7.1'
 author: FriendsOfREDAXO
 supportpage: https://github.com/FriendsOfREDAXO
 
@@ -43,3 +43,4 @@ default_config:
     enable_upload_resize: false
     upload_resize_width: 2000
     upload_resize_height: 2000
+    video_thumb_mode: animated
