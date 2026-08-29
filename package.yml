@@ -1,5 +1,5 @@
 package: mediaplace
-version: '1.7.1'
+version: '1.7.2'
 author: FriendsOfREDAXO
 supportpage: https://github.com/FriendsOfREDAXO
 
@@ -39,7 +39,7 @@ default_config:
     enable_own_metadata: false
     disable_tagging: false
     disable_collections: false
-    enable_metainfo_editing: false
+    enable_metainfo_editing: true
     enable_upload_resize: false
     upload_resize_width: 2000
     upload_resize_height: 2000

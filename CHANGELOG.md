@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.7.2 – 2026-08-29
+
+### Geändert
+- "Metadaten bearbeiten" (native Bearbeitung echter Metainfo-Felder im Detail-Panel, Einstellungen → `enable_metainfo_editing`) ist bei Neuinstallationen jetzt standardmäßig aktiviert. Betrifft nur den `default_config`-Wert für neue Installationen – bereits installierte Instanzen behalten ihre bisher gespeicherte Einstellung unverändert.
+
 ## Version 1.7.1 – 2026-08-29
 
 ### Bugfix
