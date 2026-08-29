@@ -2599,14 +2599,6 @@
         }
     }, true);
 
-    // Sehr grosse Quelldateien (z.B. mehrere MB grosse animierte GIFs) gar
-    // nicht erst als Vorschaubild anfordern: Resize auf dem Server ist bei
-    // solchen Dateien unverhaeltnismaessig teuer (Speicher/CPU) und kann dort
-    // fehlschlagen -- direkt das Datei-Icon zeigen ist fuer eine reine
-    // Grid-Vorschau voellig ausreichend ("es sind ja nur Thumbs"). Deckungsgleich
-    // mit der Schwelle im Warmup-Cronjob (ThumbWarmupCronjob::MAX_SOURCE_BYTES).
-    var MAX_THUMB_SOURCE_BYTES = 10 * 1024 * 1024;
-
     /**
      * Build preview HTML for a single media file. Genutzt von Grid- und Media-
      * Wall-Ansicht (renderFilesGrid()/renderFilesMediaWall()), beide per Slider
@@ -2619,7 +2611,7 @@
      *   Grid-Querformat (GRID_TILE_RATIO).
      */
     function previewHtml(file, ratioOverride) {
-        if (isImage(file.filename) && (!file.filesize || file.filesize <= MAX_THUMB_SOURCE_BYTES)) {
+        if (isImage(file.filename)) {
             var src = mediaThumbSrc(file.filename, 'mediaplace_thumb', file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
             var ratio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
             var style = ratio ? ' style="aspect-ratio:' + ratio + '"' : '';
@@ -2842,7 +2834,7 @@
                 html += '<td class="mp3-list-cell-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></td>';
             }
             html += '<td class="mp3-list-cell-preview">';
-            if (isImage(f.filename) && (!f.filesize || f.filesize <= MAX_THUMB_SOURCE_BYTES)) {
+            if (isImage(f.filename)) {
                 var src = mediaThumbSrc(f.filename, 'rex_media_small', f, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
                 html += '<img data-fallback-icon="' + escAttr(fileIcon(f.filename)) + '" src="' + escAttr(src) + '" alt="" loading="lazy">';
             } else {

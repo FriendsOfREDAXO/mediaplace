@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.7.4 – 2026-08-29
+
+### Geändert
+- 10-MB-Grenze für Bild-Vorschaubilder (siehe 1.6.0) wieder entfernt: Fotos über 10 MB bekamen dadurch nie ein Vorschaubild, nur noch das Datei-Icon – für eine Mediathek mit hochauflösender Fotografie eine spürbare Einschränkung. Der ursprüngliche Grund (teure/riskante Live-Generierung bei großen Kategorien) ist durch den seither eingeführten Warmup-Cronjob (1.6.0) hinfällig: die eigentliche Generierung läuft jetzt kontrolliert im Hintergrund statt live beim ersten Betrachten, der Datei-Icon-Fallback bei Fehlschlägen bleibt unabhängig davon bestehen.
+
 ## Version 1.7.3 – 2026-08-29
 
 ### Bugfix

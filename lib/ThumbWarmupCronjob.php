@@ -47,25 +47,10 @@ class ThumbWarmupCronjob extends rex_cronjob
     /** Harte Obergrenze an ueberhaupt geprueften Dateien pro Lauf und Typ (auch bei lauter Cache-Treffern). */
     private const MAX_SCANNED_PER_RUN = 300;
 
-    /**
-     * Sehr grosse Bild-Quelldateien (z.B. mehrstellige-MB animierte GIFs)
-     * werden gar nicht erst zum Warmwerden angefasst -- Resize ist bei
-     * solchen Dateien unverhaeltnismaessig teuer und kann je nach Server
-     * (Speicher-Limit) fehlschlagen und dann eine ungefaehr originalgrosse
-     * Datei im Cache hinterlassen statt eines kleinen Vorschaubilds.
-     * Deckungsgleich mit MAX_THUMB_SOURCE_BYTES in assets/mediapool3.js
-     * (previewHtml() fordert dort aus demselben Grund gar nicht erst ein
-     * Vorschaubild fuer so grosse Dateien an). NUR fuer Bilder -- bei Videos
-     * sind mehrstellige MB der Normalfall, nicht die Ausnahme, dafuer gibt es
-     * bereits die zeitbasierte Batch-Begrenzung (VIDEO_SLOW_THRESHOLD_SECONDS/
-     * video_batch_size).
-     */
-    private const MAX_IMAGE_SOURCE_BYTES = 10 * 1024 * 1024;
-
     public function execute(): bool
     {
         $imageBatchSize = max(1, (int) $this->getParam('image_batch_size', 20));
-        $imageResult = $this->warmupType(self::IMAGE_TYPE, self::IMAGE_EXTENSIONS, $imageBatchSize, self::IMAGE_SLOW_THRESHOLD_SECONDS, self::MAX_IMAGE_SOURCE_BYTES);
+        $imageResult = $this->warmupType(self::IMAGE_TYPE, self::IMAGE_EXTENSIONS, $imageBatchSize, self::IMAGE_SLOW_THRESHOLD_SECONDS);
 
         // Respektiert die Einstellungen (aus/Standbild/animiert) -- bei "aus"
         // ist getActiveVideoThumbType() null, dann wird gar nichts angefasst.
@@ -73,7 +58,7 @@ class ThumbWarmupCronjob extends rex_cronjob
         $activeVideoThumbType = FfmpegIntegration::getActiveVideoThumbType();
         if (FfmpegIntegration::isAvailable() && null !== $activeVideoThumbType) {
             $videoBatchSize = max(1, (int) $this->getParam('video_batch_size', 5));
-            $videoResult = $this->warmupType($activeVideoThumbType, FfmpegIntegration::supportedExtensions(), $videoBatchSize, self::VIDEO_SLOW_THRESHOLD_SECONDS, null);
+            $videoResult = $this->warmupType($activeVideoThumbType, FfmpegIntegration::supportedExtensions(), $videoBatchSize, self::VIDEO_SLOW_THRESHOLD_SECONDS);
         }
 
         $this->setMessage(rex_i18n::msg(
@@ -89,15 +74,14 @@ class ThumbWarmupCronjob extends rex_cronjob
 
     /**
      * @param list<string> $extensions
-     * @param int|null $maxSourceBytes null = keine Obergrenze (Videos)
      * @return array{warmed: int, scanned: int}
      */
-    private function warmupType(string $type, array $extensions, int $batchSize, float $slowThreshold, ?int $maxSourceBytes): array
+    private function warmupType(string $type, array $extensions, int $batchSize, float $slowThreshold): array
     {
         $sql = rex_sql::factory();
         $placeholders = implode(',', array_fill(0, count($extensions), '?'));
         $sql->setQuery(
-            'SELECT filename, filesize FROM ' . rex::getTable('media') . '
+            'SELECT filename FROM ' . rex::getTable('media') . '
              WHERE LOWER(SUBSTRING_INDEX(filename, \'.\', -1)) IN (' . $placeholders . ')
              ORDER BY createdate DESC
              LIMIT ' . self::MAX_SCANNED_PER_RUN,
@@ -109,11 +93,6 @@ class ThumbWarmupCronjob extends rex_cronjob
 
         foreach ($sql as $row) {
             ++$scanned;
-
-            if (null !== $maxSourceBytes && (int) $row->getValue('filesize') > $maxSourceBytes) {
-                continue;
-            }
-
             $filename = (string) $row->getValue('filename');
 
             $start = microtime(true);
