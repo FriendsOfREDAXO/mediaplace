@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.7.3 – 2026-08-29
+
+### Bugfix
+- Video-Symbol-Overlay im Einzelbild-Modus (siehe 1.7.0) saß an der Nahtstelle zwischen Bild und Dateiname/-größe, statt sauber im Bild zu sitzen – `bottom` positionierte es relativ zur gesamten Karte (inkl. Info-Text darunter), nicht relativ zum Bild allein. Jetzt oben links statt unten links positioniert.
+
 ## Version 1.7.2 – 2026-08-29
 
 ### Geändert
