@@ -679,6 +679,58 @@
         });
     }
 
+    // ---- Cloud-Provider (siehe rex_api_mediaplace_provider.php) ----
+    function getProviderApiUrl(func, params) {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.providerUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_provider';
+        }
+        var query = 'func=' + encodeURIComponent(func);
+        for (var key in params) {
+            if (Object.prototype.hasOwnProperty.call(params, key)) {
+                query += '&' + key + '=' + encodeURIComponent(params[key]);
+            }
+        }
+        return baseUrl + (baseUrl.indexOf('?') === -1 ? '?' : '&') + query;
+    }
+
+    function apiFetchProviderEntries(provider, path, search) {
+        var params = { provider: provider, path: path || '/' };
+        if (search) params.search = search;
+
+        return fetch(getProviderApiUrl('entries', params), {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || json.error) throw new Error(json.error || 'HTTP ' + r.status);
+                return json; // {data:[...], has_search: bool}
+            });
+        });
+    }
+
+    // Direkt als <img src> genutzt (kein fetch()) -- Fallback aufs Datei-Icon
+    // laeuft ueber denselben globalen error-Listener wie bei lokalen Video-/
+    // Bild-Vorschaubildern, siehe mediapool3.js.
+    function getProviderThumbnailUrl(provider, path) {
+        return getProviderApiUrl('thumbnail', { provider: provider, path: path });
+    }
+
+    function apiImportProviderFile(provider, path, categoryId) {
+        return fetch(getProviderApiUrl('import', { provider: provider, path: path, category_id: categoryId }), {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || json.error) throw new Error(json.error || 'HTTP ' + r.status);
+                return json; // {filename: "..."}
+            });
+        });
+    }
+
     // Gemeinsame Fehlerbehandlung fuer die vier Kategorie-Endpunkte (Create/
     // Rename/Delete/Move) -- haengt err.status an (wie handleJsonResponse()
     // fuer die Medienliste), damit Aufrufer speziell auf 403 (Rechte-Grenze,
@@ -927,6 +979,9 @@
     Core.api.apiPollOptimizeVideo = apiPollOptimizeVideo;
     Core.api.apiLoadVideoDetails = apiLoadVideoDetails;
     Core.api.apiOptimizeImage = apiOptimizeImage;
+    Core.api.apiFetchProviderEntries = apiFetchProviderEntries;
+    Core.api.getProviderThumbnailUrl = getProviderThumbnailUrl;
+    Core.api.apiImportProviderFile = apiImportProviderFile;
     Core.api.apiCreateCategory = apiCreateCategory;
     Core.api.resolveFolderCategories = resolveFolderCategories;
     Core.api.apiRenameCategory = apiRenameCategory;

@@ -1490,6 +1490,47 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     color: var(--mp3-status-text);
 }
 
+/* ---- Cloud-Provider-Baum (siehe StorageProviderRegistry) ----
+   Gleiche --mp3-cat-*-Variablen wie der lokale Kategoriebaum/Sammlungen --
+   keine neuen Custom Properties noetig, erbt Light/Dark automatisch mit. */
+#mp3-overlay .mp3-providers-wrap {
+    margin-top: 10px;
+    padding: 10px 8px 6px;
+    border-top: 1px solid var(--mp3-sidebar-border);
+}
+
+#mp3-overlay .mp3-providers-head {
+    margin-bottom: 6px;
+}
+
+#mp3-overlay .mp3-providers-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mp3-cat-text);
+}
+
+#mp3-overlay .mp3-provider-root {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--mp3-cat-text);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+}
+
+#mp3-overlay .mp3-provider-root:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
+#mp3-overlay .mp3-provider-root.mp3-provider-root-active {
+    background: var(--mp3-cat-active-bg);
+    border-left-color: var(--mp3-cat-active-border);
+    font-weight: 600;
+}
+
 /* ---- Grid Error Banner ---- */
 #mp3-overlay .mp3-grid-error {
     display: flex;

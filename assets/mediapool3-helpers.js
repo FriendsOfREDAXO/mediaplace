@@ -64,6 +64,27 @@
         return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     }
 
+    /**
+     * <option>-Liste fuer eine flache, tiefensortierte Kategorienliste
+     * (id/name/depth, wie von apiFetchAllCategoriesFlat() geliefert), zur
+     * Baumtiefe eingerueckt. &nbsp; statt normaler Leerzeichen: sowohl
+     * native <select>-Dropdowns als auch bootstrap-select rendern Optionen
+     * ueber eigene Layout-Boxen, die fuehrende ASCII-Leerzeichen kollabieren
+     * -- &nbsp; ist kein normaler Whitespace und bleibt sichtbar. Gemeinsam
+     * genutzt von den Kategorie-Auswahl-Dialogen in mediapool3.js und
+     * mediapool3_widget.js statt pro Aufrufer neu gebaut.
+     */
+    function buildCategoryOptionsHtml(categories, selectedId) {
+        var html = '';
+        var selected = selectedId != null ? String(selectedId) : null;
+        for (var i = 0; i < (categories || []).length; i++) {
+            var cat = categories[i];
+            html += '<option value="' + escAttr(String(cat.id)) + '"' + (selected !== null && String(cat.id) === selected ? ' selected' : '') + '>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(cat.depth || 0) + escAttr(cat.name) + '</option>';
+        }
+        return html;
+    }
+
     function formatDate(v) {
         if (!v) return '–';
         var d = (typeof v === 'number' || /^\d{9,}$/.test(String(v)))
@@ -290,6 +311,7 @@
     Core.helpers.isVideo = isVideo;
     Core.helpers.fileIcon = fileIcon;
     Core.helpers.escAttr = escAttr;
+    Core.helpers.buildCategoryOptionsHtml = buildCategoryOptionsHtml;
     Core.helpers.formatDate = formatDate;
     Core.helpers.getFilenameExtension = getFilenameExtension;
     Core.helpers.normalizeReplacementExtension = normalizeReplacementExtension;

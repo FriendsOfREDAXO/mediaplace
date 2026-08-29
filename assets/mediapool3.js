@@ -84,6 +84,17 @@
     var uploadResizeWidth = 2000;
     var uploadResizeHeight = 2000;
     var activeCollectionId = null;
+    // ---- Cloud-Provider (siehe StorageProviderInterface/-Registry, mediaplace,
+    // und lib/MediaplaceProvider.php im ersten Provider-Addon "nextcloud") ----
+    // gridMode unterscheidet, wessen Daten das Grid gerade zeigt und wie Klicks
+    // darauf zu interpretieren sind (siehe grid.addEventListener('click', ...)).
+    var providers = []; // [{id,label,icon}], aus #mp3-root data-providers
+    var gridMode = 'local'; // 'local' | 'provider'
+    var activeProvider = null; // provider-id
+    var activeProviderPath = '/';
+    var activeProviderPathSegments = []; // [{path,name}] fuer die Breadcrumb
+    var providerHasSearch = false;
+    var lastLoadedProviderEntries = [];
     var darkModeEnabled = false; // true = dark mode, false = light mode
     var mediaLinkPickFieldKey = null; // active media_link field key while picking from file grid
     var fullscreenMode = false;
@@ -161,6 +172,9 @@
     var apiPollOptimizeVideo = MP3Core.api.apiPollOptimizeVideo;
     var apiLoadVideoDetails = MP3Core.api.apiLoadVideoDetails;
     var apiOptimizeImage = MP3Core.api.apiOptimizeImage;
+    var apiFetchProviderEntries = MP3Core.api.apiFetchProviderEntries;
+    var getProviderThumbnailUrl = MP3Core.api.getProviderThumbnailUrl;
+    var apiImportProviderFile = MP3Core.api.apiImportProviderFile;
     var apiCreateCategory = MP3Core.api.apiCreateCategory;
     var resolveFolderCategories = MP3Core.api.resolveFolderCategories;
     var apiRenameCategory = MP3Core.api.apiRenameCategory;
@@ -176,6 +190,7 @@
     var isVideo = MP3Core.helpers.isVideo;
     var fileIcon = MP3Core.helpers.fileIcon;
     var escAttr = MP3Core.helpers.escAttr;
+    var buildCategoryOptionsHtml = MP3Core.helpers.buildCategoryOptionsHtml;
     var formatDate = MP3Core.helpers.formatDate;
     var getFilenameExtension = MP3Core.helpers.getFilenameExtension;
     var normalizeReplacementExtension = MP3Core.helpers.normalizeReplacementExtension;
@@ -729,6 +744,311 @@
         return html;
     }
 
+    /**
+     * Sidebar-Eintrag pro registriertem Cloud-Provider (siehe
+     * StorageProviderRegistry auf PHP-Seite) -- bewusst nur ein flacher
+     * Wurzel-Eintrag pro Provider, KEIN verschachtelter, eager geladener
+     * Ordnerbaum wie beim lokalen Kategoriebaum: eine entfernte Quelle kann
+     * beliebig gross/tief sein, das waere fuers Eager-Rendering ungeeignet.
+     * Navigation innerhalb eines Providers laeuft stattdessen ueber Ordner-
+     * Kacheln im Grid selbst + eine eigene Breadcrumb (openProviderFolder()),
+     * gleiches Muster wie z.B. das nextcloud-Addon es fuer seine eigene Seite
+     * bereits nutzt. Im Mehrfachauswahl-Picker (onMultiSelect) wird der
+     * Cloud-Bereich gar nicht erst angezeigt (Import/Auswahl ist in dieser
+     * Version auf Einzeldateien beschraenkt).
+     */
+    function renderProvidersSection() {
+        if (!providers.length || onMultiSelect) return '';
+
+        var html = '<div class="mp3-providers-wrap">';
+        html += '<div class="mp3-providers-head"><span class="mp3-providers-title">' + t('mediaplace_cloud_providers') + '</span></div>';
+        for (var i = 0; i < providers.length; i++) {
+            var p = providers[i];
+            html += '<a class="mp3-provider-root' + (activeProvider === p.id ? ' mp3-provider-root-active' : '') + '" data-provider-id="' + escAttr(p.id) + '" data-provider-label="' + escAttr(p.label) + '">' +
+                '<i class="' + escAttr(p.icon || 'fa-solid fa-cloud') + '"></i> ' + escAttr(p.label) + '</a>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    /** Aktive Provider-Sitzung beenden, zurueck zur normalen lokalen Ansicht. */
+    function closeProviderMode() {
+        if ('provider' !== gridMode) return;
+        gridMode = 'local';
+        activeProvider = null;
+        activeProviderPath = '/';
+        activeProviderPathSegments = [];
+        providerHasSearch = false;
+        lastLoadedProviderEntries = [];
+        qsa('.mp3-provider-root', sidebar).forEach(function (el) {
+            el.classList.remove('mp3-provider-root-active');
+        });
+    }
+
+    /** Klick auf einen Provider-Wurzelknoten in der Sidebar. */
+    function openProvider(providerId, label) {
+        closeProviderMode(); // vorherigen Provider (falls anderer) sauber verlassen
+        hideDetail();
+        gridMode = 'provider';
+        activeProvider = providerId;
+        activeProviderPath = '/';
+        activeProviderPathSegments = [];
+        setActiveCollection(null);
+        currentCat = -1; // rein visuell: kein lokaler Kategorie-Eintrag mehr aktiv
+        updateSidebarActiveState();
+        qsa('.mp3-provider-root', sidebar).forEach(function (el) {
+            el.classList.toggle('mp3-provider-root-active', el.getAttribute('data-provider-id') === providerId);
+        });
+        renderProviderBreadcrumb(label);
+        loadProviderEntries();
+    }
+
+    /** Klick auf eine Ordner-Kachel im Provider-Grid -- eine Ebene tiefer navigieren. */
+    function openProviderFolder(path, name) {
+        hideDetail();
+        activeProviderPath = path;
+        activeProviderPathSegments.push({ path: path, name: name });
+        renderProviderBreadcrumb();
+        loadProviderEntries();
+    }
+
+    /** Breadcrumb-Klick: zurueck zu einer bereits besuchten Ebene (oder Wurzel). */
+    function jumpToProviderBreadcrumb(index) {
+        hideDetail();
+        if (index < 0) {
+            activeProviderPath = '/';
+            activeProviderPathSegments = [];
+        } else {
+            activeProviderPathSegments = activeProviderPathSegments.slice(0, index + 1);
+            activeProviderPath = activeProviderPathSegments[index].path;
+        }
+        renderProviderBreadcrumb();
+        loadProviderEntries();
+    }
+
+    function renderProviderBreadcrumb(rootLabel) {
+        if (!breadcrumb) return;
+        var providerMeta = null;
+        for (var i = 0; i < providers.length; i++) {
+            if (providers[i].id === activeProvider) { providerMeta = providers[i]; break; }
+        }
+        var label = rootLabel || (providerMeta ? providerMeta.label : activeProvider);
+        var icon = providerMeta ? providerMeta.icon : 'fa-solid fa-cloud';
+        var html = '<a class="mp3-bc-item" data-provider-crumb="-1"><i class="' + escAttr(icon) + '"></i> ' + escAttr(label) + '</a>';
+        for (var j = 0; j < activeProviderPathSegments.length; j++) {
+            html += ' <i class="fa-solid fa-chevron-right mp3-bc-sep"></i> ';
+            html += '<a class="mp3-bc-item" data-provider-crumb="' + j + '">' + escAttr(activeProviderPathSegments[j].name) + '</a>';
+        }
+        breadcrumb.innerHTML = html;
+    }
+
+    function loadProviderEntries(search) {
+        if (!activeProvider) return;
+        grid.className = 'mp3-grid';
+        grid.innerHTML = '<div style="padding:40px;text-align:center;color:#6c757d;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2em;"></i></div>';
+
+        apiFetchProviderEntries(activeProvider, activeProviderPath, search)
+            .then(function (payload) {
+                if ('provider' !== gridMode) return; // Modus zwischenzeitlich verlassen
+                providerHasSearch = !!payload.has_search;
+                lastLoadedProviderEntries = payload.data || [];
+                renderProviderFiles(lastLoadedProviderEntries);
+            })
+            .catch(function (err) {
+                grid.innerHTML = '<div style="padding:40px;text-align:center;color:#c9302c;">' + escAttr(err.message) + '</div>';
+            });
+    }
+
+    /**
+     * Respektiert den normalen Kacheln/Liste/Media-Wall-Umschalter
+     * (viewMode) auch im Provider-Modus -- ohne das wuerde ein Umschalten
+     * ueber refreshDisplay() (viewToggle-Klick-Handler) auf die lokale
+     * renderFiles()/lastLoadedFiles zurueckfallen und den Cloud-Baum
+     * unvermittelt verlassen. Media-Wall/Masonry faellt bewusst auf die
+     * normale Kachel-Darstellung zurueck: Cloud-Eintraege haben kein
+     * width/height fuer ein echtes Seitenverhaeltnis, ein eigenes
+     * Masonry-Layout dafuer wuerde optisch nicht von der Kachelansicht
+     * abweichen.
+     */
+    function renderProviderFiles(entries) {
+        if ('list' === viewMode) {
+            renderProviderList(entries);
+        } else {
+            renderProviderGrid(entries);
+        }
+        updateStatus(entries.length);
+    }
+
+    /**
+     * Bewusst eigene, schlanke Kachel-Darstellung statt previewHtml()/
+     * renderFilesGrid() wiederzuverwenden: eine Cloud-Datei ist noch keine
+     * lokale rex_media-Zeile, hat also keine width/height/system_tags/... und
+     * die Vorschau-Quelle ist ein voellig anderer Endpunkt (Provider-
+     * Thumbnail-Proxy statt lokaler Media-Manager-Typ).
+     */
+    function renderProviderGrid(entries) {
+        var html = '';
+        if (!entries.length) {
+            html = '<div style="padding:40px;text-align:center;color:#6c757d;">' + escAttr(t('mediaplace_no_files')) + '</div>';
+        }
+        for (var i = 0; i < entries.length; i++) {
+            var entry = entries[i];
+            var isFolder = 'folder' === entry.type;
+            html += '<div class="mp3-card mp3-provider-card" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">' +
+                providerPreviewHtml(entry) +
+                '<div class="mp3-info">' +
+                    '<span class="mp3-card-name" title="' + escAttr(entry.name) + '">' + escAttr(entry.name) + '</span>' +
+                    '<span class="mp3-fmeta">' + (isFolder ? '' : formatBytes(entry.filesize || 0)) + '</span>' +
+                '</div>' +
+            '</div>';
+        }
+        grid.className = 'mp3-grid';
+        grid.innerHTML = html;
+    }
+
+    function renderProviderList(entries) {
+        var html = '<table class="mp3-list-table"><thead><tr>' +
+            '<th class="mp3-list-th-preview"></th>' +
+            '<th>' + t('mediaplace_name') + '</th>' +
+            '<th>' + t('mediaplace_field_type') + '</th>' +
+            '<th>' + t('mediaplace_field_size') + '</th>' +
+            '<th>' + t('mediaplace_date') + '</th>' +
+        '</tr></thead><tbody>';
+        for (var i = 0; i < entries.length; i++) {
+            var entry = entries[i];
+            var isFolder = 'folder' === entry.type;
+            html += '<tr class="mp3-list-row mp3-provider-card" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">';
+            html += '<td class="mp3-list-cell-preview">' + (isFolder
+                ? '<i class="fa-solid fa-folder"></i>'
+                : (entry.hasThumbnail
+                    ? '<img data-fallback-icon="' + escAttr(fileIcon(entry.name)) + '" src="' + escAttr(getProviderThumbnailUrl(activeProvider, entry.path)) + '" alt="" loading="lazy">'
+                    : '<i class="' + escAttr(fileIcon(entry.name)) + '"></i>')) + '</td>';
+            html += '<td class="mp3-list-cell-name"><div class="mp3-list-name-wrap"><span>' + escAttr(entry.name) + '</span></div></td>';
+            html += '<td class="mp3-list-cell-type">' + escAttr(entry.filetype || '') + '</td>';
+            html += '<td class="mp3-list-cell-size">' + (isFolder ? '' : formatBytes(entry.filesize || 0)) + '</td>';
+            html += '<td class="mp3-list-cell-date">' + escAttr(entry.modified || '') + '</td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        grid.className = 'mp3-grid mp3-view-list';
+        grid.innerHTML = html;
+    }
+
+    function providerPreviewHtml(entry) {
+        if ('folder' === entry.type) {
+            return '<div class="mp3-icon"><i class="fa-solid fa-folder"></i></div>';
+        }
+        if (!entry.hasThumbnail) {
+            return '<div class="mp3-icon"><i class="' + escAttr(fileIcon(entry.name)) + '"></i></div>';
+        }
+        var src = getProviderThumbnailUrl(activeProvider, entry.path);
+        // Gleicher garantierter Icon-Fallback wie bei lokalen Video-/Bild-
+        // Vorschaubildern: data-fallback-icon + globaler capture-phase
+        // error-Listener (siehe previewHtml()) greift automatisch mit, da er
+        // rein auf dem Attribut matcht, nicht auf einer bestimmten Klasse.
+        return '<img data-fallback-icon="' + escAttr(fileIcon(entry.name)) + '" src="' + escAttr(src) + '" alt="' + escAttr(entry.name) + '" loading="lazy" style="aspect-ratio:' + GRID_TILE_RATIO + '">';
+    }
+
+    /**
+     * Schlanker Mini-Detail-Bereich fuer eine Cloud-Datei (rein client-seitig
+     * aus dem bereits geladenen entries-Response gebaut, kein Server-
+     * Roundtrip): der normale showDetail()-Pfad verlangt zwingend eine echte
+     * rex_media-Zeile (rex_api_mediaplace_json_metainfo.php, "Media not
+     * found" sonst) -- eine noch nicht importierte Cloud-Datei kann den nie
+     * durchlaufen, deshalb ein komplett eigener, einfacherer Ablauf.
+     */
+    function showProviderDetail(path, name) {
+        if (!detailPanel) return;
+        var entry = null;
+        for (var i = 0; i < lastLoadedProviderEntries.length; i++) {
+            if (lastLoadedProviderEntries[i].path === path) { entry = lastLoadedProviderEntries[i]; break; }
+        }
+        if (!entry) return;
+
+        var isPicker = !!onSelect;
+        var previewHtmlStr = entry.hasThumbnail
+            ? '<img src="' + escAttr(getProviderThumbnailUrl(activeProvider, path)) + '" alt="' + escAttr(name) + '">'
+            : '<div class="mp3-icon"><i class="' + escAttr(fileIcon(name)) + '"></i></div>';
+
+        var html = '<div class="mp3-detail-inner">';
+        html += '<div class="mp3-detail-header"><span class="mp3-detail-header-name" title="' + escAttr(name) + '">' + escAttr(name) + '</span></div>';
+        html += '<div class="mp3-detail-preview">' + previewHtmlStr + '</div>';
+        html += '<table class="mp3-detail-table">';
+        html += '<tr><td>' + escAttr(t('mediaplace_field_filename')) + '</td><td>' + escAttr(name) + '</td></tr>';
+        html += '<tr><td>' + escAttr(t('mediaplace_field_size')) + '</td><td>' + (entry.filesize ? formatBytes(entry.filesize) : '–') + '</td></tr>';
+        if (entry.modified) {
+            html += '<tr><td>' + escAttr(t('mediaplace_date')) + '</td><td>' + escAttr(entry.modified) + '</td></tr>';
+        }
+        html += '</table>';
+        html += '<div class="mp3-detail-actions">';
+        html += '<button type="button" class="mp3-image-optimize-btn mp3-provider-import-btn" data-provider-import-path="' + escAttr(path) + '" data-provider-import-name="' + escAttr(name) + '">' +
+            '<i class="fa-solid fa-cloud-arrow-down"></i> ' + escAttr(isPicker ? t('mediaplace_provider_import_and_select') : t('mediaplace_provider_import')) +
+            '</button>';
+        html += '<div class="mp3-image-optimize-status mp3-provider-import-status" style="display:none"></div>';
+        html += '</div>';
+        html += '</div>';
+
+        detailPanel.innerHTML = html;
+        // Unbedingt setzen, nicht nur im Compact-Layout: .mp3-detail hat
+        // width:0/overflow:hidden per Default (siehe mediapool3.css), diese
+        // Klasse ist es, die das Panel ueberhaupt sichtbar macht -- auf dem
+        // Desktop genauso wie im Compact-Modus. Gleiches Muster wie
+        // showDetail() fuer lokale Dateien (detailPanel.classList.add(...)
+        // dort ebenfalls unbedingt, nur der separate Resize-Handle ist
+        // Compact-abhaengig).
+        detailPanel.classList.add('mp3-detail-open');
+    }
+
+    /**
+     * Zielkategorie abfragen statt stillschweigend currentCat/Wurzel zu
+     * nehmen -- nutzt denselben showCategoryPickerModal() wie der reguläre
+     * Sammlungs-Upload.
+     */
+    function promptProviderImport(path, name, btn) {
+        showCategoryPickerModal({
+            icon: 'fa-solid fa-cloud-arrow-down',
+            title: t('mediaplace_pick_import_category'),
+            hint: t('mediaplace_import_category_hint', { name: '<strong>' + escAttr(name) + '</strong>' }),
+            confirmLabel: t('mediaplace_provider_import'),
+            selectedId: currentCat,
+            onConfirm: function (catId) {
+                importProviderFile(path, name, btn, catId);
+            }
+        });
+    }
+
+    function importProviderFile(path, name, btn, categoryId) {
+        var statusEl = btn ? btn.parentNode.querySelector('.mp3-provider-import-status') : null;
+        var setStatus = function (html) {
+            if (!statusEl) return;
+            statusEl.style.display = '';
+            statusEl.innerHTML = html;
+        };
+
+        if (btn) { btn.disabled = true; btn.classList.add('is-loading'); }
+        setStatus('<i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_provider_import_running'));
+
+        apiImportProviderFile(activeProvider, path, categoryId)
+            .then(function (result) {
+                setStatus('<i class="fa-solid fa-check"></i> ' + t('mediaplace_provider_import_done'));
+                mediaForceCacheTokens[result.filename] = Date.now();
+                if (onSelect) {
+                    var cb = onSelect;
+                    onSelect = null;
+                    cb(result.filename);
+                    close();
+                    return;
+                }
+                // Browse-Modus: kein Sprung in die lokale Ansicht -- weiter im
+                // Provider stoebern und ggf. mehrere Dateien nacheinander
+                // importieren bleibt so moeglich, ohne den Kontext zu verlieren.
+            })
+            .catch(function (err) {
+                setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_importing_provider_file', { msg: err.message }));
+                if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+            });
+    }
+
     function applyCollectionFilter(files) {
         var col = getActiveCollection();
         if (!col || !col.name) {
@@ -896,6 +1216,14 @@
      * Re-render files from the cached lastLoadedFiles with current filter/sort.
      */
     function refreshDisplay() {
+        // Provider-Modus (siehe openProvider()): eigene Daten, eigener
+        // Render-Pfad -- sonst wuerde z.B. der Kacheln/Liste-Umschalter den
+        // Cloud-Baum unvermittelt verlassen und auf lastLoadedFiles (lokal)
+        // zurueckfallen.
+        if ('provider' === gridMode) {
+            renderProviderFiles(lastLoadedProviderEntries);
+            return;
+        }
         // Suchtext wird bereits serverseitig ueber filter[term] angewandt
         // (siehe buildMediaEndpoint()) -- lastLoadedFiles enthaelt nur noch
         // Treffer, hier bleiben nur Typ-/Tag-Filter und Sortierung.
@@ -3044,7 +3372,8 @@
                 '</div>' +
                 (treeHtml || '') +
             '</div>' +
-            (features.collections ? '<div id="mp3-collections-section">' + renderCollectionsSection() + '</div>' : '');
+            (features.collections ? '<div id="mp3-collections-section">' + renderCollectionsSection() + '</div>' : '') +
+            (providers.length && !onMultiSelect ? '<div id="mp3-providers-section">' + renderProvidersSection() + '</div>' : '');
         sidebar.innerHTML = html;
         applyCategorySearchFilter();
         closeCatMenu();
@@ -4214,18 +4543,24 @@
         });
     }
 
-    function showCollectionUploadCategoryPicker(files, collection) {
-        var colName = collection ? collection.name : '';
+    /**
+     * Wiederverwendbarer Kategorie-Auswahl-Dialog (.mp3-catpick-*) --
+     * gemeinsame Basis fuer showCollectionUploadCategoryPicker() und
+     * promptProviderImport() statt Modal-Markup pro Aufrufer neu zu
+     * schreiben. options: {icon, title, hint (fertiges HTML), confirmLabel,
+     * selectedId (optional, vorbelegte Kategorie), onConfirm(catId)}.
+     */
+    function showCategoryPickerModal(options) {
         var modal = document.createElement('div');
         modal.className = 'mp3-catpick-modal';
         modal.innerHTML =
             '<div class="mp3-catpick-box">' +
-            '<div class="mp3-catpick-title"><i class="fa-solid fa-folder-open"></i> ' + t('mediaplace_pick_upload_category') + '</div>' +
-            '<p class="mp3-catpick-info">' + t('mediaplace_upload_category_hint', { name: '<strong>' + escAttr(colName) + '</strong>' }) + '</p>' +
+            '<div class="mp3-catpick-title"><i class="' + escAttr(options.icon) + '"></i> ' + options.title + '</div>' +
+            '<p class="mp3-catpick-info">' + options.hint + '</p>' +
             '<select class="mp3-catpick-select"><option value="0">' + t('mediaplace_root_no_category') + '</option></select>' +
             '<div class="mp3-catpick-actions">' +
             '<button type="button" class="mp3-catpick-cancel">' + t('mediaplace_cancel') + '</button>' +
-            '<button type="button" class="mp3-catpick-confirm">' + t('mediaplace_upload') + '</button>' +
+            '<button type="button" class="mp3-catpick-confirm">' + options.confirmLabel + '</button>' +
             '</div>' +
             '</div>';
 
@@ -4237,12 +4572,7 @@
         // Kind-Struktur gibt es seit dem serverseitig gerenderten Baum nicht
         // mehr (siehe loadCategories()).
         apiFetchAllCategoriesFlat().then(function (cats) {
-            var opts = '<option value="0">' + t('mediaplace_root_no_category') + '</option>';
-            for (var i = 0; i < cats.length; i++) {
-                var cat = cats[i];
-                opts += '<option value="' + escAttr(String(cat.id)) + '">' + '    '.repeat(cat.depth) + escAttr(cat.name) + '</option>';
-            }
-            select.innerHTML = opts;
+            select.innerHTML = '<option value="0">' + t('mediaplace_root_no_category') + '</option>' + buildCategoryOptionsHtml(cats, options.selectedId);
         }).catch(function () {
             // Bleibt bei der Stamm-Option, falls die Liste nicht geladen werden kann.
         });
@@ -4254,7 +4584,20 @@
         modal.querySelector('.mp3-catpick-confirm').addEventListener('click', function () {
             var catId = parseInt(select.value || '0', 10);
             modal.remove();
-            startUpload(files, catId, collection ? collection.name : null);
+            options.onConfirm(catId);
+        });
+    }
+
+    function showCollectionUploadCategoryPicker(files, collection) {
+        var colName = collection ? collection.name : '';
+        showCategoryPickerModal({
+            icon: 'fa-solid fa-folder-open',
+            title: t('mediaplace_pick_upload_category'),
+            hint: t('mediaplace_upload_category_hint', { name: '<strong>' + escAttr(colName) + '</strong>' }),
+            confirmLabel: t('mediaplace_upload'),
+            onConfirm: function (catId) {
+                startUpload(files, catId, collection ? collection.name : null);
+            }
         });
     }
 
@@ -4453,6 +4796,11 @@
         canOptimizeVideo = root.dataset.optimizeVideoAvailable === '1';
         canAccessRootCategory = !root.dataset.canAccessRootCategory || root.dataset.canAccessRootCategory === '1';
         mediaBaseUrl = root.dataset.mediaBaseUrl || '';
+        try {
+            providers = root.dataset.providers ? JSON.parse(root.dataset.providers) : [];
+        } catch (e) {
+            providers = [];
+        }
 
         // Menu-Inhalt lebt NICHT mehr inline in .mp3-tag-filter-wrap, sondern
         // als Portal (#mp3-tag-filter-menu-portal, siehe setTagFilterMenuOpen())
@@ -5286,9 +5634,20 @@
         sidebar.addEventListener('click', function (e) {
             e.preventDefault();
 
+            var providerRoot = e.target.closest('.mp3-provider-root');
+            if (providerRoot) {
+                e.stopPropagation();
+                var clickedProviderId = providerRoot.getAttribute('data-provider-id') || '';
+                if (!clickedProviderId) return;
+                if (activeProvider === clickedProviderId) return; // schon aktiv
+                openProvider(clickedProviderId, providerRoot.getAttribute('data-provider-label') || clickedProviderId);
+                return;
+            }
+
             var collection = e.target.closest('.mp3-collection');
             if (collection) {
                 e.stopPropagation();
+                closeProviderMode();
                 var collectionId = String(collection.getAttribute('data-collection-id') || '');
                 if (!collectionId) return;
                 // Toggle: Sammlung XOR Kategorie. Wenn Sammlung aktiv, verlasse Kategorie-Modus
@@ -5322,6 +5681,7 @@
             // ein <span> ohne data-cat -- ohne diese Pruefung wuerde catId
             // unten zu NaN werden und currentCat kaputt setzen.
             if (!cat || cat.classList.contains('mp3-cat-disabled') || !cat.hasAttribute('data-cat')) return;
+            closeProviderMode();
             var catId = parseInt(cat.getAttribute('data-cat'), 10);
             currentCat = catId;
             localStorage.setItem('mp3_cat', catId);
@@ -5460,9 +5820,17 @@
         // Breadcrumb clicks (event delegation)
         breadcrumb.addEventListener('click', function (e) {
             var item = e.target.closest('.mp3-bc-item');
+            if (!item) return;
+
+            if (item.hasAttribute('data-provider-crumb')) {
+                e.preventDefault();
+                jumpToProviderBreadcrumb(parseInt(item.getAttribute('data-provider-crumb'), 10));
+                return;
+            }
+
             // mp3-bc-item-disabled (Medienpool-Wurzel ohne hasCategoryPerm(0))
             // ist ein <span> ohne data-cat -- siehe Kategorie-Klick-Handler oben.
-            if (!item || item.classList.contains('mp3-bc-item-disabled') || !item.hasAttribute('data-cat')) return;
+            if (item.classList.contains('mp3-bc-item-disabled') || !item.hasAttribute('data-cat')) return;
             e.preventDefault();
             var catId = parseInt(item.getAttribute('data-cat'), 10);
             currentCat = catId;
@@ -5474,6 +5842,23 @@
 
         // Card/row clicks (event delegation) — show detail panel or toggle multi-select
         grid.addEventListener('click', function (e) {
+            // Cloud-Provider-Grid (siehe openProvider()): komplett eigener,
+            // fruehzeitiger Zweig -- alles danach (Sammlungen, Mehrfachauswahl,
+            // Metainfo-Medien-Picker, ...) geht von lokalen rex_media-Dateien
+            // aus und darf fuer Provider-Kacheln nicht greifen.
+            if ('provider' === gridMode) {
+                var providerCard = e.target.closest('.mp3-provider-card');
+                if (!providerCard) return;
+                var entryPath = providerCard.getAttribute('data-provider-path') || '';
+                var entryType = providerCard.getAttribute('data-provider-type') || 'file';
+                if ('folder' === entryType) {
+                    openProviderFolder(entryPath, providerCard.getAttribute('data-provider-name') || '');
+                } else {
+                    showProviderDetail(entryPath, providerCard.getAttribute('data-provider-name') || '');
+                }
+                return;
+            }
+
             var quickCollectionBtn = e.target.closest('.mp3-collection-toggle-btn');
             if (quickCollectionBtn) {
                 var quickFilename = quickCollectionBtn.getAttribute('data-toggle-collection-file');
@@ -5623,6 +6008,18 @@
             if (optimizeVideoBtn) {
                 var optimizeFile = optimizeVideoBtn.getAttribute('data-optimize-video-file') || '';
                 if (optimizeFile) startOptimizeVideo(optimizeFile, optimizeVideoBtn);
+                return;
+            }
+
+            // Vor dem allgemeineren .mp3-image-optimize-btn-Check (geteilte
+            // Button-Optik, siehe showProviderDetail()) -- eigene, spezifischere
+            // Klasse zuerst pruefen, sonst wuerde der Klick vom falschen
+            // Handler abgefangen (kein data-optimize-image-file vorhanden).
+            var providerImportBtn = e.target.closest('.mp3-provider-import-btn');
+            if (providerImportBtn) {
+                var importPath = providerImportBtn.getAttribute('data-provider-import-path') || '';
+                var importName = providerImportBtn.getAttribute('data-provider-import-name') || '';
+                if (importPath) promptProviderImport(importPath, importName, providerImportBtn);
                 return;
             }
 
@@ -6111,7 +6508,16 @@
         searchInput.addEventListener('input', function () {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(function () {
-                mediaQuery = searchInput.value.trim();
+                var query = searchInput.value.trim();
+                if ('provider' === gridMode) {
+                    // Nur weiterreichen, wenn der aktive Provider laut letzter
+                    // entries-Antwort ueberhaupt Suche unterstuetzt (hasSearch()) --
+                    // sonst waere die Eingabe wirkungslos, ohne dass der Nutzer
+                    // einen Hinweis darauf haette.
+                    if (providerHasSearch || '' === query) loadProviderEntries(query);
+                    return;
+                }
+                mediaQuery = query;
                 loadFiles(currentCat, true);
             }, 200);
         });
@@ -6852,6 +7258,7 @@
         stopScrollPin();
         closeLightbox();
         setFullscreenMode(false);
+        closeProviderMode();
         if (overlay) {
             overlay.classList.remove('mp3-open');
             overlay.classList.remove('mp3-multi-mode');

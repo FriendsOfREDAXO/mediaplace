@@ -34,6 +34,7 @@
     var apiFetchAllCategoriesFlat = Core.api && Core.api.apiFetchAllCategoriesFlat;
     var isResizableImageType = Core.helpers && Core.helpers.isResizableImageType;
     var resizeImageFile = Core.helpers && Core.helpers.resizeImageFile;
+    var buildCategoryOptionsHtml = Core.helpers && Core.helpers.buildCategoryOptionsHtml;
 
     // Upload-Resize-Einstellungen kommen aus derselben #mp3-root-Config wie der
     // Overlay-Upload (boot.php) -- unabhaengig davon gelesen, da dieses Skript
@@ -170,15 +171,7 @@
         }
         if (apiFetchAllCategoriesFlat) {
             apiFetchAllCategoriesFlat().then(function (cats) {
-                var opts = '<option value="0">' + escAttr(t('mediaplace_root_no_category')) + '</option>';
-                for (var i = 0; i < cats.length; i++) {
-                    // &nbsp; statt Leerzeichen: selectpicker rendert Optionen als
-                    // eigene <a>-Elemente, normale fuehrende Leerzeichen werden dort
-                    // wie ueblich beim HTML-Rendering kollabiert und die Einrueckung
-                    // verschwindet -- &nbsp; ist kein normales Whitespace und bleibt sichtbar.
-                    opts += '<option value="' + escAttr(String(cats[i].id)) + '">' + '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(cats[i].depth) + escAttr(cats[i].name) + '</option>';
-                }
-                select.innerHTML = opts;
+                select.innerHTML = '<option value="0">' + escAttr(t('mediaplace_root_no_category')) + '</option>' + buildCategoryOptionsHtml(cats);
                 initSelectpicker();
             }).catch(function () {
                 // Bleibt bei der Stamm-Option, falls die Liste nicht geladen werden kann.

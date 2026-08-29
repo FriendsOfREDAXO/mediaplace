@@ -1,5 +1,30 @@
 # Changelog
 
+## Version 1.9.3 – 2026-08-29
+
+### Bugfix
+- Kategorie-Auswahl-Dialog beim Cloud-Import (siehe 1.9.2) zeigte die Kategorien flach ohne Einrückung – im Gegensatz zum bestehenden Upload-Dialog nutzte er dafür versehentlich normale Leerzeichen statt `&nbsp;`, die native und bootstrap-select-Dropdowns beim Rendern kollabieren.
+
+### Intern
+- Kategorie-Auswahl-Dialoge nicht mehr pro Aufrufer neu geschrieben: neue gemeinsame `showCategoryPickerModal()` (mediapool3.js) für Sammlungs-Upload und Cloud-Import, neue geteilte `buildCategoryOptionsHtml()` (mediapool3-helpers.js, `MP3Core.helpers`) für die eingerückte Options-Liste, jetzt auch vom Input-Widget (`mediapool3_widget.js`) genutzt statt einer eigenen Kopie.
+
+## Version 1.9.2 – 2026-08-29
+
+### Bugfix
+- Cloud-Provider (siehe 1.9.0): Detailansicht einer Cloud-Datei nutzte erfundene, nirgends definierte CSS-Klassen (`mp3-detail-title`, `mp3-detail-info-table`, `mp3-info-table`) statt der echten, bereits gestylten (`mp3-detail-inner`, `mp3-detail-header` + `mp3-detail-header-name`, `mp3-detail-table`) – Dateiname überlappte die Toolbar, Größe/Datum standen ohne Abstand. Auf das reale Markup aus `fragments/mediaplace/detail_panel.php`/`detail_info_table.php` umgestellt.
+- Cloud-Provider: Umschalten zwischen Listen-/Kachel-/Media-Wall-Ansicht während des Cloud-Browsens sprang zurück zu den lokalen Ordnern, weil `refreshDisplay()` (vom Ansicht-Umschalter aufgerufen) den Cloud-Modus nicht kannte. Neue `renderProviderFiles()`-Weiche (Listen-Rendering ergänzt, Media-Wall/Masonry fällt bewusst auf die Kachelansicht zurück – Cloud-Einträge liefern keine Bildmaße) + `refreshDisplay()` jetzt Cloud-Modus-bewusst.
+- Cloud-Provider: Import lief beim Klick sofort in die zuletzt im lokalen Baum aktive Kategorie (oder in den Stamm), ohne zu fragen. Neuer Kategorie-Auswahl-Dialog vor dem eigentlichen Import (gleiches Muster wie beim Sammlungs-Upload).
+
+## Version 1.9.1 – 2026-08-29
+
+### Bugfix
+- Cloud-Provider (siehe 1.9.0): Klick auf eine Datei zeigte kein Detail-/Import-Panel – `.mp3-detail` hat per Default `width:0`/`overflow:hidden`, die Klasse `mp3-detail-open` macht das Panel erst sichtbar. Wurde bei der neuen Cloud-Datei-Detailansicht fälschlich nur im Compact-Layout gesetzt statt (wie bei lokalen Dateien in `showDetail()`) immer. Browsen/Suchen selbst war davon nicht betroffen.
+
+## Version 1.9.0 – 2026-08-29
+
+### Neu
+- Cloud-Provider-Anbindung: andere Addons können sich jetzt als eigener, zusätzlicher Baum in die Sidebar einklinken (Browsen, Suchen sofern der Provider das anbietet, Import einzelner Dateien in den lokalen Medienpool – kein Sync, nach dem Import ist es eine ganz normale lokale Datei). Neuer Erweiterungspunkt `MEDIAPLACE_STORAGE_PROVIDERS` + `StorageProviderInterface` (5 Methoden: Ordner/Dateien auflisten, Suchfähigkeit, Thumbnail, Import) + `StorageProviderRegistry` (Rechte-Check: jeder Provider bringt sein eigenes Berechtigungs-String mit, kein globaler MediaPlace-weiter Schalter). Erster Provider: das `nextcloud`-Addon (siehe dortiges Changelog 1.7.0). Im Picker-Modus (`MP3.open()`) importiert die Auswahl einer Cloud-Datei sie zuerst synchron, `onSelect` feuert erst danach mit dem neuen lokalen Dateinamen – schlägt der Import fehl, bricht die Auswahl mit Fehlermeldung ab. Im Mehrfachauswahl-Modus wird der Cloud-Bereich vorerst nicht angezeigt (nur Einzelauswahl/-import in dieser Version).
+
 ## Version 1.8.0 – 2026-08-29
 
 ### Neu
