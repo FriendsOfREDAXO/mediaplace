@@ -160,6 +160,7 @@
     var apiStartOptimizeVideo = MP3Core.api.apiStartOptimizeVideo;
     var apiPollOptimizeVideo = MP3Core.api.apiPollOptimizeVideo;
     var apiLoadVideoDetails = MP3Core.api.apiLoadVideoDetails;
+    var apiOptimizeImage = MP3Core.api.apiOptimizeImage;
     var apiCreateCategory = MP3Core.api.apiCreateCategory;
     var resolveFolderCategories = MP3Core.api.resolveFolderCategories;
     var apiRenameCategory = MP3Core.api.apiRenameCategory;
@@ -1605,6 +1606,39 @@
 
         tick();
         optimizeVideoPoll = setInterval(tick, 1500);
+    }
+
+    // ---- Bild optimieren (siehe ImageOptimizer.php) ----
+    // Anders als beim Video: kein Job/Poll-Zyklus (GD-Resize ist synchron
+    // schnell) und kein "bereits optimiert"-Zustand zu tracken -- der Button
+    // verschwindet nach Erfolg einfach von selbst, weil showDetail() das
+    // Detail-Panel mit frischen Daten neu rendert und optimize_image_available
+    // dann false ist.
+    function startOptimizeImage(filename, btn) {
+        var statusEl = btn ? btn.parentNode.querySelector('.mp3-image-optimize-status') : null;
+        var setStatus = function (html) {
+            if (!statusEl) return;
+            statusEl.style.display = '';
+            statusEl.innerHTML = html;
+        };
+
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('is-loading');
+        }
+        setStatus('<i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_optimize_image_running'));
+
+        apiOptimizeImage(filename)
+            .then(function () {
+                setStatus('<i class="fa-solid fa-check"></i> ' + t('mediaplace_optimize_image_done'));
+                mediaForceCacheTokens[filename] = Date.now();
+                loadFiles(currentCat, true);
+                if (selectedFile === filename) showDetail(filename);
+            })
+            .catch(function (err) {
+                setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_optimizing_image', { msg: err.message }));
+                if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+            });
     }
 
     // "Technische Details" (ffprobe-Daten via ffmpeg-Addon, siehe
@@ -5589,6 +5623,13 @@
             if (optimizeVideoBtn) {
                 var optimizeFile = optimizeVideoBtn.getAttribute('data-optimize-video-file') || '';
                 if (optimizeFile) startOptimizeVideo(optimizeFile, optimizeVideoBtn);
+                return;
+            }
+
+            var optimizeImageBtn = e.target.closest('.mp3-image-optimize-btn');
+            if (optimizeImageBtn) {
+                var optimizeImageFile = optimizeImageBtn.getAttribute('data-optimize-image-file') || '';
+                if (optimizeImageFile) startOptimizeImage(optimizeImageFile, optimizeImageBtn);
                 return;
             }
 

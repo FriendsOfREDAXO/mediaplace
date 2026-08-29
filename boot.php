@@ -6,6 +6,7 @@
 rex_perm::register('mediaplace[view_unused_media]', 'Filter "Nur unbenutzte Medien" nutzen');
 rex_perm::register('mediaplace[manage_categories]', 'Ordner (Kategorien) umbenennen, verschieben oder löschen');
 rex_perm::register('mediaplace[optimize_video]', 'Videos optimieren (ffmpeg-Addon)');
+rex_perm::register('mediaplace[optimize_image]', 'Bilder optimieren');
 
 // YForm-Werttyp "mediaplace" (lib/yform/value/yform_value_mediaplace.php, per
 // Klassennamenskonvention automatisch von YForm erkannt -- keine explizite
@@ -233,6 +234,13 @@ if (rex::isBackend() && rex::getUser()) {
         $optimizeVideoAvailable = null !== rex::getUser() && rex::getUser()->hasPerm('mediaplace[optimize_video]')
             && \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable() ? '1' : '0';
         $videoInfoUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_video_info']);
+        // Kein "optimizeImageAvailable"-Seiten-Flag hier (anders als bei Video/
+        // Fokuspunkt frueher): der Button selbst wird bereits live pro Datei
+        // ueber optimize_image_available in buildFastInfoFields() gerendert --
+        // ein zusaetzliches, nur einmal beim Seitenaufbau gecachtes Flag wuerde
+        // veralten koennen (siehe Fokuspunkt-Bugfix, CHANGELOG 1.7.1) und ist
+        // hier von vornherein unnoetig.
+        $optimizeImageUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_image_optimize']);
 
         // Feature-Toggles der Einstellungsseite, siehe features-Objekt in mediapool3.js.
         $featureTagging = rex_config::get($addonName, 'disable_tagging', false) ? '0' : '1';
@@ -271,7 +279,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
+        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
         $ep->setSubject($content);

@@ -657,6 +657,28 @@
         });
     }
 
+    // "Bild optimieren" -- anders als beim Video ein einzelner synchroner
+    // Request (kein Start/Poll-Zyklus), siehe rex_api_mediaplace_image_optimize.php.
+    function apiOptimizeImage(filename) {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.optimizeImageUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_image_optimize';
+        }
+        baseUrl += (baseUrl.indexOf('?') === -1 ? '?' : '&') + 'func=optimize&file=' + encodeURIComponent(filename);
+
+        return fetch(baseUrl, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || json.error) throw new Error(json.error || 'HTTP ' + r.status);
+                return json;
+            });
+        });
+    }
+
     // Gemeinsame Fehlerbehandlung fuer die vier Kategorie-Endpunkte (Create/
     // Rename/Delete/Move) -- haengt err.status an (wie handleJsonResponse()
     // fuer die Medienliste), damit Aufrufer speziell auf 403 (Rechte-Grenze,
@@ -904,6 +926,7 @@
     Core.api.apiStartOptimizeVideo = apiStartOptimizeVideo;
     Core.api.apiPollOptimizeVideo = apiPollOptimizeVideo;
     Core.api.apiLoadVideoDetails = apiLoadVideoDetails;
+    Core.api.apiOptimizeImage = apiOptimizeImage;
     Core.api.apiCreateCategory = apiCreateCategory;
     Core.api.resolveFolderCategories = resolveFolderCategories;
     Core.api.apiRenameCategory = apiRenameCategory;

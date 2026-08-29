@@ -175,6 +175,8 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
             // erst nach einem erneuten Klick auf "optimieren".
             'optimize_video_job' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getActiveJobForFile($media->getFileName()),
             'optimize_video_status' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getOptimizedStatus($media->getFileName()),
+            'optimize_image_available' => \FriendsOfRedaxo\Mediaplace\ImageOptimizer::canOptimize($media->getFileName()),
+            'optimize_image_target' => \FriendsOfRedaxo\Mediaplace\ImageOptimizer::getTargetSize(),
         ];
     }
 
@@ -248,6 +250,8 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
             'video_details_available' => (bool) ($apiInfo['video_details_available'] ?? false),
             'optimize_video_job' => $apiInfo['optimize_video_job'] ?? null,
             'optimize_video_status' => $apiInfo['optimize_video_status'] ?? null,
+            'optimize_image_available' => (bool) ($apiInfo['optimize_image_available'] ?? false),
+            'optimize_image_target' => $apiInfo['optimize_image_target'] ?? null,
         ];
 
         $fragment = new rex_fragment();

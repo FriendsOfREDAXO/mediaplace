@@ -21,9 +21,19 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 - Grid, Liste & Media Wall (Masonry), Kachelgröße per Slider
 - Detail-Panel mit editierbarem Titel, eigenen Metadaten-Feldern, Verwendungsstatus, Datei tauschen/löschen/downloaden
 - Fokuspunkt-Editor direkt im Detail-Panel, sobald das [focuspoint](https://github.com/FriendsOfREDAXO/focuspoint)-Addon installiert ist
+- Zuschneiden direkt im Detail-Panel, sobald das [cropper](https://github.com/FriendsOfREDAXO/cropper)-Addon installiert ist
 - Upload per Drag & Drop, Button oder einfach **Cmd+V/Ctrl+V** pasten
 - Responsive Compact-Mode fürs schmale Fenster, Dark Mode Toggle
 - Sieht aus wie REDAXO, weil es sich an `be_style` orientiert
+
+**ffmpeg-Integration** (sobald das [ffmpeg](https://github.com/FriendsOfREDAXO/ffmpeg)-Addon installiert ist)
+- Echte Video-Vorschau im Grid statt Datei-Icon – wahlweise animiert oder als (deutlich günstigeres) Einzelbild, komplett abschaltbar
+- „Video optimieren“-Button: ersetzt eine zu große Videodatei in-place durch eine kleinere, gleicher Dateiname
+- Aufklappbare technische Details (Auflösung, Codec, Bitrate, Framerate, …)
+
+**Bilder optimieren**
+- „Bild optimieren“-Button im Detail-Panel für Bestandsbilder, die größer als die konfigurierte Upload-Grenze sind
+- Cronjob „Vorschaubilder vorwärmen“ erzeugt Grid-Thumbnails (Bild & Video) im Hintergrund vor, statt bei jedem ersten Betrachten live zu generieren
 
 **Sammlungen**
 - Eigene Sammlungen anlegen, Medien per Lesezeichen-Button oder Drag & Drop zuordnen
@@ -60,6 +70,29 @@ Ebenfalls in den Einstellungen: „Tagging (System-Tags) deaktivieren“ und „
 ### Bilder beim Upload verkleinern
 
 Unter **MediaPlace → Einstellungen → Upload** lässt sich „Bilder beim Upload verkleinern“ aktivieren (standardmäßig aus), mit maximaler Breite/Höhe in Pixeln. Zu große Bilder werden im Browser per Canvas herunterskaliert, bevor sie hochgeladen werden – Seitenverhältnis bleibt erhalten, kleinere Bilder werden nie vergrößert, und das Dateiformat bleibt unverändert. GIFs (könnten animiert sein) und SVGs (kein Rasterbild) werden dabei nie angefasst.
+
+Ist der Schalter aktiv, taucht im Detail-Panel bei bereits gespeicherten Bildern, die größer als diese Grenze sind (z. B. von vor der Aktivierung), ein **„Bild optimieren“-Button** auf – verkleinert die Datei nachträglich in-place (gleicher Dateiname, per GD, unterstützt JPG/PNG/WebP, nicht GIF/SVG). Der Button verschwindet von selbst, sobald das Bild innerhalb der Grenze liegt. Braucht das Rollenrecht `mediaplace[optimize_image]` (Benutzer → Rollen).
+
+### Videos: Vorschau, Optimieren, technische Details
+
+Ist das separate [ffmpeg](https://github.com/FriendsOfREDAXO/ffmpeg)-Addon installiert, zeigt das Grid für Videos eine echte Vorschau statt des Datei-Icons. Der Modus ist unter **MediaPlace → Einstellungen** einstellbar:
+
+- **Aus** – nur das Datei-Icon, keine Vorschau-Generierung
+- **Einzelbild** – ein einzelnes Standbild, deutlich günstiger als eine Animation (kleines Video-Symbol auf der Kachel macht trotzdem klar, dass es sich um ein Video handelt)
+- **Animiert** – kurze, bewegte Vorschau (Standard, bisheriges Verhalten)
+
+Im Detail-Panel eines Videos gibt es außerdem, sofern ffmpeg lauffähig ist:
+
+- **„Video optimieren“** (Rollenrecht `mediaplace[optimize_video]`): ersetzt die Videodatei in-place durch eine kleinere, gleicher Dateiname. Läuft im Hintergrund weiter, eine Statuszeile zeigt den Fortschritt; bereits optimierte Dateien zeigen die erreichte Kompressionsrate.
+- **„Technische Details“**: aufklappbare Auflösung/Dauer/Codec/Bitrate/Framerate-Angaben, erst beim Aufklappen nachgeladen.
+
+### Zuschneiden
+
+Ist das [cropper](https://github.com/FriendsOfREDAXO/cropper)-Addon installiert und hat der User das Recht `cropper[]`, zeigt das Detail-Panel bei Bildern einen Zuschneiden-Button – öffnet cropper's Bearbeitungsoberfläche direkt im MediaPlace-Overlay, ohne Seitenwechsel.
+
+### Vorschaubilder im Hintergrund vorwärmen
+
+Ist das `cronjob`-Addon installiert, steht unter **Cronjobs** der Typ „MediaPlace: Vorschaubilder vorwärmen“ zur Verfügung: erzeugt Grid-Thumbnails (Bilder und, falls ffmpeg installiert ist, auch Videos) im Hintergrund vor, statt sie erst beim ersten Betrachten live zu generieren – schont den Server bei großen, noch nicht durchgewärmten Kategorien. Pro Lauf wird je Typ nur eine begrenzte, einstellbare Anzahl neuer Vorschaubilder erzeugt (bereits gecachte werden übersprungen), neueste Dateien zuerst.
 
 ### Als Eingabefeld in Modulen/Formularen nutzen
 
@@ -123,6 +156,11 @@ Alle `mediaplace_*`-Endpunkte laufen über REDAXOs `rex-api-call`-Mechanismus un
 | GET/PATCH | `?rex-api-call=mediaplace_categories` | Kategorien laden, verschieben |
 | GET | `?rex-api-call=mediaplace_unused&filenames=a,b,c` | Prüft, welche Dateien unbenutzt sind |
 | GET/POST | `?rex-api-call=mediaplace_focuspoint` | Fokuspunkt lesen/speichern (nur mit `focuspoint`-Addon) |
+| GET/POST | `?rex-api-call=mediaplace_crop` | Zuschneiden (nur mit `cropper`-Addon) |
+| GET | `?rex-api-call=mediaplace_video_optimize&func=start\|status` | Video optimieren starten/pollen (nur mit `ffmpeg`-Addon) |
+| GET | `?rex-api-call=mediaplace_video_info&file={f}` | Technische Videodaten lazy nachladen (nur mit `ffmpeg`-Addon) |
+| GET | `?rex-api-call=mediaplace_image_optimize&func=optimize&file={f}` | Übergroßes Bild in-place verkleinern |
+| GET | `?rex-api-call=mediaplace_metainfo_form&filename={f}` | Formular für echte Metainfo-Felder laden/speichern (Einstellung „Metadaten bearbeiten“) |
 
 **Beispiel: Metadaten eines Mediums auslesen** (aus eigenem Backend-JS, gleiche Session):
 

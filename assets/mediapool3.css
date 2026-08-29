@@ -3132,6 +3132,44 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     color: #27ae60;
 }
 
+/* "Bild optimieren" (siehe ImageOptimizer): kein "bereits optimiert"-Zustand
+   zu tracken (anders als beim Video) -- der Button verschwindet einfach von
+   selbst (naechster Detail-Panel-Render), sobald das Bild innerhalb der
+   konfigurierten Groesse liegt, deshalb kein "-secondary"/Badge-Pendant noetig. */
+#mp3-overlay .mp3-image-optimize-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin: 8px 0 4px;
+    padding: 8px 14px;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-image-optimize-btn:hover {
+    border-color: var(--mp3-filter-active-border);
+    background: var(--mp3-filter-hover-bg);
+}
+
+#mp3-overlay .mp3-image-optimize-btn:disabled,
+#mp3-overlay .mp3-image-optimize-btn.is-loading {
+    opacity: 0.6;
+    cursor: default;
+}
+
+#mp3-overlay .mp3-image-optimize-status {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: var(--mp3-table-td-label);
+}
+
 /* "Technische Details" (ffprobe-Daten, ffmpeg-Integration) -- schlichter
    Aufklapp-Trigger statt eines vollen Buttons wie beim Optimieren, da rein
    informativ (keine Aktion). */

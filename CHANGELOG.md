@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.8.0 – 2026-08-29
+
+### Neu
+- Neuer "Bild optimieren"-Button im Detail-Panel für Bilder, deren gespeicherte Breite/Höhe die konfigurierten Upload-Resize-Grenzen (Einstellungen → "Bilder beim Upload verkleinern") überschreiten – für Bestandsdateien, die vor Aktivierung dieses Schalters hochgeladen wurden. Verkleinert die Datei in-place (gleicher Dateiname) synchron per GD, nutzt dabei den Media-Manager-Kern (`rex_effect_resize` für die Fit-Berechnung, `rex_media_service::updateMedia()` für Datei-Ersetzung/Cache-Invalidierung/`MEDIA_UPDATED`) statt eigener Bildverarbeitung. Anders als beim Video-Optimieren kein Job/Poll-Zyklus (GD-Resize ist schnell genug für einen einzelnen Request) und keine "bereits optimiert"-Registry nötig – der Button verschwindet einfach von selbst, sobald das Bild innerhalb der Grenzen liegt. Neues Rollenrecht `mediaplace[optimize_image]`, nur sichtbar wenn "Bilder beim Upload verkleinern" aktiv ist.
+
 ## Version 1.7.4 – 2026-08-29
 
 ### Geändert

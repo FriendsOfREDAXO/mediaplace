@@ -36,6 +36,15 @@ $filename = $info['filename'];
         <?php endif; ?>
         <img src="<?= rex_escape($src) ?>" alt="<?= rex_escape($info['title'] !== '' ? $info['title'] : $filename) ?>">
     </div>
+    <?php if (!empty($info['optimize_image_available'])): ?>
+        <?php $target = $info['optimize_image_target'] ?? null; ?>
+        <button type="button" class="mp3-image-optimize-btn" data-optimize-image-file="<?= rex_escape($filename) ?>">
+            <i class="fa-solid fa-compress"></i> <?= $target
+                ? $this->i18n('mediaplace_optimize_image_target', $info['width'], $info['height'], $target['width'], $target['height'])
+                : $this->i18n('mediaplace_optimize_image') ?>
+        </button>
+        <div class="mp3-image-optimize-status" style="display:none"></div>
+    <?php endif; ?>
 <?php elseif (DetailPanelFormatter::isVideoFilename($filename)): ?>
     <?php $vidSrc = DetailPanelFormatter::mediaFileUrl($filename, $info['updatedate'], $info['filesize']); ?>
     <div class="mp3-detail-preview mp3-detail-preview-video">
