@@ -34,13 +34,17 @@ if (!\FriendsOfRedaxo\Mediaplace\MetainfoFieldGroup::getFieldByKey('description'
 // zu 360px CSS-Breite skalierbaren Kacheln nicht mehr aus -- Browser skaliert
 // dann sichtbar unscharf hoch. Bewusst ein EIGENER Typ statt rex_media_medium/
 // _large (Core-Defaults) zu nutzen: die koennten site-spezifisch fuer andere
-// Zwecke umkonfiguriert sein, ohne dass dieses Addon davon erfaehrt. 500x500
-// deckt die volle Slider-Spanne (140-360px) auch auf ~1.4x-Displays ab, ohne
-// so schwer wie rex_media_large (1200x1200) zu sein. Liste/Media-Link-Vorschau
-// bleiben bewusst auf rex_media_small (feste, kleine Groesse, kein Slider).
+// Zwecke umkonfiguriert sein, ohne dass dieses Addon davon erfaehrt. Bewusst
+// klein gehalten (300x300, vormals 500x500) -- es sind reine Vorschaubilder
+// fuer die Grid-/Media-Wall-Ansicht, keine Arbeitskopien, kleiner spart
+// spuerbar Speicher/CPU bei der Erzeugung (siehe Bugfix zu grossen animierten
+// GIFs) und Bandbreite; etwas Unschaerfe am oberen Ende des Sliders wird dafuer
+// in Kauf genommen. Liste/Media-Link-Vorschau bleiben bewusst auf
+// rex_media_small (feste, kleine Groesse, kein Slider).
+$thumbTypeDescription = 'Medienpool via API – Grid-/Media-Wall-Thumbnail (300 × 300 px)';
 $typeSql = rex_sql::factory();
 $existingType = $typeSql->getArray(
-    'SELECT id FROM ' . rex::getTable('media_manager_type') . ' WHERE name = :name',
+    'SELECT id, description FROM ' . rex::getTable('media_manager_type') . ' WHERE name = :name',
     [':name' => 'mediaplace_thumb'],
 );
 $now = date('Y-m-d H:i:s');
@@ -48,7 +52,7 @@ if (empty($existingType)) {
     $typeSql->setTable(rex::getTable('media_manager_type'));
     $typeSql->setValue('status', 1);
     $typeSql->setValue('name', 'mediaplace_thumb');
-    $typeSql->setValue('description', 'Medienpool via API – Grid-/Media-Wall-Thumbnail (500 × 500 px)');
+    $typeSql->setValue('description', $thumbTypeDescription);
     $typeSql->setValue('createdate', $now);
     $typeSql->setValue('createuser', 'mediaplace');
     $typeSql->setValue('updatedate', $now);
@@ -57,6 +61,18 @@ if (empty($existingType)) {
     $typeId = $typeSql->getLastId();
 } else {
     $typeId = (int) $existingType[0]['id'];
+    if ($existingType[0]['description'] !== $thumbTypeDescription) {
+        // Beschreibung nachziehen (z.B. "500 x 500 px" -> "300 x 300 px"),
+        // damit sie in der Media-Manager-Typenliste nicht die tatsaechliche
+        // Groesse (siehe $thumbResizeParams unten) irrefuehrend falsch anzeigt.
+        $descSql = rex_sql::factory();
+        $descSql->setTable(rex::getTable('media_manager_type'));
+        $descSql->setWhere(['id' => $typeId]);
+        $descSql->setValue('description', $thumbTypeDescription);
+        $descSql->setValue('updatedate', $now);
+        $descSql->setValue('updateuser', 'mediaplace');
+        $descSql->update();
+    }
 }
 
 // Eigene Existenzpruefung, unabhaengig vom Typ-Check oben: install.php lief
@@ -66,8 +82,22 @@ if (empty($existingType)) {
 // "Typ existiert nicht"-Zweig haengte. Dadurch konnte ein Update den fehlenden
 // Effekt nicht mehr nachtragen -- Type und Effekt werden deshalb jetzt
 // unabhaengig voneinander sichergestellt.
+// 300x300 statt vormals 500x500 (siehe CHANGELOG): Grid-Kacheln sind reine
+// Vorschaubilder, keine Arbeitskopien -- kleiner spart spuerbar Speicher/CPU
+// bei der Erzeugung (insbesondere bei grossen animierten GIFs, siehe dortiger
+// Bugfix) und Bandbreite, auf Kosten von etwas Unschaerfe am oberen Ende des
+// Kachelgroessen-Sliders (bis 360px CSS-Breite) auf sehr hochaufloesenden
+// Displays -- bewusst in Kauf genommen.
+$thumbResizeParams = [
+    'rex_effect_resize' => [
+        'rex_effect_resize_width' => '300',
+        'rex_effect_resize_height' => '300',
+        'rex_effect_resize_style' => 'maximum',
+        'rex_effect_resize_allow_enlarge' => 'not_enlarge',
+    ],
+];
 $existingEffect = $typeSql->getArray(
-    'SELECT id FROM ' . rex::getTable('media_manager_type_effect') . ' WHERE type_id = :type_id AND effect = :effect',
+    'SELECT id, parameters FROM ' . rex::getTable('media_manager_type_effect') . ' WHERE type_id = :type_id AND effect = :effect',
     [':type_id' => $typeId, ':effect' => 'resize'],
 );
 if (empty($existingEffect)) {
@@ -75,20 +105,28 @@ if (empty($existingEffect)) {
     $effectSql->setTable(rex::getTable('media_manager_type_effect'));
     $effectSql->setValue('type_id', $typeId);
     $effectSql->setValue('effect', 'resize');
-    $effectSql->setValue('parameters', json_encode([
-        'rex_effect_resize' => [
-            'rex_effect_resize_width' => '500',
-            'rex_effect_resize_height' => '500',
-            'rex_effect_resize_style' => 'maximum',
-            'rex_effect_resize_allow_enlarge' => 'not_enlarge',
-        ],
-    ]));
+    $effectSql->setValue('parameters', json_encode($thumbResizeParams));
     $effectSql->setValue('priority', 1);
     $effectSql->setValue('createdate', $now);
     $effectSql->setValue('createuser', 'mediaplace');
     $effectSql->setValue('updatedate', $now);
     $effectSql->setValue('updateuser', 'mediaplace');
     $effectSql->insert();
+} elseif ($existingEffect[0]['parameters'] !== json_encode($thumbResizeParams)) {
+    // Bestehende Installation, Groesse hat sich seitdem geaendert (500 -> 300)
+    // -- Parameter nachziehen, damit auch aeltere Installationen beim naechsten
+    // Addon-Update die kleinere Zielgroesse bekommen, ohne den Typ manuell neu
+    // anlegen zu muessen. Bereits gecachte 500x500-Thumbnails bleiben liegen,
+    // bis sie durch eine neue Anfrage (aktualisierte Datei o.ae.) ersetzt
+    // werden -- kein aktives Cache-Purge hier, um nicht bei jedem Update alle
+    // Vorschaubilder auf einen Schlag neu erzeugen zu muessen.
+    $effectSql = rex_sql::factory();
+    $effectSql->setTable(rex::getTable('media_manager_type_effect'));
+    $effectSql->setWhere(['id' => $existingEffect[0]['id']]);
+    $effectSql->setValue('parameters', json_encode($thumbResizeParams));
+    $effectSql->setValue('updatedate', $now);
+    $effectSql->setValue('updateuser', 'mediaplace');
+    $effectSql->update();
 }
 
 // Register med_json_data in REDAXO core metainfo addon so it appears in field list

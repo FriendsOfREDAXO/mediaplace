@@ -2559,18 +2559,20 @@
     // zeigt das echte Format.
     var GRID_TILE_RATIO = '4 / 3';
 
-    // Garantierter Datei-Icon-Fallback fuer Video-Vorschaubilder (siehe
-    // previewHtml()): das <img>-"error"-Event bubbelt NICHT, ein normaler
-    // $(document).on('error', selector, ...) delegierter Handler wuerde es
-    // also nie erreichen. Ein einzelner, einmalig gebundener Capture-Phase-
-    // Listener auf document sieht dagegen JEDES error-Event auf dem Weg zum
-    // Zielelement, unabhaengig davon, wie viele Video-Kacheln das Grid gerade
-    // rendert -- kein Listener pro Bild noetig. Greift bei jedem
-    // Fehlschlag (ffmpeg fehlt, Server-Fehler, Timeout), nicht nur, wenn
-    // canVideoThumb bereits beim Seitenaufbau false war.
+    // Garantierter Datei-Icon-Fallback fuer Grid-Vorschaubilder (Bild UND
+    // Video, siehe previewHtml()): das <img>-"error"-Event bubbelt NICHT, ein
+    // normaler $(document).on('error', selector, ...) delegierter Handler
+    // wuerde es also nie erreichen. Ein einzelner, einmalig gebundener
+    // Capture-Phase-Listener auf document sieht dagegen JEDES error-Event auf
+    // dem Weg zum Zielelement, unabhaengig davon, wie viele Kacheln das Grid
+    // gerade rendert -- kein Listener pro Bild noetig. Greift bei jedem
+    // Fehlschlag (ffmpeg fehlt, riesige/kaputte Datei, Server-Fehler,
+    // Timeout), nicht nur bei den Faellen, die previewHtml() bereits vorher
+    // erkennt. Erkennung ueber data-fallback-icon statt einer bestimmten
+    // Klasse, damit ein Handler fuer beide Vorschau-Arten reicht.
     document.addEventListener('error', function (e) {
         var img = e.target;
-        if (!img || !img.classList || !img.classList.contains('mp3-video-thumb-img')) {
+        if (!img || !img.getAttribute || !img.hasAttribute('data-fallback-icon')) {
             return;
         }
         var icon = img.getAttribute('data-fallback-icon') || 'fa-solid fa-file';
@@ -2585,6 +2587,14 @@
         }
     }, true);
 
+    // Sehr grosse Quelldateien (z.B. mehrere MB grosse animierte GIFs) gar
+    // nicht erst als Vorschaubild anfordern: Resize auf dem Server ist bei
+    // solchen Dateien unverhaeltnismaessig teuer (Speicher/CPU) und kann dort
+    // fehlschlagen -- direkt das Datei-Icon zeigen ist fuer eine reine
+    // Grid-Vorschau voellig ausreichend ("es sind ja nur Thumbs"). Deckungsgleich
+    // mit der Schwelle im Warmup-Cronjob (ThumbWarmupCronjob::MAX_SOURCE_BYTES).
+    var MAX_THUMB_SOURCE_BYTES = 10 * 1024 * 1024;
+
     /**
      * Build preview HTML for a single media file. Genutzt von Grid- und Media-
      * Wall-Ansicht (renderFilesGrid()/renderFilesMediaWall()), beide per Slider
@@ -2597,16 +2607,17 @@
      *   Grid-Querformat (GRID_TILE_RATIO).
      */
     function previewHtml(file, ratioOverride) {
-        if (isImage(file.filename)) {
+        if (isImage(file.filename) && (!file.filesize || file.filesize <= MAX_THUMB_SOURCE_BYTES)) {
             var src = mediaThumbSrc(file.filename, 'mediaplace_thumb', file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
             var ratio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
             var style = ratio ? ' style="aspect-ratio:' + ratio + '"' : '';
             // loading="lazy": bei grossen Kategorien/"Alle Medien" sollen nicht
             // alle Kachel-Vorschaubilder gleichzeitig angefordert werden --
-            // Browser laedt nur, was (bald) sichtbar ist. Gleicher Grund wie
-            // beim Video-Thumb unten, hier zusaetzlich wichtig, weil Bilder die
-            // deutliche Mehrheit der Dateien sind.
-            return '<img src="' + escAttr(src) + '" alt="' + escAttr(file.title || file.filename) + '" loading="lazy"' + style + '>';
+            // Browser laedt nur, was (bald) sichtbar ist. data-fallback-icon +
+            // globaler error-Listener oben: Fallback aufs Datei-Icon, falls die
+            // Generierung trotz Groessen-Check fehlschlaegt.
+            return '<img data-fallback-icon="' + escAttr(fileIcon(file.filename)) + '" src="' + escAttr(src)
+                + '" alt="' + escAttr(file.title || file.filename) + '" loading="lazy"' + style + '>';
         }
         // ffmpeg-Integration: animierte Vorschau (Media-Manager-Typ
         // "mediaplace_video_thumb", siehe FfmpegIntegration::ensureVideoThumbType())
@@ -2808,9 +2819,9 @@
                 html += '<td class="mp3-list-cell-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></td>';
             }
             html += '<td class="mp3-list-cell-preview">';
-            if (isImage(f.filename)) {
+            if (isImage(f.filename) && (!f.filesize || f.filesize <= MAX_THUMB_SOURCE_BYTES)) {
                 var src = mediaThumbSrc(f.filename, 'rex_media_small', f, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
-                html += '<img src="' + escAttr(src) + '" alt="" loading="lazy">';
+                html += '<img data-fallback-icon="' + escAttr(fileIcon(f.filename)) + '" src="' + escAttr(src) + '" alt="" loading="lazy">';
             } else {
                 html += '<i class="' + fileIcon(f.filename) + '"></i>';
             }
