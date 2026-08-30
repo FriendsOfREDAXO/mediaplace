@@ -74,12 +74,6 @@ $altTextMissing = (bool) $this->getVar('alt_text_missing');
             <?php endif; ?>
         <?php endif; ?>
 
-        <?php if ($featureTagging): ?>
-            <?php $this->subfragment('mediaplace/detail_field_system_tags.php', [
-                'tags' => $systemTagsNormal,
-            ]); ?>
-        <?php endif; ?>
-
         <?php if (!empty($fields)): ?>
             <?php /* Bewusst per CSS statt if/endif ausgeblendet (nicht $featureOwnMetadata
                      in die Bedingung oben): die data-json-field-Elemente muessen im DOM
@@ -100,6 +94,16 @@ $altTextMissing = (bool) $this->getVar('alt_text_missing');
                     ?>
                 <?php endforeach; ?>
             </div>
+        <?php endif; ?>
+
+        <?php /* Zuletzt, direkt vor den technischen Details (detail_info_table.php
+                 unterhalb dieses .mp3-edit-section-Blocks) -- Nutzer-Feedback:
+                 Tags sollen immer nach den eigenen Metadaten-Feldern stehen, nicht
+                 davor. */ ?>
+        <?php if ($featureTagging): ?>
+            <?php $this->subfragment('mediaplace/detail_field_system_tags.php', [
+                'tags' => $systemTagsNormal,
+            ]); ?>
         <?php endif; ?>
     </div>
 

@@ -179,6 +179,45 @@ export function updateFilterCounts() {
         var filterFn = FILTER_MAP[type];
         badge.textContent = filterFn ? base.filter(filterFn).length : base.length;
     });
+
+    updateFilterResetVisibility();
+}
+
+/** Sortierung zaehlt bewusst NICHT als Filter (reine Anzeige-Praeferenz). */
+export function hasActiveFilters() {
+    return 'all' !== currentFilter || Object.keys(currentTagFilters).length > 0 || unusedOnlyFilter;
+}
+
+/**
+ * Der "Filter zurücksetzen"-Button (.mp3-filter-reset-btn, siehe core.js)
+ * soll nur auftauchen, wenn es tatsaechlich etwas zurueckzusetzen gibt --
+ * sonst ein staendig sichtbarer, meist wirkungsloser Button in der ohnehin
+ * schon vollen Filter-Leiste.
+ */
+function updateFilterResetVisibility() {
+    if (!ctx.overlay) return;
+    var btn = qs('.mp3-filter-reset-btn', ctx.overlay);
+    if (btn) btn.style.display = hasActiveFilters() ? '' : 'none';
+}
+
+/**
+ * Setzt Typ-/Tag-/"Nur unbenutzte"-Filter zurueck (NICHT die Suche -- die
+ * hat ihre eigene, unabhaengige Bedeutung, siehe Nutzer-Feedback). Reload
+ * obliegt bewusst dem Aufrufer (core.js): hier nur einmalig die drei
+ * Zustaende geradeziehen statt applyTypeFilter()/toggleUnusedOnlyFilter()
+ * einzeln aufzurufen, die sonst je einen eigenen (ueberfluessigen) Reload/
+ * Refresh ausloesen wuerden.
+ */
+export function clearAllFilters() {
+    currentFilter = 'all';
+    currentTagFilters = {};
+    unusedOnlyFilter = false;
+    qsa('.mp3-filter-btn', ctx.overlay).forEach(function (b) {
+        var isUnused = b.classList.contains('mp3-unused-filter-btn');
+        b.classList.toggle('mp3-filter-active', isUnused ? false : 'all' === b.getAttribute('data-filter'));
+    });
+    updateFilterDropdownLabel();
+    updateTagFilterOptions();
 }
 
 /**
@@ -271,7 +310,9 @@ export function updateTagFilterOptions() {
     });
     if (dirty) {
         updateTagFilterOptions();
+        return;
     }
+    updateFilterResetVisibility();
 }
 
 // ---- Mobiles Filter-Dropdown (Compact-Modus) ----

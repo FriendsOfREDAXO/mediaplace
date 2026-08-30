@@ -21,6 +21,12 @@ import {
     renderCurrentProviderEntries,
     showProviderDetail,
     promptProviderImport,
+    getProviderSelectMode,
+    toggleProviderSelectMode,
+    toggleProviderSelected,
+    selectAllProviderFilesInFolder,
+    clearProviderSelection,
+    startProviderBulkImport,
 } from './modules/providers.js';
 import {
     initModals,
@@ -110,6 +116,7 @@ import {
     toggleTagFilter,
     clearTagFilters,
     getSelectedTagFilters,
+    clearAllFilters,
     resetFilterState,
     getCurrentFilter,
     getCurrentSort,
@@ -180,7 +187,7 @@ import {
     var TILE_SIZE_MAX = 360;
 
     // ---- State ----
-    var overlay, sidebar, grid, gridWrap, searchInput, statusBar, breadcrumb, detailPanel, multiFooter, batchFooter;
+    var overlay, sidebar, grid, gridWrap, searchInput, statusBar, breadcrumb, detailPanel, multiFooter, batchFooter, providerBatchFooter;
     var scrollPillTrack, scrollPillThumb;
     var lightboxLayer, lightboxImage, lightboxCaption;
     var currentCat = -1;
@@ -1263,6 +1270,11 @@ import {
                                         '<i class="fa-solid fa-chevron-down"></i>' +
                                     '</button>' +
                                 '</div>' +
+                                // Nur sichtbar, sobald tatsaechlich ein Filter (Typ/Tag/"Nur
+                                // unbenutzte") aktiv ist, siehe updateFilterResetVisibility()
+                                // in filters.js -- setzt bewusst NICHT die Suche zurueck
+                                // (eigene, unabhaengige Bedeutung).
+                                '<button type="button" class="mp3-filter-reset-btn" style="display:none" title="' + escAttr(t('mediaplace_filter_reset')) + '"><i class="fa-solid fa-filter-circle-xmark"></i></button>' +
                             '</div>' +
                             '<div class="mp3-metainfo-pick-banner" id="mp3-metainfo-pick-banner" style="display:none">' +
                                 '<span class="mp3-metainfo-pick-banner-text"></span>' +
@@ -1385,6 +1397,22 @@ import {
                             '<button type="button" class="mp3-batch-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_deselect_all_action') + '</button>' +
                         '</div>' +
                     '</div>' +
+                    // Eigene, von .mp3-batch-footer unabhaengige Leiste fuer
+                    // die Cloud-Provider-Mehrfachauswahl (siehe providers.js) --
+                    // andere Aktion (Importieren statt Verschieben/Loeschen),
+                    // andere Datengrundlage (Provider-Pfade statt lokaler
+                    // Dateinamen). Wiederverwendet nur die .mp3-batch-left/
+                    // -actions-CSS-Klassen fuer identische Optik.
+                    '<div class="mp3-batch-footer mp3-provider-batch-footer" id="mp3-provider-batch-footer" style="display:none">' +
+                        '<div class="mp3-batch-left">' +
+                            '<button type="button" class="mp3-provider-batch-select-all" title="' + escAttr(t('mediaplace_select_all')) + '"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
+                            '<span class="mp3-provider-batch-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
+                        '</div>' +
+                        '<div class="mp3-batch-actions">' +
+                            '<button type="button" class="mp3-provider-batch-import-btn" title="' + escAttr(t('mediaplace_provider_import_selection')) + '"><i class="fa-solid fa-cloud-arrow-down"></i> ' + t('mediaplace_provider_import_selection') + '</button>' +
+                            '<button type="button" class="mp3-provider-batch-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_deselect_all_action') + '</button>' +
+                        '</div>' +
+                    '</div>' +
                 '</div>' +
                 '<div class="mp3-lightbox" id="mp3-lightbox">' +
                     '<button type="button" class="mp3-lightbox-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
@@ -1406,6 +1434,7 @@ import {
         detailPanel = qs('#mp3-detail');
         multiFooter = qs('#mp3-multi-footer');
         batchFooter = qs('#mp3-batch-footer');
+        providerBatchFooter = qs('#mp3-provider-batch-footer');
         lightboxLayer = qs('#mp3-lightbox');
         lightboxImage = qs('.mp3-lightbox-image', overlay);
         lightboxCaption = qs('.mp3-lightbox-caption', overlay);
@@ -1588,6 +1617,7 @@ import {
             sidebar: sidebar,
             breadcrumb: breadcrumb,
             detailPanel: detailPanel,
+            providerBatchFooter: providerBatchFooter,
             gridTileRatio: GRID_TILE_RATIO,
             mediaForceCacheTokens: mediaForceCacheTokens,
             getOnMultiSelect: function () { return onMultiSelect; },
@@ -2633,6 +2663,12 @@ import {
                 var entryType = providerCard.getAttribute('data-provider-type') || 'file';
                 if ('folder' === entryType) {
                     openProviderFolder(entryPath, providerCard.getAttribute('data-provider-name') || '');
+                } else if (getProviderSelectMode()) {
+                    // Massen-Import-Auswahl aktiv (Toolbar-Button, siehe
+                    // .mp3-select-mode-toggle): normaler Klick toggelt die
+                    // Auswahl, statt das Mini-Detail zu oeffnen -- gleiches
+                    // Prinzip wie batchSelectMode fuer lokale Dateien.
+                    toggleProviderSelected(entryPath);
                 } else {
                     showProviderDetail(entryPath, providerCard.getAttribute('data-provider-name') || '');
                 }
@@ -2750,7 +2786,11 @@ import {
 
             var selModeBtn = e.target.closest('.mp3-select-mode-toggle');
             if (selModeBtn) {
-                setBatchSelectMode(!batchSelectMode);
+                if (isProviderMode()) {
+                    toggleProviderSelectMode();
+                } else {
+                    setBatchSelectMode(!batchSelectMode);
+                }
                 return;
             }
 
@@ -2844,6 +2884,24 @@ import {
             var batchClearBtn = e.target.closest('.mp3-batch-clear-btn');
             if (batchClearBtn) {
                 clearCollectionDragSelection();
+                return;
+            }
+
+            var providerBatchSelectAllBtn = e.target.closest('.mp3-provider-batch-select-all');
+            if (providerBatchSelectAllBtn) {
+                selectAllProviderFilesInFolder();
+                return;
+            }
+
+            var providerBatchClearBtn = e.target.closest('.mp3-provider-batch-clear-btn');
+            if (providerBatchClearBtn) {
+                clearProviderSelection();
+                return;
+            }
+
+            var providerBatchImportBtn = e.target.closest('.mp3-provider-batch-import-btn');
+            if (providerBatchImportBtn) {
+                startProviderBulkImport();
                 return;
             }
 
@@ -3564,9 +3622,17 @@ import {
         // Filter buttons (event delegation on filter bar)
         var filterBar = qs('.mp3-filter-bar', overlay);
         filterBar.addEventListener('click', function (e) {
-            // Unabhaengiger Toggle, kein data-filter -- deshalb vor dem
-            // generischen Typ-Filter-Handler unten geprueft, sonst wuerde
-            // currentFilter faelschlich auf 'all' zurueckgesetzt.
+            // Kein data-filter -- deshalb vor dem generischen Typ-Filter-
+            // Handler unten geprueft, sonst wuerde currentFilter faelschlich
+            // auf 'all' zurueckgesetzt (bzw. hier: der Klick liefe ins Leere).
+            var resetBtn = e.target.closest('.mp3-filter-reset-btn');
+            if (resetBtn) {
+                clearAllFilters();
+                loadFiles(currentCat, true);
+                return;
+            }
+
+            // Unabhaengiger Toggle, kein data-filter -- gleicher Grund wie oben.
             var unusedBtn = e.target.closest('.mp3-unused-filter-btn');
             if (unusedBtn) {
                 toggleUnusedOnlyFilter();

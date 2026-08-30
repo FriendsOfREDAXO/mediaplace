@@ -910,6 +910,29 @@
         });
     }
 
+    // Mehrfachauswahl-Import ("Ausgewaehlte importieren"/"Alle im Ordner
+    // importieren", siehe providers.js) -- category_id bleibt Query-Param
+    // wie beim Einzel-Import, paths kommt als JSON-Body (Api\Provider.php,
+    // handleImportBatch()).
+    function apiImportProviderFilesBatch(provider, paths, categoryId) {
+        return fetch(getProviderApiUrl('import_batch', { provider: provider, category_id: categoryId }), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ paths: paths })
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || json.error) throw new Error(json.error || 'HTTP ' + r.status);
+                return json; // {results: [{path, success, filename|error}]}
+            });
+        });
+    }
+
     // Gemeinsame Fehlerbehandlung fuer die vier Kategorie-Endpunkte (Create/
     // Rename/Delete/Move) -- haengt err.status an (wie handleJsonResponse()
     // fuer die Medienliste), damit Aufrufer speziell auf 403 (Rechte-Grenze,
@@ -1166,6 +1189,7 @@
     Core.api.apiFetchProviderEntries = apiFetchProviderEntries;
     Core.api.getProviderThumbnailUrl = getProviderThumbnailUrl;
     Core.api.apiImportProviderFile = apiImportProviderFile;
+    Core.api.apiImportProviderFilesBatch = apiImportProviderFilesBatch;
     Core.api.apiCreateCategory = apiCreateCategory;
     Core.api.resolveFolderCategories = resolveFolderCategories;
     Core.api.apiRenameCategory = apiRenameCategory;

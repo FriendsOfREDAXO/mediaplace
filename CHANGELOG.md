@@ -1,13 +1,25 @@
 # Changelog
 
-## Version 1.21.1-beta1 – 2026-08-30
+## Version 1.22.0 – 2026-08-30
 
-iPhone-Fixes (Beta-Release zum Gegentesten vor dem endgültigen 1.21.1).
+„Alles bestens beim Apfel." – volle Benutzbarkeit auf iOS sowie Massenimport aus Cloud-Speichern (Nextcloud & Co.). Löst die Zwischen-Beta 1.21.1-beta1 ab (Inhalt hier vollständig enthalten).
+
+### Neu
+- **Massenimport aus Cloud-Speichern**: im Cloud-Provider-Bereich (z. B. Nextcloud) lässt sich jetzt per Auswahl-Modus-Umschalter eine Mehrfachauswahl treffen – einzelne Dateien per Checkbox oder „Alle auswählen" für den kompletten aktuellen Ordner (nicht rekursiv). Eine eigene Fußleiste zeigt die Auswahlzahl und importiert nach einmaliger Zielkategorie-Wahl alle markierten Dateien in Chunks von je 25, mit Fortschrittsbalken und einer Fehlerliste für einzelne fehlgeschlagene Dateien (bricht die übrigen nicht ab). Neuer Endpunkt `func=import_batch` am bestehenden `mediaplace_provider`-Dispatcher, ruft serverseitig lediglich `importToMediaPool()` je Datei auf – kein bestehender Storage-Provider (z. B. `nextcloud`) musste dafür angepasst werden.
+- Werkzeugleiste: neuer Button hebt alle aktiven Filter (Typ, Tags, „Nur unbenutzte") auf einen Klick auf.
+
+### Geändert
+- Mobiles Detail-Panel: Schließen-Button jetzt gleich groß wie der des Haupt-Overlays (war zuvor deutlich kleiner und dadurch schwer als Schließen-Aktion erkennbar); das Panel darf bei Bedarf den vollen Bildschirm ausfüllen.
+- Tags erscheinen im Detail-Panel jetzt konsequent zuletzt – nach den eigenen Metadaten-Feldern, direkt vor den technischen Details (vorher zwischen "Metadaten bearbeiten"-Button und den eigenen Feldern).
+- KI-Icons neben ALT-Text-/Tags-Feld-Label sowie die Feld-Labels selbst vergrößert (bessere Lesbarkeit/Klickfläche).
 
 ### Bugfix
 - iOS Safari: das Overlay wurde auf dem iPhone teils vom Browser-Chrome (Adress-/Werkzeugleiste) abgeschnitten. Der `100vh`→`100%`→`100dvh`-Fallback aus 1.21.0 saß am falschen Selektor (`.mp3-fullscreen-mode .mp3-modal`, ein separates, nur manuell togglebares Feature) statt am tatsächlich auf schmalen Viewports wirksamen `@media (max-width: 768px)`-Regelwerk, das weiterhin blankes `100vh` nutzte – jetzt am richtigen Ort ergänzt.
 - iOS Safari: die Adressleiste konnte zusätzlich dauerhaft in dem Zustand steckenbleiben, den sie genau beim Öffnen des Overlays hatte – durch den (bereits vorhandenen) Scroll-Lock der Hintergrundseite sieht Safari die Seite nie wieder scrollen und hat keinen Anlass, die Leiste zu verkleinern. Ein minimaler, unsichtbarer 1px-Scroll auf `<html>` kurz nach dem Öffnen gibt Safari dieses Signal, ohne die Wiederherstellung der Scrollposition beim Schließen zu beeinflussen.
 - Tag-Filter (Sidebar) zeigte auch Tags an, die gar keiner Datei (mehr) zugewiesen sind (z. B. nach Entfernen des letzten Vorkommens) – der Filter listete den kompletten Tag-Katalog statt nur tatsächlich vergebene Tags. Zeigt jetzt nur noch Tags mit mindestens einer (für den User zugänglichen) zugewiesenen Datei, per echtem Server-Count (`SystemTagManager::getTagCounts()`, gleiches Muster wie bei Sammlungen).
+- Tags-Combobox im Detail-Panel wurde von nachfolgenden Feldern verdeckt, sobald sie geöffnet blieb (zu niedriger `z-index`).
+- Tags-Combobox öffnete sich unerwünscht erneut, wenn ein KI-Tag-Vorschlag per Klick übernommen wurde (Verhalten war eigentlich nur für die manuelle Mehrfachauswahl gedacht).
+- Auswahl-Modus-Umschalter in der Werkzeugleiste war im Cloud-Provider-Bereich per CSS komplett ausgeblendet (Rest einer älteren Einschränkung, bevor Mehrfachauswahl dort unterstützt wurde) – verhinderte die Nutzung des neuen Massenimports.
 
 ## Version 1.21.0 – 2026-08-30
 

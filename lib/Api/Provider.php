@@ -13,12 +13,19 @@ use rex_api_result;
  * StorageProviderRegistry::getInstance() liefert nur eine Instanz, wenn der
  * aktuelle User das vom Provider selbst deklarierte `perm` hat.
  *
- * GET ?rex-api-call=mediaplace_provider&func=entries&provider=X&path=P[&search=Q]
- * GET ?rex-api-call=mediaplace_provider&func=thumbnail&provider=X&path=P
- * GET ?rex-api-call=mediaplace_provider&func=import&provider=X&path=P&category_id=C
+ * GET  ?rex-api-call=mediaplace_provider&func=entries&provider=X&path=P[&search=Q]
+ * GET  ?rex-api-call=mediaplace_provider&func=thumbnail&provider=X&path=P
+ * GET  ?rex-api-call=mediaplace_provider&func=import&provider=X&path=P&category_id=C
+ * POST ?rex-api-call=mediaplace_provider&func=import_batch&provider=X, JSON-Body {paths:[...], category_id:C}
  */
 class Provider extends rex_api_function
 {
+    // Jeder Eintrag ist ein echter Netzwerk-Roundtrip zur entfernten Quelle
+    // (Download + rex_media_service::addMedia()) -- deutlich teurer als eine
+    // lokale Bulk-Operation, deshalb ein kleines Limit wie bei
+    // Api\AiAltBulk.php, nicht die 100/500 von Api\CategoryBulk.php.
+    private const IMPORT_BATCH_MAX = 25;
+
     public function execute(): rex_api_result
     {
         \rex_response::cleanOutputBuffers();
@@ -43,6 +50,7 @@ class Provider extends rex_api_function
             'entries' => $this->handleEntries($provider),
             'thumbnail' => $this->handleThumbnail($provider),
             'import' => $this->handleImport($provider),
+            'import_batch' => $this->handleImportBatch($provider),
             default => $this->handleUnknownFunc(),
         };
         exit;
@@ -116,6 +124,48 @@ class Provider extends rex_api_function
         }
 
         \rex_response::sendJson(['filename' => $filename]);
+    }
+
+    /**
+     * Mehrere Pfade in einem Rutsch importieren ("Ausgewaehlte importieren"/
+     * "Alle im Ordner importieren" im Client, siehe providers.js). Ruft
+     * lediglich importToMediaPool() je Pfad in einer Schleife auf -- KEINE
+     * Erweiterung von StorageProviderInterface noetig, jeder bestehende
+     * Provider (z.B. nextcloud) funktioniert dadurch unveraendert weiter.
+     * Schlaegt ein einzelner Import fehl, laufen die uebrigen trotzdem
+     * durch (Ergebnis pro Pfad einzeln, kein Abbruch der ganzen Anfrage) --
+     * der Client zeigt Erfolge/Fehler getrennt an.
+     */
+    private function handleImportBatch(\FriendsOfRedaxo\Mediaplace\StorageProviderInterface $provider): void
+    {
+        $categoryId = rex_request('category_id', 'int', 0);
+
+        if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($categoryId)) {
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
+            return;
+        }
+
+        $body = json_decode((string) file_get_contents('php://input'), true);
+        $body = is_array($body) ? $body : [];
+        $paths = is_array($body['paths'] ?? null) ? $body['paths'] : [];
+        $paths = array_values(array_filter(array_map(
+            static fn (mixed $p): string => trim((string) $p),
+            $paths,
+        ), static fn (string $p): bool => '' !== $p));
+        $paths = array_slice($paths, 0, self::IMPORT_BATCH_MAX);
+
+        $results = [];
+        foreach ($paths as $path) {
+            try {
+                $filename = $provider->importToMediaPool($path, $categoryId);
+                $results[] = ['path' => $path, 'success' => true, 'filename' => $filename];
+            } catch (\Throwable $e) {
+                $results[] = ['path' => $path, 'success' => false, 'error' => $e->getMessage()];
+            }
+        }
+
+        \rex_response::sendJson(['results' => $results]);
     }
 
     private function handleUnknownFunc(): void

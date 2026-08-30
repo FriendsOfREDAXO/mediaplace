@@ -43,6 +43,11 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 - Eigene Sammlungen anlegen, Medien per Lesezeichen-Button oder Drag & Drop zuordnen
 - Auch als Batch: mehrere Medien mit Cmd/Ctrl+Klick markieren und gemeinsam ziehen
 
+**Cloud-Speicher durchsuchen und importieren** (sobald ein Storage-Provider-Addon wie [nextcloud](https://github.com/FriendsOfREDAXO/nextcloud) installiert und berechtigt ist)
+- Eigener Sidebar-Bereich pro angebundenem Speicher, Navigation per Ordner-Kacheln und eigener Breadcrumb, serverseitige Suche sofern der Provider sie unterstützt
+- Einzeldatei-Import direkt aus der Mini-Detailansicht, im Picker-Modus mit sofortiger Übernahme
+- Massenimport: Mehrfachauswahl per Checkbox oder „Alle im aktuellen Ordner“, einmalige Zielkategorie-Wahl, Fortschrittsanzeige mit Fehlerliste je Datei
+
 **KI-Funktionen** (optional, sobald das separate [ai_platform](https://github.com/FriendsOfREDAXO/ai_platform)-Addon installiert/konfiguriert und in den Einstellungen aktiviert ist)
 - **ALT-Text-Generierung**: „AI generieren“-Button neben dem ALT-Text-Feld (Einzeldatei) sowie „AI Bulk Management“ im Zahnrad-Menü (mehrere Dateien mit fehlendem ALT-Text nacheinander abarbeiten). Schreibt nie automatisch – Vorschläge werden erst nach Prüfung durch einen expliziten Klick übernommen.
 - **KI-Tag-Vorschläge**: schlägt beim Bearbeiten einer Datei passende Tags vor – ausschließlich aus Tags, die zuvor in der Tag-Verwaltung gezielt dafür freigegeben wurden (geschlossenes Vokabular, die KI legt nie eigenständig neue Tags an).
@@ -108,6 +113,14 @@ Im Detail-Panel eines Videos gibt es außerdem, sofern ffmpeg lauffähig ist:
 ### Zuschneiden
 
 Ist das [cropper](https://github.com/FriendsOfREDAXO/cropper)-Addon installiert und hat der User das Recht `cropper[]`, zeigt das Detail-Panel bei Bildern einen Zuschneiden-Button – öffnet cropper's Bearbeitungsoberfläche direkt im MediaPlace-Overlay, ohne Seitenwechsel.
+
+### Cloud-Speicher durchsuchen und importieren
+
+Ist ein Storage-Provider-Addon installiert (z. B. [nextcloud](https://github.com/FriendsOfREDAXO/nextcloud)) und hat der Nutzer dessen eigenes Recht, taucht in der Sidebar ein zusätzlicher Bereich mit einem Eintrag je angebundenem Speicher auf. Ein Klick öffnet die entfernte Ordnerstruktur direkt im gewohnten Grid/Liste-Layout, inklusive eigener Breadcrumb und – sofern der Provider das unterstützt – Suche.
+
+- **Einzelne Datei importieren**: Klick auf eine Datei öffnet eine schlanke Mini-Detailansicht mit einem „In Medienpool importieren“-Button. Zielkategorie wird einmalig abgefragt.
+- **Mehrere Dateien auf einmal importieren**: Der Auswahl-Modus-Button in der Werkzeugleiste (gleicher Button wie für die lokale Mehrfachauswahl) blendet Checkboxen auf den Dateien ein. Eine Fußleiste bietet „Alle auswählen“ (nur Dateien im gerade angezeigten Ordner, nicht rekursiv), die Anzahl der Auswahl sowie „Auswahl importieren“. Nach der Zielkategorie-Wahl läuft der Import in kleinen Chunks mit Fortschrittsbalken; einzelne fehlgeschlagene Dateien brechen die restlichen nicht ab, sondern erscheinen als eigene Fehlerzeile.
+- Der Import kopiert die Datei in den lokalen Medienpool – die entfernte Originaldatei bleibt beim Provider unverändert bestehen (kein Verschieben/Löschen).
 
 ### Vorschaubilder im Hintergrund vorwärmen
 

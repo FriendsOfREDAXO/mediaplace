@@ -858,11 +858,19 @@ body.rex-theme-dark {
 /* margin-left:auto aufs Icon selbst statt justify-content:space-between auf
    dem Label -- Tags-Label hat neben dem reinen Text noch
    .mp3-edit-kind-badge als weiteres Kind, ein drittes "space-between"-Item
-   wuerde das Icon in die Mitte statt an den Rand schieben. */
-#mp3-overlay .mp3-edit-label-with-ai {
+   wuerde das Icon in die Mitte statt an den Rand schieben.
+   Kombiniert mit .mp3-edit-label (statt der Klasse allein), damit die
+   Spezifitaet sicher ueber der geteilten 11px-Basisregel (#mp3-overlay
+   .mp3-edit-label weiter unten) liegt, unabhaengig von der Regel-Reihenfolge
+   im Stylesheet -- 13px matcht die bereits bestehende Tags-Sondergroesse
+   (dort bleibt es unveraendert, ALT wird dadurch auf dieselbe Groesse
+   angehoben, siehe Nutzer-Feedback "Label groesser, dann darf auch das
+   KI-Icon groesser werden"). */
+#mp3-overlay .mp3-edit-label.mp3-edit-label-with-ai {
     display: flex;
     align-items: center;
     gap: 6px;
+    font-size: 13px;
 }
 
 /* Klassischer Metainfo-Canvas nutzt Bootstraps .control-label (eigene
@@ -878,13 +886,13 @@ body.rex-theme-dark {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: none;
     background: transparent;
     color: var(--mp3-filter-btn-text);
-    font-size: 12px;
+    font-size: 15px;
     text-transform: none;
     letter-spacing: normal;
     font-weight: 400;
@@ -2079,14 +2087,6 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     display: none;
 }
 
-/* Cloud-Provider-Browsing (Nextcloud etc.) unterstuetzt keine Mehrfachauswahl
-   -- eigener Render-Pfad (renderCurrentProviderEntries() statt renderFiles()),
-   collectionDragSelected/batchSelectMode wirken dort gar nicht. Umschalter
-   waere klickbar, ohne sichtbar etwas zu tun -- deshalb ausgeblendet. */
-#mp3-overlay.mp3-provider-mode .mp3-select-mode-toggle {
-    display: none;
-}
-
 #mp3-overlay .mp3-upload-btn {
     display: inline-flex;
     align-items: center;
@@ -2239,6 +2239,33 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 #mp3-overlay .mp3-filter-btn.mp3-filter-active:hover {
     background: var(--mp3-filter-active-hover-bg);
     border-color: var(--mp3-filter-active-hover-border);
+}
+
+/* Nur sichtbar, wenn tatsaechlich ein Filter aktiv ist (JS toggelt
+   style.display, siehe updateFilterResetVisibility() in filters.js) --
+   deshalb bewusst kein eigenes display:none/flex hier, das wuerde die
+   Inline-Steuerung ueberschreiben. Gleiche Boersen-/Rahmenoptik wie
+   .mp3-filter-btn, damit er sich als Teil derselben Leiste liest, statt
+   als Fremdkoerper. */
+#mp3-overlay .mp3-filter-reset-btn {
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp3-filter-btn-bg);
+    color: var(--mp3-filter-btn-text);
+    cursor: pointer;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-filter-reset-btn:hover {
+    background: #c9302c;
+    border-color: #c9302c;
+    color: #fff;
 }
 
 #mp3-overlay .mp3-filter-count {
@@ -3527,7 +3554,13 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     border: 1px solid var(--mp3-input-border);
     border-radius: 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 30;
+    /* War 30 -- reichte nicht, um die im DOM NACH dem Tags-Feld folgenden
+       Felder (z.B. ALT) zu ueberdecken: bleibt die Liste nach dem
+       Hinzufuegen eines Tags bewusst offen (siehe addTagFromWidget()),
+       stand sie sichtbar HINTER deren Inhalt statt darueber, siehe
+       Bugreport/Screenshot. Angeglichen an die anderen im Detail-Panel
+       schwebenden Dropdowns (Sortierung/Ansicht nutzen 620). */
+    z-index: 620;
 }
 
 #mp3-overlay .mp3-tags-combo-option,
@@ -4462,7 +4495,12 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
         display: flex;
     }
 
-    /* Detail panel as bottom sheet / offcanvas */
+    /* Detail panel as bottom sheet / offcanvas -- volle Bildschirmhoehe statt
+       92vh (Nutzer-Feedback: der schmale sichtbare Grid-Streifen darueber
+       liess nicht sofort erkennen, dass .mp3-detail-close ueberhaupt ein
+       eigener Schliessen-Button ist -- Details darf jetzt den ganzen Schirm
+       fuellen). Fallback-Kette wie beim Hauptmodal, siehe dortiger
+       Kommentar. */
     #mp3-overlay .mp3-detail {
         position: fixed;
         top: auto;
@@ -4470,7 +4508,9 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
         right: 0;
         bottom: 0;
         width: 100% !important;
-        max-height: 92vh;
+        max-height: 100vh;
+        max-height: 100%;
+        max-height: 100dvh;
         z-index: 10600;
         border-left: none;
         border-top: 1px solid var(--mp3-detail-border);
@@ -4482,9 +4522,9 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     }
 
     /* Sticky Griff-Balken -- bleibt beim Scrollen im Panel sichtbar und
-       signalisiert durchgehend "das ist ein Sheet ueber dem Grid", nicht nur
-       beim ersten Aufklappen (max-height liess bewusst 92vh statt 100vh, der
-       verbleibende Rand allein reicht bei langem Scroll-Inhalt aber nicht). */
+       signalisiert durchgehend "das ist ein Sheet ueber dem Grid", auch bei
+       voller Bildschirmhoehe (siehe .mp3-detail oben) und bei langem
+       Scroll-Inhalt. */
     #mp3-overlay .mp3-detail::before {
         content: '';
         display: block;
@@ -4499,6 +4539,17 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 
     #mp3-overlay .mp3-detail.mp3-detail-open {
         transform: translateY(0);
+    }
+
+    /* Bei voller Bildschirmhoehe (siehe .mp3-detail oben) wirkt das Panel
+       wie eine eigene Seite -- der Schliessen-Button war mit 28px/14px
+       (Desktop-Groesse, gedacht fuer ein schmales Seitenpanel neben dem
+       Grid) hier zu unauffaellig, siehe Nutzer-Feedback ("erkennt man nicht
+       sofort"). Gleiche Groesse wie .mp3-compact .mp3-close (Hauptmodal). */
+    #mp3-overlay .mp3-detail-close {
+        width: 38px;
+        height: 38px;
+        font-size: 22px;
     }
 
     /* Grid adjustments */
@@ -4570,7 +4621,10 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     #mp3-overlay .mp3-batch-select-all,
     #mp3-overlay .mp3-batch-move-btn,
     #mp3-overlay .mp3-batch-delete-btn,
-    #mp3-overlay .mp3-batch-clear-btn {
+    #mp3-overlay .mp3-batch-clear-btn,
+    #mp3-overlay .mp3-provider-batch-select-all,
+    #mp3-overlay .mp3-provider-batch-import-btn,
+    #mp3-overlay .mp3-provider-batch-clear-btn {
         padding: 8px;
         font-size: 0;
     }
@@ -4580,12 +4634,16 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     #mp3-overlay .mp3-batch-select-all i,
     #mp3-overlay .mp3-batch-move-btn i,
     #mp3-overlay .mp3-batch-delete-btn i,
-    #mp3-overlay .mp3-batch-clear-btn i {
+    #mp3-overlay .mp3-batch-clear-btn i,
+    #mp3-overlay .mp3-provider-batch-select-all i,
+    #mp3-overlay .mp3-provider-batch-import-btn i,
+    #mp3-overlay .mp3-provider-batch-clear-btn i {
         font-size: 14px;
     }
 
     #mp3-overlay .mp3-multi-count,
-    #mp3-overlay .mp3-batch-count {
+    #mp3-overlay .mp3-batch-count,
+    #mp3-overlay .mp3-provider-batch-count {
         font-size: 12px;
     }
 
@@ -4818,6 +4876,57 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 }
 #mp3-overlay .mp3-batch-delete-btn:hover {
     background: #c9302c;
+}
+
+/* ---- Batch-Footer (Cloud-Provider-Massenimport, siehe
+   startProviderBulkImport()) -- eigene Button-Klassen (kein Namens-Overlap
+   mit .mp3-batch-select-all/.mp3-batch-clear-btn/.mp3-batch-move-btn, sonst
+   wuerden Klicks von BEIDEN Event-Delegationen gleichzeitig behandelt),
+   Optik 1:1 identisch zu den Buttons oben. */
+#mp3-overlay .mp3-provider-batch-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mp3-multi-count);
+}
+#mp3-overlay .mp3-provider-batch-select-all,
+#mp3-overlay .mp3-provider-batch-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--mp3-multi-select-text);
+    border: 1px solid var(--mp3-multi-select-border);
+    border-radius: 0;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+#mp3-overlay .mp3-provider-batch-select-all:hover,
+#mp3-overlay .mp3-provider-batch-clear-btn:hover {
+    background: var(--mp3-multi-select-hover-bg);
+    border-color: var(--mp3-multi-select-hover-border);
+}
+#mp3-overlay .mp3-provider-batch-import-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: var(--mp3-confirm-btn-bg);
+    color: #fff;
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+#mp3-overlay .mp3-provider-batch-import-btn:hover {
+    background: var(--mp3-confirm-btn-hover-bg);
+}
+#mp3-overlay .mp3-provider-batch-import-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* ---- Upload Tracker ---- */
@@ -6154,7 +6263,10 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 #mp3-overlay.mp3-compact .mp3-batch-select-all,
 #mp3-overlay.mp3-compact .mp3-batch-move-btn,
 #mp3-overlay.mp3-compact .mp3-batch-delete-btn,
-#mp3-overlay.mp3-compact .mp3-batch-clear-btn {
+#mp3-overlay.mp3-compact .mp3-batch-clear-btn,
+#mp3-overlay.mp3-compact .mp3-provider-batch-select-all,
+#mp3-overlay.mp3-compact .mp3-provider-batch-import-btn,
+#mp3-overlay.mp3-compact .mp3-provider-batch-clear-btn {
     padding: 8px;
     font-size: 0;
 }
@@ -6164,12 +6276,16 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 #mp3-overlay.mp3-compact .mp3-batch-select-all i,
 #mp3-overlay.mp3-compact .mp3-batch-move-btn i,
 #mp3-overlay.mp3-compact .mp3-batch-delete-btn i,
-#mp3-overlay.mp3-compact .mp3-batch-clear-btn i {
+#mp3-overlay.mp3-compact .mp3-batch-clear-btn i,
+#mp3-overlay.mp3-compact .mp3-provider-batch-select-all i,
+#mp3-overlay.mp3-compact .mp3-provider-batch-import-btn i,
+#mp3-overlay.mp3-compact .mp3-provider-batch-clear-btn i {
     font-size: 14px;
 }
 
 #mp3-overlay.mp3-compact .mp3-multi-count,
-#mp3-overlay.mp3-compact .mp3-batch-count {
+#mp3-overlay.mp3-compact .mp3-batch-count,
+#mp3-overlay.mp3-compact .mp3-provider-batch-count {
     font-size: 12px;
 }
 
@@ -6220,7 +6336,12 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     right: 0;
     bottom: 0;
     width: 100% !important;
-    max-height: 92%;
+    /* 100% statt vormals 92% -- volle Bildschirmhoehe, siehe Kommentar im
+       @media (max-width: 768px)-Block oben (Nutzer-Feedback zum
+       Schliessen-Button). Prozentual statt vh/dvh: dieser Block ist
+       position:absolute relativ zu #mp3-overlay, dessen Hoehe bereits
+       ueber die dvh-Fallback-Kette dort korrekt ist. */
+    max-height: 100%;
     z-index: 600;
     border-left: none;
     border-top: 1px solid var(--mp3-detail-border);
@@ -6247,6 +6368,13 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 
 #mp3-overlay.mp3-compact .mp3-detail.mp3-detail-open {
     transform: translateY(0);
+}
+
+/* Siehe Kommentar im @media (max-width: 768px)-Block oben. */
+#mp3-overlay.mp3-compact .mp3-detail-close {
+    width: 38px;
+    height: 38px;
+    font-size: 22px;
 }
 
 /* Grid */

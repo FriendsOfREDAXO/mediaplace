@@ -162,6 +162,13 @@ globaler MediaPlace-Schalter) – `getAvailableProviders()` filtert per
 ist provider-intern und wird von MediaPlace nur durchgereicht. Reales
 Beispiel: das `nextcloud`-Addon.
 
+Der Massenimport (Mehrfachauswahl oder „Alle im aktuellen Ordner“ im
+Overlay, `func=import_batch` am `mediaplace_provider`-Endpunkt) braucht
+**keine** Erweiterung dieses Interfaces – `Api\Provider::handleImportBatch()`
+ruft lediglich `importToMediaPool()` je ausgewähltem Pfad in einer Schleife
+auf. Ein neuer Provider funktioniert dadurch automatisch mit, sobald er die
+vier Interface-Methoden implementiert.
+
 ```php
 rex_extension::register('MEDIAPLACE_STORAGE_PROVIDERS', function (rex_extension_point $ep) {
     $providers = $ep->getSubject();
@@ -327,7 +334,7 @@ dieser Endpunkte nutzt).
 | `mediaplace_json_metainfo` | `JsonMetainfo` | Speichert MediaPlace's eigene JSON-Metadaten |
 | `mediaplace_media_list` | `MediaList` | Medienliste: Übergangs-Fallback bei zu alter `api`-Addon-Version, UND immer (unabhängig davon) für die MediaPlace-eigenen Filter Sammlung/„Medien ohne ALT-Text“/Tags (`filter[collection]`/`filter[alt_missing]`/`filter[tags]`), die die generische `api`-Route nicht kennt – siehe `apiFetchOwnMediaList()` in `mediaplace-api.js` |
 | `mediaplace_metainfo_form` | `MetainfoForm` | Nativer Metainfo-Canvas (`med_*`-Felder) über `MEDIA_FORM_EDIT`/`MEDIA_UPDATED` |
-| `mediaplace_provider` | `Provider` | Dispatcher für `StorageProviderInterface`-Provider (Browsen/Suche/Thumbnail/Import) |
+| `mediaplace_provider` | `Provider` | Dispatcher für `StorageProviderInterface`-Provider (Browsen/Suche/Thumbnail/Einzel- und Massenimport `func=import_batch`, max. `IMPORT_BATCH_MAX=25` Pfade/Request, Chunking siehe `providers.js::runProviderBulkImport()`) |
 | `mediaplace_schema` | `Schema` | Feld-Schema (Präfix `med_` per Default) als JSON |
 | `mediaplace_tags` | `Tags` | System-Tags/Sammlungen-API |
 | `mediaplace_unused` | `Unused` | "Nur unbenutzte Medien"-Prüfung, gated auf `mediaplace[view_unused_media]` |

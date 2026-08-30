@@ -575,11 +575,18 @@ export function closeTagsComboList(wrap) {
     if (list) list.style.display = 'none';
 }
 
-// Gemeinsame "Tag hinzufuegen"-Logik fuer beide Ausloeser: Klick auf den
-// "+"-Button (liest tagsInput.value) UND Klick auf eine Combobox-Zeile
-// (liest deren data-tag-name) -- identisches Verhalten statt zweier
-// divergierender Kopien.
-export function addTagFromWidget(wrap, rawTagName) {
+// Gemeinsame "Tag hinzufuegen"-Logik fuer DREI Ausloeser: Klick auf den
+// "+"-Button (liest tagsInput.value), Klick auf eine Combobox-Zeile (liest
+// deren data-tag-name) UND Klick auf einen KI-Vorschlags-Chip (siehe
+// ai_tags.js) -- identisches Verhalten statt divergierender Kopien.
+// reopenCombo=false fuer den KI-Vorschlags-Fall: bei den ersten beiden
+// Ausloesern ist der Nutzer aktiv im "Tags suchen/eintippen"-Fluss, dort
+// haelt das Wiederoeffnen+Fokussieren fuer zuegige Mehrfachauswahl sinnvoll
+// offen -- ein Klick auf einen Vorschlags-Chip ist dagegen kein Texteingabe-
+// Moment, das Aufklappen der Autocomplete-Liste direkt danach wirkte dort
+// nur wie ein unerwuenschter Nebeneffekt (siehe Bugreport).
+export function addTagFromWidget(wrap, rawTagName, reopenCombo) {
+    if (undefined === reopenCombo) reopenCombo = true;
     var tagsInput = wrap ? qs('.mp3-tags-input', wrap) : null;
     var hiddenInput = wrap ? qs('[data-widget="tags-value"]', wrap) : null;
     if (!wrap || !hiddenInput) return;
@@ -629,7 +636,7 @@ export function addTagFromWidget(wrap, rawTagName) {
     hiddenInput.value = JSON.stringify(list);
     if (tagsInput) tagsInput.value = '';
     repaintTagsWidget(wrap);
-    if (isSystemTagsField) {
+    if (isSystemTagsField && reopenCombo) {
         // Bleibt offen (statt zu schliessen) fuer zuegige Mehrfachauswahl.
         openTagsComboList(wrap);
         if (tagsInput) tagsInput.focus();
@@ -1108,7 +1115,8 @@ function renderDetail(jsonPayload) {
     var systemTagsWidget = qs('.mp3-json-field[data-field-key="__system_tags"] .mp3-tags-widget', detailPanel);
     if (systemTagsWidget) {
         attachTagSuggestButton(systemTagsWidget, selectedFile, function (tagName) {
-            addTagFromWidget(systemTagsWidget, tagName);
+            // reopenCombo=false: siehe addTagFromWidget()-Docblock.
+            addTagFromWidget(systemTagsWidget, tagName, false);
         });
     }
 

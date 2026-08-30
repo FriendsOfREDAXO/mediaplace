@@ -26,16 +26,32 @@ var activeProviderPath = '/';
 var activeProviderPathSegments = []; // [{path,name}] fuer die Breadcrumb
 var providerHasSearch = false;
 var lastLoadedProviderEntries = [];
+// Mehrfachauswahl fuer den Massen-Import (siehe startProviderBulkImport())
+// -- bewusst eigener, von multiMode/batchSelectMode (lokale Dateien) VOELLIG
+// getrennter State: andere Datengrundlage (Provider-Pfade statt lokaler
+// Dateinamen), andere Aktion (Importieren statt Verschieben/Loeschen), siehe
+// Modul-Docblock oben ("kein Zirkelbezug"-Philosophie konsequent
+// weitergefuehrt.
+var providerSelectMode = false;
+var providerSelected = {}; // path -> true
+// Client-seitige Chunk-Groesse fuer den Massen-Import, siehe
+// Api\Provider.php::IMPORT_BATCH_MAX -- muss nicht zwingend identisch sein
+// (der Server kappt ohnehin serverseitig auf sein eigenes Limit), aber ein
+// Gleichlauf vermeidet, dass ein einzelner Chunk serverseitig unbemerkt
+// gekuerzt wird.
+var IMPORT_BATCH_MAX = 25;
 
 var MP3Core = window.MP3Core;
 var t = MP3Core.i18n.t;
 var escAttr = MP3Core.helpers.escAttr;
 var fileIcon = MP3Core.helpers.fileIcon;
 var formatBytes = MP3Core.helpers.formatBytes;
+var qs = MP3Core.helpers.qs;
 var qsa = MP3Core.helpers.qsa;
 var apiFetchProviderEntries = MP3Core.api.apiFetchProviderEntries;
 var getProviderThumbnailUrl = MP3Core.api.getProviderThumbnailUrl;
 var apiImportProviderFile = MP3Core.api.apiImportProviderFile;
+var apiImportProviderFilesBatch = MP3Core.api.apiImportProviderFilesBatch;
 
 /**
  * Von core.js einmalig am Ende von build() aufgerufen, sobald DOM-Refs
@@ -102,10 +118,101 @@ export function closeProviderMode() {
     activeProviderPathSegments = [];
     providerHasSearch = false;
     lastLoadedProviderEntries = [];
+    providerSelectMode = false;
+    providerSelected = {};
+    var selModeBtn = qs('.mp3-select-mode-toggle', ctx.overlay);
+    if (selModeBtn) selModeBtn.classList.remove('mp3-select-mode-active');
+    updateProviderSelectFooter();
     qsa('.mp3-provider-root', ctx.sidebar).forEach(function (el) {
         el.classList.remove('mp3-provider-root-active');
     });
     if (ctx.overlay) ctx.overlay.classList.remove('mp3-provider-mode');
+}
+
+export function getProviderSelectMode() {
+    return providerSelectMode;
+}
+
+/** Klick auf .mp3-select-mode-toggle in der Toolbar, siehe core.js. */
+export function toggleProviderSelectMode() {
+    providerSelectMode = !providerSelectMode;
+    if (!providerSelectMode) providerSelected = {};
+    var btn = qs('.mp3-select-mode-toggle', ctx.overlay);
+    if (btn) btn.classList.toggle('mp3-select-mode-active', providerSelectMode);
+    renderCurrentProviderEntries();
+    updateProviderSelectFooter();
+}
+
+/** Klick auf eine Datei-Kachel/-Zeile waehrend providerSelectMode aktiv ist. */
+export function toggleProviderSelected(path) {
+    if (!path) return;
+    if (providerSelected[path]) {
+        delete providerSelected[path];
+    } else {
+        providerSelected[path] = true;
+    }
+    updateProviderSelectionUI();
+}
+
+function updateProviderSelectionUI() {
+    qsa('.mp3-card.mp3-provider-card', ctx.grid).forEach(function (c) {
+        var path = c.getAttribute('data-provider-path');
+        var isFolder = 'folder' === c.getAttribute('data-provider-type');
+        var isSel = !isFolder && !!providerSelected[path];
+        c.classList.toggle('mp3-card-multi-selected', isSel);
+        var chk = qs('.mp3-card-check i', c);
+        if (chk) chk.className = 'fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square');
+    });
+    qsa('.mp3-list-row.mp3-provider-card', ctx.grid).forEach(function (r) {
+        var path = r.getAttribute('data-provider-path');
+        var isFolder = 'folder' === r.getAttribute('data-provider-type');
+        var isSel = !isFolder && !!providerSelected[path];
+        r.classList.toggle('mp3-list-row-multi-selected', isSel);
+        var chk = qs('.mp3-list-cell-check i', r);
+        if (chk) chk.className = 'fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square');
+    });
+    updateProviderSelectFooter();
+}
+
+/** Klick auf ".mp3-provider-batch-select-all" -- nur Dateien, keine Ordner,
+ *  und nur die des AKTUELL geladenen Ordners (nicht rekursiv), siehe
+ *  Docblock oben ("alle im aktuellen Ordner"). */
+export function selectAllProviderFilesInFolder() {
+    var fileEntries = lastLoadedProviderEntries.filter(function (e) { return 'folder' !== e.type; });
+    var allSelected = fileEntries.length > 0 && fileEntries.every(function (e) { return !!providerSelected[e.path]; });
+    if (allSelected) {
+        fileEntries.forEach(function (e) { delete providerSelected[e.path]; });
+    } else {
+        fileEntries.forEach(function (e) { providerSelected[e.path] = true; });
+    }
+    updateProviderSelectionUI();
+}
+
+export function clearProviderSelection() {
+    providerSelected = {};
+    updateProviderSelectionUI();
+}
+
+function updateProviderSelectFooter() {
+    var footer = ctx.providerBatchFooter;
+    if (!footer) return;
+    var count = Object.keys(providerSelected).length;
+    footer.style.display = (providerSelectMode || count > 0) ? '' : 'none';
+
+    var countEl = qs('.mp3-provider-batch-count', footer);
+    if (countEl) countEl.textContent = t('mediaplace_files_selected_dynamic', { count: count, unit: (1 === count ? t('mediaplace_file_singular') : t('mediaplace_file_plural')) });
+
+    var fileEntries = lastLoadedProviderEntries.filter(function (e) { return 'folder' !== e.type; });
+    var allSelected = fileEntries.length > 0 && fileEntries.every(function (e) { return !!providerSelected[e.path]; });
+    var selAllBtn = qs('.mp3-provider-batch-select-all', footer);
+    if (selAllBtn) {
+        var label = allSelected ? t('mediaplace_deselect_all') : t('mediaplace_select_all');
+        selAllBtn.innerHTML = '<i class="fa-solid ' + (allSelected ? 'fa-square' : 'fa-square-check') + '"></i> ' + label;
+        selAllBtn.title = label;
+    }
+
+    var importBtn = qs('.mp3-provider-batch-import-btn', footer);
+    if (importBtn) importBtn.disabled = 0 === count;
 }
 
 /** Klick auf einen Provider-Wurzelknoten in der Sidebar. */
@@ -232,7 +339,12 @@ function renderProviderGrid(entries) {
     for (var i = 0; i < entries.length; i++) {
         var entry = entries[i];
         var isFolder = 'folder' === entry.type;
-        html += '<div class="mp3-card mp3-provider-card" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">' +
+        // Nur Dateien sind auswaehlbar -- importToMediaPool() importiert
+        // eine einzelne Datei, ein Ordner ist keine importierbare Einheit.
+        var isSel = !isFolder && !!providerSelected[entry.path];
+        var showCheck = providerSelectMode && !isFolder;
+        html += '<div class="mp3-card mp3-provider-card' + (isSel ? ' mp3-card-multi-selected' : '') + '" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">' +
+            (showCheck ? '<div class="mp3-card-check"><i class="fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square') + '"></i></div>' : '') +
             providerPreviewHtml(entry) +
             '<div class="mp3-info">' +
                 '<span class="mp3-card-name" title="' + escAttr(entry.name) + '">' + escAttr(entry.name) + '</span>' +
@@ -245,7 +357,9 @@ function renderProviderGrid(entries) {
 }
 
 function renderProviderList(entries) {
+    var showCheck = providerSelectMode;
     var html = '<table class="mp3-list-table"><thead><tr>' +
+        (showCheck ? '<th class="mp3-list-th-check"></th>' : '') +
         '<th class="mp3-list-th-preview"></th>' +
         '<th>' + t('mediaplace_name') + '</th>' +
         '<th>' + t('mediaplace_field_type') + '</th>' +
@@ -255,7 +369,11 @@ function renderProviderList(entries) {
     for (var i = 0; i < entries.length; i++) {
         var entry = entries[i];
         var isFolder = 'folder' === entry.type;
-        html += '<tr class="mp3-list-row mp3-provider-card" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">';
+        var isSel = !isFolder && !!providerSelected[entry.path];
+        html += '<tr class="mp3-list-row mp3-provider-card' + (isSel ? ' mp3-list-row-multi-selected' : '') + '" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">';
+        if (showCheck) {
+            html += '<td class="mp3-list-cell-check">' + (isFolder ? '' : '<i class="fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square') + '"></i>') + '</td>';
+        }
         html += '<td class="mp3-list-cell-preview">' + (isFolder
             ? '<i class="fa-solid fa-folder"></i>'
             : (entry.hasThumbnail
@@ -385,4 +503,155 @@ function importProviderFile(path, name, btn, categoryId) {
             setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_importing_provider_file', { msg: err.message }));
             if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
         });
+}
+
+/** Klick auf ".mp3-provider-batch-import-btn" -- Zielkategorie abfragen,
+ *  dann runProviderBulkImport(). */
+export function startProviderBulkImport() {
+    var paths = Object.keys(providerSelected);
+    if (!paths.length) return;
+    showCategoryPickerModal({
+        icon: 'fa-solid fa-cloud-arrow-down',
+        title: t('mediaplace_provider_import_selection'),
+        hint: t('mediaplace_provider_bulk_import_hint', { count: paths.length }),
+        confirmLabel: t('mediaplace_provider_import_selection'),
+        selectedId: ctx.getCurrentCat(),
+        onConfirm: function (catId) {
+            runProviderBulkImport(paths, catId);
+        }
+    });
+}
+
+/**
+ * Eigenes, schlankes Fortschritts-Modal analog zu categories.js'
+ * showBulkProgressModal() (Api\CategoryBulk.php-Massenaktionen) -- bewusst
+ * eigene Kopie statt Re-Export, gleiches Duplikations-Muster wie ai_alt.js'
+ * openBulkPanel() (siehe Modul-Docblocks dort). Kein AbortController: ein
+ * Chunk ist maximal IMPORT_BATCH_MAX Dateien gross, "Abbrechen" heisst hier
+ * lediglich "keinen weiteren Chunk mehr starten" -- der gerade laufende
+ * Request wird nicht hart gekappt, das waere bei so kleinen Chunks kein
+ * spuerbarer Unterschied.
+ */
+function showProviderBulkProgressModal(title) {
+    var overlay = document.createElement('div');
+    overlay.className = 'mp3-cat-move-modal-overlay';
+    overlay.innerHTML =
+        '<div class="mp3-cat-move-modal mp3-bulk-progress-modal mp3-provider-bulk-modal">' +
+        '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid fa-spinner fa-spin"></i> ' + escAttr(title) + '</h5>' +
+        '<p class="mp3-cat-move-modal-info mp3-bulk-progress-text"></p>' +
+        '<div class="mp3-bulk-progress-track"><div class="mp3-bulk-progress-fill" style="width:0%"></div></div>' +
+        '<div class="mp3-bulk-progress-errors" style="display:none"></div>' +
+        '<div class="mp3-cat-move-modal-actions">' +
+        '<button type="button" class="mp3-cat-move-modal-cancel mp3-bulk-progress-close">' + escAttr(t('mediaplace_cancel')) + '</button>' +
+        '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    var textEl = qs('.mp3-bulk-progress-text', overlay);
+    var fillEl = qs('.mp3-bulk-progress-fill', overlay);
+    var errorsEl = qs('.mp3-bulk-progress-errors', overlay);
+    var titleIcon = qs('.mp3-cat-move-modal-title i', overlay);
+    var closeBtn = qs('.mp3-bulk-progress-close', overlay);
+
+    var cancelled = false;
+    var finished = false;
+
+    function close() {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+    closeBtn.addEventListener('click', function () {
+        if (finished) {
+            close();
+            return;
+        }
+        cancelled = true;
+        closeBtn.disabled = true;
+    });
+
+    return {
+        isCancelled: function () {
+            return cancelled;
+        },
+        setProgress: function (processed, total) {
+            textEl.textContent = t('mediaplace_bulk_progress', { processed: processed, total: total });
+            var pct = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+            fillEl.style.width = pct + '%';
+        },
+        addErrors: function (errList) {
+            if (!errList || !errList.length) return;
+            errorsEl.style.display = '';
+            errList.forEach(function (err) {
+                var block = document.createElement('div');
+                block.className = 'mp3-bulk-progress-error-item';
+                var messageHtml = (err && err.message) ? err.message : String(err);
+                block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp3-bulk-progress-error-text">' + messageHtml + '</div>';
+                errorsEl.appendChild(block);
+            });
+        },
+        finish: function (finalText) {
+            finished = true;
+            titleIcon.className = 'fa-solid fa-circle-check';
+            textEl.textContent = finalText;
+            fillEl.style.width = '100%';
+            closeBtn.disabled = false;
+            closeBtn.textContent = t('mediaplace_close');
+        }
+    };
+}
+
+/**
+ * Verarbeitet `paths` in Chunks von IMPORT_BATCH_MAX ueber
+ * apiImportProviderFilesBatch() (Api\Provider.php::handleImportBatch()).
+ * Ein einzelner fehlgeschlagener Pfad bricht die uebrigen NICHT ab (Fehler
+ * pro Pfad einzeln in der Antwort, siehe dort) -- nur ein Klick auf
+ * "Abbrechen" stoppt vor dem naechsten Chunk.
+ */
+function runProviderBulkImport(paths, categoryId) {
+    var total = paths.length;
+    var progress = showProviderBulkProgressModal(t('mediaplace_provider_import_selection'));
+    progress.setProgress(0, total);
+
+    var queue = paths.slice();
+    var succeeded = 0;
+    var processed = 0;
+
+    function step() {
+        if (progress.isCancelled()) {
+            progress.finish(t('mediaplace_bulk_cancelled', { count: succeeded }));
+            updateProviderSelectionUI();
+            return;
+        }
+        if (!queue.length) {
+            progress.finish(t('mediaplace_provider_bulk_import_done', { count: succeeded }));
+            updateProviderSelectionUI();
+            return;
+        }
+
+        var chunk = queue.splice(0, IMPORT_BATCH_MAX);
+        apiImportProviderFilesBatch(activeProvider, chunk, categoryId)
+            .then(function (result) {
+                var results = result.results || [];
+                var errs = [];
+                results.forEach(function (r) {
+                    processed++;
+                    if (r.success) {
+                        succeeded++;
+                        ctx.mediaForceCacheTokens[r.filename] = Date.now();
+                        delete providerSelected[r.path];
+                    } else {
+                        errs.push({ message: escAttr(r.path) + ': ' + escAttr(r.error || '') });
+                    }
+                });
+                progress.addErrors(errs);
+                progress.setProgress(processed, total);
+                step();
+            })
+            .catch(function (err) {
+                progress.addErrors([{ message: escAttr(err.message) }]);
+                progress.finish(t('mediaplace_provider_bulk_import_done', { count: succeeded }));
+                updateProviderSelectionUI();
+            });
+    }
+
+    step();
 }
