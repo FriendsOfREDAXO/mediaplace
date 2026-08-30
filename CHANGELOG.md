@@ -28,7 +28,8 @@ Zusammengefasste Änderungen seit Version 1.5.3 (Zwischenschritte entfernt, sieh
 - Ansicht-Umschalter (Kacheln/Liste/Media-Wall) ist jetzt ein einzelner Button statt 3 nebeneinander – öffnet ein kleines Dropdown, der Button selbst zeigt immer das Icon der aktiven Ansicht. Gilt auch auf dem Desktop, nicht nur mobil.
 - Sortierung wandert im mobilen (schmalen) Layout aus der Werkzeugleiste ins Zahnrad-Menü – ein Icon-Ziel weniger in der ohnehin vollen mobilen Kopfzeile.
 - Sortierung ist jetzt ein eigener Trigger-Button mit Popover statt eines nativen `<select>` – konsistent durchgängig stylebar (ein natives `<select>`-Options-Panel lässt sich browserseitig nicht vollständig gestalten), gleiches Muster wie der Ansicht-Umschalter.
-- Sortierung/Ansicht/Upload-Button in der Werkzeugleiste hatten leicht unterschiedliche Höhen (padding-basiert vs. fest) – jetzt einheitlich mit expliziter Höhe.
+- Alle Header-Buttons (Zahnrad, Vollbild, Schließen, Sortierung, Ansicht, Upload, Suchfeld, mobiles Kategorien-Icon) haben jetzt durchgängig dieselbe explizite Höhe statt teils padding-, teils fest-basierter Werte – 36px auf dem Desktop, 38px im mobilen Layout (etwas großzügiger für Touch-Bedienung).
+- Auswahl-Modus-Checkbox über der Dateiliste vergrößert (20px → 26px) und mit eigenen, für den hellen/dunklen Statusleisten-Hintergrund passenden Farben statt der vom (immer dunklen) Header geerbten – war dort als weißes Icon auf hellem Grund kaum sichtbar.
 - Header-Buttons im mobilen Layout vergrößert (bessere Touch-Ziele) und Zahnrad/Schließen wieder korrekt rechtsbündig (waren durch den umbrechenden Werkzeugleisten-Bereich links neben dem Titel hängengeblieben).
 
 ### Intern
