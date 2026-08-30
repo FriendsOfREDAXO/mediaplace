@@ -1,5 +1,10 @@
 <?php
 
+namespace FriendsOfRedaxo\Mediaplace\Api;
+
+use rex_api_function;
+use rex_api_result;
+
 /**
  * Flat category list + category add/rename/delete/move endpoint.
  *
@@ -45,20 +50,20 @@
  * (`path LIKE '%|id|%'`, siehe api/lib/RoutePackage/Media.php) auf dem alten Baum
  * stehen und liefert still falsche Ergebnisse.
  */
-class rex_api_mediaplace_categories extends rex_api_function
+class Categories extends rex_api_function
 {
     public function execute(): rex_api_result
     {
-        rex_response::cleanOutputBuffers();
+        \rex_response::cleanOutputBuffers();
 
-        if (!rex_backend_login::hasSession()) {
-            rex_response::sendJson(['error' => 'Unauthorized']);
+        if (!\rex_backend_login::hasSession()) {
+            \rex_response::sendJson(['error' => 'Unauthorized']);
             exit;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasMediaAccess()) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
@@ -76,7 +81,7 @@ class rex_api_mediaplace_categories extends rex_api_function
             }
             // parent_id unterscheidet Move (id + parent_id) von Rename (id + name,
             // kein parent_id) -- apiMoveCategory()/apiRenameCategory() in
-            // mediapool3-api.js senden entsprechend nur eines von beiden mit.
+            // mediaplace-api.js senden entsprechend nur eines von beiden mit.
             if (array_key_exists('parent_id', $data)) {
                 $this->handleMove($data);
             } else {
@@ -93,7 +98,7 @@ class rex_api_mediaplace_categories extends rex_api_function
     {
         $currentCat = rex_request('current_cat', 'int', 0);
 
-        rex_response::sendJson([
+        \rex_response::sendJson([
             'categories' => self::getFlatCategoryList(),
             'tree_html' => $this->renderTreeHtml($currentCat),
         ]);
@@ -111,13 +116,13 @@ class rex_api_mediaplace_categories extends rex_api_function
     public static function getFlatCategoryList(): array
     {
         $result = [];
-        self::collectFlatCategories(self::filterVisibleCategories(rex_media_category::getRootCategories()), 0, $result, '', 0);
+        self::collectFlatCategories(self::filterVisibleCategories(\rex_media_category::getRootCategories()), 0, $result, '', 0);
 
         return $result;
     }
 
     /**
-     * @param list<rex_media_category>   $categories
+     * @param list<\rex_media_category>   $categories
      * @param list<array<string, mixed>> $result
      */
     private static function collectFlatCategories(array $categories, int $parentId, array &$result, string $prefix, int $depth): void
@@ -146,8 +151,8 @@ class rex_api_mediaplace_categories extends rex_api_function
      * Ueberspringen ebenfalls der aeussere $parentId an die Kinder weitergereicht),
      * nur hier fuer eine Liste statt fuer eine einzelne Select-Box.
      *
-     * @param list<rex_media_category> $categories
-     * @return list<rex_media_category>
+     * @param list<\rex_media_category> $categories
+     * @return list<\rex_media_category>
      */
     public static function filterVisibleCategories(array $categories): array
     {
@@ -171,7 +176,7 @@ class rex_api_mediaplace_categories extends rex_api_function
      * Baut den kompletten, verschachtelten Sidebar-Kategoriebaum als HTML
      * (fragments/mediaplace/category_children.php + category_node.php).
      * Ersetzt das fruehere lazy Nachladen pro Ebene (siehe frueheres
-     * loadCategories()/toggleCategory() in mediapool3.js, das dafuer die
+     * loadCategories()/toggleCategory() in mediaplace.js, das dafuer die
      * api-Addon-Route media/category nutzte) -- bei der ueberschaubaren
      * Kategorienzahl typischer Installationen lohnt sich ein Request fuer
      * den ganzen Baum mehr als ein Request pro Aufklappen, und das Markup
@@ -179,8 +184,8 @@ class rex_api_mediaplace_categories extends rex_api_function
      */
     private function renderTreeHtml(int $currentCat): string
     {
-        $fragment = new rex_fragment();
-        $fragment->setVar('categories', self::filterVisibleCategories(rex_media_category::getRootCategories()), false);
+        $fragment = new \rex_fragment();
+        $fragment->setVar('categories', self::filterVisibleCategories(\rex_media_category::getRootCategories()), false);
         $fragment->setVar('depth', 0, false);
         $fragment->setVar('current_cat', $currentCat, false);
 
@@ -196,13 +201,13 @@ class rex_api_mediaplace_categories extends rex_api_function
         $newParentId = (int) ($data['parent_id'] ?? 0);
 
         if ($catId <= 0) {
-            rex_response::sendJson(['error' => 'Missing id']);
+            \rex_response::sendJson(['error' => 'Missing id']);
             exit;
         }
 
-        $cat = rex_media_category::get($catId);
+        $cat = \rex_media_category::get($catId);
         if (!$cat) {
-            rex_response::sendJson(['error' => 'Category not found']);
+            \rex_response::sendJson(['error' => 'Category not found']);
             exit;
         }
 
@@ -215,22 +220,22 @@ class rex_api_mediaplace_categories extends rex_api_function
         $hasSourcePerm = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasParentCategoryAccess($cat->getParentId());
         $hasTargetPerm = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasParentCategoryAccess($newParentId);
         if (!$hasSourcePerm || !$hasTargetPerm) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
         // Prevent moving to own subtree
         if ($newParentId > 0 && $this->isDescendant($catId, $newParentId)) {
-            rex_response::sendJson(['error' => 'Cannot move a category into its own subtree']);
+            \rex_response::sendJson(['error' => 'Cannot move a category into its own subtree']);
             exit;
         }
 
         $newParentCat = null;
         if ($newParentId > 0) {
-            $newParentCat = rex_media_category::get($newParentId);
+            $newParentCat = \rex_media_category::get($newParentId);
             if (!$newParentCat) {
-                rex_response::sendJson(['error' => 'Target parent category not found']);
+                \rex_response::sendJson(['error' => 'Target parent category not found']);
                 exit;
             }
         }
@@ -244,8 +249,8 @@ class rex_api_mediaplace_categories extends rex_api_function
         $oldPrefix = $oldPath . $catId . '|';
         $newPrefix = $newParentPath . $catId . '|';
 
-        $sql = rex_sql::factory();
-        $sql->setTable(rex::getTablePrefix() . 'media_category');
+        $sql = \rex_sql::factory();
+        $sql->setTable(\rex::getTablePrefix() . 'media_category');
         $sql->setWhere(['id' => $catId]);
         $sql->setValue('parent_id', $newParentId);
         $sql->setValue('path', $newParentPath);
@@ -254,15 +259,15 @@ class rex_api_mediaplace_categories extends rex_api_function
 
         $affectedIds = [$catId];
         if ($oldPrefix !== $newPrefix) {
-            $descendants = rex_sql::factory()->getArray(
-                'SELECT id, path FROM ' . rex::getTablePrefix() . 'media_category WHERE path LIKE :prefix',
+            $descendants = \rex_sql::factory()->getArray(
+                'SELECT id, path FROM ' . \rex::getTablePrefix() . 'media_category WHERE path LIKE :prefix',
                 [':prefix' => $oldPrefix . '%'],
             );
             foreach ($descendants as $d) {
                 $descId = (int) $d['id'];
                 $newChildPath = $newPrefix . substr((string) $d['path'], strlen($oldPrefix));
-                $upd = rex_sql::factory();
-                $upd->setTable(rex::getTablePrefix() . 'media_category');
+                $upd = \rex_sql::factory();
+                $upd->setTable(\rex::getTablePrefix() . 'media_category');
                 $upd->setWhere(['id' => $descId]);
                 $upd->setValue('path', $newChildPath);
                 $upd->addGlobalUpdateFields();
@@ -272,16 +277,16 @@ class rex_api_mediaplace_categories extends rex_api_function
         }
 
         foreach ($affectedIds as $affectedId) {
-            rex_media_cache::deleteCategory($affectedId);
+            \rex_media_cache::deleteCategory($affectedId);
         }
         if ($cat->getParentId() > 0) {
-            rex_media_cache::deleteCategory($cat->getParentId());
+            \rex_media_cache::deleteCategory($cat->getParentId());
         }
         if ($newParentId > 0) {
-            rex_media_cache::deleteCategory($newParentId);
+            \rex_media_cache::deleteCategory($newParentId);
         }
 
-        rex_response::sendJson(['success' => true, 'id' => $catId, 'parent_id' => $newParentId]);
+        \rex_response::sendJson(['success' => true, 'id' => $catId, 'parent_id' => $newParentId]);
     }
 
     private function handleAdd(): void
@@ -296,15 +301,15 @@ class rex_api_mediaplace_categories extends rex_api_function
         $parentId = (int) ($data['parent_id'] ?? 0);
 
         if ('' === $name) {
-            rex_response::sendJson(['error' => 'Missing name']);
+            \rex_response::sendJson(['error' => 'Missing name']);
             exit;
         }
 
         $parent = null;
         if ($parentId > 0) {
-            $parent = rex_media_category::get($parentId);
+            $parent = \rex_media_category::get($parentId);
             if (!$parent) {
-                rex_response::sendJson(['error' => 'Parent category not found']);
+                \rex_response::sendJson(['error' => 'Parent category not found']);
                 exit;
             }
         }
@@ -314,27 +319,27 @@ class rex_api_mediaplace_categories extends rex_api_function
         // hier ist $parentId die Kategorie, in der gearbeitet wird, nicht die
         // Kategorie, die veraendert wird).
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($parentId)) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
         // Mirror mediapool/pages/structure.php (add_file_cat): rex_media_category_service::addCategory()
         // fires MEDIA_CATEGORY_ADDED and handles cache invalidation.
         try {
-            rex_media_category_service::addCategory($name, $parent);
-        } catch (Exception $e) {
-            rex_response::sendJson(['error' => $e->getMessage()]);
+            \rex_media_category_service::addCategory($name, $parent);
+        } catch (\Exception $e) {
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             exit;
         }
 
-        $row = rex_sql::factory()->getArray(
-            'SELECT id FROM ' . rex::getTable('media_category') . ' WHERE parent_id = :p AND name = :n ORDER BY id DESC LIMIT 1',
+        $row = \rex_sql::factory()->getArray(
+            'SELECT id FROM ' . \rex::getTable('media_category') . ' WHERE parent_id = :p AND name = :n ORDER BY id DESC LIMIT 1',
             [':p' => $parentId, ':n' => $name],
         );
         $newId = isset($row[0]['id']) ? (int) $row[0]['id'] : null;
 
-        rex_response::sendJson(['success' => true, 'id' => $newId]);
+        \rex_response::sendJson(['success' => true, 'id' => $newId]);
     }
 
     private function handleRename(array $data): void
@@ -343,25 +348,25 @@ class rex_api_mediaplace_categories extends rex_api_function
         $name = trim((string) ($data['name'] ?? ''));
 
         if ($catId <= 0) {
-            rex_response::sendJson(['error' => 'Missing id']);
+            \rex_response::sendJson(['error' => 'Missing id']);
             exit;
         }
         if ('' === $name) {
-            rex_response::sendJson(['error' => 'Missing name']);
+            \rex_response::sendJson(['error' => 'Missing name']);
             exit;
         }
 
-        $cat = rex_media_category::get($catId);
+        $cat = \rex_media_category::get($catId);
         if (!$cat) {
-            rex_response::sendJson(['error' => 'Category not found']);
+            \rex_response::sendJson(['error' => 'Category not found']);
             exit;
         }
 
         // Zugriff auf die ELTERN-Kategorie noetig, nicht auf $catId selbst --
         // siehe MediaPermission::hasParentCategoryAccess() und Klassenkommentar.
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasParentCategoryAccess($cat->getParentId())) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
@@ -369,13 +374,13 @@ class rex_api_mediaplace_categories extends rex_api_function
         // nimmt nur den Namen entgegen und feuert MEDIA_CATEGORY_UPDATED. Core
         // erlaubt keine parent_id-Aenderung ueber die Seite, daher auch hier nicht.
         try {
-            rex_media_category_service::editCategory($catId, ['name' => $name]);
-        } catch (Exception $e) {
-            rex_response::sendJson(['error' => $e->getMessage()]);
+            \rex_media_category_service::editCategory($catId, ['name' => $name]);
+        } catch (\Exception $e) {
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             exit;
         }
 
-        rex_response::sendJson(['success' => true, 'id' => $catId]);
+        \rex_response::sendJson(['success' => true, 'id' => $catId]);
     }
 
     private function handleDelete(): void
@@ -383,21 +388,21 @@ class rex_api_mediaplace_categories extends rex_api_function
         $catId = rex_request('id', 'int', 0);
 
         if ($catId <= 0) {
-            rex_response::sendJson(['error' => 'Missing id']);
+            \rex_response::sendJson(['error' => 'Missing id']);
             exit;
         }
 
-        $cat = rex_media_category::get($catId);
+        $cat = \rex_media_category::get($catId);
         if (!$cat) {
-            rex_response::sendJson(['error' => 'Category not found']);
+            \rex_response::sendJson(['error' => 'Category not found']);
             exit;
         }
 
         // Zugriff auf die ELTERN-Kategorie noetig, nicht auf $catId selbst --
         // siehe MediaPermission::hasParentCategoryAccess() und Klassenkommentar.
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasParentCategoryAccess($cat->getParentId())) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
@@ -405,27 +410,27 @@ class rex_api_mediaplace_categories extends rex_api_function
         // prueft Unterkategorien/Dateien (inkl. MEDIA_CATEGORY_IS_IN_USE) selbst
         // und feuert MEDIA_CATEGORY_DELETED.
         try {
-            rex_media_category_service::deleteCategory($catId);
-        } catch (rex_functional_exception $e) {
+            \rex_media_category_service::deleteCategory($catId);
+        } catch (\rex_functional_exception $e) {
             // Kategorie hat noch Unterkategorien/Dateien -- Konflikt, nicht
             // Server-Fehler, analog api-Addons handleDeleteCategory() (409).
             // rex_response definiert keine HTTP_CONFLICT-Konstante (nur bis 416/500/503).
-            rex_response::setStatus('409 Conflict');
-            rex_response::sendJson(['error' => $e->getMessage()]);
+            \rex_response::setStatus('409 Conflict');
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             exit;
-        } catch (Exception $e) {
-            rex_response::sendJson(['error' => $e->getMessage()]);
+        } catch (\Exception $e) {
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             exit;
         }
 
-        rex_response::sendJson(['success' => true, 'id' => $catId]);
+        \rex_response::sendJson(['success' => true, 'id' => $catId]);
     }
 
     private function isDescendant(int $ancestorId, int $targetId): bool
     {
-        $sql = rex_sql::factory();
+        $sql = \rex_sql::factory();
         $cats = $sql->getArray(
-            'SELECT id, parent_id FROM ' . rex::getTablePrefix() . 'media_category',
+            'SELECT id, parent_id FROM ' . \rex::getTablePrefix() . 'media_category',
         );
 
         $byId = [];

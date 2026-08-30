@@ -2,7 +2,7 @@
 
 /**
  * Eine einzelne Sprachzeile innerhalb eines uebersetzbaren Feldes. Markup
- * identisch zu renderSingleLangInput() in mediapool3.js.
+ * identisch zu renderSingleLangInput() in mediaplace.js.
  *
  * Vars:
  * - string $field_key

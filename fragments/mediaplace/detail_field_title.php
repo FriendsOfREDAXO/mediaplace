@@ -3,8 +3,8 @@
 /**
  * Titel-Feld (inline Klick-zum-Bearbeiten), Sonderfall ausserhalb der
  * Custom-Feld-Widgets -- Markup identisch zu renderInlineTextField()
- * in mediapool3.js. Lesen/Speichern laeuft weiterhin ueber die feste ID
- * #mp3-detail-title-input (saveDetail() in mediapool3.js), nicht ueber
+ * in mediaplace.js. Lesen/Speichern laeuft weiterhin ueber die feste ID
+ * #mp3-detail-title-input (saveDetail() in mediaplace.js), nicht ueber
  * data-json-field.
  *
  * Vars:

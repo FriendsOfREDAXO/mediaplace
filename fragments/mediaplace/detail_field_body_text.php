@@ -4,7 +4,7 @@
  * Feldkoerper fuer widget_type "text" (Default-Fall) -- uebersetzbar via
  * detail_lang_group.php, sonst inline Klick-zum-Bearbeiten wie beim
  * Titel-Feld. Markup identisch zum default-Zweig von renderJsonWidgetField()
- * in mediapool3.js.
+ * in mediaplace.js.
  *
  * Vars: $field, $value, $clangs (siehe detail_field.php)
  *

@@ -1,7 +1,12 @@
 <?php
 
+namespace FriendsOfRedaxo\Mediaplace\Api;
+
+use rex_api_function;
+use rex_api_result;
+
 /**
- * Mediapool3 Demo – JSON Metainfo Storage API
+ * MediaPlace – JSON Metainfo Storage API
  *
  * Saves metadata JSON for media files.
  * Backend-only (session auth).
@@ -9,37 +14,37 @@
  * POST /api/backend/mediaplace_json_metainfo/{filename}
  * Body: { "field_key": value, ... }
  */
-class rex_api_mediaplace_json_metainfo extends rex_api_function
+class JsonMetainfo extends rex_api_function
 {
     public function execute(): rex_api_result
     {
-        rex_response::cleanOutputBuffers();
+        \rex_response::cleanOutputBuffers();
 
-        if (!rex::getUser()) {
-            rex_response::setStatus(rex_response::HTTP_UNAUTHORIZED);
-            rex_response::sendJson(['error' => 'Unauthorized']);
+        if (!\rex::getUser()) {
+            \rex_response::setStatus(\rex_response::HTTP_UNAUTHORIZED);
+            \rex_response::sendJson(['error' => 'Unauthorized']);
             exit;
         }
 
-        $filename = rex_request('filename', 'string', '');
-        $method = rex_request::server('REQUEST_METHOD', 'string', 'GET');
+        $filename = \rex_request('filename', 'string', '');
+        $method = \rex_request::server('REQUEST_METHOD', 'string', 'GET');
 
         if (!$filename) {
-            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-            rex_response::sendJson(['error' => 'Missing filename']);
+            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+            \rex_response::sendJson(['error' => 'Missing filename']);
             exit;
         }
 
-        $media = rex_media::get($filename);
+        $media = \rex_media::get($filename);
         if (!$media) {
-            rex_response::setStatus(rex_response::HTTP_NOT_FOUND);
-            rex_response::sendJson(['error' => 'Media not found']);
+            \rex_response::setStatus(\rex_response::HTTP_NOT_FOUND);
+            \rex_response::sendJson(['error' => 'Media not found']);
             exit;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($media->getCategoryId())) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
@@ -52,17 +57,17 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
                 return $this->handleSave($media);
             }
 
-            rex_response::setStatus(405);
-            rex_response::sendJson(['error' => 'Method not allowed']);
+            \rex_response::setStatus(405);
+            \rex_response::sendJson(['error' => 'Method not allowed']);
             exit;
-        } catch (Exception $e) {
-            rex_response::setStatus(rex_response::HTTP_INTERNAL_ERROR);
-            rex_response::sendJson(['error' => $e->getMessage()]);
+        } catch (\Exception $e) {
+            \rex_response::setStatus(\rex_response::HTTP_INTERNAL_ERROR);
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             exit;
         }
     }
 
-    private function handleGet(rex_media $media): rex_api_result
+    private function handleGet(\rex_media $media): rex_api_result
     {
         \FriendsOfRedaxo\Mediaplace\SystemTagManager::ensureSchema();
         $data = \FriendsOfRedaxo\Mediaplace\MetainfoJsonStorage::loadFromMedia($media);
@@ -89,7 +94,7 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
         }
 
         $clangs = [];
-        foreach (rex_clang::getAll() as $clang) {
+        foreach (\rex_clang::getAll() as $clang) {
             $clangs[] = [
                 'id' => $clang->getId(),
                 'name' => $clang->getName(),
@@ -103,13 +108,20 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
         $apiInfo = $this->buildFastInfoFields($media);
 
         // detail_html nur bauen, wenn der Client tatsaechlich das Detail-Panel
-        // anzeigen will (render_detail=1, siehe showDetail() in mediapool3.js)
+        // anzeigen will (render_detail=1, siehe showDetail() in mediaplace.js)
         // -- andere Aufrufer (z.B. setFileCollectionMembership()) wollen nur
         // data/system_tags und sollen das Rendering nicht unnoetig mit bezahlen.
-        $wantDetail = rex_request('render_detail', 'bool', false);
+        $wantDetail = \rex_request('render_detail', 'bool', false);
         $detailHtml = $wantDetail ? $this->renderDetailHtml($media, $apiInfo, $data, $fieldsData, $clangs, $systemTags, $systemTagCatalog) : '';
 
-        rex_response::sendJson([
+        // Auch als eigenes Top-Level-Feld (nicht nur in detail_html eingebettet):
+        // erlaubt einen leichten Refresh nach dem nativen Metainfo-Canvas
+        // (closeMetainfoCanvas() in modules/detail.js), ohne das ganze Panel neu
+        // zu rendern und dabei unsichtbar ungespeicherte Aenderungen zu verwerfen.
+        $altTextMissing = (bool) \rex_config::get('mediaplace', 'enable_metainfo_editing', false)
+            && \FriendsOfRedaxo\Mediaplace\AltTextStatus::shouldShowNativeCanvasHint($media, $data);
+
+        \rex_response::sendJson([
             'success' => true,
             'data' => $data,
             'fields' => $fieldsData,
@@ -118,6 +130,7 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
             'system_tag_catalog' => $systemTagCatalog,
             'detail_html' => $detailHtml,
             'title' => $apiInfo['title'],
+            'alt_text_missing' => $altTextMissing,
         ]);
         exit;
     }
@@ -137,10 +150,10 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
      * mediaIsInUse() ca. 20ms. Deshalb hier bewusst wieder synchron.)
      * @return array<string, mixed>
      */
-    private function buildFastInfoFields(rex_media $media): array
+    private function buildFastInfoFields(\rex_media $media): array
     {
         try {
-            $isInUse = false !== rex_mediapool::mediaIsInUse($media->getFileName());
+            $isInUse = false !== \rex_mediapool::mediaIsInUse($media->getFileName());
         } catch (\Throwable $e) {
             $isInUse = false;
         }
@@ -166,7 +179,7 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
             'optimize_video_available' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::canOptimize($media->getFileName()),
             // Nur die (billige, keine ffprobe-Kosten) Sichtbarkeits-Flag hier --
             // die eigentlichen Technikdaten werden erst beim Aufklappen lazy
-            // nachgeladen, siehe rex_api_mediaplace_video_info.php.
+            // nachgeladen, siehe Api\VideoInfo.php.
             'video_details_available' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable() && \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isSupportedVideo($media->getFileName()),
             // Laeuft GERADE eine Optimierung fuer diese Datei (auch wenn nicht
             // in dieser Browser-Session gestartet, z.B. ueber ffmpeg's eigene
@@ -183,7 +196,7 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
     /**
      * Baut das komplette Detail-Panel (Header, Vorschau, Bearbeitungs-Sektion,
      * Info-Tabelle, Aktionen) als HTML-String -- ersetzt renderDetail() +
-     * die dazugehoerigen Render-Helfer, die frueher in mediapool3.js per
+     * die dazugehoerigen Render-Helfer, die frueher in mediaplace.js per
      * JS-String-Konkatenation liefen.
      *
      * Alle Info-Felder (Titel/Groesse/Masse/Datum/is_in_use/...) kommen aus
@@ -195,13 +208,13 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
      * nur ein vermiedener zusaetzlicher HTTP-Hop fuer Werte, die durch das
      * ohnehin schon geladene $media-Objekt bereits da sind.
      */
-    private function renderDetailHtml(rex_media $media, array $apiInfo, array $data, array $fields, array $clangs, array $systemTags, array $systemTagCatalog): string
+    private function renderDetailHtml(\rex_media $media, array $apiInfo, array $data, array $fields, array $clangs, array $systemTags, array $systemTagCatalog): string
     {
         $filename = $media->getFileName();
 
         // System-Tags mit "collection:"-Praefix sind Sammlungs-Mitgliedschaften
         // (siehe SystemTagManager::COLLECTION_PREFIX, gespiegelt in COLLECTION_TAG_PREFIX
-        // in mediapool3.js) -- werden im Tag-Editor nicht angezeigt, aber als
+        // in mediaplace.js) -- werden im Tag-Editor nicht angezeigt, aber als
         // Namensliste in der Info-Tabelle gebraucht.
         $normalTags = [];
         $collectionNames = [];
@@ -254,7 +267,7 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
             'optimize_image_target' => $apiInfo['optimize_image_target'] ?? null,
         ];
 
-        $fragment = new rex_fragment();
+        $fragment = new \rex_fragment();
         $fragment->setVar('info', $info, false);
         $fragment->setVar('data', $data, false);
         $fragment->setVar('fields', $fields, false);
@@ -262,20 +275,20 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
         $fragment->setVar('system_tags_normal', $normalTags, false);
         $fragment->setVar('system_tag_catalog', $systemTagCatalog, false);
         $fragment->setVar('collection_names', $collectionNames, false);
-        $fragment->setVar('category_list', rex_api_mediaplace_categories::getFlatCategoryList(), false);
-        // Feature-Toggles (Einstellungsseite) -- siehe features-Objekt in mediapool3.js
+        $fragment->setVar('category_list', Categories::getFlatCategoryList(), false);
+        // Feature-Toggles (Einstellungsseite) -- siehe features-Objekt in mediaplace.js
         // bzw. den entsprechenden Kommentar in boot.php (disable_*-Speicherung).
-        $fragment->setVar('feature_own_metadata', (bool) rex_config::get('mediaplace', 'enable_own_metadata', false), false);
-        $fragment->setVar('feature_tagging', !rex_config::get('mediaplace', 'disable_tagging', false), false);
-        $fragment->setVar('feature_collections', !rex_config::get('mediaplace', 'disable_collections', false), false);
-        $featureMetainfoEditing = (bool) rex_config::get('mediaplace', 'enable_metainfo_editing', false);
+        $fragment->setVar('feature_own_metadata', (bool) \rex_config::get('mediaplace', 'enable_own_metadata', false), false);
+        $fragment->setVar('feature_tagging', !\rex_config::get('mediaplace', 'disable_tagging', false), false);
+        $fragment->setVar('feature_collections', !\rex_config::get('mediaplace', 'disable_collections', false), false);
+        $featureMetainfoEditing = (bool) \rex_config::get('mediaplace', 'enable_metainfo_editing', false);
         $fragment->setVar('feature_metainfo_editing', $featureMetainfoEditing, false);
-        $fragment->setVar('alt_text_missing', $featureMetainfoEditing && \FriendsOfRedaxo\Mediaplace\AltTextStatus::isMissing($media, $data), false);
+        $fragment->setVar('alt_text_missing', $featureMetainfoEditing && \FriendsOfRedaxo\Mediaplace\AltTextStatus::shouldShowNativeCanvasHint($media, $data), false);
 
         return $fragment->parse('mediaplace/detail_panel.php');
     }
 
-    private function handleSave(rex_media $media): rex_api_result
+    private function handleSave(\rex_media $media): rex_api_result
     {
         \FriendsOfRedaxo\Mediaplace\SystemTagManager::ensureSchema();
         $input = $this->getJsonInput();
@@ -315,12 +328,12 @@ class rex_api_mediaplace_json_metainfo extends rex_api_function
 
         // Save to database
         if (!\FriendsOfRedaxo\Mediaplace\MetainfoJsonStorage::saveToMedia($media, $data)) {
-            rex_response::setStatus(rex_response::HTTP_INTERNAL_ERROR);
-            rex_response::sendJson(['error' => 'Failed to save data']);
+            \rex_response::setStatus(\rex_response::HTTP_INTERNAL_ERROR);
+            \rex_response::sendJson(['error' => 'Failed to save data']);
             exit;
         }
 
-        rex_response::sendJson(['success' => true, 'data' => $data]);
+        \rex_response::sendJson(['success' => true, 'data' => $data]);
         exit;
     }
 

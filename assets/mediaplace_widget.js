@@ -145,7 +145,7 @@
 
     // ---- Kategorie-Auswahl fuer Direkt-Upload ----
     // Eigene, vom Overlay unabhaengige Modal-Klassen (.mp3w-catpick-*, siehe
-    // mediapool3_widget.css) statt der Overlay-Klassen .mp3-catpick-* -- letztere
+    // mediaplace_widget.css) statt der Overlay-Klassen .mp3-catpick-* -- letztere
     // sind unter "#mp3-overlay ..." gescoped, das Overlay-Root existiert aber
     // erst, nachdem MP3.open() einmal gebaut hat, und dieses Skript muss ohne
     // den Overlay-Kern funktionieren.
@@ -811,7 +811,7 @@
      */
     function initWidgets(scope) {
         // Eigenstaendiger Aufruf noetig, da dieses Skript unabhaengig vom
-        // Overlay-Kern (mediapool3.js, dessen build() erst beim Oeffnen des
+        // Overlay-Kern (mediaplace.js, dessen build() erst beim Oeffnen des
         // Overlays laeuft) auf Widgets auf der Seite reagiert -- idempotent,
         // mehrfacher Aufruf (z.B. auch spaeter durch build()) ist unproblematisch.
         if (window.MP3Core && window.MP3Core.i18n) {

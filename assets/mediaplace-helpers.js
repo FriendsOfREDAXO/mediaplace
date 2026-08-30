@@ -1,10 +1,10 @@
 /**
  * MediaPlace -- generische Utility-Funktionen (reine Funktionen, kein
- * Modul-State). Ausgelagert aus mediapool3.js (Stufe C, Teil 1), gleiches
- * Alias-Prinzip wie mediapool3-api.js. getMediaCacheToken()/
+ * Modul-State). Ausgelagert aus mediaplace.js (Stufe C, Teil 1), gleiches
+ * Alias-Prinzip wie mediaplace-api.js. getMediaCacheToken()/
  * withMediaCacheBuster()/mediaThumbSrc() bekommen den Cache-Token-Status
  * (mediaForceCacheTokens/lastLoadedFiles) explizit als Parameter statt ihn
- * per Closure zu lesen -- Aufrufer in mediapool3.js reichen ihre lokalen
+ * per Closure zu lesen -- Aufrufer in mediaplace.js reichen ihre lokalen
  * Variablen weiterhin wie gehabt durch.
  */
 (function (Core) {
@@ -13,7 +13,12 @@
     Core.helpers = Core.helpers || {};
 
     var DEFAULT_MEDIA_PER_PAGE = 30;
-    var MEDIA_PER_PAGE_OPTIONS = [30, 50, 100, 250];
+    // 1000 = "Alle" im Pro-Seite-Selector -- kein echtes "unbegrenzt" (weder
+    // unser eigener Fallback-Endpunkt noch die API-Route erlauben das), aber
+    // deckt praktisch jede Kategorie ab; siehe MAX_PER_PAGE in
+    // rex_api_mediaplace_media_list.php (dort ebenfalls 1000, exakt dieselbe
+    // Grenze -- ein hoeherer Wert hier wuerde serverseitig ohnehin gekappt).
+    var MEDIA_PER_PAGE_OPTIONS = [30, 50, 100, 250, 1000];
     var DEFAULT_TILE_SIZE = 220;
     var TILE_SIZE_MIN = 140;
     var TILE_SIZE_MAX = 360;
@@ -71,8 +76,8 @@
      * native <select>-Dropdowns als auch bootstrap-select rendern Optionen
      * ueber eigene Layout-Boxen, die fuehrende ASCII-Leerzeichen kollabieren
      * -- &nbsp; ist kein normaler Whitespace und bleibt sichtbar. Gemeinsam
-     * genutzt von den Kategorie-Auswahl-Dialogen in mediapool3.js und
-     * mediapool3_widget.js statt pro Aufrufer neu gebaut.
+     * genutzt von den Kategorie-Auswahl-Dialogen in mediaplace.js und
+     * mediaplace_widget.js statt pro Aufrufer neu gebaut.
      */
     function buildCategoryOptionsHtml(categories, selectedId) {
         var html = '';

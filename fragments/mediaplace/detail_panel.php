@@ -2,12 +2,12 @@
 
 /**
  * Detail-Panel (rechtes Metadaten-Panel) fuer eine einzelne Mediendatei.
- * Ersetzt renderDetail() + zugehoerige Render-Helfer in mediapool3.js.
+ * Ersetzt renderDetail() + zugehoerige Render-Helfer in mediaplace.js.
  *
  * Markup ist bewusst 1:1 identisch zu dem, was renderDetail() vorher per
  * JS-String-Konkatenation gebaut hat -- gleiche Klassen/data-Attribute,
  * damit die bestehende Event-Delegation (overlay.addEventListener(...) in
- * mediapool3.js) unveraendert weiterfunktioniert. Interaktion/Speichern
+ * mediaplace.js) unveraendert weiterfunktioniert. Interaktion/Speichern
  * bleibt komplett JS-seitig (collectJsonValuesFromDetail()/saveDetail()),
  * dieses Fragment liefert nur den initialen Rendering-Zustand.
  *
@@ -37,7 +37,6 @@ $data = $this->getVar('data');
 $fields = $this->getVar('fields');
 $clangs = $this->getVar('clangs');
 $systemTagsNormal = $this->getVar('system_tags_normal');
-$systemTagCatalog = $this->getVar('system_tag_catalog');
 $collectionNames = $this->getVar('collection_names');
 $categoryList = $this->getVar('category_list');
 $featureOwnMetadata = (bool) $this->getVar('feature_own_metadata');
@@ -46,11 +45,10 @@ $featureCollections = (bool) $this->getVar('feature_collections');
 $featureMetainfoEditing = (bool) $this->getVar('feature_metainfo_editing');
 $altTextMissing = (bool) $this->getVar('alt_text_missing');
 
-$headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
 ?>
 <div class="mp3-detail-inner">
     <div class="mp3-detail-header">
-        <span class="mp3-detail-header-name" title="<?= rex_escape($info['filename']) ?>"><?= rex_escape($headerName) ?></span>
+        <span class="mp3-detail-header-name"><?= rex_escape($this->i18n('mediaplace_details')) ?></span>
         <button class="mp3-detail-close" title="<?= rex_escape($this->i18n('mediaplace_close')) ?>"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
@@ -79,7 +77,6 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
         <?php if ($featureTagging): ?>
             <?php $this->subfragment('mediaplace/detail_field_system_tags.php', [
                 'tags' => $systemTagsNormal,
-                'catalog' => $systemTagCatalog,
             ]); ?>
         <?php endif; ?>
 
@@ -115,5 +112,7 @@ $headerName = $info['title'] !== '' ? $info['title'] : $info['filename'];
 
     <?php $this->subfragment('mediaplace/detail_actions.php', [
         'info' => $info,
+        'feature_collections' => $featureCollections,
+        'has_collections' => !empty($collectionNames),
     ]); ?>
 </div>

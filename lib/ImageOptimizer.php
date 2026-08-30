@@ -33,7 +33,7 @@ class ImageOptimizer
      * GD-sicher kodierbare Formate. Kein GIF (Animation ginge bei einem
      * GD-Resize verloren, GD liest ohnehin nur den ersten Frame), kein SVG
      * (Vektor, "zu gross" ergibt hier keinen Sinn) -- gleiche Ausschlussliste
-     * wie die client-seitige isResizableImageType() in mediapool3-helpers.js.
+     * wie die client-seitige isResizableImageType() in mediaplace-helpers.js.
      */
     private const SUPPORTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 

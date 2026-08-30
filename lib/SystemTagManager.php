@@ -3,7 +3,7 @@
 namespace FriendsOfRedaxo\Mediaplace;
 
 /**
- * Central tag storage for mediapool3 demo.
+ * Central tag storage for mediaplace demo.
  * Tags are stored system-wide and mapped to media files separately.
  */
 class SystemTagManager
@@ -237,6 +237,55 @@ class SystemTagManager
             ];
         }
         return $out;
+    }
+
+    /**
+     * Dateianzahl pro Sammlung UEBER DEN GESAMTEN Medienpool (nicht nur die
+     * aktuell im Client geladene Kategorie/Ansicht) -- der Sidebar-Zaehler
+     * war seit MediaPlace 1.0.0 fälschlich auf lastLoadedFiles beschraenkt
+     * (siehe getCollectionsForCurrentCategory() im Client), zeigte je nach
+     * Kategorie also 0 statt der echten Mitgliederzahl.
+     *
+     * $accessibleCategoryIds MUSS von MediaPermission::getAccessibleCategoryIds()
+     * kommen -- ohne diesen Filter wuerden Zaehler auch Dateien in fuer den
+     * User gesperrten Kategorien mitzaehlen.
+     *
+     * @param list<int> $accessibleCategoryIds
+     * @return array<string, int> Sammlungsname (ohne Praefix) -> Dateianzahl
+     */
+    public static function getCollectionCounts(array $accessibleCategoryIds): array
+    {
+        self::ensureSchema();
+
+        if ([] === $accessibleCategoryIds) {
+            return [];
+        }
+
+        $sql = \rex_sql::factory();
+        $placeholders = implode(',', array_fill(0, count($accessibleCategoryIds), '?'));
+        $rows = $sql->getArray(
+            'SELECT mt.tag_name AS tag_name, COUNT(DISTINCT mt.filename) AS cnt
+             FROM ' . \rex::getTable('mediaplace_media_tags') . ' mt
+             INNER JOIN ' . \rex::getTable('media') . ' m ON m.filename = mt.filename
+             WHERE mt.tag_name LIKE ? AND m.category_id IN (' . $placeholders . ')
+             GROUP BY mt.tag_name',
+            array_merge([self::COLLECTION_PREFIX . '%'], $accessibleCategoryIds),
+        );
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $tagName = (string) ($row['tag_name'] ?? '');
+            if (!self::isCollectionTagName($tagName)) {
+                continue;
+            }
+            $name = trim(mb_substr($tagName, mb_strlen(self::COLLECTION_PREFIX)));
+            if ('' === $name) {
+                continue;
+            }
+            $counts[$name] = (int) ($row['cnt'] ?? 0);
+        }
+
+        return $counts;
     }
 
     /**

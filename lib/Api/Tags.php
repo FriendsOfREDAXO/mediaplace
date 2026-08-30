@@ -1,29 +1,34 @@
 <?php
 
+namespace FriendsOfRedaxo\Mediaplace\Api;
+
+use rex_api_function;
+use rex_api_result;
+
 /**
- * Mediapool3 Demo - system tags API.
+ * MediaPlace - system tags API.
  */
-class rex_api_mediaplace_tags extends rex_api_function
+class Tags extends rex_api_function
 {
     public function execute(): rex_api_result
     {
-        rex_response::cleanOutputBuffers();
+        \rex_response::cleanOutputBuffers();
 
-        if (!rex::getUser()) {
-            rex_response::setStatus(rex_response::HTTP_UNAUTHORIZED);
-            rex_response::sendJson(['error' => 'Unauthorized']);
+        if (!\rex::getUser()) {
+            \rex_response::setStatus(\rex_response::HTTP_UNAUTHORIZED);
+            \rex_response::sendJson(['error' => 'Unauthorized']);
             exit;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasMediaAccess()) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
-        $method = rex_request::server('REQUEST_METHOD', 'string', 'GET');
-        $filename = rex_request('filename', 'string', '');
-        $filenamesRaw = rex_request('filenames', 'string', '');
+        $method = \rex_request::server('REQUEST_METHOD', 'string', 'GET');
+        $filename = \rex_request('filename', 'string', '');
+        $filenamesRaw = \rex_request('filenames', 'string', '');
 
         try {
             if ('GET' === $method) {
@@ -39,27 +44,33 @@ class rex_api_mediaplace_tags extends rex_api_function
                 }
 
                 if ('' !== $filename) {
-                    $media = rex_media::get($filename);
+                    $media = \rex_media::get($filename);
                     if (!$media) {
-                        rex_response::setStatus(rex_response::HTTP_NOT_FOUND);
-                        rex_response::sendJson(['error' => 'Media not found']);
+                        \rex_response::setStatus(\rex_response::HTTP_NOT_FOUND);
+                        \rex_response::sendJson(['error' => 'Media not found']);
                         exit;
                     }
 
                     if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($media->getCategoryId())) {
-                        rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-                        rex_response::sendJson(['error' => 'Permission denied']);
+                        \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+                        \rex_response::sendJson(['error' => 'Permission denied']);
                         exit;
                     }
 
                     $tags = \FriendsOfRedaxo\Mediaplace\SystemTagManager::getTagsForFilename($filename);
                 }
 
-                rex_response::sendJson([
+                \rex_response::sendJson([
                     'success' => true,
                     'catalog' => $catalog,
                     'tags' => $tags,
                     'file_tags' => $fileTags,
+                    // Global (nicht auf die aktuell geladene Kategorie beschraenkt),
+                    // respektiert aber die Kategorie-Rechte des Users -- siehe
+                    // SystemTagManager::getCollectionCounts().
+                    'collection_counts' => \FriendsOfRedaxo\Mediaplace\SystemTagManager::getCollectionCounts(
+                        \FriendsOfRedaxo\Mediaplace\MediaPermission::getAccessibleCategoryIds(),
+                    ),
                 ]);
                 exit;
             }
@@ -71,8 +82,8 @@ class rex_api_mediaplace_tags extends rex_api_function
                 if ('' !== $action) {
                     // Sammlungs-Katalog ist kategorieuebergreifend -> volles Medienrecht noetig.
                     if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasFullAccess()) {
-                        rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-                        rex_response::sendJson(['error' => 'Permission denied']);
+                        \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+                        \rex_response::sendJson(['error' => 'Permission denied']);
                         exit;
                     }
 
@@ -80,14 +91,14 @@ class rex_api_mediaplace_tags extends rex_api_function
                         $name = trim((string) ($input['name'] ?? ''));
                         $color = trim((string) ($input['color'] ?? '#4a90d9'));
                         if ('' === $name) {
-                            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-                            rex_response::sendJson(['error' => 'Missing collection name']);
+                            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+                            \rex_response::sendJson(['error' => 'Missing collection name']);
                             exit;
                         }
 
                         \FriendsOfRedaxo\Mediaplace\SystemTagManager::ensureCatalogTag($name, $color);
 
-                        rex_response::sendJson([
+                        \rex_response::sendJson([
                             'success' => true,
                             'catalog' => \FriendsOfRedaxo\Mediaplace\SystemTagManager::getCatalog(),
                             'affected_files' => 0,
@@ -99,14 +110,14 @@ class rex_api_mediaplace_tags extends rex_api_function
                         $oldName = trim((string) ($input['old_name'] ?? ''));
                         $newName = trim((string) ($input['new_name'] ?? ''));
                         if ('' === $oldName || '' === $newName) {
-                            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-                            rex_response::sendJson(['error' => 'Missing old_name/new_name']);
+                            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+                            \rex_response::sendJson(['error' => 'Missing old_name/new_name']);
                             exit;
                         }
 
                         $affected = \FriendsOfRedaxo\Mediaplace\SystemTagManager::renameCatalogTag($oldName, $newName);
 
-                        rex_response::sendJson([
+                        \rex_response::sendJson([
                             'success' => true,
                             'catalog' => \FriendsOfRedaxo\Mediaplace\SystemTagManager::getCatalog(),
                             'affected_files' => $affected,
@@ -117,14 +128,14 @@ class rex_api_mediaplace_tags extends rex_api_function
                     if ('collection_delete' === $action) {
                         $name = trim((string) ($input['name'] ?? ''));
                         if ('' === $name) {
-                            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-                            rex_response::sendJson(['error' => 'Missing name']);
+                            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+                            \rex_response::sendJson(['error' => 'Missing name']);
                             exit;
                         }
 
                         $affected = \FriendsOfRedaxo\Mediaplace\SystemTagManager::deleteCatalogTag($name);
 
-                        rex_response::sendJson([
+                        \rex_response::sendJson([
                             'success' => true,
                             'catalog' => \FriendsOfRedaxo\Mediaplace\SystemTagManager::getCatalog(),
                             'affected_files' => $affected,
@@ -132,27 +143,27 @@ class rex_api_mediaplace_tags extends rex_api_function
                         exit;
                     }
 
-                    rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-                    rex_response::sendJson(['error' => 'Unknown action']);
+                    \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+                    \rex_response::sendJson(['error' => 'Unknown action']);
                     exit;
                 }
 
                 if ('' === $filename) {
-                    rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-                    rex_response::sendJson(['error' => 'Missing filename']);
+                    \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+                    \rex_response::sendJson(['error' => 'Missing filename']);
                     exit;
                 }
 
-                $media = rex_media::get($filename);
+                $media = \rex_media::get($filename);
                 if (!$media) {
-                    rex_response::setStatus(rex_response::HTTP_NOT_FOUND);
-                    rex_response::sendJson(['error' => 'Media not found']);
+                    \rex_response::setStatus(\rex_response::HTTP_NOT_FOUND);
+                    \rex_response::sendJson(['error' => 'Media not found']);
                     exit;
                 }
 
                 if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($media->getCategoryId())) {
-                    rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-                    rex_response::sendJson(['error' => 'Permission denied']);
+                    \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+                    \rex_response::sendJson(['error' => 'Permission denied']);
                     exit;
                 }
 
@@ -160,7 +171,7 @@ class rex_api_mediaplace_tags extends rex_api_function
 
                 \FriendsOfRedaxo\Mediaplace\SystemTagManager::saveTagsForFilename($filename, $tags);
 
-                rex_response::sendJson([
+                \rex_response::sendJson([
                     'success' => true,
                     'catalog' => \FriendsOfRedaxo\Mediaplace\SystemTagManager::getCatalog(),
                     'tags' => \FriendsOfRedaxo\Mediaplace\SystemTagManager::getTagsForFilename($filename),
@@ -168,12 +179,12 @@ class rex_api_mediaplace_tags extends rex_api_function
                 exit;
             }
 
-            rex_response::setStatus(405);
-            rex_response::sendJson(['error' => 'Method not allowed']);
+            \rex_response::setStatus(405);
+            \rex_response::sendJson(['error' => 'Method not allowed']);
             exit;
-        } catch (Throwable $e) {
-            rex_response::setStatus(rex_response::HTTP_INTERNAL_ERROR);
-            rex_response::sendJson(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            \rex_response::setStatus(\rex_response::HTTP_INTERNAL_ERROR);
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             exit;
         }
     }

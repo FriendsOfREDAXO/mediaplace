@@ -35,7 +35,7 @@ class ThumbWarmupCronjob extends rex_cronjob
 {
     private const IMAGE_TYPE = 'mediaplace_thumb';
 
-    /** Deckungsgleich mit isImage() in assets/mediapool3-helpers.js (ohne "ico", siehe DetailPanelFormatter::isImageFilename()). */
+    /** Deckungsgleich mit isImage() in assets/mediaplace-helpers.js (ohne "ico", siehe DetailPanelFormatter::isImageFilename()). */
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'bmp'];
 
     /** Ein Bild-Resize ist deutlich billiger als eine Video-Konvertierung -- niedrigerer Schwellwert. */

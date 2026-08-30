@@ -1,12 +1,18 @@
 package: mediaplace
-version: '1.9.3'
+version: '1.20.0'
 author: FriendsOfREDAXO
 supportpage: https://github.com/FriendsOfREDAXO
 
 page:
     title: 'MediaPlace'
     icon: rex-icon fa-photo-film
-    perm: admin
+    # Kein perm hier (frueher: admin) -- jede Unterseite gated sich selbst
+    # (settings/metainfo_fields/demo/help bleiben bewusst admin-only,
+    # tag_management bekommt die engere mediaplace[manage_tags]-Berechtigung).
+    # rex_be_page::checkPermission() prueft die komplette Eltern-Kette; ein
+    # perm hier wuerde jede engere Unterseiten-Berechtigung wieder auf dieses
+    # Niveau hochziehen. Der "MediaPlace"-Menuepunkt selbst ist dadurch fuer
+    # alle eingeloggten Backend-User sichtbar.
     subpages:
         settings:
             title: 'Einstellungen'
@@ -16,6 +22,10 @@ page:
             title: 'Metainfo Felder'
             icon: rex-icon fa-sliders
             perm: admin
+        tag_management:
+            title: 'Tag-Verwaltung'
+            icon: rex-icon fa-tags
+            perm: 'mediaplace[manage_tags]'
         demo:
             title: 'Demo'
             icon: rex-icon fa-play
@@ -40,6 +50,7 @@ default_config:
     disable_tagging: false
     disable_collections: false
     enable_metainfo_editing: true
+    enable_alt_missing_filter: true
     enable_upload_resize: false
     upload_resize_width: 2000
     upload_resize_height: 2000

@@ -37,11 +37,14 @@ $filename = $info['filename'];
         <img src="<?= rex_escape($src) ?>" alt="<?= rex_escape($info['title'] !== '' ? $info['title'] : $filename) ?>">
     </div>
     <?php if (!empty($info['optimize_image_available'])): ?>
-        <?php $target = $info['optimize_image_target'] ?? null; ?>
-        <button type="button" class="mp3-image-optimize-btn" data-optimize-image-file="<?= rex_escape($filename) ?>">
-            <i class="fa-solid fa-compress"></i> <?= $target
-                ? $this->i18n('mediaplace_optimize_image_target', $info['width'], $info['height'], $target['width'], $target['height'])
-                : $this->i18n('mediaplace_optimize_image') ?>
+        <?php
+        $target = $info['optimize_image_target'] ?? null;
+        $optimizeImageLabel = $target
+            ? $this->i18n('mediaplace_optimize_image_target', $info['width'], $info['height'], $target['width'], $target['height'])
+            : $this->i18n('mediaplace_optimize_image');
+        ?>
+        <button type="button" class="mp3-image-optimize-btn" data-optimize-image-file="<?= rex_escape($filename) ?>" title="<?= rex_escape($optimizeImageLabel) ?>">
+            <i class="fa-solid fa-compress"></i> <span class="mp3-image-optimize-btn-label"><?= rex_escape($optimizeImageLabel) ?></span>
         </button>
         <div class="mp3-image-optimize-status" style="display:none"></div>
     <?php endif; ?>

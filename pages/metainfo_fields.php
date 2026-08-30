@@ -163,7 +163,7 @@ if ('edit' === $func || 'add' === $func) {
         // Haken suggeriert: media_link rendert immer nur ein einzelnes
         // Eingabefeld (der Haken haette gar keine Wirkung, aeltere Bugs
         // dadurch entstanden -- siehe collectJsonValuesFromDetail() in
-        // mediapool3.js), alt rendert immer pro Sprache (der Haken ist dort
+        // mediaplace.js), alt rendert immer pro Sprache (der Haken ist dort
         // immer wirkungslos "an"). UI reagiert entsprechend, serverseitig
         // wird das ohnehin unabhaengig davon erzwungen (siehe Save-Handler).
         var FORCED = { media_link: false, alt: true, checkbox: false, select: false };
@@ -237,7 +237,7 @@ if (1 === rex_post('save', 'int', 0)) {
         // media_link rendert immer nur ein einzelnes Eingabefeld ohne
         // Sprachbezug (detail_field_body_media_link.php) -- ein per Formular
         // gesetztes translatable=1 wuerde in collectJsonValuesFromDetail()
-        // (mediapool3.js) nach nicht existierenden [data-clang]-Unterfeldern
+        // (mediaplace.js) nach nicht existierenden [data-clang]-Unterfeldern
         // suchen und den Wert nie speichern.
         $translatable = false;
     }

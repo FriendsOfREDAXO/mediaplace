@@ -1,7 +1,12 @@
 <?php
 
+namespace FriendsOfRedaxo\Mediaplace\Api;
+
+use rex_api_function;
+use rex_api_result;
+
 /**
- * Mediapool3 Demo – "Nur unbenutzte Medien"-Filter.
+ * MediaPlace – "Nur unbenutzte Medien"-Filter.
  *
  * Prueft fuer eine gegebene Liste von Dateinamen (typischerweise eine
  * bereits geladene Seite der normalen Medienliste), welche davon aktuell
@@ -9,7 +14,7 @@
  * Vorab-Scan des gesamten Medienpools: mediaIsInUse() ist pro Datei ein
  * eigener Table-Scan auf rex_article_slice, ein Massen-Check ueber den
  * kompletten Bestand waere fuer groessere Installationen zu teuer. Der
- * Client (loadFiles() in mediapool3.js) ruft diesen Endpunkt deshalb nur
+ * Client (loadFiles() in mediaplace.js) ruft diesen Endpunkt deshalb nur
  * pro bereits geladener Seite auf, nicht fuer den ganzen Pool auf einmal.
  *
  * Zusaetzlich zur normalen Medien-Berechtigung greift hier ein eigenes,
@@ -19,26 +24,26 @@
  *
  * GET /api/backend/mediaplace_unused?filenames=a.jpg,b.png,...
  */
-class rex_api_mediaplace_unused extends rex_api_function
+class Unused extends rex_api_function
 {
     /** Schutz gegen versehentlich/absichtlich ueberlange Anfragen -- der
      * Client schickt normalerweise nur eine einzelne Seitengroesse (siehe
-     * mediaPerPage in mediapool3.js, max. 250). */
+     * mediaPerPage in mediaplace.js, max. 250). */
     private const MAX_FILENAMES = 300;
 
     public function execute(): rex_api_result
     {
-        rex_response::cleanOutputBuffers();
+        \rex_response::cleanOutputBuffers();
 
-        if (!rex::getUser()) {
-            rex_response::setStatus(rex_response::HTTP_UNAUTHORIZED);
-            rex_response::sendJson(['error' => 'Unauthorized']);
+        if (!\rex::getUser()) {
+            \rex_response::setStatus(\rex_response::HTTP_UNAUTHORIZED);
+            \rex_response::sendJson(['error' => 'Unauthorized']);
             exit;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasUnusedFilterAccess()) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
@@ -54,7 +59,7 @@ class rex_api_mediaplace_unused extends rex_api_function
 
         $unused = [];
         foreach ($filenames as $filename) {
-            $media = rex_media::get($filename);
+            $media = \rex_media::get($filename);
             if (!$media) {
                 continue;
             }
@@ -64,12 +69,12 @@ class rex_api_mediaplace_unused extends rex_api_function
             if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($media->getCategoryId())) {
                 continue;
             }
-            if (false === rex_mediapool::mediaIsInUse($filename)) {
+            if (false === \rex_mediapool::mediaIsInUse($filename)) {
                 $unused[] = $filename;
             }
         }
 
-        rex_response::sendJson([
+        \rex_response::sendJson([
             'success' => true,
             'unused' => $unused,
         ]);

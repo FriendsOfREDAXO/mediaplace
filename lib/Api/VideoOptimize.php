@@ -1,5 +1,10 @@
 <?php
 
+namespace FriendsOfRedaxo\Mediaplace\Api;
+
+use rex_api_function;
+use rex_api_result;
+
 /**
  * "Video optimieren"-Button im Detail-Panel -- duenner Wrapper um das
  * separate ffmpeg-Addon (FriendsOfRedaxo\FFmpeg\Api\Converter, siehe
@@ -13,28 +18,28 @@
  * GET ?rex-api-call=mediaplace_video_optimize&func=status&job=...
  *     Pollt den Job-Status (siehe Converter::pollJob()).
  */
-class rex_api_mediaplace_video_optimize extends rex_api_function
+class VideoOptimize extends rex_api_function
 {
     public function execute(): rex_api_result
     {
-        rex_response::cleanOutputBuffers();
+        \rex_response::cleanOutputBuffers();
 
-        $user = rex::getUser();
+        $user = \rex::getUser();
         if (!$user) {
-            rex_response::setStatus(rex_response::HTTP_UNAUTHORIZED);
-            rex_response::sendJson(['error' => 'Unauthorized']);
+            \rex_response::setStatus(\rex_response::HTTP_UNAUTHORIZED);
+            \rex_response::sendJson(['error' => 'Unauthorized']);
             exit;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable()) {
-            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-            rex_response::sendJson(['error' => 'ffmpeg addon not available']);
+            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+            \rex_response::sendJson(['error' => 'ffmpeg addon not available']);
             exit;
         }
 
         if (!$user->hasPerm('mediaplace[optimize_video]')) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
@@ -46,37 +51,37 @@ class rex_api_mediaplace_video_optimize extends rex_api_function
         exit;
     }
 
-    private function handleStart(rex_user $user): void
+    private function handleStart(\rex_user $user): void
     {
         $filename = rex_request('file', 'string', '');
-        $media = '' !== $filename ? rex_media::get($filename) : null;
+        $media = '' !== $filename ? \rex_media::get($filename) : null;
         if (!$media) {
-            rex_response::setStatus(rex_response::HTTP_NOT_FOUND);
-            rex_response::sendJson(['error' => 'Media not found']);
+            \rex_response::setStatus(\rex_response::HTTP_NOT_FOUND);
+            \rex_response::sendJson(['error' => 'Media not found']);
             return;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($media->getCategoryId())) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             return;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isSupportedVideo($filename)) {
-            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-            rex_response::sendJson(['error' => 'Unsupported video type']);
+            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+            \rex_response::sendJson(['error' => 'Unsupported video type']);
             return;
         }
 
         try {
             $result = \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::startOptimizeJob($filename, $user);
         } catch (\Throwable $e) {
-            rex_response::setStatus(rex_response::HTTP_INTERNAL_ERROR);
-            rex_response::sendJson(['error' => $e->getMessage()]);
+            \rex_response::setStatus(\rex_response::HTTP_INTERNAL_ERROR);
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             return;
         }
 
-        rex_response::sendJson($result);
+        \rex_response::sendJson($result);
     }
 
     /**
@@ -89,19 +94,19 @@ class rex_api_mediaplace_video_optimize extends rex_api_function
     {
         $jobId = rex_request('job', 'string', '');
         if ('' === $jobId) {
-            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-            rex_response::sendJson(['error' => 'Missing job id']);
+            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+            \rex_response::sendJson(['error' => 'Missing job id']);
             return;
         }
 
         try {
             $result = \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::pollOptimizeJob($jobId);
         } catch (\Throwable $e) {
-            rex_response::setStatus(rex_response::HTTP_INTERNAL_ERROR);
-            rex_response::sendJson(['error' => $e->getMessage()]);
+            \rex_response::setStatus(\rex_response::HTTP_INTERNAL_ERROR);
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             return;
         }
 
-        rex_response::sendJson($result);
+        \rex_response::sendJson($result);
     }
 }

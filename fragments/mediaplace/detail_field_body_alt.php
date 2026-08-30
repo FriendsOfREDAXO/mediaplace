@@ -3,7 +3,7 @@
 /**
  * Feldkoerper fuer widget_type "alt" (ALT-Text + "dekorativ"-Checkbox).
  * Live-Aktualisierung des Fehlt-Hinweises beim Tippen laeuft JS-seitig
- * (updateAltHint() in mediapool3.js) -- dieses Fragment liefert nur den
+ * (updateAltHint() in mediaplace.js) -- dieses Fragment liefert nur den
  * initialen Zustand. Markup identisch zum 'alt'-Zweig von
  * renderJsonWidgetField().
  *

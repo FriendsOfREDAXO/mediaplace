@@ -2,7 +2,7 @@
 
 /**
  * Feldkoerper fuer widget_type "textarea". Markup identisch zum
- * 'textarea'-Zweig von renderJsonWidgetField() in mediapool3.js.
+ * 'textarea'-Zweig von renderJsonWidgetField() in mediaplace.js.
  *
  * Vars: $field, $value, $clangs (siehe detail_field.php)
  *

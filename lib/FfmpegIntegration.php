@@ -18,7 +18,7 @@ namespace FriendsOfRedaxo\Mediaplace;
  *    MediaPlace jederzeit (de)installiert werden kann.
  * 2. "Video optimieren"-Button im Detail-Panel (canOptimize()): nutzt
  *    ffmpeg's Job-Engine (Converter::startOverwriteJob()/pollJob()) direkt,
- *    siehe rex_api_mediaplace_video_optimize.php.
+ *    siehe Api\VideoOptimize.php.
  *
  * Alle ffmpeg-Klassen werden nur vollqualifiziert INNERHALB von
  * isAvailable()-abgesicherten Methoden referenziert (kein "use" am
@@ -130,7 +130,7 @@ class FfmpegIntegration
      * Media-Manager-Typ-Name, der fuer die aktuell eingestellte Vorschau-Art
      * (getVideoThumbMode()) verwendet werden soll -- null bei "off" (dann
      * wird client-seitig gar kein Typ angefordert, siehe previewHtml() in
-     * mediapool3.js).
+     * mediaplace.js).
      */
     public static function getActiveVideoThumbType(): ?string
     {
@@ -297,7 +297,7 @@ class FfmpegIntegration
     /**
      * Aufbereitete Video-Technikdaten (Aufloesung/Dauer/Codec/Bitrate/...)
      * ueber ffmpeg's bereits vorhandene VideoInfo-Klasse -- siehe
-     * rex_api_mediaplace_video_info.php. Keine eigene ffprobe-Logik hier,
+     * Api\VideoInfo.php. Keine eigene ffprobe-Logik hier,
      * nur Uebersetzung ins fuer den Client passende Format.
      *
      * @return array<string, mixed>|null

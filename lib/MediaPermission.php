@@ -3,7 +3,7 @@
 namespace FriendsOfRedaxo\Mediaplace;
 
 /**
- * Zentrale Berechtigungspruefung fuer die Mediapool3-API-Endpunkte.
+ * Zentrale Berechtigungspruefung fuer die MediaPlace-API-Endpunkte.
  * Spiegelt die Rechte, die REDAXO fuer den klassischen Medienpool durchsetzt
  * (rex_media_perm), damit unsere Endpunkte nicht mehr pruefen als
  * "irgendein eingeloggter Backend-User" -- vorher wurde die tatsaechliche
@@ -84,7 +84,7 @@ class MediaPermission
      * zu iterieren. Es gibt keinen oeffentlichen Getter fuer die rohe
      * Rechteliste auf rex_complex_perm, daher Einzelpruefung pro Kategorie
      * (gleiches Muster wie mediapool/lib/media_category_select.php::addCatOption()).
-     * Genutzt vom eigenen Medienlisten-Fallback (rex_api_mediaplace_media_list),
+     * Genutzt vom eigenen Medienlisten-Fallback (Api\MediaList),
      * solange das FriendsOfRedaxo/api-Addon media/list selbst noch nicht nach
      * Kategorie-Rechten filtert (siehe README/CHANGELOG).
      *

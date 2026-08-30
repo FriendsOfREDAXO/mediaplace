@@ -2,7 +2,7 @@
 
 /**
  * Metadaten-Tabelle (Dateiname/Typ/Groesse/Datum/Sammlungen/Kategorie).
- * Markup identisch zum Tabellen-Teil von renderDetail() in mediapool3.js.
+ * Markup identisch zum Tabellen-Teil von renderDetail() in mediaplace.js.
  * Das Kategorie-Verschieben-Select wird jetzt direkt serverseitig befuellt
  * (vorher async per apiFetchAllCategoriesFlat() nach dem Rendern) --
  * der change-Handler dafuer bleibt unveraendert JS-seitig.

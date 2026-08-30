@@ -1,31 +1,36 @@
 <?php
 
+namespace FriendsOfRedaxo\Mediaplace\Api;
+
+use rex_api_function;
+use rex_api_result;
+
 /**
- * Mediapool3 Demo – Metainfo Schema Endpoint
+ * MediaPlace – Metainfo Schema Endpoint
  *
  * Liefert das Feld-Schema für einen Metainfo-Prefix (Standard: med_) als JSON.
  * Erlaubte Aufrufer: eingeloggte Backend-User.
  *
  * URL: index.php?rex-api-call=mediaplace_schema&prefix=med_
  */
-class rex_api_mediaplace_schema extends rex_api_function
+class Schema extends rex_api_function
 {
     /** @var bool Frontend-Aufruf erlauben (nötig, weil die API-Route im Frontend-Context läuft) */
 
     public function execute(): rex_api_result
     {
-        rex_response::cleanOutputBuffers();
+        \rex_response::cleanOutputBuffers();
 
         // Nur eingeloggte Backend-User
-        if (!rex::getUser()) {
-            rex_response::setStatus(rex_response::HTTP_UNAUTHORIZED);
-            rex_response::sendJson(['error' => 'Unauthorized']);
+        if (!\rex::getUser()) {
+            \rex_response::setStatus(\rex_response::HTTP_UNAUTHORIZED);
+            \rex_response::sendJson(['error' => 'Unauthorized']);
             exit;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasMediaAccess()) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
@@ -36,11 +41,11 @@ class rex_api_mediaplace_schema extends rex_api_function
         }
 
         try {
-            $sql = rex_sql::factory();
+            $sql = \rex_sql::factory();
 
             // Typen-Map laden
             $typeRows = $sql->getArray(
-                'SELECT id, label FROM ' . rex::getTable('metainfo_type') . ' ORDER BY id',
+                'SELECT id, label FROM ' . \rex::getTable('metainfo_type') . ' ORDER BY id',
             );
             $typeMap = [];
             foreach ($typeRows as $t) {
@@ -50,7 +55,7 @@ class rex_api_mediaplace_schema extends rex_api_function
             // Felder für Prefix laden
             $fieldRows = $sql->getArray(
                 'SELECT id, name, title, type_id, priority, attributes, `default`, params, restrictions
-                 FROM ' . rex::getTable('metainfo_field') . '
+                 FROM ' . \rex::getTable('metainfo_field') . '
                  WHERE name LIKE :prefix
                  ORDER BY priority, name',
                 [':prefix' => $prefix . '%'],
@@ -72,7 +77,7 @@ class rex_api_mediaplace_schema extends rex_api_function
                 // Titel kann ein i18n-Schlüssel sein (z.B. "translate:pool_file_copyright")
                 $rawTitle = (string) $row['title'];
                 $resolvedLabel = ($rawTitle !== '')
-                    ? rex_i18n::translate($rawTitle, false)
+                    ? \rex_i18n::translate($rawTitle, false)
                     : (string) $row['name'];
                 // Fallback: wenn Übersetzung nicht gefunden (translate() gibt Key zurück), rawTitle nutzen
                 if ($resolvedLabel === $rawTitle && str_starts_with($rawTitle, 'translate:')) {
@@ -94,11 +99,11 @@ class rex_api_mediaplace_schema extends rex_api_function
                 ];
             }
 
-            rex_response::sendJson(['data' => $fields, 'prefix' => $prefix]);
+            \rex_response::sendJson(['data' => $fields, 'prefix' => $prefix]);
             exit;
-        } catch (rex_sql_exception $e) {
-            rex_response::setStatus(rex_response::HTTP_INTERNAL_ERROR);
-            rex_response::sendJson(['error' => $e->getMessage()]);
+        } catch (\rex_sql_exception $e) {
+            \rex_response::setStatus(\rex_response::HTTP_INTERNAL_ERROR);
+            \rex_response::sendJson(['error' => $e->getMessage()]);
             exit;
         }
     }
@@ -110,19 +115,19 @@ class rex_api_mediaplace_schema extends rex_api_function
     private static function resolveEditorKind(int $typeId, string $attributes): string
     {
         switch ($typeId) {
-            case rex_metainfo_default_type::TEXT:                return 'text';
-            case rex_metainfo_default_type::TEXTAREA:            return 'textarea';
-            case rex_metainfo_default_type::SELECT:              return 'select';
-            case rex_metainfo_default_type::RADIO:               return 'radio';
-            case rex_metainfo_default_type::CHECKBOX:            return 'checkbox';
-            case rex_metainfo_default_type::REX_MEDIA_WIDGET:    return 'media_widget';
-            case rex_metainfo_default_type::REX_MEDIALIST_WIDGET: return 'medialist';
-            case rex_metainfo_default_type::REX_LINK_WIDGET:     return 'link_widget';
-            case rex_metainfo_default_type::REX_LINKLIST_WIDGET: return 'linklist';
-            case rex_metainfo_default_type::DATE:                return 'date';
-            case rex_metainfo_default_type::DATETIME:            return 'datetime';
-            case rex_metainfo_default_type::TIME:                return 'time';
-            case rex_metainfo_default_type::LEGEND:              return 'legend';
+            case \rex_metainfo_default_type::TEXT:                return 'text';
+            case \rex_metainfo_default_type::TEXTAREA:            return 'textarea';
+            case \rex_metainfo_default_type::SELECT:              return 'select';
+            case \rex_metainfo_default_type::RADIO:               return 'radio';
+            case \rex_metainfo_default_type::CHECKBOX:            return 'checkbox';
+            case \rex_metainfo_default_type::REX_MEDIA_WIDGET:    return 'media_widget';
+            case \rex_metainfo_default_type::REX_MEDIALIST_WIDGET: return 'medialist';
+            case \rex_metainfo_default_type::REX_LINK_WIDGET:     return 'link_widget';
+            case \rex_metainfo_default_type::REX_LINKLIST_WIDGET: return 'linklist';
+            case \rex_metainfo_default_type::DATE:                return 'date';
+            case \rex_metainfo_default_type::DATETIME:            return 'datetime';
+            case \rex_metainfo_default_type::TIME:                return 'time';
+            case \rex_metainfo_default_type::LEGEND:              return 'legend';
             default:
                 // Externe Addon-Typen: sicherer Fallback
                 return 'custom';
@@ -133,13 +138,13 @@ class rex_api_mediaplace_schema extends rex_api_function
     private static function isMultiple(int $typeId, string $attributes): bool
     {
         if (in_array($typeId, [
-            rex_metainfo_default_type::CHECKBOX,
-            rex_metainfo_default_type::REX_MEDIALIST_WIDGET,
-            rex_metainfo_default_type::REX_LINKLIST_WIDGET,
+            \rex_metainfo_default_type::CHECKBOX,
+            \rex_metainfo_default_type::REX_MEDIALIST_WIDGET,
+            \rex_metainfo_default_type::REX_LINKLIST_WIDGET,
         ], true)) {
             return true;
         }
-        if (rex_metainfo_default_type::SELECT === $typeId && str_contains($attributes, 'multiple')) {
+        if (\rex_metainfo_default_type::SELECT === $typeId && str_contains($attributes, 'multiple')) {
             return true;
         }
         return false;
@@ -169,9 +174,9 @@ class rex_api_mediaplace_schema extends rex_api_function
         }
 
         if (!in_array($typeId, [
-            rex_metainfo_default_type::SELECT,
-            rex_metainfo_default_type::RADIO,
-            rex_metainfo_default_type::CHECKBOX,
+            \rex_metainfo_default_type::SELECT,
+            \rex_metainfo_default_type::RADIO,
+            \rex_metainfo_default_type::CHECKBOX,
         ], true)) {
             return [];
         }
@@ -192,11 +197,11 @@ class rex_api_mediaplace_schema extends rex_api_function
             // key:value-Paar – aber NICHT wenn es mit "translate:" beginnt
             if (str_contains($group, ':') && !str_starts_with($group, 'translate:')) {
                 [$key, $labelRaw] = explode(':', $group, 2);
-                $label = rex_i18n::translate(trim($labelRaw), false);
+                $label = \rex_i18n::translate(trim($labelRaw), false);
                 $options[] = ['label' => $label, 'value' => trim($key)];
             } else {
                 // Wert ist Label (kann translate:key sein)
-                $label = rex_i18n::translate($group, false);
+                $label = \rex_i18n::translate($group, false);
                 $options[] = ['label' => $label, 'value' => $group];
             }
         }

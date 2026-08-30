@@ -36,6 +36,23 @@
         return null; // rex-icon-delete-media bleibt unveraendert
     }
 
+    // Ermittelt die "Ansehen"-Zieldatei fuer beide Widget-Typen -- genutzt
+    // sowohl fuer den normalen Fall (handleMediaWidget/handleMedialistWidget)
+    // als auch fuer den Metainfo-Canvas-Fall unten (dort bisher komplett
+    // gefehlt, siehe dortiger Kommentar).
+    function resolveViewFilename(wrapper) {
+        if (wrapper.classList.contains('rex-js-widget-medialist')) {
+            var select = qs('select[id^="REX_MEDIALIST_SELECT_"]', wrapper);
+            if (!select) return null;
+            for (var i = 0; i < select.options.length; i++) {
+                if (select.options[i].selected) return select.options[i].value;
+            }
+            return null;
+        }
+        var input = qs('input[id^="REX_MEDIA_"]', wrapper);
+        return input ? (input.value || null) : null;
+    }
+
     // ---- REX_MEDIA[n] (Einzelauswahl) ----
     function handleMediaWidget(wrapper, action) {
         var input = qs('input[id^="REX_MEDIA_"]', wrapper);
@@ -94,13 +111,25 @@
         if (!link) return;
 
         // Im Metainfo-Canvas: eigenes Grid statt REDAXOs Popup nutzen (MP3.startMetainfoPick()
-        // in mediapool3.js), sonst wuerde das Popup unseren gerade offenen Overlay verdecken.
+        // in mediaplace.js), sonst wuerde das Popup unseren gerade offenen Overlay verdecken.
+        // "Ansehen" (das Auge-Icon) ist davon ausgenommen: die Datei ist ja schon
+        // ausgewaehlt, es soll kein Auswahl-Modus starten, sondern nur das eigene
+        // Detail-Panel (rechte Sidebar, waehrend des Canvas weiterhin sichtbar) auf
+        // diese Datei umschalten -- frueher landete "Ansehen" hier faelschlich
+        // ebenfalls im Picker-Modus, weil nur auf "irgendeine Aktion", nicht auf die
+        // konkrete Aktion geprueft wurde.
         if (link.closest('#mp3-metainfo-canvas')) {
             var mcWrapper = link.closest('.rex-js-widget-media, .rex-js-widget-medialist');
-            if (mcWrapper && actionFromLink(link) && window.MP3 && typeof window.MP3.startMetainfoPick === 'function') {
+            var mcAction = mcWrapper ? actionFromLink(link) : null;
+            if (mcWrapper && mcAction && window.MP3) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                window.MP3.startMetainfoPick(mcWrapper, mcWrapper.classList.contains('rex-js-widget-medialist'));
+                var viewFilename = mcAction === 'view' ? resolveViewFilename(mcWrapper) : null;
+                if (viewFilename && typeof window.MP3.showFileDetail === 'function') {
+                    window.MP3.showFileDetail(viewFilename);
+                } else if (typeof window.MP3.startMetainfoPick === 'function') {
+                    window.MP3.startMetainfoPick(mcWrapper, mcWrapper.classList.contains('rex-js-widget-medialist'));
+                }
             }
             return;
         }

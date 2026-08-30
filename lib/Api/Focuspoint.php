@@ -1,7 +1,12 @@
 <?php
 
+namespace FriendsOfRedaxo\Mediaplace\Api;
+
+use rex_api_function;
+use rex_api_result;
+
 /**
- * Mediapool3 Demo – Fokuspunkt-Integration mit dem separaten focuspoint-Addon.
+ * MediaPlace – Fokuspunkt-Integration mit dem separaten focuspoint-Addon.
  *
  * Zwei Actions:
  *   GET  ?rex-api-call=mediaplace_focuspoint&action=info&file=...
@@ -17,43 +22,43 @@
  * data-focuspoint-available="1" nie aufrufen, das ist aber kein Ersatz fuer
  * eine eigene serverseitige Absicherung.
  */
-class rex_api_mediaplace_focuspoint extends rex_api_function
+class Focuspoint extends rex_api_function
 {
     public function execute(): rex_api_result
     {
-        rex_response::cleanOutputBuffers();
+        \rex_response::cleanOutputBuffers();
 
-        if (!rex::getUser()) {
-            rex_response::setStatus(rex_response::HTTP_UNAUTHORIZED);
-            rex_response::sendJson(['error' => 'Unauthorized']);
+        if (!\rex::getUser()) {
+            \rex_response::setStatus(\rex_response::HTTP_UNAUTHORIZED);
+            \rex_response::sendJson(['error' => 'Unauthorized']);
             exit;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\FocuspointIntegration::isAvailable()) {
-            rex_response::setStatus(rex_response::HTTP_NOT_IMPLEMENTED);
-            rex_response::sendJson(['error' => 'focuspoint addon not available']);
+            \rex_response::setStatus('501 Not Implemented');
+            \rex_response::sendJson(['error' => 'focuspoint addon not available']);
             exit;
         }
 
         $action = rex_request('action', 'string', 'info');
         $filename = rex_request('file', 'string', '');
 
-        $media = '' !== $filename ? rex_media::get($filename) : null;
+        $media = '' !== $filename ? \rex_media::get($filename) : null;
         if (!$media) {
-            rex_response::setStatus(rex_response::HTTP_NOT_FOUND);
-            rex_response::sendJson(['error' => 'Media not found']);
+            \rex_response::setStatus(\rex_response::HTTP_NOT_FOUND);
+            \rex_response::sendJson(['error' => 'Media not found']);
             exit;
         }
 
         if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($media->getCategoryId())) {
-            rex_response::setStatus(rex_response::HTTP_FORBIDDEN);
-            rex_response::sendJson(['error' => 'Permission denied']);
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
             exit;
         }
 
         if (!$media->isImage()) {
-            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-            rex_response::sendJson(['error' => 'Not an image']);
+            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+            \rex_response::sendJson(['error' => 'Not an image']);
             exit;
         }
 
@@ -74,7 +79,7 @@ class rex_api_mediaplace_focuspoint extends rex_api_function
             $current[$field] = \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::getFocus($filename, $field);
         }
 
-        rex_response::sendJson([
+        \rex_response::sendJson([
             'success' => true,
             'types' => \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::getTypesForImage(),
             'fields' => $fields,
@@ -85,8 +90,8 @@ class rex_api_mediaplace_focuspoint extends rex_api_function
     private function handleSave(string $filename): void
     {
         if ('post' !== rex_request_method()) {
-            rex_response::setStatus(rex_response::HTTP_METHOD_NOT_ALLOWED);
-            rex_response::sendJson(['error' => 'POST required']);
+            \rex_response::setStatus('405 Method Not Allowed');
+            \rex_response::sendJson(['error' => 'POST required']);
             return;
         }
 
@@ -94,11 +99,11 @@ class rex_api_mediaplace_focuspoint extends rex_api_function
         $xy = rex_request('xy', 'string', '');
 
         if (!\FriendsOfRedaxo\Mediaplace\FocuspointIntegration::saveFocus($filename, $metafield, $xy)) {
-            rex_response::setStatus(rex_response::HTTP_BAD_REQUEST);
-            rex_response::sendJson(['error' => 'Invalid field or coordinate']);
+            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+            \rex_response::sendJson(['error' => 'Invalid field or coordinate']);
             return;
         }
 
-        rex_response::sendJson(['success' => true]);
+        \rex_response::sendJson(['success' => true]);
     }
 }

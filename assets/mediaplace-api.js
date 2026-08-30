@@ -1,10 +1,10 @@
 /**
  * MediaPlace -- API-Schicht (reine Funktionen, kein Modul-State).
- * Ausgelagert aus mediapool3.js (Stufe C, Teil 1): alle Funktionen hier
+ * Ausgelagert aus mediaplace.js (Stufe C, Teil 1): alle Funktionen hier
  * nehmen ihre Daten ueber Parameter/Rueckgabewerte entgegen, ohne auf die
  * geteilten Overlay-Statusvariablen (currentCat, selectedFile, ...)
- * zuzugreifen -- deshalb per einfachem Alias in mediapool3.js einbindbar
- * (var apiFetch = MP3Core.api.apiFetch; usw.), ohne dass mediapool3.js
+ * zuzugreifen -- deshalb per einfachem Alias in mediaplace.js einbindbar
+ * (var apiFetch = MP3Core.api.apiFetch; usw.), ohne dass mediaplace.js
  * selbst umgebaut werden musste.
  */
 (function (Core) {
@@ -174,7 +174,11 @@
         .then(function (json) {
             return {
                 file_tags: (json && typeof json.file_tags === 'object' && json.file_tags) ? json.file_tags : {},
-                catalog: Array.isArray(json.catalog) ? json.catalog : []
+                catalog: Array.isArray(json.catalog) ? json.catalog : [],
+                // Global (nicht auf die aktuell geladene Kategorie beschraenkt),
+                // respektiert aber die Kategorie-Rechte des Users -- siehe
+                // SystemTagManager::getCollectionCounts() serverseitig.
+                collection_counts: (json && typeof json.collection_counts === 'object' && json.collection_counts) ? json.collection_counts : {}
             };
         });
     }
@@ -217,15 +221,12 @@
     // ausgetauscht, kein Aufrufer muss angepasst werden. RUECKBAU-TODO: sobald
     // api ueberall >=1.3.1 ist, kann diese Funktion durch apiFetchRaw() ersetzt
     // und der Fallback-Endpunkt entfernt werden.
-    function apiFetchMediaList(endpoint) {
-        var root = document.getElementById('mp3-root');
-        var secure = root ? root.dataset.apiMediaListSecure === '1' : true;
-        var fallbackUrl = root ? root.dataset.mediaListFallbackUrl : null;
-
-        if (secure || !fallbackUrl) {
-            return apiFetchRaw(endpoint);
-        }
-
+    // Gemeinsam von apiFetchMediaList() (Uebergangs-Fallback-Fall) und
+    // apiFetchCollectionMediaList() (siehe dort, IMMER ueber diesen Weg)
+    // genutzt: haengt die Query eines api-Addon-foermigen endpoint-Strings an
+    // fallbackUrl an, inkl. page/per_page -> mp3_page/mp3_per_page-Umbenennung
+    // (siehe Kommentar unten).
+    function fetchViaMediaListFallback(endpoint, fallbackUrl) {
         // Reines String-Anhaengen wie bei getCategoriesApiUrl()/getUnusedApiUrl();
         // URLSearchParams() kodiert "[" / "]" in filter[category_id]/filter[term]
         // dabei korrekt, ohne eine Basis-URL zu brauchen.
@@ -257,6 +258,35 @@
             }
         })
         .then(handleJsonResponse);
+    }
+
+    function apiFetchMediaList(endpoint) {
+        var root = document.getElementById('mp3-root');
+        var secure = root ? root.dataset.apiMediaListSecure === '1' : true;
+        var fallbackUrl = root ? root.dataset.mediaListFallbackUrl : null;
+
+        if (secure || !fallbackUrl) {
+            return apiFetchRaw(endpoint);
+        }
+
+        return fetchViaMediaListFallback(endpoint, fallbackUrl);
+    }
+
+    // Sammlungen (rex_mediaplace_media_tags, "collection:"-Praefix) sind ein
+    // MediaPlace-eigenes Konzept, das FriendsOfRedaxo/api's /media-Route gar
+    // nicht kennt -- ein filter[collection] dort wuerde als unbekannter
+    // Parameter still ignoriert, die Antwort waere die ungefilterte
+    // Gesamtliste. Sammlungs-Anfragen laufen deshalb IMMER ueber den eigenen
+    // Endpunkt (rex_api_mediaplace_media_list.php), unabhaengig vom
+    // data-api-media-list-secure-Schalter oben (der betrifft nur die
+    // generische Kategorie-Rechtefilterung der normalen Medienliste).
+    function apiFetchCollectionMediaList(endpoint) {
+        var root = document.getElementById('mp3-root');
+        var fallbackUrl = root ? root.dataset.mediaListFallbackUrl : null;
+        if (!fallbackUrl) {
+            return Promise.reject(new Error('Collection media list endpoint not available'));
+        }
+        return fetchViaMediaListFallback(endpoint, fallbackUrl);
     }
 
     function apiUpload(file, catId, onProgress) {
@@ -713,7 +743,7 @@
 
     // Direkt als <img src> genutzt (kein fetch()) -- Fallback aufs Datei-Icon
     // laeuft ueber denselben globalen error-Listener wie bei lokalen Video-/
-    // Bild-Vorschaubildern, siehe mediapool3.js.
+    // Bild-Vorschaubildern, siehe mediaplace.js.
     function getProviderThumbnailUrl(provider, path) {
         return getProviderApiUrl('thumbnail', { provider: provider, path: path });
     }
@@ -959,6 +989,7 @@
     Core.api.apiFetch = apiFetch;
     Core.api.apiFetchRaw = apiFetchRaw;
     Core.api.apiFetchMediaList = apiFetchMediaList;
+    Core.api.apiFetchCollectionMediaList = apiFetchCollectionMediaList;
     Core.api.apiUpload = apiUpload;
     Core.api.apiUploadJsonOrError = apiUploadJsonOrError;
     Core.api.apiUploadInit = apiUploadInit;

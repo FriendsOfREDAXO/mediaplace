@@ -18,7 +18,7 @@
     --mp3-modal-bg: #fff;
     --mp3-modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 
-    /* Media-Wall-Masonry-Spaltenbreite, per Slider im Footer steuerbar (siehe mediapool3.js) */
+    /* Media-Wall-Masonry-Spaltenbreite, per Slider im Footer steuerbar (siehe mediaplace.js) */
     --mp3-tile-size: 220px;
 
     /* Resize Handle */
@@ -682,7 +682,7 @@ body.rex-theme-dark {
 }
 
 /* position:fixed statt absolute -- left/top werden von positionAdminMenu()
-   (mediapool3.js) gesetzt und am Viewport geklemmt, damit das Menue auf
+   (mediaplace.js) gesetzt und am Viewport geklemmt, damit das Menue auf
    schmalen Bildschirmen nicht ueber den Rand hinausragt (der Button steht im
    Header oft nah am rechten Rand). */
 #mp3-overlay .mp3-admin-menu {
@@ -723,29 +723,57 @@ body.rex-theme-dark {
     color: var(--mp3-status-text);
 }
 
-#mp3-overlay .mp3-dark-mode-toggle {
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    color: #fff;
-    cursor: pointer;
+/* Dark/Light-Umschalter als erste Zeile im Verwaltungsmenue (statt eigenes
+   Header-Icon) -- gleiche Zeilen-Optik wie die Links darunter (.mp3-admin-menu a),
+   aber ein <button> statt <a> (kein href, reiner Zustands-Umschalter). */
+#mp3-overlay .mp3-admin-menu-darkmode-toggle {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: background 0.15s ease;
-    flex-shrink: 0;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: none;
+    border-bottom: 1px solid var(--mp3-toolbar-border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-text);
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
 }
 
-#mp3-overlay .mp3-dark-mode-toggle:hover {
-    background: rgba(255, 255, 255, 0.15);
+#mp3-overlay .mp3-admin-menu-darkmode-toggle i {
+    width: 16px;
+    text-align: center;
+    color: var(--mp3-status-text);
 }
 
-#mp3-overlay .mp3-dark-mode-toggle.mp3-dark-mode-active {
-    background: rgba(108, 155, 210, 0.35);
+#mp3-overlay .mp3-admin-menu-darkmode-toggle:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
+#mp3-overlay .mp3-admin-menu-darkmode-toggle.mp3-dark-mode-active i {
     color: #8ab8e8;
+}
+
+/* Der Umschalter kann Dark Mode nur AUFsetzen (aus einer hellen Umgebung
+   dunkel machen) -- es gibt bewusst keine #mp3-overlay:not(.mp3-dark-mode)-
+   Regel, die eine bereits von REDAXO/System geerbte dunkle Vorgabe wieder
+   auf hell zwingt (das wuerde den 4-Block-Variablenaufbau oben verdoppeln).
+   Ist die Umgebung schon dunkel -- REDAXO explizit auf dunkel gestellt, oder
+   REDAXO auf "automatisch" und das System dunkel -- haette der Umschalter
+   also nie eine sichtbare Wirkung. Dann lieber ausblenden als einen
+   wirkungslosen Button zeigen (gleiche Bedingungen wie die Variablen-
+   Ueberschreibungen oben, nur als display:none statt Farbwerte). */
+body.rex-theme-dark #mp3-overlay .mp3-admin-menu-darkmode-toggle {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.rex-has-theme:not(.rex-theme-light) #mp3-overlay .mp3-admin-menu-darkmode-toggle {
+        display: none;
+    }
 }
 
 
@@ -894,7 +922,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 }
 
 /* Nur der leere Titel-/Info-Bereich des Headers ist wirklich per Drag
-   verschiebbar (siehe initDragResize() in mediapool3.js: der mousedown-Handler
+   verschiebbar (siehe initDragResize() in mediaplace.js: der mousedown-Handler
    bricht bei .mp3-close, .mp3-header-tools, input, select, button, label ab).
    Der ererbte Grab-Cursor muss deshalb ueber allen interaktiven Bereichen
    explizit zurueckgesetzt werden, sonst wird dort Ziehen suggeriert, das
@@ -1014,7 +1042,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 }
 
 /* Sidebar per Drag-Handle breiter/schmaler ziehen (initDragResize() in
-   mediapool3.js, Breite in localStorage gemerkt). Im Compact-Modus (Sidebar
+   mediaplace.js, Breite in localStorage gemerkt). Im Compact-Modus (Sidebar
    wird zum Offcanvas) nicht sichtbar -- dort ergibt Resize keinen Sinn. */
 #mp3-overlay .mp3-sidebar-resize-handle {
     width: 6px;
@@ -1168,7 +1196,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 }
 
 /* Menue-Inhalt wird beim Oeffnen dynamisch in dieses EINE Element geschrieben
-   (openCatMenu() in mediapool3.js), das direkt im Modal haengt (nicht in der
+   (openCatMenu() in mediaplace.js), das direkt im Modal haengt (nicht in der
    Sidebar) und "position: fixed" ist -- sonst schneidet overflow-y:auto der
    Sidebar das Dropdown ab, sobald eine Kategorie nah am Rand steht. */
 #mp3-overlay .mp3-cat-menu-portal {
@@ -1286,7 +1314,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 
 /* Baum kommt komplett vom Server (siehe fragments/mediaplace/), auf-/
    zugeklappt wird rein clientseitig per Klasse -- kein Nachladen mehr pro
-   Ebene (toggleCategory() in mediapool3.js). Nur verschachtelte Ebenen
+   Ebene (toggleCategory() in mediaplace.js). Nur verschachtelte Ebenen
    (Kind eines .mp3-cat-node) werden per Default versteckt -- die oberste
    Ebene ist direktes Kind von .mp3-cat-tree (kein umschliessender Node, der
    sie freischalten koennte) und muss immer sichtbar bleiben. */
@@ -1338,7 +1366,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 
 /* Kategorie 0 ("kein Ordner"/"Medienpool"-Wurzel) ohne hasCategoryPerm(0) --
    als <span> statt <a> gerendert (siehe renderCategories()/renderBreadcrumb()
-   in mediapool3.js), hier nur visuell als nicht anklickbar kennzeichnen. */
+   in mediaplace.js), hier nur visuell als nicht anklickbar kennzeichnen. */
 #mp3-overlay .mp3-cat.mp3-cat-disabled {
     cursor: not-allowed;
     color: var(--mp3-cat-toggle);
@@ -1377,21 +1405,17 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     /* removed old rule – icon styles above */
 }
 
-/* ---- Collections ---- */
-#mp3-overlay .mp3-collections-wrap {
-    margin-top: 10px;
-    padding: 10px 8px 2px;
-    border-top: 1px solid var(--mp3-sidebar-border);
-}
-
-#mp3-overlay .mp3-collections-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 6px;
-}
-
-#mp3-overlay .mp3-collections-title {
+/* ---- Ein-/ausklappbare Sidebar-Abschnitte (Medienpool-Baum, Sammlungen,
+   Tags) -- gemeinsame Struktur-Klassen, siehe setBatchSelectMode()-artiger
+   Click-Handler (.mp3-sidebar-section-toggle) in mediaplace.js. Zustand pro
+   Abschnitt in localStorage (mp3_sidebar_collapsed_<section>), jeder
+   Abschnitt liest ihn selbst beim Rendern. */
+/* Titel waechst, damit die Action-Buttons (Hinzufuegen/Leeren + Toggle)
+   rechtsbuendig zusammenbleiben statt sich bei justify-content:space-between
+   mit 3 Kindern gleichmaessig ueber die ganze Zeile zu verteilen. */
+#mp3-overlay .mp3-sidebar-section-title {
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: 12px;
     font-weight: 600;
     color: var(--mp3-cat-text);
@@ -1399,6 +1423,88 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     align-items: center;
     gap: 6px;
 }
+
+#mp3-overlay .mp3-sidebar-section-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-add-color);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+#mp3-overlay .mp3-sidebar-section-toggle:hover {
+    background: var(--mp3-cat-add-hover-bg);
+    color: #fff;
+}
+
+#mp3-overlay .mp3-sidebar-section-collapsed .mp3-sidebar-section-toggle i {
+    transform: rotate(-90deg);
+}
+
+#mp3-overlay .mp3-sidebar-section-collapsed .mp3-sidebar-section-body {
+    display: none;
+}
+
+/* Alle drei Sidebar-Abschnitts-Koepfe (Kategorien/Sammlungen/Tags) teilen
+   sich dieselben Abstaende, damit Titel/Icons buendig untereinander stehen --
+   nur hier definieren, nicht pro Abschnitt einzeln ueberschreiben. */
+#mp3-overlay .mp3-sidebar-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+/* Medienpool-Baum-Abschnitt (Suche + Baum) -- eigener Wrapper analog zu
+   .mp3-collections-wrap, aber oben ohne Trennlinie/Extra-Abstand (erster
+   Abschnitt der Sidebar, direkt unter deren eigenem Rand). Gleiche
+   Innenabstaende wie die anderen beiden Abschnitte, nur ohne den
+   margin-top/border-top, den die spaeteren als Trenner zum vorherigen
+   Abschnitt brauchen. */
+#mp3-overlay .mp3-cat-section-wrap {
+    padding: 10px 8px 2px;
+}
+
+/* "Medien ohne ALT-Text"-Sidebar-Eintrag: direkt nach dem Kategorie-Baum,
+   vor Sammlungen -- wiederverwendet .mp3-cat fuer Hover-/Aktiv-Optik statt
+   eigener Regeln, nur der Wrapper braucht Abstand nach oben/unten. Farbe
+   wiederverwendet dieselbe lokal gescopte Variable wie .mp3-alt-hint (siehe
+   dort) fuer denselben Warn-Ton, inkl. derselben zwei Dark-Mode-Overrides. */
+#mp3-overlay .mp3-alt-missing-nav-wrap {
+    padding: 0 8px 8px;
+}
+
+#mp3-overlay .mp3-alt-missing-nav {
+    color: var(--mp3-alt-hint-text, #b06000);
+}
+
+body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
+    --mp3-alt-hint-text: #f0a040;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.rex-has-theme:not(.rex-theme-light) #mp3-overlay .mp3-alt-missing-nav {
+        --mp3-alt-hint-text: #f0a040;
+    }
+}
+
+/* ---- Collections ---- */
+#mp3-overlay .mp3-collections-wrap {
+    margin-top: 10px;
+    padding: 10px 8px 2px;
+    border-top: 1px solid var(--mp3-sidebar-border);
+}
+
+/* .mp3-collections-title: Typografie kommt vollstaendig von der geteilten
+   .mp3-sidebar-section-title-Klasse (siehe oben), hier keine eigene Regel
+   mehr noetig. */
 
 #mp3-overlay .mp3-collection-add-btn,
 #mp3-overlay .mp3-collection-rename-btn,
@@ -1650,6 +1756,51 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     background: rgba(255, 255, 255, 0.15);
 }
 
+/* Auswahl-Modus-Umschalter (touch-taugliche Alternative zu Ctrl/Cmd+Klick,
+   siehe setBatchSelectMode() in mediaplace.js) -- gleiche Optik wie
+   .mp3-upload-btn, aber reines Icon ohne Label (bleibt im engen Header schmal). */
+#mp3-overlay .mp3-select-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-select-mode-toggle:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+#mp3-overlay .mp3-select-mode-toggle.mp3-select-mode-active {
+    background: rgba(108, 155, 210, 0.35);
+    border-color: rgba(108, 155, 210, 0.5);
+    color: #8ab8e8;
+}
+
+/* Waehrend MP3 als Mehrfachauswahl-Picker laeuft (MP3.open({multiple:true}))
+   hat der eingebaute Multi-Footer bereits eine eigene Select-All-Funktion --
+   der zusaetzliche Umschalter waere hier redundant/widerspruechlich. */
+#mp3-overlay.mp3-multi-mode .mp3-select-mode-toggle {
+    display: none;
+}
+
+/* Cloud-Provider-Browsing (Nextcloud etc.) unterstuetzt keine Mehrfachauswahl
+   -- eigener Render-Pfad (renderCurrentProviderEntries() statt renderFiles()),
+   collectionDragSelected/batchSelectMode wirken dort gar nicht. Umschalter
+   waere klickbar, ohne sichtbar etwas zu tun -- deshalb ausgeblendet. */
+#mp3-overlay.mp3-provider-mode .mp3-select-mode-toggle {
+    display: none;
+}
+
 #mp3-overlay .mp3-upload-btn {
     display: inline-flex;
     align-items: center;
@@ -1702,12 +1853,10 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 }
 
 /* ---- Filter bar ---- */
-/* Zwei Kinder: .mp3-filter-pills (Typ-Filter + "Nur unbenutzte", wrappen als
-   eigene Gruppe) und .mp3-tag-filter-wrap (rechtsbuendig). space-between +
-   flex-wrap auf DIESER Ebene sorgt dafuer, dass der Tag-Filter erst dann in
-   eine eigene Zeile faellt, wenn die Pills-Gruppe schon die volle Breite
-   braucht -- statt (wie vorher, ohne die Gruppierung) inmitten einzelner,
-   umgebrochener Pill-Buttons zu landen. */
+/* .mp3-filter-pills (Typ-Filter + "Nur unbenutzte") wrappen als eigene
+   Gruppe; der Tag-Filter lebt inzwischen als eigener Sidebar-Abschnitt statt
+   hier (siehe .mp3-tag-section-wrap), diese Zeile enthaelt also nur noch die
+   Pills-Gruppe + das mobile Typ-Filter-Dropdown. */
 #mp3-overlay .mp3-filter-bar {
     display: flex;
     align-items: center;
@@ -1775,60 +1924,52 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     background: var(--mp3-filter-count-active-bg);
 }
 
-#mp3-overlay .mp3-tag-filter-wrap {
-    position: relative;
-    margin-left: auto;
-    min-width: 150px;
+/* Tag-Filter-Liste in der Sidebar (frueher ein Dropdown/Portal im
+   Filter-Bar-Bereich, siehe CHANGELOG) -- gleiche Struktur/Optik wie
+   .mp3-collections-wrap/-head/-title darueber. */
+#mp3-overlay .mp3-tag-section-wrap {
+    margin-top: 10px;
+    padding: 10px 8px 2px;
+    border-top: 1px solid var(--mp3-sidebar-border);
 }
 
-#mp3-overlay .mp3-tag-filter-toggle {
-    width: 100%;
+/* .mp3-tag-section-title: Typografie kommt vollstaendig von der geteilten
+   .mp3-sidebar-section-title-Klasse (siehe oben), hier keine eigene Regel
+   mehr noetig. */
+
+#mp3-overlay .mp3-tag-section-count {
+    display: inline-block;
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: 0;
+    background: var(--mp3-filter-count-bg);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 16px;
+}
+
+#mp3-overlay .mp3-tag-filter-clear-btn {
     display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    padding: 4px 8px;
-    border: 1px solid var(--mp3-filter-btn-border);
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
     border-radius: 0;
-    background: var(--mp3-filter-btn-bg);
-    color: var(--mp3-filter-btn-text);
-    font-size: 12px;
+    background: transparent;
+    color: var(--mp3-cat-add-color);
     cursor: pointer;
 }
 
-#mp3-overlay .mp3-tag-filter-wrap.is-open .mp3-tag-filter-toggle {
-    border-color: var(--mp3-filter-active-border);
-    box-shadow: 0 0 0 2px rgba(60, 141, 188, 0.15);
+#mp3-overlay .mp3-tag-filter-clear-btn:hover {
+    background: var(--mp3-cat-add-hover-bg);
+    color: #fff;
 }
 
-#mp3-overlay .mp3-tag-filter-label {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Portal statt Inline-Dropdown (gleiches Muster wie #mp3-cat-menu-portal):
-   .mp3-filter-bar ist im Compact-Modus horizontal scrollbar (overflow-x:auto),
-   das schneidet ein absolut positioniertes Kind sonst am Rand ab. Position
-   wird per JS gesetzt (setTagFilterMenuOpen()), position:fixed statt
-   absolute, da relativ zum Viewport statt zu einem (jetzt entfernten)
-   Vorfahren positioniert. */
-#mp3-overlay .mp3-tag-filter-menu-portal {
-    display: none;
-    position: fixed;
-    z-index: 620;
-    min-width: 220px;
-    max-height: 260px;
+#mp3-overlay .mp3-tag-filter-list {
+    max-height: 220px;
     overflow-y: auto;
-    padding: 6px;
-    border: 1px solid var(--mp3-filter-btn-border);
-    border-radius: 0;
-    background: var(--mp3-modal-bg);
-    box-shadow: var(--mp3-card-hover-shadow);
-}
-
-#mp3-overlay .mp3-tag-filter-menu-portal.mp3-tag-filter-menu-portal-open {
-    display: block;
 }
 
 #mp3-overlay .mp3-tag-filter-option {
@@ -1974,11 +2115,27 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 
 /* ---- Status bar ---- */
 #mp3-overlay .mp3-status {
-    padding: 4px 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
     font-size: 12px;
     color: var(--mp3-status-text);
     background: var(--mp3-status-bg);
     border-bottom: 1px solid var(--mp3-status-border);
+    flex-shrink: 0;
+}
+
+/* Auswahl-Modus-Umschalter sitzt hier statt in der oberen Toolbar --
+   naeher an der klassischen Medienpool-Anordnung ("Alle auswaehlen" direkt
+   ueber der Dateiliste statt am Kopfende der ganzen Seite). */
+#mp3-overlay .mp3-status .mp3-select-mode-toggle {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--mp3-filter-btn-border);
+    font-size: 11px;
     flex-shrink: 0;
 }
 
@@ -2220,28 +2377,6 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     cursor: grab;
 }
 
-#mp3-overlay .mp3-collection-toggle-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    z-index: 3;
-    width: 24px;
-    height: 24px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.35);
-    color: #fff;
-    cursor: pointer;
-}
-
-#mp3-overlay .mp3-collection-toggle-btn:hover {
-    background: rgba(0, 0, 0, 0.55);
-}
-
-#mp3-overlay .mp3-collection-toggle-btn.is-active {
-    background: #3c8dbc;
-}
-
 /* Standbild-Modus der Video-Vorschau (siehe previewHtml()/FfmpegIntegration::
    getVideoThumbMode()): kein animiertes Bewegtbild mehr erkennbar, dieses
    Overlay-Icon macht trotzdem klar, dass es sich um ein Video handelt statt
@@ -2266,6 +2401,18 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     pointer-events: none;
 }
 
+/* Im normalen Grid-Kartenlayout (.mp3-card) sitzt die Multi-Select-Checkbox
+   (.mp3-card-check) ebenfalls oben links -- deckt das Video-Badge sonst ab
+   (Checkbox nicht mehr klickbar/sichtbar). Nach rechts verschoben, wo im
+   Grid nichts anderes sitzt. Im Media-Wall (.mp3-masonry-media) bleibt das
+   Badge links: dort sitzt die Checkbox stattdessen rechts in
+   .mp3-masonry-toolbar, links ist frei -- daher hier bewusst nur fuer
+   .mp3-card gescoped statt global geaendert. */
+#mp3-overlay .mp3-card .mp3-video-badge {
+    left: auto;
+    right: 6px;
+}
+
 #mp3-overlay .mp3-card:hover {
     border-color: var(--mp3-card-hover-border);
     box-shadow: var(--mp3-card-hover-shadow);
@@ -2281,7 +2428,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
    aspect-ratio, siehe cardAspectRatio()) stauchte/streckte Bilder sichtbar,
    sobald die Kachelbreite per Slider (--mp3-tile-size) von der urspruenglich
    festen ~180px-Breite abwich. 4/3 hier ist nur der Fallback, falls das
-   inline style (GRID_TILE_RATIO, mediapool3.js) aus irgendeinem Grund fehlt --
+   inline style (GRID_TILE_RATIO, mediaplace.js) aus irgendeinem Grund fehlt --
    die Grid-Kacheln bekommen bewusst IMMER ein festes Querformat, unabhaengig
    vom natuerlichen Bildverhaeltnis (das zeigt nur die Media-Wall/Masonry). */
 #mp3-overlay .mp3-card img {
@@ -2615,13 +2762,21 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 
 #mp3-overlay .mp3-edit-label {
     display: block;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--mp3-edit-label);
     margin-bottom: 3px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding-left: 2px;
+}
+
+/* Tags-Feld-Label etwas groesser als die uebrigen Feld-Labels -- eigene
+   Gewichtung als am haeufigsten genutztes Feld, gescoped ueber das
+   data-field-key-Attribut statt die geteilte .mp3-edit-label-Regel
+   global zu aendern (die gilt auch fuer TITEL/BESCHREIBUNG/... unveraendert). */
+#mp3-overlay [data-field-key="__system_tags"] > .mp3-edit-label {
+    font-size: 13px;
 }
 
 /* Display mode (clickable text) */
@@ -2796,34 +2951,6 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     padding: 2px 0;
 }
 
-/* Metainfo-Hinweis wenn keine Felder definiert */
-#mp3-overlay .mp3-metainfo-hint {
-    margin-top: 10px;
-    padding: 8px 10px;
-    font-size: 12px;
-    color: var(--mp3-status-text);
-    border-left: 3px solid var(--mp3-edit-section-border);
-    border-radius: 0;
-    background: var(--mp3-edit-display-hover);
-    line-height: 1.5;
-}
-
-#mp3-overlay .mp3-metainfo-hint a {
-    color: var(--mp3-link-color);
-    text-decoration: none;
-}
-
-#mp3-overlay .mp3-metainfo-hint a:hover {
-    text-decoration: underline;
-}
-
-#mp3-overlay .mp3-metainfo-hint code {
-    font-size: 11px;
-    background: var(--mp3-table-td-border);
-    padding: 0 3px;
-    border-radius: 0;
-}
-
 #mp3-overlay .mp3-lang-row {
     display: flex;
     align-items: stretch;
@@ -2898,9 +3025,9 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 6px;
+    padding: 3px 8px;
     border-radius: 0;
-    font-size: 11px;
+    font-size: 15px;
     background: var(--mp3-list-th-bg);
     color: var(--mp3-list-th-text);
 }
@@ -2973,6 +3100,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 }
 
 #mp3-overlay .mp3-tags-input-wrap {
+    position: relative;
     display: flex;
     gap: 6px;
 }
@@ -2984,6 +3112,62 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     color: var(--mp3-input-text);
     border-radius: 0;
     cursor: pointer;
+}
+
+/* Combobox-Vorschlagsliste (updateTagsComboList() in mediaplace.js) -- kein
+   Portal noetig wie beim Kategorie-/Filter-Dropdown: der Detail-Panel-
+   Container scrollt selbst, ein absolut positioniertes Kind scrollt korrekt
+   mit statt abgeschnitten zu werden. */
+#mp3-overlay .mp3-tags-combo-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 34px;
+    margin-top: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--mp3-modal-bg);
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 30;
+}
+
+#mp3-overlay .mp3-tags-combo-option,
+#mp3-overlay .mp3-tags-combo-create {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    background: transparent;
+    color: var(--mp3-input-text);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-tags-combo-option:hover,
+#mp3-overlay .mp3-tags-combo-create:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
+#mp3-overlay .mp3-tags-combo-option-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-tags-combo-create {
+    color: var(--mp3-cat-active-border);
+    border-top: 1px solid var(--mp3-input-border);
+}
+
+#mp3-overlay .mp3-tags-combo-empty {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--mp3-status-text);
 }
 
 #mp3-overlay .mp3-inline-edit-wrap {
@@ -3059,7 +3243,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 }
 
 /* ---- Metainfo-Canvas: Grid-Auswahl fuer klassische REX_MEDIA[n]/
-   REX_MEDIALIST[n]-Widgets (startMetainfoPick() in mediapool3.js) ---- */
+   REX_MEDIALIST[n]-Widgets (startMetainfoPick() in mediaplace.js) ---- */
 #mp3-overlay.mp3-metainfo-pick-mode .mp3-grid .mp3-card,
 #mp3-overlay.mp3-metainfo-pick-mode .mp3-list-row,
 #mp3-overlay.mp3-metainfo-pick-mode .mp3-masonry-card {
@@ -3199,6 +3383,19 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     background: var(--mp3-filter-hover-bg);
 }
 
+/* Label (inkl. Bildmasse, z.B. "Bild optimieren (3000×2000 -> max.
+   2000×2000)") einzeilig halten statt umzubrechen -- eigenes Span statt
+   direkt am Flex-Container, weil text-overflow:ellipsis nur innerhalb eines
+   eigenen Text-Formatierungskontexts greift, nicht auf einem Flex-Container
+   mit Icon + Text als Geschwister-Kinder. Voller Text bleibt ueber
+   title=""-Attribut am Button abrufbar. */
+#mp3-overlay .mp3-image-optimize-btn .mp3-image-optimize-btn-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
 #mp3-overlay .mp3-image-optimize-btn:disabled,
 #mp3-overlay .mp3-image-optimize-btn.is-loading {
     opacity: 0.6;
@@ -3224,7 +3421,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     border: none;
     background: none;
     color: var(--mp3-table-td-label);
-    font-size: 12px;
+    font-size: 13px;
     cursor: pointer;
     text-align: left;
 }
@@ -3474,7 +3671,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 
 /* ---- Media Wall View – Masonry via CSS Multi-Column (Pinterest-Style) ----
    Karten behalten ihr natuerliches Seitenverhaeltnis (cardAspectRatio() in
-   mediapool3.js, inline auf .mp3-masonry-media) statt fester Aspekt-Buckets --
+   mediaplace.js, inline auf .mp3-masonry-media) statt fester Aspekt-Buckets --
    dadurch variable Kartenhoehen pro Spalte. Kachelgroesse per Slider im
    Footer steuerbar (--mp3-tile-size, siehe updateTileSizeVisibility()). */
 #mp3-overlay .mp3-grid.mp3-view-mediawall,
@@ -3654,18 +3851,6 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 
 #mp3-overlay .mp3-list-table .mp3-list-th-preview {
     width: 44px;
-}
-
-#mp3-overlay .mp3-list-th-collection,
-#mp3-overlay .mp3-list-cell-collection {
-    width: 44px;
-    text-align: center;
-}
-
-#mp3-overlay .mp3-list-cell-collection .mp3-collection-toggle-btn {
-    position: static;
-    width: 22px;
-    height: 22px;
 }
 
 #mp3-overlay .mp3-list-row {
@@ -3949,6 +4134,53 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
         font-size: 14px;
     }
 
+    /* Auswahl-/Sammelaktions-Fussleisten (Multi-Picker + Batch-Auswahl):
+       Buttons zeigen auf schmalen Screens nur noch das Icon. Der Label-Text
+       steht als reiner Textknoten neben dem <i> (kein eigenes <span>), daher
+       font-size:0 auf dem Button (blendet den Text aus, ohne extra Markup)
+       und font-size auf dem <i> zurueckgesetzt, damit nur das Icon sichtbar
+       bleibt -- haelt die Reihe schmal UND (durch den fehlenden Textumbruch)
+       niedrig. */
+    #mp3-overlay .mp3-multi-footer,
+    #mp3-overlay .mp3-batch-footer {
+        padding: 6px 10px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    #mp3-overlay .mp3-multi-left,
+    #mp3-overlay .mp3-batch-left {
+        gap: 8px;
+    }
+
+    #mp3-overlay .mp3-batch-actions {
+        gap: 6px;
+    }
+
+    #mp3-overlay .mp3-multi-select-all,
+    #mp3-overlay .mp3-multi-confirm,
+    #mp3-overlay .mp3-batch-select-all,
+    #mp3-overlay .mp3-batch-move-btn,
+    #mp3-overlay .mp3-batch-delete-btn,
+    #mp3-overlay .mp3-batch-clear-btn {
+        padding: 8px;
+        font-size: 0;
+    }
+
+    #mp3-overlay .mp3-multi-select-all i,
+    #mp3-overlay .mp3-multi-confirm i,
+    #mp3-overlay .mp3-batch-select-all i,
+    #mp3-overlay .mp3-batch-move-btn i,
+    #mp3-overlay .mp3-batch-delete-btn i,
+    #mp3-overlay .mp3-batch-clear-btn i {
+        font-size: 14px;
+    }
+
+    #mp3-overlay .mp3-multi-count,
+    #mp3-overlay .mp3-batch-count {
+        font-size: 12px;
+    }
+
     /* Typ-Filter-Pills + "Nur unbenutzte" werden im Dropdown zusammengefasst
        (.mp3-filter-dropdown-wrap) statt als horizontal scrollbarer Streifen
        -- bei so vielen Filtern auf schmalen Breiten sonst unuebersichtlich
@@ -3968,12 +4200,6 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
         display: block;
         flex: 1 1 auto;
         min-width: 0;
-    }
-
-    #mp3-overlay .mp3-tag-filter-wrap {
-        margin-left: 0;
-        flex-shrink: 0;
-        min-width: 150px;
     }
 
     /* List view: hide type and date columns */
@@ -4150,6 +4376,23 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 #mp3-overlay .mp3-batch-clear-btn:hover {
     background: var(--mp3-multi-select-hover-bg);
     border-color: var(--mp3-multi-select-hover-border);
+}
+#mp3-overlay .mp3-batch-move-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: var(--mp3-confirm-btn-bg);
+    color: #fff;
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+#mp3-overlay .mp3-batch-move-btn:hover {
+    background: var(--mp3-confirm-btn-hover-bg);
 }
 #mp3-overlay .mp3-batch-delete-btn {
     display: inline-flex;
@@ -4415,7 +4658,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 }
 
 /* Steuert cropper's eigene Info-Sidebar (Vorschau/Zuschnittdaten) -- siehe
-   Kommentar bei der Markup-Erzeugung in mediapool3.js. Startet standardmaessig
+   Kommentar bei der Markup-Erzeugung in mediaplace.js. Startet standardmaessig
    eingeklappt (cropper-Einstellung "show_info_sidebar_initially"), damit sie
    nicht unnoetig Platz wegnimmt. */
 #mp3-overlay .mp3-crop-sidebar-toggle {
@@ -4763,6 +5006,10 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     font-size: 13px;
     color: var(--mp3-status-text);
     margin-bottom: 14px;
+    /* Siehe .mp3-cat-move-modal-info -- gleiche Begruendung, gemeinsam
+       genutzt fuer Sammlungsname/Dateiname-Anzeigen ohne Leerzeichen. */
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 #mp3-overlay .mp3-catpick-select {
@@ -4860,6 +5107,16 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     margin: 0;
     font-size: 13px;
     color: var(--mp3-status-text);
+    /* Dateinamen (haeufig als <strong> eingebettet) enthalten keine
+       Leerzeichen -- ohne Umbruch-Erlaubnis zaehlen sie als EIN "Wort" und
+       sprengen als Flex-Kind (min-width:auto ist der Flexbox-Default) sonst
+       die feste Modal-Breite (.mp3-cat-move-modal, max-width:480px) statt in
+       der Box umzubrechen -- betrifft ALLE Dialoge, die dieses gemeinsame
+       Modal fuer eine Dateinamen-Anzeige nutzen (Loeschen/Verschieben/
+       Umbenennen-Bestaetigungen etc.). */
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .mp3-cat-move-modal-select {
@@ -4924,6 +5181,54 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     margin: 2px 0 4px;
     font-size: 12px;
     color: #c9302c;
+}
+
+/* ---- Sammlungs-Auswahl-Liste (showManageCollectionsModal) ---- */
+.mp3-collection-picker-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--mp3-input-border);
+}
+
+.mp3-collection-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--mp3-input-border);
+}
+
+.mp3-collection-picker-item:last-child {
+    border-bottom: none;
+}
+
+.mp3-collection-picker-item:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
+.mp3-collection-picker-item input[type="checkbox"] {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.mp3-collection-picker-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--mp3-input-text);
+}
+
+.mp3-collection-empty {
+    margin: 0;
+    padding: 10px 0;
+    font-size: 13px;
+    color: #777;
 }
 
 /* ---- File category dropdown in Detail Panel ---- */
@@ -5006,6 +5311,49 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 
 #mp3-overlay.mp3-compact .mp3-title {
     font-size: 14px;
+}
+
+/* Siehe Kommentar im @media (max-width: 768px)-Block oben -- gleiche Regeln
+   fuer den .mp3-compact-Pfad (JS-gesteuerte Breitenerkennung statt reiner
+   Media Query, siehe mediaplace-dev-Skill). */
+#mp3-overlay.mp3-compact .mp3-multi-footer,
+#mp3-overlay.mp3-compact .mp3-batch-footer {
+    padding: 6px 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+#mp3-overlay.mp3-compact .mp3-multi-left,
+#mp3-overlay.mp3-compact .mp3-batch-left {
+    gap: 8px;
+}
+
+#mp3-overlay.mp3-compact .mp3-batch-actions {
+    gap: 6px;
+}
+
+#mp3-overlay.mp3-compact .mp3-multi-select-all,
+#mp3-overlay.mp3-compact .mp3-multi-confirm,
+#mp3-overlay.mp3-compact .mp3-batch-select-all,
+#mp3-overlay.mp3-compact .mp3-batch-move-btn,
+#mp3-overlay.mp3-compact .mp3-batch-delete-btn,
+#mp3-overlay.mp3-compact .mp3-batch-clear-btn {
+    padding: 8px;
+    font-size: 0;
+}
+
+#mp3-overlay.mp3-compact .mp3-multi-select-all i,
+#mp3-overlay.mp3-compact .mp3-multi-confirm i,
+#mp3-overlay.mp3-compact .mp3-batch-select-all i,
+#mp3-overlay.mp3-compact .mp3-batch-move-btn i,
+#mp3-overlay.mp3-compact .mp3-batch-delete-btn i,
+#mp3-overlay.mp3-compact .mp3-batch-clear-btn i {
+    font-size: 14px;
+}
+
+#mp3-overlay.mp3-compact .mp3-multi-count,
+#mp3-overlay.mp3-compact .mp3-batch-count {
+    font-size: 12px;
 }
 
 /* Sidebar as offcanvas (absolute within modal) */
@@ -5107,12 +5455,6 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     display: block;
     flex: 1 1 auto;
     min-width: 0;
-}
-
-#mp3-overlay.mp3-compact .mp3-tag-filter-wrap {
-    margin-left: 0;
-    flex-shrink: 0;
-    min-width: 150px;
 }
 
 /* List view: hide type and date columns */

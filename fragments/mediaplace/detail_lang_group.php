@@ -4,8 +4,8 @@
  * Mehrsprachigkeits-Huelle fuer ein uebersetzbares Feld: bei genau einer
  * Sprache nur die einzelne Zeile, bei mehreren die erste Sprache offen plus
  * kollabierbarer "N weitere Sprachen"-Umschalter (Auf-/Zuklappen bleibt rein
- * JS-seitig, siehe .mp3-lang-toggle Handler in mediapool3.js). Markup
- * identisch zu renderLangInputs() in mediapool3.js.
+ * JS-seitig, siehe .mp3-lang-toggle Handler in mediaplace.js). Markup
+ * identisch zu renderLangInputs() in mediaplace.js.
  *
  * Vars:
  * - string $field_key

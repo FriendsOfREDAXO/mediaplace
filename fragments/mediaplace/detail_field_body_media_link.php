@@ -4,7 +4,7 @@
  * Feldkoerper fuer widget_type "media_link" (Verlinkung auf ein anderes
  * Medium, z.B. Poster-Bild). Auswahl per Klick im Raster / Zuruecksetzen
  * bleibt JS-seitig (setMediaLinkPickMode()/repaintMediaLinkWidget() in
- * mediapool3.js). Markup identisch zum 'media_link'-Zweig von
+ * mediaplace.js). Markup identisch zum 'media_link'-Zweig von
  * renderJsonWidgetField() / renderMediaLinkWidget().
  *
  * Vars: $field, $value (siehe detail_field.php)

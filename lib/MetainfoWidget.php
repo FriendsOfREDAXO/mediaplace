@@ -37,7 +37,7 @@ abstract class MetainfoWidget implements MetainfoWidgetInterface
      * detail_field_body_*.php-Dateien ($field, $value, $info, $clangs), siehe
      * fragments/mediaplace/detail_field.php. Fuer Feldwerte, die nicht ins
      * generische JS-Sammel-Muster (ein data-json-field-Element, skalar oder pro
-     * Sprache) passen, siehe MP3.registerFieldCollector() in mediapool3.js.
+     * Sprache) passen, siehe MP3.registerFieldCollector() in mediaplace.js.
      *
      * @return array<string, array{label:string, class:class-string, fragment:string}>
      */

@@ -5,7 +5,7 @@ namespace FriendsOfRedaxo\Mediaplace;
 /**
  * Kleine Formatierungs-Helfer fuer das serverseitig gerenderte Detail-Panel
  * (fragments/mediaplace/detail_*.php). Spiegeln bewusst 1:1 die
- * frueheren JS-Aequivalente in assets/mediapool3.js (formatBytes/formatDate/
+ * frueheren JS-Aequivalente in assets/mediaplace.js (formatBytes/formatDate/
  * fileIcon/mediaThumbSrc/getReplacementAcceptForFilename), damit sich das
  * Erscheinungsbild durch die Verlagerung nach PHP nicht aendert.
  */
@@ -99,7 +99,7 @@ class DetailPanelFormatter
     /**
      * Media-Manager-Thumbnail-URL inkl. Cache-Buster (updatedate, sonst
      * Dateigroesse) -- SVGs koennen nicht zuverlaessig durch den Media
-     * Manager gejagt werden, siehe mediaThumbSrc() in mediapool3.js. Nutzt
+     * Manager gejagt werden, siehe mediaThumbSrc() in mediaplace.js. Nutzt
      * rex_url::media()/backendController() statt fest kodierter "/media/"-
      * bzw. "index.php?..."-Pfade, damit Installationen in einem Unterordner
      * (siehe https://redaxo.org/doku/5.x/pfade) nicht brechen.

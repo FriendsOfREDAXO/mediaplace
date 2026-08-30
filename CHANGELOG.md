@@ -1,82 +1,52 @@
 # Changelog
 
-## Version 1.9.3 – 2026-08-29
+## Version 1.20.0 – 2026-08-30
 
-### Bugfix
-- Kategorie-Auswahl-Dialog beim Cloud-Import (siehe 1.9.2) zeigte die Kategorien flach ohne Einrückung – im Gegensatz zum bestehenden Upload-Dialog nutzte er dafür versehentlich normale Leerzeichen statt `&nbsp;`, die native und bootstrap-select-Dropdowns beim Rendern kollabieren.
+Zusammengefasste Änderungen seit Version 1.5.3 (Zwischenschritte entfernt, siehe Git-Historie für die volle Detailtiefe).
+
+### Neu
+- Vollständiger Ersatz des klassischen Medienpools durch MediaPlace: nicht nur der Haupt-Menüpunkt, auch "Medium hinzufügen"/"Kategorieverwaltung" sowie Direktaufrufe/Deep-Links (`?page=mediapool/media&file_id=...`) landen jetzt auf der MediaPlace-Vollbildansicht. TinyMCE/CKEditor5 und die klassischen `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Popups funktionieren unverändert weiter (eigener Popup-Vertrag wird nachgebildet). Kollisionsschutz mit `filepond_uploader`s eigenem `replace_mediapool`-Schalter.
+- Cloud-Provider-Anbindung: andere Addons können sich als zusätzlicher Baum in die Sidebar einklinken (Browsen, Suchen, Import einzelner Dateien in den lokalen Medienpool) über einen neuen Erweiterungspunkt `MEDIAPLACE_STORAGE_PROVIDERS`. Erster Provider: das `nextcloud`-Addon.
+- Mehrfachauswahl grundlegend überarbeitet: sichtbare Checkbox-Overlays statt nur versteckter Ctrl/Cmd+Klick-Geste, Sammelaktionen "Auswahl verschieben"/"Auswahl löschen" in einer Auswahl-Fußleiste – deckt jetzt alle klassischen Medienpool-Mehrfachaktionen ab.
+- Sammlungen: fester Zuordnungs-Button im Detail-Panel (ersetzt das fehlerhafte Lesezeichen-System), echte globale Mitgliederzahl pro Sammlung statt nur der aktuell geladenen Kategorie.
+- Tags: eigene Combobox mit Mehrfachauswahl + "neu anlegen"-Option ersetzt das frühere native `<datalist>`-Autocomplete. Neu abgeschlossen: zentrale **Tag-Verwaltung** (eigene Backend-Seite) zum Umbenennen (kaskadiert automatisch auf alle Dateien), Farbe zentral ändern und Löschen von System-Tags – erreichbar über eine neue, eigene Berechtigung `mediaplace[manage_tags]` sowie einen Eintrag im Zahnrad-Menü des Overlays. Die Farbe eines *bestehenden* Tags ist damit nur noch hier änderbar; das per-Datei-Farb-Swatch im Tag-Widget erscheint nur noch direkt bei der Neuanlage eines Tags.
+- Sidebar: die drei großen Abschnitte (Kategorien, Sammlungen, Tags) lassen sich einzeln ein-/ausklappen (Zustand in `localStorage`); der Tag-Filter zog aus einem Dropdown in einen eigenen, immer sichtbaren Sidebar-Abschnitt um.
+- Video/Bild-Optimierung: "Bild optimieren"-Button für Bestandsdateien über den Upload-Resize-Grenzen (GD-Resize in-place), wählbarer Video-Vorschau-Modus (Aus/Einzelbild/Animiert), "Bereits optimiert"-Badge mit Kompressionsrate, aufklappbarer "Technische Details"-Bereich für Videos (ffprobe-Daten, lazy geladen), Cronjob "Vorschaubilder vorwärmen" für Bild- und Video-Thumbnails.
+- "Pro Seite"-Auswahl bietet zusätzlich "Alle" an; Dark/Light-Umschalter zog ins Zahnrad-Menü.
+- JS-Architektur: der komplette Overlay-Kern (ursprünglich 7313 Zeilen als Einzeldatei) wurde in einem esbuild-basierten Build-Prozess schrittweise in eigenständige ES-Module aufgeteilt (Cloud-Provider, Modals, Lightbox, Fokuspunkt, Zuschneiden, Optimieren, Sammlungen, Kategorien, Filter, Grid-Rendering, Detail-Panel, Upload, Multi-Select) – der verbleibende Hub ist dadurch auf ca. 3640 Zeilen geschrumpft (-50%), bei unveränderter Funktionalität.
+- Neuer Sidebar-Eintrag "Medien ohne ALT-Text" direkt unter dem Medien-Abschnitt (nur sichtbar, wenn in den Einstellungen aktiviert – Default an – UND überhaupt ein ALT-Text-Feld – eigenes oder klassisches `med_alt` – existiert): globaler, rechte-gefilterter Filter über alle zugänglichen Kategorien, analog zu Sammlungen als eigener Ansichts-Modus. Folgt derselben Prioritäts-Logik wie der "ALT-Text fehlt"-Hinweis im Detail-Panel (`AltTextStatus`) – ist das eigene Metadaten-Feld aktiv, zählt ausschließlich dieses, nicht zusätzlich das klassische `med_alt`.
+
+### Geändert
+- Sammlungen sehen nirgends mehr wie Tags aus (Farb-Dots auf Datei-Kacheln, im Sammlungen-verwalten-Dialog und im Tag-Widget waren zuvor optisch nicht unterscheidbar).
+- Lange, leerzeichenfreie Dateinamen sprengen Bestätigungs-/Auswahl-Dialoge nicht mehr um (zentral in den gemeinsamen Modal-Bausteinen behoben).
+- Diverse Performance-/Speicher-Fixes für die Video-Vorschau im Grid (IntersectionObserver statt dauerhaft geladener animierter Bilder, kleinere Thumbnail-Zielgröße, konsequentes `loading="lazy"`).
+- Mobile Auswahl-Fußleisten zeigen auf schmalen Bildschirmen nur noch Icons statt umbrechender Textlabel.
+- "Metadaten bearbeiten" ist bei Neuinstallationen jetzt standardmäßig aktiviert.
+- Der "Bitte ALT-Text hinterlegen"-Hinweis unter dem "Metadaten bearbeiten"-Button erscheint nur noch bei Bild-Dateien – bei PDF/Video/Audio ergibt der Hinweis keinen Sinn (`AltTextStatus::isMissing()` prüft jetzt zuerst `$media->isImage()`).
+- Sidebar-Sektion "Kategorien" heißt jetzt "Medien" mit dem Icon des klassischen Medienpools (`rex-icon-media`) statt eines Ordnerbaum-Symbols.
+- Der Panel-Header im Detail-Panel zeigt jetzt nur noch die statische Überschrift "Details" – ein kurzer Versuch, den Titel direkt dort editierbar zu machen (um die Dopplung mit dem "Titel"-Feld darunter zu vermeiden) machte das Eingabefeld dort zu schmal; das "Titel"-Feld bleibt daher wie gewohnt unterhalb der Vorschau.
 
 ### Intern
-- Kategorie-Auswahl-Dialoge nicht mehr pro Aufrufer neu geschrieben: neue gemeinsame `showCategoryPickerModal()` (mediapool3.js) für Sammlungs-Upload und Cloud-Import, neue geteilte `buildCategoryOptionsHtml()` (mediapool3-helpers.js, `MP3Core.helpers`) für die eingerückte Options-Liste, jetzt auch vom Input-Widget (`mediapool3_widget.js`) genutzt statt einer eigenen Kopie.
-
-## Version 1.9.2 – 2026-08-29
-
-### Bugfix
-- Cloud-Provider (siehe 1.9.0): Detailansicht einer Cloud-Datei nutzte erfundene, nirgends definierte CSS-Klassen (`mp3-detail-title`, `mp3-detail-info-table`, `mp3-info-table`) statt der echten, bereits gestylten (`mp3-detail-inner`, `mp3-detail-header` + `mp3-detail-header-name`, `mp3-detail-table`) – Dateiname überlappte die Toolbar, Größe/Datum standen ohne Abstand. Auf das reale Markup aus `fragments/mediaplace/detail_panel.php`/`detail_info_table.php` umgestellt.
-- Cloud-Provider: Umschalten zwischen Listen-/Kachel-/Media-Wall-Ansicht während des Cloud-Browsens sprang zurück zu den lokalen Ordnern, weil `refreshDisplay()` (vom Ansicht-Umschalter aufgerufen) den Cloud-Modus nicht kannte. Neue `renderProviderFiles()`-Weiche (Listen-Rendering ergänzt, Media-Wall/Masonry fällt bewusst auf die Kachelansicht zurück – Cloud-Einträge liefern keine Bildmaße) + `refreshDisplay()` jetzt Cloud-Modus-bewusst.
-- Cloud-Provider: Import lief beim Klick sofort in die zuletzt im lokalen Baum aktive Kategorie (oder in den Stamm), ohne zu fragen. Neuer Kategorie-Auswahl-Dialog vor dem eigentlichen Import (gleiches Muster wie beim Sammlungs-Upload).
-
-## Version 1.9.1 – 2026-08-29
+- Alle `mediapool3*`-Dateinamen (Erbe aus der Zeit vor dem eigenständigen `mediaplace`-Addon) auf `mediaplace*` umbenannt: `assets/mediaplace.js` (Overlay-Bundle, vorher `mediapool3.js`), `mediaplace.css`, `mediaplace-i18n.js`/`-helpers.js`/`-api.js`, `mediaplace_widget.js`/`.css`, `mediaplace_classic.js`, Quell-Ordner `src/mediaplace/` (vorher `src/mediapool3/`). `legacy.js` (der Hub, der alle `modules/*.js` importiert und verdrahtet) heißt jetzt `core.js` – der alte Name war seit Abschluss aller 12 Modularisierungs-Phasen irreführend. `DEV.md` entsprechend aktualisiert.
+- Alle 13 eigenen `rex_api_function`-Endpunkte laufen jetzt unter dem Namespace `FriendsOfRedaxo\Mediaplace\Api` (siehe https://redaxo.org/doku/5.x/api#namespace-registrierung) statt der `rex_api_<name>`-Klassennamenskonvention – Klassen umbenannt (z. B. `rex_api_mediaplace_json_metainfo` → `Api\JsonMetainfo`), Dateien nach `lib/Api/` verschoben, explizite `rex_api_function::register()`-Aufrufe in `boot.php` ergänzt. Die `rex-api-call`-Bezeichner selbst (z. B. `mediaplace_json_metainfo`) bleiben unverändert – bestehende Client-Aufrufe sind nicht betroffen.
 
 ### Bugfix
-- Cloud-Provider (siehe 1.9.0): Klick auf eine Datei zeigte kein Detail-/Import-Panel – `.mp3-detail` hat per Default `width:0`/`overflow:hidden`, die Klasse `mp3-detail-open` macht das Panel erst sichtbar. Wurde bei der neuen Cloud-Datei-Detailansicht fälschlich nur im Compact-Layout gesetzt statt (wie bei lokalen Dateien in `showDetail()`) immer. Browsen/Suchen selbst war davon nicht betroffen.
-
-## Version 1.9.0 – 2026-08-29
-
-### Neu
-- Cloud-Provider-Anbindung: andere Addons können sich jetzt als eigener, zusätzlicher Baum in die Sidebar einklinken (Browsen, Suchen sofern der Provider das anbietet, Import einzelner Dateien in den lokalen Medienpool – kein Sync, nach dem Import ist es eine ganz normale lokale Datei). Neuer Erweiterungspunkt `MEDIAPLACE_STORAGE_PROVIDERS` + `StorageProviderInterface` (5 Methoden: Ordner/Dateien auflisten, Suchfähigkeit, Thumbnail, Import) + `StorageProviderRegistry` (Rechte-Check: jeder Provider bringt sein eigenes Berechtigungs-String mit, kein globaler MediaPlace-weiter Schalter). Erster Provider: das `nextcloud`-Addon (siehe dortiges Changelog 1.7.0). Im Picker-Modus (`MP3.open()`) importiert die Auswahl einer Cloud-Datei sie zuerst synchron, `onSelect` feuert erst danach mit dem neuen lokalen Dateinamen – schlägt der Import fehl, bricht die Auswahl mit Fehlermeldung ab. Im Mehrfachauswahl-Modus wird der Cloud-Bereich vorerst nicht angezeigt (nur Einzelauswahl/-import in dieser Version).
-
-## Version 1.8.0 – 2026-08-29
-
-### Neu
-- Neuer "Bild optimieren"-Button im Detail-Panel für Bilder, deren gespeicherte Breite/Höhe die konfigurierten Upload-Resize-Grenzen (Einstellungen → "Bilder beim Upload verkleinern") überschreiten – für Bestandsdateien, die vor Aktivierung dieses Schalters hochgeladen wurden. Verkleinert die Datei in-place (gleicher Dateiname) synchron per GD, nutzt dabei den Media-Manager-Kern (`rex_effect_resize` für die Fit-Berechnung, `rex_media_service::updateMedia()` für Datei-Ersetzung/Cache-Invalidierung/`MEDIA_UPDATED`) statt eigener Bildverarbeitung. Anders als beim Video-Optimieren kein Job/Poll-Zyklus (GD-Resize ist schnell genug für einen einzelnen Request) und keine "bereits optimiert"-Registry nötig – der Button verschwindet einfach von selbst, sobald das Bild innerhalb der Grenzen liegt. Neues Rollenrecht `mediaplace[optimize_image]`, nur sichtbar wenn "Bilder beim Upload verkleinern" aktiv ist.
-
-## Version 1.7.4 – 2026-08-29
-
-### Geändert
-- 10-MB-Grenze für Bild-Vorschaubilder (siehe 1.6.0) wieder entfernt: Fotos über 10 MB bekamen dadurch nie ein Vorschaubild, nur noch das Datei-Icon – für eine Mediathek mit hochauflösender Fotografie eine spürbare Einschränkung. Der ursprüngliche Grund (teure/riskante Live-Generierung bei großen Kategorien) ist durch den seither eingeführten Warmup-Cronjob (1.6.0) hinfällig: die eigentliche Generierung läuft jetzt kontrolliert im Hintergrund statt live beim ersten Betrachten, der Datei-Icon-Fallback bei Fehlschlägen bleibt unabhängig davon bestehen.
-
-## Version 1.7.3 – 2026-08-29
-
-### Bugfix
-- Video-Symbol-Overlay im Einzelbild-Modus (siehe 1.7.0) saß an der Nahtstelle zwischen Bild und Dateiname/-größe, statt sauber im Bild zu sitzen – `bottom` positionierte es relativ zur gesamten Karte (inkl. Info-Text darunter), nicht relativ zum Bild allein. Jetzt oben links statt unten links positioniert.
-
-## Version 1.7.2 – 2026-08-29
-
-### Geändert
-- "Metadaten bearbeiten" (native Bearbeitung echter Metainfo-Felder im Detail-Panel, Einstellungen → `enable_metainfo_editing`) ist bei Neuinstallationen jetzt standardmäßig aktiviert. Betrifft nur den `default_config`-Wert für neue Installationen – bereits installierte Instanzen behalten ihre bisher gespeicherte Einstellung unverändert.
-
-## Version 1.7.1 – 2026-08-29
-
-### Bugfix
-- Fokuspunkt-Button reagierte manchmal gar nicht auf Klicks (kein Dialog, keine Fehlermeldung, auch nicht in der Browser-Konsole), obwohl im Media-Manager bereits ein Fokuspunkt-Effekt eingerichtet war und der Button auch sichtbar war. Ursache: ein zusätzlicher client-seitiger Gate-Check auf ein Flag, das nur einmal beim Laden der Seite gesetzt wurde – wurde der Media-Manager-Effekt erst angelegt, während die MediaPlace-Sitzung bereits offen war, blieb dieses Flag bis zum nächsten Seiten-Reload veraltet auf "nicht verfügbar" stehen, obwohl der Button selbst (serverseitig live pro Datei geprüft) längst korrekt sichtbar war. Der veraltete Gate-Check ist entfernt – die Sichtbarkeit des Buttons selbst ist bereits die aktuelle, korrekte Prüfung.
-
-## Version 1.7.0 – 2026-08-29
-
-### Neu
-- Video-Vorschau im Grid ist jetzt optional und wahlweise animiert oder als Einzelbild (Einstellungen → "Video-Vorschau im Grid": Aus / Einzelbild / Animiert, nur sichtbar wenn ffmpeg installiert ist). "Aus" zeigt konsequent nur das Datei-Icon, keine Vorschau-Generierung. "Einzelbild" extrahiert nur ein einziges Standbild statt einer animierten Sequenz (nutzt ffmpeg's neuen "Animiert"-Parameter, siehe dortiges Changelog 4.8.0) – deutlich günstiger in Erzeugung und Dateigröße als die animierte Variante. Im Einzelbild-Modus zeigt ein kleines Video-Symbol unten links auf der Kachel, dass es sich trotz Standbild um ein Video handelt. Standard bleibt "Animiert" (bisheriges Verhalten), bestehende Installationen sind davon nicht betroffen. Der Warmup-Cronjob (siehe 1.6.0) respektiert die Einstellung automatisch.
-
-## Version 1.6.0 – 2026-08-29
-
-### Neu
-- Neuer Cronjob-Typ "MediaPlace: Vorschaubilder vorwärmen" (nur sichtbar, wenn das `cronjob`-Addon installiert ist): erzeugt sowohl die normalen Bild- als auch die animierten Video-Vorschaubilder im Hintergrund vorab, statt sie ausschließlich beim ersten Betrachten im Grid zu generieren. Pro Lauf wird je Typ nur eine begrenzte, getrennt konfigurierbare Anzahl NEUER Vorschaubilder erzeugt (Standard 20 für Bilder, 5 für Videos – Video-Konvertierung ist ungleich teurer), der Rest folgt beim nächsten planmäßigen Lauf. Neueste Dateien zuerst, damit frisch hochgeladene Medien möglichst schnell eine Vorschau bekommen. Bereits gecachte Dateien werden übersprungen. Video-Vorwärmung läuft nur, wenn ffmpeg tatsächlich verfügbar ist.
-
-### Bugfix
-- Browser-Absturz ("Diese Webseite wurde neu geladen, weil sie sehr viel Speicher benötigte") beim Durchsuchen von Video-reichen Kategorien: animierte Video-Vorschaubilder wurden zwar per `loading="lazy"` erst beim Sichtbarwerden geladen, beim Herausscrollen aber nie wieder aus dem Speicher entfernt – der Speicherverbrauch wuchs beim Scrollen durch eine große Kategorie unbegrenzt. Video-Vorschaubilder werden jetzt über einen `IntersectionObserver` verwaltet: `src` wird erst beim Sichtbarwerden gesetzt und beim Verlassen des Viewports wieder entfernt (der HTTP-Cache hält die Bytes weiter vor, ein erneutes Sichtbarwerden ist praktisch instant).
-- Garantierter Datei-Icon-Fallback für Video-Vorschaubilder bei jedem Fehlschlag (ffmpeg nicht installiert, Server-Fehler, Timeout) – nicht mehr nur, wenn ffmpeg bereits beim Seitenaufbau als nicht verfügbar erkannt wurde. Ein fehlgeschlagenes `<img>` wird jetzt zuverlässig durch das übliche Datei-Icon ersetzt statt ein kaputtes Bild anzuzeigen.
-- Bild-Vorschaubilder im Grid/Media-Wall sowie in der Listenansicht luden bisher ohne `loading="lazy"` – bei großen Kategorien wurden dadurch alle sichtbaren UND unsichtbaren Bild-Kacheln gleichzeitig angefordert. Jetzt konsequent `loading="lazy"` wie bereits beim Video-Vorschaubild.
-- Grid-Thumbnail-Zielgröße von 500×500 auf 300×300 px reduziert – reine Vorschaubilder brauchen keine Arbeitskopie-Qualität, kleiner spart spürbar Speicher/CPU bei der Erzeugung und Bandbreite beim Laden. Bereits installierte Instanzen ziehen die neue Größe automatisch beim nächsten Addon-Update nach (Update-Pfad in `install.php`, kein manuelles Neuanlegen des Media-Manager-Typs nötig).
-- Große Bild-Quelldateien (insbesondere mehrstellige-MB animierte GIFs, in der Praxis bei einem Kunden 1920×1080/12 MB) konnten den Server-seitigen Resize unverhältnismäßig teuer machen oder ihn (abhängig vom PHP-Speicherlimit) fehlschlagen lassen – im Fehlerfall landete dann eine ungefähr originalgroße Datei im Cache statt eines kleinen Vorschaubilds. Bild-Vorschaubilder ab 10 MB Quelldateigröße werden jetzt gar nicht mehr angefordert (weder live im Grid noch im Warmup-Cronjob) – Datei-Icon statt eines unverhältnismäßig teuren Vorschaubilds für so große Bilder. Gilt bewusst nicht für Videos (dort sind mehrstellige MB der Normalfall, nicht die Ausnahme).
-
-## Version 1.5.4 – 2026-08-29
-
-### Bugfix
-- 500er (Fatal Error) bei Videos, wenn das separate `ffmpeg`-Addon nicht (mehr) installiert ist: der eigene Video-Vorschau-Typ `mediaplace_video_thumb` referenziert ffmpeg's Effekt `video_to_webp` – wird ffmpeg nach dem Anlegen dieses Typs deinstalliert, bleibt die Typ-/Effekt-Zeile in der Datenbank stehen. `media_manager` selbst hat vor dem Instanziieren eines Effekts keine `class_exists()`-Absicherung und stürzt hart ab, sobald irgendeine (auch eine alte/gecachte) Anfrage diesen Typ für ein Video anfordert. Neuer `MEDIA_MANAGER_FILTERSET`-Hook setzt das Effekt-Set für diesen Typ auf leer, sobald ffmpeg nicht mehr verfügbar ist – `media_manager` liefert dann sein eigenes "nicht gefunden"-Verhalten statt eines Fatal Errors. Live verifiziert (ffmpeg-Addon testweise deaktiviert): Crash reproduziert ohne den Hook, kein Crash mit dem Hook.
-
-## Version 1.5.3 – 2026-08-28
-
-### Bugfix
-- Badge "Bereits optimiert (X% kleiner)" zeigte im Detail-Panel wörtlich `%s%%` statt der Prozentzahl – REDAXOs `rex_i18n`/`rex_fragment::i18n()` nutzen `{0}`, `{1}`, … als Platzhalter-Syntax, nicht `sprintf`s `%s`. Lang-Datei entsprechend korrigiert.
-- Nebenbei gefunden: Button-Beschriftung und Badge-Text im Detail-Panel wurden doppelt escaped (`rex_escape()` um einen bereits von `$this->i18n()` escapten Wert) – behoben.
+- Mehrere Zustands-Sync-Probleme rund um den nativen Metainfo-Canvas behoben: ALT-Text-Warnungen und Speichern-Button blieben nach dem Zurückkehren aus dem klassischen Formular auf altem Stand.
+- 500er-Fehler bei Videos behoben, wenn das `ffmpeg`-Addon nicht (mehr) installiert ist.
+- Einstellungen-Checkboxen (inkl. "Klassischen Medienpool-Menüpunkt ersetzen") ließen sich nicht mehr deaktivieren (REDAXO-Kernverhalten von `rex_config_form` bei nicht gesendeten Checkboxen).
+- Escape schloss im Metainfo-/Fokuspunkt-/Zuschneiden-Canvas fälschlich das komplette Overlay statt nur den Canvas.
+- Fokuspunkt-Button reagierte teils gar nicht auf Klicks (veralteter clientseitiger Gate-Check).
+- i18n-Platzhalter-Syntax-Fehler (`%s` statt `{0}`) beim Optimieren-Badge korrigiert.
+- Dark/Light-Umschalter im Zahnrad-Menü blendet sich jetzt aus, wenn er ohnehin wirkungslos wäre: er kann nur eine helle Umgebung dunkel machen, nicht eine bereits (von REDAXO explizit oder REDAXO "automatisch" + dunklem System) dunkle Umgebung wieder hell erzwingen – vorher blieb er in diesem Fall sichtbar, hatte beim Klick aber keine erkennbare Wirkung.
+- "System-Tags"-Feld im Detail-Panel heißt jetzt nur noch "Tags", Label größer (13px statt 11px) und Tag-Chips deutlich größer (15px statt 11px, plus etwas mehr Innenabstand).
+- "Ansehen" (Auge-Icon) auf einem klassischen `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widget landete innerhalb des nativen Metainfo-Canvas fälschlich im Auswahl-Modus statt die Details der bereits ausgewählten Datei im eigenen Detail-Panel zu zeigen (nur auf "irgendeine Aktion" statt auf die konkrete Aktion geprüft).
+- Video-Badge auf Grid-Kacheln (Standbild-Vorschau-Modus) verdeckte bei aktiver Mehrfachauswahl die Checkbox (beide oben links positioniert) – Badge sitzt im normalen Grid jetzt oben rechts, im Media-Wall unverändert oben links (dort ist die Checkbox rechts in der Toolbar).
+- Feld-Labels (TITEL/SYSTEM-TAGS/BESCHREIBUNG/...) und der "Technische Details"-Umschalter im Detail-Panel waren zu klein (10px bzw. 12px) – jetzt 11px bzw. 13px.
+- Der Tag-Feld-Hinweis "Autofill aus bestehenden Tags. Farben gelten systemweit." entfernt (unnötiger Text im Detail-Panel).
+- Der "N weitere Sprache(n)"-Umschalter bei mehrsprachigen Feldern zeigte beim ersten Rendern wörtlich "%d weitere Sprache" statt der echten Anzahl (falsche Platzhalter-Syntax `%d` statt `{0}`, REDAXOs `rex_i18n::msg()` kennt nur Letzteres) – betraf ebenso den Tag-Umbenennen-Dialog-Titel (`%s` statt `{0}`). Der JS-seitige Auf-/Zuklappen-Text nutzte zusätzlich hartkodiertes Deutsch statt der Sprachdatei – zeigte an nicht-deutschen Installationen immer Deutsch.
+- "Bild optimieren"-Button umbrach bei langem Label (inkl. Bildmaße, z. B. "Bild optimieren (3000×2000 → max. 2000×2000)") zweizeilig – Label bleibt jetzt einzeilig mit Ellipsis, voller Text weiterhin per Tooltip abrufbar.
+- "Bitte ALT-Text hinterlegen" unter "Metadaten bearbeiten" erschien zusätzlich zum eigenen, direkt am ALT-Feld sitzenden Hinweis – doppelt und irreführend, da ein Klick auf "Metadaten bearbeiten" zum klassischen `med_alt`-Feld im nativen Formular führt, nicht zum eigentlich fehlenden eigenen Feld. Der Hinweis unter "Metadaten bearbeiten" erscheint jetzt nur noch, wenn tatsächlich das klassische `med_alt`-Feld die maßgebliche Quelle ist (kein eigenes Alt-Feld aktiv).
+- Eine Sammlung zu aktivieren zeigte oft "0 Treffer", obwohl die Sidebar die echte (globale) Mitgliederzahl korrekt anzeigte: der Sammlungs-Modus lud serverseitig einfach Seite 1 der unsortierten Gesamtliste (kein Kategorie-Filter im Sammlungs-Modus, da Sammlungen kategorieübergreifend sind) und filterte erst danach clientseitig auf die Sammlung – lagen die Mitglieder nicht zufällig auf dieser einen geladenen Seite, blieb die Liste leer. `Api\MediaList` unterstützt jetzt `filter[collection]` (SQL-Filterung direkt auf `rex_mediaplace_media_tags`, kategorierechte-bewusst wie die übrige Abfrage) und wird für den Sammlungs-Modus jetzt immer direkt aufgerufen – unabhängig vom `data-api-media-list-secure`-Schalter, der nur die generische Kategorie-Rechtefilterung der normalen Medienliste betrifft, da Sammlungen ein reines MediaPlace-Konzept sind, das die `api`-Addon-Route ohnehin nie kennen konnte.
 
 ## Version 1.5.2 – 2026-08-28
 

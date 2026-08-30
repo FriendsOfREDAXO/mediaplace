@@ -3,9 +3,9 @@
 /**
  * Eine Kategorie-Zeile im Sidebar-Baum, ruft sich fuer Kinder rekursiv selbst
  * auf (siehe rex_fragment::subfragment()). Markup ist bewusst 1:1 identisch
- * zu dem, was frueher renderCatChildren() in mediapool3.js gebaut hat --
+ * zu dem, was frueher renderCatChildren() in mediaplace.js gebaut hat --
  * gleiche Klassen/data-Attribute, damit die bestehende Event-Delegation
- * (overlay.addEventListener('click', ...) in mediapool3.js) unveraendert
+ * (overlay.addEventListener('click', ...) in mediaplace.js) unveraendert
  * weiterfunktioniert.
  *
  * Vars:
@@ -23,7 +23,7 @@ $currentCat = (int) $this->getVar('current_cat');
 
 $id = $category->getId();
 $name = $category->getName();
-$children = rex_api_mediaplace_categories::filterVisibleCategories($category->getChildren());
+$children = \FriendsOfRedaxo\Mediaplace\Api\Categories::filterVisibleCategories($category->getChildren());
 $hasKids = count($children) > 0;
 $indent = ($depth + 1) * 16;
 // Umbenennen/Verschieben/Loeschen brauchen Zugriff auf die ELTERN-Kategorie,

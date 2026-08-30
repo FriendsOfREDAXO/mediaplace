@@ -4,8 +4,8 @@
  * Wrapper um eine Liste von Kategorien auf einer Ebene (".mp3-cat-children").
  * Sichtbarkeit (auf-/zugeklappt) wird rein per CSS ueber die
  * ".mp3-cat-node-open"-Klasse auf dem Eltern-Node gesteuert (siehe
- * mediapool3.css), nicht durch Weglassen des Markups -- der komplette Baum
- * wird immer auf einmal gerendert, toggleCategory() in mediapool3.js schaltet
+ * mediaplace.css), nicht durch Weglassen des Markups -- der komplette Baum
+ * wird immer auf einmal gerendert, toggleCategory() in mediaplace.js schaltet
  * nur noch lokal eine Klasse um, ohne Nachladen.
  *
  * Vars:

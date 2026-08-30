@@ -11,7 +11,7 @@ namespace FriendsOfRedaxo\Mediaplace;
  * cropper-Addon sollen automatisch mitgelten. Geladen werden dessen echte
  * cropper.js/cropper.css/rex_cropper.js-Assets sowie dessen
  * fragments/cropper_panel.php-Fragment; gespeichert wird ueber dessen
- * CropperExecutor (siehe rex_api_mediaplace_crop.php).
+ * CropperExecutor (siehe Api\Crop.php).
  *
  * Alle cropper-Klassen werden nur vollqualifiziert INNERHALB von
  * isAvailable()-abgesicherten Methoden referenziert (kein "use" am
@@ -50,7 +50,7 @@ class CropperIntegration
     /**
      * Ohne dieses (separate) Recht darf cropper nur neue Kopien erzeugen,
      * nie das Original ueberschreiben -- spiegelt cropper/pages/mediapool.cropper.php.
-     * Server-seitig in rex_api_mediaplace_crop.php erzwungen, nicht nur im UI versteckt.
+     * Server-seitig in Api\Crop.php erzwungen, nicht nur im UI versteckt.
      */
     public static function canOverwrite(): bool
     {

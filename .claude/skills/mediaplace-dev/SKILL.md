@@ -11,26 +11,26 @@ Du arbeitest im REDAXO-Addon `mediaplace` (FriendsOfREDAXO, Vollbild-Medienpool-
 
 1. **API-Addon first.** Medien-CRUD läuft über `FriendsOfREDAXO/api` (`/api/backend/media/...`), nicht über eigenes SQL. Vor jedem Eigenbau erst `src/addons/api/lib/RoutePackage/Media.php` nach einer passenden Route durchsuchen — es gibt oft mehr, als das eigene README dokumentiert. Zu Beginn jeder Session mit API-Bezug (und immer, bevor an einem der unten dokumentierten Eigenbauten/Fallbacks gearbeitet wird) die *installierte* `api`-Version und deren `CHANGELOG.md`/Routen-Definitionen aktiv gegenprüfen (`rex_addon::get('api')->getVersion()`, `git log`/`CHANGELOG.md` im `api`-Repo) — nicht nur einmalig zum Zeitpunkt des Eigenbaus. Das Addon entwickelt sich unabhängig weiter; ein Workaround, der heute noch nötig ist, kann es morgen nicht mehr sein (siehe `getAccessibleCategoryIds()`/`rex_api_mediaplace_media_list.php`, bereits mit eingebautem Versionscheck als Vorbild). Jeden bestehenden Eigenbau explizit in Frage stellen, sobald sich die api-Version geändert hat, statt ihn stillschweigend weiterzuführen.
 2. **REDAXO-eigene Methoden nutzen, kein Parallel-Code.** Wo REDAXO selbst schon eine Fähigkeit hat (Medien-Berechtigungen, `rex_media`, `rex_mediapool::mediaIsInUse()`, Metainfo-Rendering/Speichern über `MEDIA_FORM_EDIT`/`MEDIA_UPDATED`, YForm-Feldtyp-Konventionen), diese wiederverwenden statt nachzubauen. Der native Metainfo-Canvas (siehe unten) ist das Musterbeispiel: rendert/speichert über REDAXOs eigene Extension Points, keine eigene Feldtyp-Logik für `med_*`-Felder.
-3. **Modularisieren.** Neue, in sich geschlossene Fähigkeiten (Widget-Typen, YForm-Integration, Tag-Verwaltung) als eigene Dateien/Klassen in `lib/`, `lib/Widgets/`, `lib/yform/value/` etc. — nicht alles in `mediapool3.js`/`boot.php` anhäufen. `assets/mediapool3-*.js` (i18n/helpers/api) sind bereits so ausgelagert und werden per Alias in `mediapool3.js` UND `mediapool3_widget.js` eingebunden (`MP3Core.helpers.xxx`).
+3. **Modularisieren.** Neue, in sich geschlossene Fähigkeiten (Widget-Typen, YForm-Integration, Tag-Verwaltung) als eigene Dateien/Klassen in `lib/`, `lib/Widgets/`, `lib/yform/value/` etc. — nicht alles in `mediaplace.js`/`boot.php` anhäufen. `assets/mediaplace-*.js` (i18n/helpers/api) sind bereits so ausgelagert und werden per Alias in `mediaplace.js` UND `mediaplace_widget.js` eingebunden (`MP3Core.helpers.xxx`).
 4. **Kommentare knapp halten** (pre-1.0, kein Fix-Verlauf im Code dokumentieren — das gehört in Commit-Messages, nicht in Inline-Kommentare).
 
 ## Architektur in Kürze
 
 Fünf Teile, die unabhängig voneinander (de)aktivierbar sind (Einstellungsseite, `default_config` in `package.yml`):
 
-1. **Overlay** (`MP3.open()`, `mediapool3.js`) — Vollbild-Picker: Kategoriebaum, Grid/Liste/Media-Wall, Suche, Tag-/Typ-Filter, Sammlungen, Multi-Select, Detail-Panel mit eigenen JSON-Metadaten-Feldern.
-2. **Input-Widget** (`<input class="mp3-widget">`, `mediapool3_widget.js`) — visueller Picker für Module/YForm. Optional: `data-mp3-upload="true"` (Direkt-Upload per Drag&Drop/Klick, ganzer Container ist Drop-Zone, Kategorie-Auswahl-Dialog vor dem Upload), `data-mp3-types` (erlaubte Dateitypen), `data-mp3-max` (Obergrenze bei Mehrfachauswahl, mit Klick/Cmd/Ctrl-Klick-Markierung zum gemeinsamen Löschen), `data-mp3-view="grid"|"list"` (Start-Ansicht dieses Widgets, unabhängig von Einzel-/Mehrfachauswahl; ohne Angabe gilt die geteilte Nutzer-Präferenz aus `localStorage`, ein späterer Umschalter-Klick wechselt weiterhin global für alle Widgets der Seite).
-3. **Klassische Integration** (`mediapool3_classic.js`, `boot.php`) — Hauptmenüpunkt "Medienpool" sowie `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets öffnen wahlweise den Overlay statt der alten Seiten/Popups.
-4. **Metainfo-Canvas** (`openMetainfoCanvas()` in `mediapool3.js`, `lib/rex_api_mediaplace_metainfo_form.php`) — natives Bearbeiten echter, über das Metainfo-Addon angelegter `med_*`-Felder direkt im Overlay, über REDAXOs eigenen `MEDIA_FORM_EDIT`/`MEDIA_UPDATED`-Pfad (kein eigenes Feldtyp-System für diese Felder). Klick auf ein klassisches `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widget *innerhalb* des Canvas öffnet das eigene Grid zur Auswahl statt REDAXOs Popup (`MP3.startMetainfoPick()`).
+1. **Overlay** (`MP3.open()`, `mediaplace.js`) — Vollbild-Picker: Kategoriebaum, Grid/Liste/Media-Wall, Suche, Tag-/Typ-Filter, Sammlungen, Multi-Select, Detail-Panel mit eigenen JSON-Metadaten-Feldern.
+2. **Input-Widget** (`<input class="mp3-widget">`, `mediaplace_widget.js`) — visueller Picker für Module/YForm. Optional: `data-mp3-upload="true"` (Direkt-Upload per Drag&Drop/Klick, ganzer Container ist Drop-Zone, Kategorie-Auswahl-Dialog vor dem Upload), `data-mp3-types` (erlaubte Dateitypen), `data-mp3-max` (Obergrenze bei Mehrfachauswahl, mit Klick/Cmd/Ctrl-Klick-Markierung zum gemeinsamen Löschen), `data-mp3-view="grid"|"list"` (Start-Ansicht dieses Widgets, unabhängig von Einzel-/Mehrfachauswahl; ohne Angabe gilt die geteilte Nutzer-Präferenz aus `localStorage`, ein späterer Umschalter-Klick wechselt weiterhin global für alle Widgets der Seite).
+3. **Klassische Integration** (`mediaplace_classic.js`, `boot.php`) — Hauptmenüpunkt "Medienpool" sowie `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets öffnen wahlweise den Overlay statt der alten Seiten/Popups.
+4. **Metainfo-Canvas** (`openMetainfoCanvas()` in `mediaplace.js`, `lib/rex_api_mediaplace_metainfo_form.php`) — natives Bearbeiten echter, über das Metainfo-Addon angelegter `med_*`-Felder direkt im Overlay, über REDAXOs eigenen `MEDIA_FORM_EDIT`/`MEDIA_UPDATED`-Pfad (kein eigenes Feldtyp-System für diese Felder). Klick auf ein klassisches `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widget *innerhalb* des Canvas öffnet das eigene Grid zur Auswahl statt REDAXOs Popup (`MP3.startMetainfoPick()`).
 5. **YForm-Integration** (`lib/yform/value/yform_value_mediaplace.php`, `ytemplates/bootstrap/value.mediaplace.tpl.php`) — eigener YForm-Werttyp `mediaplace`, registriert sich per Klassennamens-Konvention automatisch bei YForm (kein Boot-Hook nötig), registriert aber explizit `MEDIA_IS_IN_USE` in `boot.php` (siehe unten, kritisch).
 
 ## Wo du was findest
 
 - `boot.php` — Assets laden, `PAGES_PREPARED`-Hook (Medienpool-Menüpunkt umbiegen), `METAINFO_CUSTOM_FIELD`-Hook (eigenes JSON-Feld read-only im klassischen Formular anzeigen), `OUTPUT_FILTER`-Hook (injiziert `#mp3-root` mit API-URLs, Feature-Toggles, i18n-JSON), YForm-Template-Pfad + `MEDIA_IS_IN_USE`-Registrierung (unconditional, außerhalb des `isBackend()`-Blocks).
-- `assets/mediapool3-i18n.js` / `-helpers.js` / `-api.js` — geteilte Basis (`window.MP3Core`), von `mediapool3.js` UND `mediapool3_widget.js` per Alias genutzt. Bild-Resize-Logik (`resizeImageFile`, `isResizableImageType`) lebt hier, nicht in `mediapool3.js`, damit Overlay-Upload UND Widget-Direkt-Upload sie gemeinsam nutzen.
-- `assets/mediapool3.js` — Overlay-Kern (IIFE, `window.MP3`), mehrere Tausend Zeilen, ein File.
-- `assets/mediapool3_widget.js` — Input-Widget (`window.MP3Widget`), inkl. Direkt-Upload, Kategorie-Auswahl-Modal (`.mp3w-catpick-*`, eigenständig von `#mp3-overlay` — Overlay-Root existiert ggf. noch nicht), Kacheln/Liste-Umschalter.
-- `assets/mediapool3_classic.js` — fängt Klicks auf klassische Widget-Buttons per Event-Delegation ab (Capture-Phase). Überschreibt **bewusst nicht** `openREXMedia()`/`openMediaPool()` selbst (TinyMCE/CKEditor5 rufen diese direkt auf). Klicks *innerhalb* `#mp3-metainfo-canvas` werden separat behandelt (eigenes Grid statt Popup).
+- `assets/mediaplace-i18n.js` / `-helpers.js` / `-api.js` — geteilte Basis (`window.MP3Core`), von `mediaplace.js` UND `mediaplace_widget.js` per Alias genutzt. Bild-Resize-Logik (`resizeImageFile`, `isResizableImageType`) lebt hier, nicht in `mediaplace.js`, damit Overlay-Upload UND Widget-Direkt-Upload sie gemeinsam nutzen.
+- `assets/mediaplace.js` — Overlay-Kern (IIFE, `window.MP3`), mehrere Tausend Zeilen, ein File.
+- `assets/mediaplace_widget.js` — Input-Widget (`window.MP3Widget`), inkl. Direkt-Upload, Kategorie-Auswahl-Modal (`.mp3w-catpick-*`, eigenständig von `#mp3-overlay` — Overlay-Root existiert ggf. noch nicht), Kacheln/Liste-Umschalter.
+- `assets/mediaplace_classic.js` — fängt Klicks auf klassische Widget-Buttons per Event-Delegation ab (Capture-Phase). Überschreibt **bewusst nicht** `openREXMedia()`/`openMediaPool()` selbst (TinyMCE/CKEditor5 rufen diese direkt auf). Klicks *innerhalb* `#mp3-metainfo-canvas` werden separat behandelt (eigenes Grid statt Popup).
 - `lib/rex_api_mediaplace_*.php` — eigene `rex_api_function`-Endpunkte (categories, tags, json_metainfo, schema, unused, focuspoint, metainfo_form, media_list).
 - `lib/rex_api_mediaplace_media_list.php` — Übergangs-Fallback für die Medienliste, nur aktiv, wenn `boot.php` die installierte `api`-Version als zu alt erkennt (`data-api-media-list-secure="0"`, siehe `#8`). Rückbau-TODO, siehe Kommentar im File.
 - `lib/MediaPermission.php` — zentrale Rechteprüfung für eigene Endpunkte, inkl. `getAccessibleCategoryIds()` für den Media-List-Fallback.
@@ -47,7 +47,7 @@ Fünf Teile, die unabhängig voneinander (de)aktivierbar sind (Einstellungsseite
 
 ### 1. API-Abhängigkeit: FriendsOfRedaxo/api
 
-Medien-CRUD läuft über `/api/backend/media/...`. **Bekannte Eigenbauten mit Rückbau-TODO**: Kategorie verschieben (`apiMoveCategory()` in `rex_api_mediaplace_categories.php`, eigenes SQL weil `media/category/update` nur `name` ändern lässt); Medienliste-Fallback (`rex_api_mediaplace_media_list.php`), aktiv solange die installierte `api`-Version `media`/`backend/media` noch nicht nach Kategorie-Rechten filtert (behoben ab api 1.3.1, [PR #78](https://github.com/FriendsOfREDAXO/api/pull/78)) — Versionscheck in `boot.php` (`data-api-media-list-secure`), Umschaltung in `mediapool3-api.js` (`apiFetchMediaList()`). Vor Arbeit an einem dieser beiden prüfen, ob das api-Addon die fehlende Route/Absicherung inzwischen hat, und den Eigenbau dann entfernen.
+Medien-CRUD läuft über `/api/backend/media/...`. **Bekannte Eigenbauten mit Rückbau-TODO**: Kategorie verschieben (`apiMoveCategory()` in `rex_api_mediaplace_categories.php`, eigenes SQL weil `media/category/update` nur `name` ändern lässt); Medienliste-Fallback (`rex_api_mediaplace_media_list.php`), aktiv solange die installierte `api`-Version `media`/`backend/media` noch nicht nach Kategorie-Rechten filtert (behoben ab api 1.3.1, [PR #78](https://github.com/FriendsOfREDAXO/api/pull/78)) — Versionscheck in `boot.php` (`data-api-media-list-secure`), Umschaltung in `mediaplace-api.js` (`apiFetchMediaList()`). Vor Arbeit an einem dieser beiden prüfen, ob das api-Addon die fehlende Route/Absicherung inzwischen hat, und den Eigenbau dann entfernen.
 
 ### 2. Eigene API-Endpunkte brauchen explizite Rechteprüfung
 
@@ -55,14 +55,14 @@ Medien-CRUD läuft über `/api/backend/media/...`. **Bekannte Eigenbauten mit R�
 
 ### 3. CSS-Theming: Overlay vs. Widget unterschiedlich
 
-**Overlay** (`mediapool3.css`): `--mp3-*`-Variablen in **vier** Blöcken (`:root`, `body.rex-theme-dark`, `@media (prefers-color-scheme: dark)`, `#mp3-overlay.mp3-dark-mode`) — neue Variable immer in allen vieren definieren. Vor CSS-Änderungen:
+**Overlay** (`mediaplace.css`): `--mp3-*`-Variablen in **vier** Blöcken (`:root`, `body.rex-theme-dark`, `@media (prefers-color-scheme: dark)`, `#mp3-overlay.mp3-dark-mode`) — neue Variable immer in allen vieren definieren. Vor CSS-Änderungen:
 ```bash
-grep -oE -- '--mp3-[a-z0-9-]+\s*:' assets/mediapool3.css | sed 's/\s*:$//' | sort -u > /tmp/defined.txt
-grep -oE -- 'var\(--mp3-[a-z0-9-]+' assets/mediapool3.css | sed 's/^var(//' | sort -u > /tmp/used.txt
+grep -oE -- '--mp3-[a-z0-9-]+\s*:' assets/mediaplace.css | sed 's/\s*:$//' | sort -u > /tmp/defined.txt
+grep -oE -- 'var\(--mp3-[a-z0-9-]+' assets/mediaplace.css | sed 's/^var(//' | sort -u > /tmp/used.txt
 comm -23 /tmp/used.txt /tmp/defined.txt   # muss leer sein
-python3 -c "c=open('assets/mediapool3.css').read(); print(c.count('{'), c.count('}'))"
+python3 -c "c=open('assets/mediaplace.css').read(); print(c.count('{'), c.count('}'))"
 ```
-**Widget** (`mediapool3_widget.css`, `mp3w-`-Prefix, kein `#mp3-overlay`-Scoping): nur **zwei** Dark-Mode-Blöcke (`body.rex-theme-dark`, `@media`), direkte Hex-Werte statt Variablen — beide synchron halten.
+**Widget** (`mediaplace_widget.css`, `mp3w-`-Prefix, kein `#mp3-overlay`-Scoping): nur **zwei** Dark-Mode-Blöcke (`body.rex-theme-dark`, `@media`), direkte Hex-Werte statt Variablen — beide synchron halten.
 
 Weitere Fallen: REDAXO/Bootstrap setzt global `table{background-color:#fff}` (eigene Tabellen brauchen `background:transparent`); native `<select>` braucht `-webkit-appearance:none;appearance:none;` + eigenes Pfeil-SVG; REDAXOs Muted-Grau ist `#777`, nicht `#9ca5b2` (das ist Rand-/Icon-Grau); kein `border-radius` außer bei echten Kreisen.
 

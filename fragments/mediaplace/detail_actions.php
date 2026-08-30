@@ -3,12 +3,12 @@
 /**
  * Aktionen-Zeile (Auswaehlen/Speichern/Ersetzen/Herunterladen/Loeschen), am
  * unteren Rand des Detail-Panels fixiert (position: sticky). Markup
- * identisch zum Aktionen-Teil von renderDetail() in mediapool3.js.
+ * identisch zum Aktionen-Teil von renderDetail() in mediaplace.js.
  *
  * Der "Auswaehlen"-Button wird -- anders als frueher in renderDetail(), wo
  * er nur bei onSelect/onMultiSelect ueberhaupt ausgegeben wurde -- immer
  * gerendert und per JS nach dem Einfuegen ein-/ausgeblendet (renderDetail()
- * in mediapool3.js), weil der PHP-Endpoint zur Renderzeit nicht wissen
+ * in mediaplace.js), weil der PHP-Endpoint zur Renderzeit nicht wissen
  * kann, in welchem Auswahlmodus der Overlay gerade geoeffnet wurde. Er steht
  * auf einer eigenen, vollbreiten Zeile ueber den restlichen Buttons: bei fuenf
  * Buttons in einer Reihe (Auswaehlen/Ersetzen/Herunterladen/Speichern/
@@ -27,6 +27,9 @@
  *
  * Vars:
  * - array $info siehe detail_panel.php
+ * - bool  $feature_collections  Einstellungen-Toggle: Sammlungen-Zeile zeigen?
+ * - bool  $has_collections      Ist diese Datei bereits Mitglied mind. einer
+ *                                Sammlung? (nur fuer die .is-active-Optik)
  *
  * @var rex_fragment $this
  */
@@ -35,8 +38,10 @@ use FriendsOfRedaxo\Mediaplace\DetailPanelFormatter;
 
 $info = $this->getVar('info');
 $filename = $info['filename'];
+$featureCollections = (bool) $this->getVar('feature_collections');
+$hasCollections = (bool) $this->getVar('has_collections');
 
-// Muss mit API_BASE in assets/mediapool3.js uebereinstimmen (fixe Route des
+// Muss mit API_BASE in assets/mediaplace.js uebereinstimmen (fixe Route des
 // FriendsOfRedaxo/api-Addons fuer die Backend-Session-Auth-Spiegelroute).
 $apiBase = '/api/backend/';
 $token = $info['updatedate'] ?: (string) $info['filesize'];
@@ -50,6 +55,10 @@ $downloadUrl = $apiBase . 'media/' . rawurlencode($filename) . '/file' . ($token
             <i class="fa-solid fa-arrows-rotate"></i><input type="file" class="mp3-detail-replace-input" accept="<?= rex_escape(DetailPanelFormatter::replacementAccept($filename)) ?>" style="display:none"></label>
         <a class="mp3-detail-download-btn" href="<?= rex_escape($downloadUrl) ?>" download="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_download_file')) ?>">
             <i class="fa-solid fa-download"></i></a>
+        <?php if ($featureCollections): ?>
+            <button type="button" class="mp3-detail-collection-btn<?= $hasCollections ? ' is-active' : '' ?>" data-filename="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_manage_collections')) ?>">
+                <i class="fa-solid fa-bookmark"></i></button>
+        <?php endif; ?>
         <button type="button" class="mp3-detail-save-btn" title="<?= rex_escape($this->i18n('mediaplace_save_changes')) ?>" disabled>
             <i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
         <button class="mp3-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" title="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>">

@@ -7,6 +7,30 @@ rex_perm::register('mediaplace[view_unused_media]', 'Filter "Nur unbenutzte Medi
 rex_perm::register('mediaplace[manage_categories]', 'Ordner (Kategorien) umbenennen, verschieben oder löschen');
 rex_perm::register('mediaplace[optimize_video]', 'Videos optimieren (ffmpeg-Addon)');
 rex_perm::register('mediaplace[optimize_image]', 'Bilder optimieren');
+rex_perm::register('mediaplace[manage_tags]', 'Tags umbenennen, Farbe bestehender Tags ändern oder Tags löschen');
+
+// Eigene rex_api_function-Endpunkte laufen unter dem Namespace
+// FriendsOfRedaxo\Mediaplace\Api (siehe https://redaxo.org/doku/5.x/api#namespace-registrierung)
+// statt der Klassennamenskonvention "rex_api_<name>" -- deshalb explizite
+// Registrierung noetig, sonst findet rex_api_function::factory() die Klasse
+// nicht mehr. Die rex-api-call-Bezeichner selbst bleiben unveraendert (Client-
+// seitig in mediaplace-api.js/README.md verwendet), nur die PHP-Klasse zieht um.
+// Unconditional wie die rex_perm::register()-Aufrufe oben -- die Registrierung
+// selbst braucht keinen eingeloggten Backend-User, das pruefen die einzelnen
+// Endpunkte (rex::getUser() + MediaPermission) ohnehin selbst in execute().
+rex_api_function::register('mediaplace_categories', \FriendsOfRedaxo\Mediaplace\Api\Categories::class);
+rex_api_function::register('mediaplace_crop', \FriendsOfRedaxo\Mediaplace\Api\Crop::class);
+rex_api_function::register('mediaplace_focuspoint', \FriendsOfRedaxo\Mediaplace\Api\Focuspoint::class);
+rex_api_function::register('mediaplace_image_optimize', \FriendsOfRedaxo\Mediaplace\Api\ImageOptimize::class);
+rex_api_function::register('mediaplace_json_metainfo', \FriendsOfRedaxo\Mediaplace\Api\JsonMetainfo::class);
+rex_api_function::register('mediaplace_media_list', \FriendsOfRedaxo\Mediaplace\Api\MediaList::class);
+rex_api_function::register('mediaplace_metainfo_form', \FriendsOfRedaxo\Mediaplace\Api\MetainfoForm::class);
+rex_api_function::register('mediaplace_provider', \FriendsOfRedaxo\Mediaplace\Api\Provider::class);
+rex_api_function::register('mediaplace_schema', \FriendsOfRedaxo\Mediaplace\Api\Schema::class);
+rex_api_function::register('mediaplace_tags', \FriendsOfRedaxo\Mediaplace\Api\Tags::class);
+rex_api_function::register('mediaplace_unused', \FriendsOfRedaxo\Mediaplace\Api\Unused::class);
+rex_api_function::register('mediaplace_video_info', \FriendsOfRedaxo\Mediaplace\Api\VideoInfo::class);
+rex_api_function::register('mediaplace_video_optimize', \FriendsOfRedaxo\Mediaplace\Api\VideoOptimize::class);
 
 // YForm-Werttyp "mediaplace" (lib/yform/value/yform_value_mediaplace.php, per
 // Klassennamenskonvention automatisch von YForm erkannt -- keine explizite
@@ -61,20 +85,20 @@ if (rex::isBackend() && rex::getUser()) {
         return '?v=' . filemtime($this->getPath('assets/' . $file));
     };
 
-    // Core: Overlay Picker -- i18n/Helfer/API-Schicht zuerst laden (mediapool3.js
+    // Core: Overlay Picker -- i18n/Helfer/API-Schicht zuerst laden (mediaplace.js
     // bindet sie per Alias ein, siehe deren Datei-Header-Kommentare).
-    rex_view::addCssFile($this->getAssetsUrl('mediapool3.css') . $bust('mediapool3.css'));
-    rex_view::addJsFile($this->getAssetsUrl('mediapool3-i18n.js') . $bust('mediapool3-i18n.js'));
-    rex_view::addJsFile($this->getAssetsUrl('mediapool3-helpers.js') . $bust('mediapool3-helpers.js'));
-    rex_view::addJsFile($this->getAssetsUrl('mediapool3-api.js') . $bust('mediapool3-api.js'));
-    rex_view::addJsFile($this->getAssetsUrl('mediapool3.js') . $bust('mediapool3.js'));
+    rex_view::addCssFile($this->getAssetsUrl('mediaplace.css') . $bust('mediaplace.css'));
+    rex_view::addJsFile($this->getAssetsUrl('mediaplace-i18n.js') . $bust('mediaplace-i18n.js'));
+    rex_view::addJsFile($this->getAssetsUrl('mediaplace-helpers.js') . $bust('mediaplace-helpers.js'));
+    rex_view::addJsFile($this->getAssetsUrl('mediaplace-api.js') . $bust('mediaplace-api.js'));
+    rex_view::addJsFile($this->getAssetsUrl('mediaplace.js') . $bust('mediaplace.js'));
 
     // Widget: Input-Feld → Media Picker
-    rex_view::addCssFile($this->getAssetsUrl('mediapool3_widget.css') . $bust('mediapool3_widget.css'));
-    rex_view::addJsFile($this->getAssetsUrl('mediapool3_widget.js') . $bust('mediapool3_widget.js'));
+    rex_view::addCssFile($this->getAssetsUrl('mediaplace_widget.css') . $bust('mediaplace_widget.css'));
+    rex_view::addJsFile($this->getAssetsUrl('mediaplace_widget.js') . $bust('mediaplace_widget.js'));
 
     // Klassische REX_MEDIA[n]/REX_MEDIALIST[n]-Widgets auf den neuen Overlay umleiten
-    rex_view::addJsFile($this->getAssetsUrl('mediapool3_classic.js') . $bust('mediapool3_classic.js'));
+    rex_view::addJsFile($this->getAssetsUrl('mediaplace_classic.js') . $bust('mediaplace_classic.js'));
 
     // Zuschneiden-Canvas nutzt cropper's eigene Assets 1:1 (siehe CropperIntegration) --
     // nur laden, wenn das Addon installiert ist und der User das Recht hat.
@@ -106,18 +130,51 @@ if (rex::isBackend() && rex::getUser()) {
         }
 
         $mediapool = rex_be_controller::getPages()['mediapool'] ?? null;
-        if ($mediapool instanceof rex_be_page) {
-            $mediapool->setPopup('MP3.open(); return false;');
-            $mediapool->setTitle('MediaPlace');
-            $mediapool->setIcon('rex-icon fa-photo-film');
-
-            // Route bleibt aktiv (TinyMCE/CKEditor5 steuern sie per Popup an),
-            // nur aus der Navigation ausgeblendet.
-            $mediaSubpage = $mediapool->getSubpage('media');
-            if ($mediaSubpage instanceof rex_be_page) {
-                $mediaSubpage->setHidden(true);
-            }
+        if (!$mediapool instanceof rex_be_page) {
+            return;
         }
+
+        $mediapool->setPopup('MP3.open(); return false;');
+        $mediapool->setTitle('MediaPlace');
+        $mediapool->setIcon('rex-icon fa-photo-film');
+
+        $takeoverPath = rex_path::addon($addonName, 'pages/mediapool_takeover.php');
+
+        // Auch klassische Popup-Aufrufe (TinyMCE/CKEditor5, REX_MEDIA[n]/
+        // REX_MEDIALIST[n]-Widgets -- erkennbar am mitgeschickten
+        // 'opener_input_field', siehe openMediaPool()/openREXMedia()/
+        // addREXMedia()/... in mediapool.js) bekommen MediaPlace statt des
+        // klassischen Formulars: mediapool_takeover.php bildet dafuer selbst
+        // den klassischen Popup-Vertrag (rex:selectMedia-Event bzw.
+        // REX_MEDIALIST-Select-Befuellung auf dem Opener-Fenster) nach, siehe
+        // dortigen Kommentar.
+        $mediaSubpage = $mediapool->getSubpage('media');
+        if ($mediaSubpage instanceof rex_be_page) {
+            $mediaSubpage->setHidden(true);
+            $mediaSubpage->setSubPath($takeoverPath);
+        }
+
+        // filepond_uploader kann dieselbe Unterseite ueber seinen eigenen
+        // 'replace_mediapool'-Schalter uebernehmen -- in dem Fall bewusst
+        // nicht eingreifen, um die beiden Umbiegungen nicht gegeneinander
+        // laufen zu lassen (wer zuletzt registriert, wuerde sonst "gewinnen").
+        $filepondOwnsUpload = rex_addon::get('filepond_uploader')->isAvailable()
+            && rex_config::get('filepond_uploader', 'replace_mediapool', false);
+        $uploadSubpage = $mediapool->getSubpage('upload');
+        if ($uploadSubpage instanceof rex_be_page && !$filepondOwnsUpload) {
+            $uploadSubpage->setHidden(true);
+            $uploadSubpage->setSubPath($takeoverPath);
+        }
+
+        // 'structure' (Kategorieverwaltung) hat keinen klassischen Popup-Aufrufer,
+        // kann also immer umgebogen werden.
+        $structureSubpage = $mediapool->getSubpage('structure');
+        if ($structureSubpage instanceof rex_be_page) {
+            $structureSubpage->setHidden(true);
+            $structureSubpage->setSubPath($takeoverPath);
+        }
+
+        // 'sync' bewusst unangetastet -- kein Aequivalent im MediaPlace-Overlay.
     });
 
     // Zeigt med_json_data im klassischen Medienpool-Formular formatiert und
@@ -189,7 +246,7 @@ if (rex::isBackend() && rex::getUser()) {
         // hier. Schwelle bewusst auf 1.3.2 gesetzt (noch keine reale
         // api-Release-Version, Platzhalter fuer die erste Version, die PR #78
         // MIT der spaeter ergaenzten Kaskadierung enthaelt): der eigene
-        // Fallback-Endpunkt (rex_api_mediaplace_media_list.php) nutzt
+        // Fallback-Endpunkt (Api\MediaList.php) nutzt
         // MediaPermission::getAccessibleCategoryIds(), das bereits kaskadiert
         // (Zugriff auf X gilt fuer den ganzen Unterbaum) -- ohne die Anhebung
         // wuerden Installationen mit reinem api 1.3.1 (Kategorie-Filterung,
@@ -205,6 +262,12 @@ if (rex::isBackend() && rex::getUser()) {
         $apiMediaListSecure = version_compare($apiVersion, '1.3.2', '>=') ? '1' : '0';
         $mediaListFallbackUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_media_list']);
         $canFilterUnused = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasUnusedFilterAccess() ? '1' : '0';
+        // "Medien ohne ALT-Text"-Sidebar-Eintrag nur anzeigen, wenn er in den
+        // Einstellungen aktiviert ist (Default an, siehe package.yml
+        // default_config) UND es ueberhaupt ein ALT-Text-Feld gibt (eigenes
+        // oder klassisches med_alt) -- sonst waere die Ansicht immer leer/sinnlos.
+        $altMissingFilterAvailable = rex_config::get($addonName, 'enable_alt_missing_filter', true)
+            && \FriendsOfRedaxo\Mediaplace\AltTextStatus::hasAltField() ? '1' : '0';
         // Kategorie 0 ("kein Ordner") ist ein eigenes Recht (hasCategoryPerm(0)),
         // das viele auf einzelne Kategorien eingeschraenkte User nicht haben --
         // steuert, ob der "Medienpool"-Sidebar-/Breadcrumb-Link anklickbar ist.
@@ -214,7 +277,7 @@ if (rex::isBackend() && rex::getUser()) {
         $metainfoFormAvailable = rex_addon::get('metainfo')->isAvailable() ? '1' : '0';
         // Globale Verfuegbarkeit (Addon + Recht) -- ob eine KONKRETE Datei
         // zuschneidbar ist (Bild-Endung), entscheidet der Client anhand des
-        // Dateinamens, siehe CropperIntegration::isSupportedMedia()/mediapool3.js.
+        // Dateinamens, siehe CropperIntegration::isSupportedMedia()/mediaplace.js.
         $cropperUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_crop']);
         $cropperAvailable = \FriendsOfRedaxo\Mediaplace\CropperIntegration::isAvailable()
             && null !== rex::getUser() && rex::getUser()->hasPerm('cropper[]') ? '1' : '0';
@@ -242,7 +305,7 @@ if (rex::isBackend() && rex::getUser()) {
         // hier von vornherein unnoetig.
         $optimizeImageUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_image_optimize']);
 
-        // Feature-Toggles der Einstellungsseite, siehe features-Objekt in mediapool3.js.
+        // Feature-Toggles der Einstellungsseite, siehe features-Objekt in mediaplace.js.
         $featureTagging = rex_config::get($addonName, 'disable_tagging', false) ? '0' : '1';
         $featureCollections = rex_config::get($addonName, 'disable_collections', false) ? '0' : '1';
         $featureMetainfoEditing = rex_config::get($addonName, 'enable_metainfo_editing', false) ? '1' : '0';
@@ -258,7 +321,7 @@ if (rex::isBackend() && rex::getUser()) {
         // und das darf den Seitenaufbau nicht abreissen, obwohl der User das
         // Recht dafuer haette. hasSearch() kommt deshalb erst mit der
         // tatsaechlichen entries-Antwort vom Server (siehe
-        // rex_api_mediaplace_provider.php), nicht schon hier.
+        // Api\Provider.php), nicht schon hier.
         $providerUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_provider']);
         $providers = [];
         foreach (\FriendsOfRedaxo\Mediaplace\StorageProviderRegistry::getAvailableProviders() as $providerId => $providerMeta) {
@@ -282,12 +345,46 @@ if (rex::isBackend() && rex::getUser()) {
                     'title' => $subpage->getTitle(),
                     'href' => $subpage->getHref(),
                     'icon' => $subpage->hasIcon() ? $subpage->getIcon() : 'rex-icon rex-icon-package-addon',
+                    // Klassische Unterseiten oeffnen wie bisher im alten Popup-Fenster
+                    // (siehe initAdminMenu() in legacy.js) -- nur der neue
+                    // Einstellungen-Eintrag unten (echte MediaPlace-Seite, kein
+                    // Popup-Formular) navigiert stattdessen normal.
+                    'popup' => true,
                 ];
             }
         }
 
+        // Zahnrad-Eintrag im selben Menue: Link zur eigenen Einstellungsseite,
+        // nur wenn der User dafuer berechtigt ist (dort per package.yml perm: admin).
+        $mediaplaceSettingsPage = rex_be_controller::getPages()[$addonName] ?? null;
+        $mediaplaceSettingsSubpage = $mediaplaceSettingsPage instanceof rex_be_page
+            ? $mediaplaceSettingsPage->getSubpage('settings')
+            : null;
+        if ($mediaplaceSettingsSubpage instanceof rex_be_page && $mediaplaceSettingsSubpage->checkPermission(rex::requireUser())) {
+            $subpages[] = [
+                'title' => rex_i18n::msg('mediaplace_settings'),
+                'href' => $mediaplaceSettingsSubpage->getHref(),
+                'icon' => $mediaplaceSettingsSubpage->hasIcon() ? $mediaplaceSettingsSubpage->getIcon() : 'rex-icon fa-gear',
+                'popup' => false,
+            ];
+        }
+
+        // Gleiches Muster fuer die Tag-Verwaltung (eigene, engere Berechtigung
+        // mediaplace[manage_tags] statt admin, siehe package.yml).
+        $mediaplaceTagManagementSubpage = $mediaplaceSettingsPage instanceof rex_be_page
+            ? $mediaplaceSettingsPage->getSubpage('tag_management')
+            : null;
+        if ($mediaplaceTagManagementSubpage instanceof rex_be_page && $mediaplaceTagManagementSubpage->checkPermission(rex::requireUser())) {
+            $subpages[] = [
+                'title' => rex_i18n::msg('mediaplace_tag_management'),
+                'href' => $mediaplaceTagManagementSubpage->getHref(),
+                'icon' => $mediaplaceTagManagementSubpage->hasIcon() ? $mediaplaceTagManagementSubpage->getIcon() : 'rex-icon fa-tags',
+                'popup' => false,
+            ];
+        }
+
         // JS-Uebersetzungen: jeder Schluessel aus lang/de_de.lang wird fuer die
-        // aktive Locale aufgeloest und als JSON eingebettet (siehe mediapool3-i18n.js).
+        // aktive Locale aufgeloest und als JSON eingebettet (siehe mediaplace-i18n.js).
         $i18nMap = [];
         $langFile = rex_path::addon($addonName, 'lang/de_de.lang');
         if (is_file($langFile)) {
@@ -298,9 +395,20 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '"></div>'
+        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
-        $content = str_replace('</body>', $inject . "\n" . '</body>', $content);
+        // Nur das LETZTE '</body>' ersetzen, nicht jedes Vorkommen: ein einfaches
+        // str_replace() traf schon einmal versehentlich den Text eines eigenen
+        // Inline-<script>-Kommentars (der zufaellig die Zeichenkette "</body>"
+        // enthielt) weiter oben im Dokument -- der injizierte Block enthaelt
+        // selbst ein <script>...</script> (i18n-Daten), dessen schliessendes Tag
+        // dadurch mitten im FALSCHEN <script>-Element landete und dieses vorzeitig
+        // beendete (sichtbarer JS-Quelltext als Seiteninhalt). Das echte
+        // schliessende body-Tag ist immer das letzte im Dokument.
+        $lastBodyPos = strrpos($content, '</body>');
+        if (false !== $lastBodyPos) {
+            $content = substr_replace($content, $inject . "\n" . '</body>', $lastBodyPos, strlen('</body>'));
+        }
         $ep->setSubject($content);
     });
 }

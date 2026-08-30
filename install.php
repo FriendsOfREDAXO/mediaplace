@@ -30,7 +30,7 @@ if (!\FriendsOfRedaxo\Mediaplace\MetainfoFieldGroup::getFieldByKey('description'
 }
 
 // Eigener Media-Manager-Typ fuer Grid-/Media-Wall-Thumbnails (previewHtml() in
-// mediapool3.js): rex_media_small (200x200) reicht fuer die per Slider auf bis
+// mediaplace.js): rex_media_small (200x200) reicht fuer die per Slider auf bis
 // zu 360px CSS-Breite skalierbaren Kacheln nicht mehr aus -- Browser skaliert
 // dann sichtbar unscharf hoch. Bewusst ein EIGENER Typ statt rex_media_medium/
 // _large (Core-Defaults) zu nutzen: die koennten site-spezifisch fuer andere

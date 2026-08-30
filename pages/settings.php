@@ -21,6 +21,10 @@ $field = $form->addCheckboxField('enable_metainfo_editing');
 $field->addOption(rex_i18n::msg('mediaplace_settings_feature_metainfo_editing_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_metainfo_editing_hint'));
 
+$field = $form->addCheckboxField('enable_alt_missing_filter');
+$field->addOption(rex_i18n::msg('mediaplace_settings_feature_alt_missing_filter_label'), 1);
+$field->setNotice(rex_i18n::msg('mediaplace_settings_feature_alt_missing_filter_hint'));
+
 $field = $form->addCheckboxField('disable_tagging');
 $field->addOption(rex_i18n::msg('mediaplace_settings_feature_tagging_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_tagging_hint'));
@@ -61,8 +65,37 @@ $field = $form->addInputField('number', 'upload_resize_height', null, [
 ]);
 $field->setLabel(rex_i18n::msg('mediaplace_settings_upload_resize_height'));
 
+$formHtml = $form->get();
+
+// rex_form_base::createElement() faellt bei einer NICHT abgeschickten Checkbox
+// (der Browser sendet fuer eine deaktivierte Checkbox ueberhaupt kein Feld mit)
+// auf den zuvor gespeicherten Wert zurueck, statt "aus" zu speichern -- eine
+// Checkbox in einem rex_config_form laesst sich dadurch nie wieder deaktivieren,
+// sobald sie einmal aktiviert wurde (live beobachtet: "Klassischen Medienpool-
+// Menuepunkt ersetzen" liess sich nicht abschalten). Betrifft jedes
+// addCheckboxField() auf dieser Seite gleichermassen -- nach dem generischen
+// Form-Save (oben) deshalb fuer alle hier den tatsaechlich gesendeten Zustand
+// explizit nachtragen, als echten Bool-Wert statt des sonst ueblichen
+// Pipe-Strings (beides wird ueberall nur truthy/falsy ausgewertet, siehe
+// boot.php/lib/*).
+$checkboxFields = [
+    'replace_classic_mediapool',
+    'enable_own_metadata',
+    'enable_metainfo_editing',
+    'enable_alt_missing_filter',
+    'disable_tagging',
+    'disable_collections',
+    'enable_upload_resize',
+];
+$submittedFieldset = rex_post('mediaplace', 'array', null);
+if (null !== $submittedFieldset) {
+    foreach ($checkboxFields as $checkboxField) {
+        rex_config::set('mediaplace', $checkboxField, isset($submittedFieldset[$checkboxField]['1']));
+    }
+}
+
 $fragment = new rex_fragment();
 $fragment->setVar('class', 'edit', false);
 $fragment->setVar('title', rex_i18n::msg('mediaplace_settings_menu_legend'));
-$fragment->setVar('body', $form->get(), false);
+$fragment->setVar('body', $formHtml, false);
 echo $fragment->parse('core/page/section.php');
