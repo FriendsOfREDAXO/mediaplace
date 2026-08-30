@@ -67,8 +67,13 @@ class Tags extends rex_api_function
                     'file_tags' => $fileTags,
                     // Global (nicht auf die aktuell geladene Kategorie beschraenkt),
                     // respektiert aber die Kategorie-Rechte des Users -- siehe
-                    // SystemTagManager::getCollectionCounts().
+                    // SystemTagManager::getCollectionCounts()/getTagCounts().
                     'collection_counts' => \FriendsOfRedaxo\Mediaplace\SystemTagManager::getCollectionCounts(
+                        \FriendsOfRedaxo\Mediaplace\MediaPermission::getAccessibleCategoryIds(),
+                    ),
+                    // Nur tatsaechlich zugewiesene Tags sollen im Sidebar-Filter
+                    // erscheinen, siehe updateTagFilterOptions() im Client.
+                    'tag_counts' => \FriendsOfRedaxo\Mediaplace\SystemTagManager::getTagCounts(
                         \FriendsOfRedaxo\Mediaplace\MediaPermission::getAccessibleCategoryIds(),
                     ),
                 ]);

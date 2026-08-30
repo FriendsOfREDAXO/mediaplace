@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 1.21.1-beta1 – 2026-08-30
+
+iPhone-Fixes (Beta-Release zum Gegentesten vor dem endgültigen 1.21.1).
+
+### Bugfix
+- iOS Safari: das Overlay wurde auf dem iPhone teils vom Browser-Chrome (Adress-/Werkzeugleiste) abgeschnitten. Der `100vh`→`100%`→`100dvh`-Fallback aus 1.21.0 saß am falschen Selektor (`.mp3-fullscreen-mode .mp3-modal`, ein separates, nur manuell togglebares Feature) statt am tatsächlich auf schmalen Viewports wirksamen `@media (max-width: 768px)`-Regelwerk, das weiterhin blankes `100vh` nutzte – jetzt am richtigen Ort ergänzt.
+- iOS Safari: die Adressleiste konnte zusätzlich dauerhaft in dem Zustand steckenbleiben, den sie genau beim Öffnen des Overlays hatte – durch den (bereits vorhandenen) Scroll-Lock der Hintergrundseite sieht Safari die Seite nie wieder scrollen und hat keinen Anlass, die Leiste zu verkleinern. Ein minimaler, unsichtbarer 1px-Scroll auf `<html>` kurz nach dem Öffnen gibt Safari dieses Signal, ohne die Wiederherstellung der Scrollposition beim Schließen zu beeinflussen.
+- Tag-Filter (Sidebar) zeigte auch Tags an, die gar keiner Datei (mehr) zugewiesen sind (z. B. nach Entfernen des letzten Vorkommens) – der Filter listete den kompletten Tag-Katalog statt nur tatsächlich vergebene Tags. Zeigt jetzt nur noch Tags mit mindestens einer (für den User zugänglichen) zugewiesenen Datei, per echtem Server-Count (`SystemTagManager::getTagCounts()`, gleiches Muster wie bei Sammlungen).
+
 ## Version 1.21.0 – 2026-08-30
 
 Zusammengefasste Änderungen seit Version 1.5.3 (Zwischenschritte entfernt, siehe Git-Historie für die volle Detailtiefe).

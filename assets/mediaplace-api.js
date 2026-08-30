@@ -324,8 +324,9 @@
                 catalog: Array.isArray(json.catalog) ? json.catalog : [],
                 // Global (nicht auf die aktuell geladene Kategorie beschraenkt),
                 // respektiert aber die Kategorie-Rechte des Users -- siehe
-                // SystemTagManager::getCollectionCounts() serverseitig.
-                collection_counts: (json && typeof json.collection_counts === 'object' && json.collection_counts) ? json.collection_counts : {}
+                // SystemTagManager::getCollectionCounts()/getTagCounts() serverseitig.
+                collection_counts: (json && typeof json.collection_counts === 'object' && json.collection_counts) ? json.collection_counts : {},
+                tag_counts: (json && typeof json.tag_counts === 'object' && json.tag_counts) ? json.tag_counts : {}
             };
         });
     }

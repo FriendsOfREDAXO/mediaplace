@@ -116,6 +116,7 @@ import {
     setCurrentSort,
     getCurrentTagCatalog,
     setCurrentTagCatalog,
+    setCurrentTagCounts,
     getUnusedOnlyFilter,
     getUnusedStatusCache,
 } from './modules/filters.js';
@@ -1006,6 +1007,7 @@ import {
                         var unusedList = results[1];
                         var fileTags = tagsPayload.file_tags || {};
                         setCurrentTagCatalog(Array.isArray(tagsPayload.catalog) ? tagsPayload.catalog : getCurrentTagCatalog());
+                        setCurrentTagCounts(tagsPayload.tag_counts);
                         setCollectionCounts(tagsPayload.collection_counts);
 
                         for (var i = 0; i < taggedFiles.length; i++) {
@@ -3915,6 +3917,23 @@ import {
         // ~500ms aktiv festhalten, falls z.B. der Fokus-Aufruf unten
         // (preventScroll) in manchen Browsern doch scrollt.
         pinScrollPosition(500);
+        // iOS Safari: die Adressleiste bleibt manchmal dauerhaft in dem
+        // Zustand (ein-/ausgeklappt) stehen, den sie GENAU beim Oeffnen
+        // hatte -- durch den Scroll-Lock oben "sieht" Safari die
+        // Hintergrundseite nie wieder scrollen und hat deshalb keinen Anlass,
+        // die Leiste zu verkleinern. Ein minimaler, unsichtbarer 1px-Scroll
+        // auf <html> (dessen scrollTop bewusst unangetastet bleibt, siehe
+        // Kommentar oben bei body.mp3-scroll-lock) gibt Safari dieses Signal
+        // -- nach Ablauf von pinScrollPosition()'s eigenem 500ms-Fenster,
+        // sonst wuerde dessen aktive requestAnimationFrame-Schleife den Nudge
+        // im selben Tick wieder zuruecksetzen. Beeinflusst nicht die
+        // Wiederherstellung beim Schliessen (close() nutzt weiterhin den
+        // unveraendert gespeicherten pageScrollTopBeforeOpen-Wert, nicht den
+        // dann aktuellen scrollTop).
+        setTimeout(function () {
+            var doc = document.scrollingElement || document.documentElement;
+            if (doc) doc.scrollTop = pageScrollTopBeforeOpen + 1;
+        }, 600);
         // Focus overlay so paste events (Cmd+V) are received without triggering scroll jumps.
         setTimeout(function () {
             focusWithoutScroll(overlay);

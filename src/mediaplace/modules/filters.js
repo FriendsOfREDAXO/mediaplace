@@ -27,6 +27,7 @@ var currentFilter = 'all'; // all | images | videos | audio | documents | other
 var currentSort = 'date_desc'; // date_desc | date_asc | filename_asc | filename_desc | title_asc | title_desc
 var currentTagFilters = {}; // tagName -> true
 var currentTagCatalog = []; // [{name,color}]
+var currentTagCounts = {}; // tagName -> Dateianzahl, siehe SystemTagManager::getTagCounts()
 var unusedOnlyFilter = false;
 var unusedStatusCache = {};
 
@@ -215,6 +216,16 @@ export function updateTagFilterOptions() {
             return a.localeCompare(b, 'de', { sensitivity: 'base' });
         }).map(function (n) {
             return { name: n, color: '#4a90d9' };
+        });
+    } else {
+        // Der Katalog (currentTagCatalog) enthaelt ALLE je angelegten Tags,
+        // auch nie oder nicht mehr benutzte -- der Sidebar-Filter soll nur
+        // tatsaechlich zugewiesene zeigen (siehe SystemTagManager::
+        // getTagCounts(), echte Server-Zaehlung ueber den gesamten Bestand,
+        // nicht nur bereits geladene Seiten).
+        tags = tags.filter(function (tag) {
+            var name = String((tag && tag.name) || '').trim();
+            return !!name && (currentTagCounts[name] || 0) > 0;
         });
     }
 
@@ -420,6 +431,7 @@ export function resetFilterState(options) {
     currentFilter = (options.filter && VALID_OPEN_FILTERS.indexOf(options.filter) !== -1) ? options.filter : 'all';
     currentTagFilters = {};
     currentTagCatalog = [];
+    currentTagCounts = {};
     unusedOnlyFilter = false;
     unusedStatusCache = {};
     currentSort = localStorage.getItem('mp3_sort') || 'date_desc';
@@ -444,6 +456,10 @@ export function getCurrentTagCatalog() {
 
 export function setCurrentTagCatalog(v) {
     currentTagCatalog = v;
+}
+
+export function setCurrentTagCounts(v) {
+    currentTagCounts = (v && typeof v === 'object') ? v : {};
 }
 
 export function getUnusedOnlyFilter() {

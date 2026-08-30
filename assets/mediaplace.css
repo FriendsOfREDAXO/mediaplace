@@ -4394,7 +4394,18 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     #mp3-overlay .mp3-modal {
         width: 100vw !important;
         max-width: none !important;
+        /* Fallback-Kette, siehe ausfuehrlicher Kommentar bei
+           .mp3-fullscreen-mode .mp3-modal weiter oben -- DIESER Block hier
+           ist der tatsaechlich auf normalem Mobile-Browsing wirksame Pfad
+           (reine Viewport-Breite, kein manuelles ".mp3-fullscreen-mode"-
+           Toggle noetig/gesetzt), der dortige Fix griff hier nicht: bare
+           100vh berechnet sich in iOS Safari anhand der groesstmoeglichen
+           Hoehe (Adressleiste eingeklappt), ragt also unten heraus bzw.
+           Header wirkt verrutscht/abgeschnitten, solange die Leiste noch
+           ausgefahren ist. */
         height: 100vh !important;
+        height: 100% !important;
+        height: 100dvh !important;
         min-width: 0 !important;
         min-height: 0 !important;
         border-radius: 0;

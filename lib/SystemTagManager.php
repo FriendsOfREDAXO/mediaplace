@@ -351,6 +351,51 @@ class SystemTagManager
     }
 
     /**
+     * Dateianzahl pro (echtem, nicht-Sammlungs-)Tag UEBER DEN GESAMTEN
+     * Medienpool -- gleiches Muster wie getCollectionCounts() oben, nur ohne
+     * COLLECTION_PREFIX-Filter. Sidebar-Tag-Filter zeigt darueber nur Tags
+     * an, die tatsaechlich mindestens einer (fuer den User zugaenglichen)
+     * Datei zugewiesen sind, statt des kompletten Katalogs inklusive nie
+     * benutzter/verwaister Tags.
+     *
+     * $accessibleCategoryIds MUSS von MediaPermission::getAccessibleCategoryIds()
+     * kommen, siehe getCollectionCounts().
+     *
+     * @param list<int> $accessibleCategoryIds
+     * @return array<string, int> Tag-Name -> Dateianzahl
+     */
+    public static function getTagCounts(array $accessibleCategoryIds): array
+    {
+        self::ensureSchema();
+
+        if ([] === $accessibleCategoryIds) {
+            return [];
+        }
+
+        $sql = \rex_sql::factory();
+        $placeholders = implode(',', array_fill(0, count($accessibleCategoryIds), '?'));
+        $rows = $sql->getArray(
+            'SELECT mt.tag_name AS tag_name, COUNT(DISTINCT mt.filename) AS cnt
+             FROM ' . \rex::getTable('mediaplace_media_tags') . ' mt
+             INNER JOIN ' . \rex::getTable('media') . ' m ON m.filename = mt.filename
+             WHERE m.category_id IN (' . $placeholders . ')
+             GROUP BY mt.tag_name',
+            $accessibleCategoryIds,
+        );
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $tagName = (string) ($row['tag_name'] ?? '');
+            if ('' === $tagName || self::isCollectionTagName($tagName)) {
+                continue;
+            }
+            $counts[$tagName] = (int) ($row['cnt'] ?? 0);
+        }
+
+        return $counts;
+    }
+
+    /**
      * @param array<int, array{name?:string,color?:string}|string> $tags
      */
     public static function saveTagsForFilename(string $filename, array $tags): void
