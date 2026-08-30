@@ -7,7 +7,7 @@ rex_perm::register('mediaplace[view_unused_media]', 'Filter "Nur unbenutzte Medi
 rex_perm::register('mediaplace[manage_categories]', 'Ordner (Kategorien) umbenennen, verschieben oder löschen');
 rex_perm::register('mediaplace[optimize_video]', 'Videos optimieren (ffmpeg-Addon)');
 rex_perm::register('mediaplace[optimize_image]', 'Bilder optimieren');
-rex_perm::register('mediaplace[manage_tags]', 'Tags umbenennen, Farbe bestehender Tags ändern oder Tags löschen');
+rex_perm::register('mediaplace[manage_tags]', 'Tags umbenennen, Farbe bestehender Tags ändern, Tags löschen oder für KI-Vorschläge freigeben');
 rex_perm::register('mediaplace[bulk_operations]', 'Massenaktionen für ganze Kategorien (alle Dateien verschieben/löschen/taggen)');
 
 // Eigene rex_api_function-Endpunkte laufen unter dem Namespace
@@ -33,6 +33,15 @@ rex_api_function::register('mediaplace_tags', \FriendsOfRedaxo\Mediaplace\Api\Ta
 rex_api_function::register('mediaplace_unused', \FriendsOfRedaxo\Mediaplace\Api\Unused::class);
 rex_api_function::register('mediaplace_video_info', \FriendsOfRedaxo\Mediaplace\Api\VideoInfo::class);
 rex_api_function::register('mediaplace_video_optimize', \FriendsOfRedaxo\Mediaplace\Api\VideoOptimize::class);
+// Optionale KI-Alt-Text-Generierung (siehe AiAltTextService::isAvailable()
+// -- rein soft-optional, wirkungslos ohne installiertes+konfiguriertes
+// ai_platform-Addon UND aktivierte Einstellung "AI Alt-Text aktivieren").
+rex_api_function::register('mediaplace_ai_alt_text', \FriendsOfRedaxo\Mediaplace\Api\AiAltText::class);
+rex_api_function::register('mediaplace_ai_alt_bulk', \FriendsOfRedaxo\Mediaplace\Api\AiAltBulk::class);
+// Optionale KI-Auto-Tagging-Vorschlaege (siehe AiAutoTagService::isAvailable()
+// -- rein soft-optional, zusaetzlich nur aktiv, wenn mindestens ein Tag in
+// der Tag-Verwaltung fuer KI freigegeben ist).
+rex_api_function::register('mediaplace_ai_auto_tag', \FriendsOfRedaxo\Mediaplace\Api\AiAutoTag::class);
 
 // YForm-Werttyp "mediaplace" (lib/yform/value/yform_value_mediaplace.php, per
 // Klassennamenskonvention automatisch von YForm erkannt -- keine explizite
@@ -317,6 +326,30 @@ if (rex::isBackend() && rex::getUser()) {
         $uploadResizeWidth = (int) rex_config::get($addonName, 'upload_resize_width', 2000);
         $uploadResizeHeight = (int) rex_config::get($addonName, 'upload_resize_height', 2000);
 
+        // Optionale KI-Alt-Text-Generierung (siehe AiAltTextService::isAvailable()).
+        // aiAltAvailable steuert den Einzeldatei-Button (Detail-Panel + nativer
+        // Canvas) -- zusaetzlich zu Feature/Addon-Verfuegbarkeit auch
+        // hasMediaAccess(), sonst wuerde der Button auch fuer Backend-User
+        // OHNE jede Medien-Berechtigung injiziert (nur der Server-Endpunkt
+        // haette das dann noch abgefangen -- gleiches Defense-in-Depth-Muster
+        // wie cropperAvailable/optimizeVideoAvailable oben). aiAltBulkAvailable
+        // zusaetzlich das granularere Recht fuer die kategorieuebergreifende
+        // Massengenerierung (Zahnrad-Menue) -- Massenaktionen sind ein
+        // groesseres Blast-Radius-/Kosten-Risiko (viele KI-Aufrufe pro Klick)
+        // als eine einzelne, manuell angestossene Generierung.
+        $aiAltAvailable = \FriendsOfRedaxo\Mediaplace\AiAltTextService::isAvailable()
+            && \FriendsOfRedaxo\Mediaplace\MediaPermission::hasMediaAccess();
+        $aiAltUrl = $aiAltAvailable ? rex_url::backendController(['rex-api-call' => 'mediaplace_ai_alt_text']) : '';
+        $aiAltBulkAvailable = $aiAltAvailable && \FriendsOfRedaxo\Mediaplace\MediaPermission::hasBulkOperationsAccess();
+        $aiAltBulkUrl = $aiAltBulkAvailable ? rex_url::backendController(['rex-api-call' => 'mediaplace_ai_alt_bulk']) : '';
+
+        // Optionale KI-Auto-Tagging-Vorschlaege (siehe AiAutoTagService::
+        // isAvailable() -- Feature-Toggle + mindestens ein KI-freigegebener
+        // Tag). Gleiches hasMediaAccess()-Defense-in-Depth wie aiAltAvailable.
+        $aiAutoTagAvailable = \FriendsOfRedaxo\Mediaplace\AiAutoTagService::isAvailable()
+            && \FriendsOfRedaxo\Mediaplace\MediaPermission::hasMediaAccess();
+        $aiAutoTagUrl = $aiAutoTagAvailable ? rex_url::backendController(['rex-api-call' => 'mediaplace_ai_auto_tag']) : '';
+
         // Cloud-Provider-Addons (siehe StorageProviderRegistry), die sich als
         // zusaetzlicher Baum in die Sidebar einklinken. Nur Registrierungs-
         // Metadaten (Label/Icon) hier -- KEINE Provider-Instanziierung an
@@ -412,7 +445,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '"></div>'
+        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '" data-ai-alt-url="' . rex_escape($aiAltUrl) . '" data-ai-alt-bulk-url="' . rex_escape($aiAltBulkUrl) . '" data-ai-auto-tag-url="' . rex_escape($aiAutoTagUrl) . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         // Nur das LETZTE '</body>' ersetzen, nicht jedes Vorkommen: ein einfaches
         // str_replace() traf schon einmal versehentlich den Text eines eigenen

@@ -50,6 +50,18 @@ class AltTextStatus
         return self::isMissing($media, $ownData);
     }
 
+    /**
+     * Oeffentlicher Zugriff auf dasselbe Feld, das isMissing() intern
+     * ermittelt -- genutzt von der optionalen KI-Alt-Text-Generierung
+     * (AiAltTextService/AiAltTextWriter), um zu wissen, WOHIN generierter
+     * Text geschrieben werden soll (eigenes JSON-Feld vs. klassisches
+     * med_alt), ohne dieselbe Ermittlungslogik ein zweites Mal zu duplizieren.
+     */
+    public static function resolveOwnAltField(): ?MetainfoField
+    {
+        return self::findOwnAltField();
+    }
+
     private static function findOwnAltField(): ?MetainfoField
     {
         if (!\rex_config::get('mediaplace', 'enable_own_metadata', false)) {

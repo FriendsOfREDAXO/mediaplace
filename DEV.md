@@ -226,8 +226,12 @@ Unterseiten-Liste im selben Menü immer eine echte Seite/ein Popup zu öffnen.
 Rendert in `#mp3-admin-menu-extensions`, oberhalb der klassischen
 Unterseiten-Links. Registrierung ist bewusst mehrfach-sicher: kann vor ODER
 nach dem ersten `open()` aufgerufen werden (Eintrag bleibt über
-open()/close()-Zyklen hinweg bestehen). Reales Beispiel: das
-`mediaplace_a11y`-Addon ("AI Bulk Management").
+open()/close()-Zyklen hinweg bestehen). Noch kein externer Nutzer – mediaplace's
+eigenes "AI Bulk Management" (optionale KI-Alt-Text-Generierung, siehe
+Einstellungen → "KI-Funktionen") ist direkt im Kern eingebaut, nicht über
+diesen Erweiterungspunkt angebunden (die Funktion braucht ohnehin Zugriff auf
+mediaplace-interne Klassen wie `AltTextStatus`, eine externe Anbindung hätte
+dort keinen Vorteil gebracht).
 
 ```js
 MP3.registerAdminMenuItem('my_addon_bulk', {
@@ -295,7 +299,7 @@ können):
 | `mediaplace[manage_categories]` | Ordner (Kategorien) umbenennen/verschieben/löschen |
 | `mediaplace[optimize_video]` | Videos optimieren (ffmpeg-Addon) |
 | `mediaplace[optimize_image]` | Bilder optimieren |
-| `mediaplace[manage_tags]` | Tags umbenennen/Farbe ändern/löschen |
+| `mediaplace[manage_tags]` | Tags anlegen/umbenennen/Farbe ändern/löschen/für KI-Vorschläge freigeben |
 | `mediaplace[bulk_operations]` | Massenaktionen für ganze Kategorien (alle Dateien verschieben/löschen/taggen) |
 
 ### 5. Eigene REST-Endpunkte (`lib/Api/*.php`)
@@ -312,13 +316,16 @@ dieser Endpunkte nutzt).
 
 | `rex-api-call` | Klasse | Zweck |
 |---|---|---|
+| `mediaplace_ai_alt_bulk` | `AiAltBulk` | KI-ALT-Text-Massengenerierung (nur Vorschläge, siehe `apply`-Aktion fürs eigentliche Schreiben), gated auf `mediaplace[bulk_operations]` |
+| `mediaplace_ai_alt_text` | `AiAltText` | KI-ALT-Text-Vorschlag für eine einzelne Datei, schreibt nicht selbst |
+| `mediaplace_ai_auto_tag` | `AiAutoTag` | KI-Tag-Vorschläge für eine einzelne Datei (geschlossenes Vokabular, siehe `AiAutoTagService`), schreibt nicht selbst |
 | `mediaplace_categories` | `Categories` | Kategoriebaum + CRUD (eigene Rechteprüfung statt `api`-Addon-Routen) |
 | `mediaplace_category_bulk` | `CategoryBulk` | Massenaktionen für alle Dateien einer Kategorie (verschieben/löschen/taggen/Sammlung) |
 | `mediaplace_crop` | `Crop` | Bettet die UI/Speicherlogik des `cropper`-Addons im Overlay ein |
 | `mediaplace_focuspoint` | `Focuspoint` | Fokuspunkt-Info/Speichern |
 | `mediaplace_image_optimize` | `ImageOptimize` | "Bild optimieren"-Button |
 | `mediaplace_json_metainfo` | `JsonMetainfo` | Speichert MediaPlace's eigene JSON-Metadaten |
-| `mediaplace_media_list` | `MediaList` | Übergangs-Fallback-Medienliste, nur aktiv bei zu alter `api`-Addon-Version |
+| `mediaplace_media_list` | `MediaList` | Medienliste: Übergangs-Fallback bei zu alter `api`-Addon-Version, UND immer (unabhängig davon) für die MediaPlace-eigenen Filter Sammlung/„Medien ohne ALT-Text“/Tags (`filter[collection]`/`filter[alt_missing]`/`filter[tags]`), die die generische `api`-Route nicht kennt – siehe `apiFetchOwnMediaList()` in `mediaplace-api.js` |
 | `mediaplace_metainfo_form` | `MetainfoForm` | Nativer Metainfo-Canvas (`med_*`-Felder) über `MEDIA_FORM_EDIT`/`MEDIA_UPDATED` |
 | `mediaplace_provider` | `Provider` | Dispatcher für `StorageProviderInterface`-Provider (Browsen/Suche/Thumbnail/Import) |
 | `mediaplace_schema` | `Schema` | Feld-Schema (Präfix `med_` per Default) als JSON |
@@ -336,3 +343,10 @@ dieser Endpunkte nutzt).
   verwenden, nicht `watch`.
 - `node_modules/` wird nicht committet (siehe `.gitignore`) – nach einem
   frischen Checkout erst `npm install` laufen lassen.
+- `src/` (die esbuild-Quelle) landet trotzdem NICHT im GitHub-Release-Zip:
+  `.gitattributes` markiert den Ordner als `export-ignore`, `git archive`
+  (was Release-Zips baut) lässt ihn dadurch weg. Der Auslieferungsstand
+  (`assets/mediaplace.js`) bleibt davon unberührt – nur unminifizierter
+  Quellcode fliegt raus, kein Funktionsverlust. `node_modules` braucht dort
+  keinen eigenen Eintrag, da es ohnehin nie committet wird und `git archive`
+  nur getrackte Dateien einpackt.

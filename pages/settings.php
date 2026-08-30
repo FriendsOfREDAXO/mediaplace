@@ -83,6 +83,83 @@ foreach ($uploadProviders as $providerId => $providerMeta) {
 }
 $field->setNotice(rex_i18n::msg($uploadProviders ? 'mediaplace_settings_upload_provider_hint' : 'mediaplace_settings_upload_provider_hint_none'));
 
+$form->addFieldset(rex_i18n::msg('mediaplace_settings_ai_alt_legend'));
+
+$aiPlatformAvailable = rex_addon::exists('ai_platform') && rex_addon::get('ai_platform')->isAvailable();
+
+$field = $form->addCheckboxField('enable_ai_alt_text');
+$field->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_enable_label'), 1);
+$field->setNotice(rex_i18n::msg('mediaplace_settings_ai_alt_enable_hint') . ($aiPlatformAvailable ? '' : ' <strong>' . rex_i18n::msg('mediaplace_settings_ai_alt_not_available_hint') . '</strong>'));
+
+$field = $form->addSelectField('ai_alt_prompt_profile');
+$field->setLabel(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_label'));
+$select = $field->getSelect();
+$select->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_accessibility'), 'accessibility');
+$select->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_neutral'), 'neutral');
+$select->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_seo'), 'seo');
+$field->setAttribute('class', 'form-control');
+$field->setNotice(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_hint'));
+
+$field = $form->addTextAreaField('ai_alt_custom_prompt', null, ['class' => 'form-control', 'rows' => 3]);
+$field->setLabel(rex_i18n::msg('mediaplace_settings_ai_alt_custom_prompt_label'));
+$field->setNotice(rex_i18n::msg('mediaplace_settings_ai_alt_custom_prompt_hint'));
+
+$field = $form->addInputField('number', 'ai_alt_max_image_dimension', null, [
+    'class' => 'form-control',
+    'min' => '256',
+    'max' => '2048',
+]);
+$field->setLabel(rex_i18n::msg('mediaplace_settings_ai_alt_max_dimension_label'));
+$field->setNotice(rex_i18n::msg('mediaplace_settings_ai_alt_max_dimension_hint'));
+
+$aiPlatformProfiles = [];
+if ($aiPlatformAvailable) {
+    try {
+        $aiPlatformProfiles = \FriendsOfRedaxo\AiPlatform\Service::getInstance()->getProfiles('image_understanding');
+    } catch (\Throwable $e) {
+        $aiPlatformProfiles = [];
+    }
+}
+$field = $form->addSelectField('ai_alt_platform_profile_id');
+$field->setLabel(rex_i18n::msg('mediaplace_settings_ai_alt_platform_profile_label'));
+$select = $field->getSelect();
+$select->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_platform_profile_default'), '0');
+foreach ($aiPlatformProfiles as $profile) {
+    $label = (string) ($profile['name'] ?? ($profile['provider'] ?? 'Profil') . ' (' . ($profile['model'] ?? '?') . ')');
+    $select->addOption($label, (string) $profile['id']);
+}
+$field->setAttribute('class', 'form-control');
+$field->setNotice(
+    $aiPlatformProfiles || !$aiPlatformAvailable
+        ? rex_i18n::msg('mediaplace_settings_ai_alt_platform_profile_hint')
+        : rex_i18n::msg('mediaplace_settings_ai_alt_platform_profile_none_hint'),
+);
+
+// KI-Auto-Tagging: geschlossenes Vokabular, siehe AiAutoTagService-Docblock
+// -- welche Tags zur Auswahl stehen wird NICHT hier, sondern gezielt in der
+// Tag-Verwaltung (pages/tag_management.php) pro Tag festgelegt ("Für
+// KI-Vorschläge freigeben"). Teilt sich das Bildverstaendnis-Profil oben
+// (ai_alt_platform_profile_id) mit der ALT-Text-Generierung.
+$aiAllowedTagCount = count(\FriendsOfRedaxo\Mediaplace\SystemTagManager::getAiAllowedTagNames());
+
+$field = $form->addCheckboxField('enable_ai_auto_tag');
+$field->addOption(rex_i18n::msg('mediaplace_settings_ai_auto_tag_enable_label'), 1);
+$field->setNotice(
+    rex_i18n::msg('mediaplace_settings_ai_auto_tag_enable_hint')
+    . ($aiPlatformAvailable ? '' : ' <strong>' . rex_i18n::msg('mediaplace_settings_ai_alt_not_available_hint') . '</strong>')
+    . (0 === $aiAllowedTagCount
+        ? ' <strong>' . rex_i18n::msg('mediaplace_settings_ai_auto_tag_none_allowed_hint') . '</strong>'
+        : ' ' . rex_i18n::msg('mediaplace_settings_ai_auto_tag_allowed_count_hint', $aiAllowedTagCount)),
+);
+
+$field = $form->addInputField('number', 'ai_auto_tag_max', null, [
+    'class' => 'form-control',
+    'min' => '1',
+    'max' => '10',
+]);
+$field->setLabel(rex_i18n::msg('mediaplace_settings_ai_auto_tag_max_label'));
+$field->setNotice(rex_i18n::msg('mediaplace_settings_ai_auto_tag_max_hint'));
+
 $formHtml = $form->get();
 
 // rex_form_base::createElement() faellt bei einer NICHT abgeschickten Checkbox
@@ -104,6 +181,8 @@ $checkboxFields = [
     'disable_tagging',
     'disable_collections',
     'enable_upload_resize',
+    'enable_ai_alt_text',
+    'enable_ai_auto_tag',
 ];
 $submittedFieldset = rex_post('mediaplace', 'array', null);
 if (null !== $submittedFieldset) {

@@ -26,11 +26,11 @@ use rex_api_result;
  *
  * Unterstuetzt bewusst nur die Parameter, die mediaplace.js tatsaechlich
  * schickt (buildMediaEndpoint()/fetchTypeCounts()): filter[category_id],
- * filter[term], filter[types], page, per_page. Freitextsuche spiegelt
- * dieselbe Semantik wie api's Media.php (Anfuehrungszeichen gruppieren,
- * "type:jpg,png" filtert die Dateiendung), filter[types] ebenso
- * (extensionExpression() IN (...)), damit sich das Verhalten fuer den
- * Nutzer durch den Fallback nicht aendert.
+ * filter[term], filter[types], filter[collection], filter[alt_missing],
+ * filter[tags], page, per_page. Freitextsuche spiegelt dieselbe Semantik wie
+ * api's Media.php (Anfuehrungszeichen gruppieren, "type:jpg,png" filtert die
+ * Dateiendung), filter[types] ebenso (extensionExpression() IN (...)), damit
+ * sich das Verhalten fuer den Nutzer durch den Fallback nicht aendert.
  *
  * GET /api/backend/mediaplace_media_list?filter[category_id]=&filter[term]=&page=&per_page=
  */
@@ -72,6 +72,7 @@ class MediaList extends rex_api_function
         $types = isset($filter['types']) ? trim((string) $filter['types']) : '';
         $collection = isset($filter['collection']) ? trim((string) $filter['collection']) : '';
         $altMissing = isset($filter['alt_missing']) && '1' === (string) $filter['alt_missing'];
+        $tagsRaw = isset($filter['tags']) ? trim((string) $filter['tags']) : '';
 
         if (null !== $categoryId && !\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($categoryId)) {
             \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
@@ -97,7 +98,7 @@ class MediaList extends rex_api_function
         // Sammlungen (rex_mediaplace_media_tags, "collection:"-Praefix) sind ein
         // MediaPlace-eigenes Konzept, das FriendsOfRedaxo/api's /media-Route nicht
         // kennt -- der Client ruft diesen Endpunkt fuer den Sammlungs-Modus deshalb
-        // IMMER direkt auf (siehe apiFetchCollectionMediaList() in mediaplace-api.js),
+        // IMMER direkt auf (siehe apiFetchOwnMediaList() in mediaplace-api.js),
         // unabhaengig vom data-api-media-list-secure-Schalter oben in der
         // Klassendoku (der betrifft nur die generische Kategorie-Rechtefilterung).
         // Ohne diesen Filter lud der Sammlungs-Modus schlicht Seite 1 der
@@ -122,6 +123,25 @@ class MediaList extends rex_api_function
             $sqlWhere[':alt_missing'] = [] === $missingFilenames
                 ? '1 = 0'
                 : 'filename IN (' . \rex_sql::factory()->in($missingFilenames) . ')';
+        }
+
+        // Tag-Filter (Sidebar-Auswahl, mehrere Tags = ODER-Verknuepfung --
+        // spiegelt applyFilterSort()'s bisherige Client-Logik in filters.js).
+        // Gleiches MediaPlace-eigenes-Konzept-Problem wie bei Sammlungen oben:
+        // ohne diesen Server-Filter laed(e)t die Tag-Ansicht nur Seite 1 der
+        // ungefilterten Liste und filtert clientseitig -- "0 Treffer" sobald
+        // getaggte Dateien nicht zufaellig dort liegen (bei "Alle Medien" mit
+        // vielen Dateien der Regelfall, nicht die Ausnahme).
+        if ('' !== $tagsRaw) {
+            \FriendsOfRedaxo\Mediaplace\SystemTagManager::ensureSchema();
+            $tagNames = array_values(array_filter(array_map(
+                static fn (string $t): string => trim($t),
+                explode(',', $tagsRaw),
+            ), static fn (string $t): bool => '' !== $t));
+            if ([] !== $tagNames) {
+                $sql = \rex_sql::factory();
+                $sqlWhere[':tags'] = 'filename IN (SELECT filename FROM ' . \rex::getTable('mediaplace_media_tags') . ' WHERE tag_name IN (' . $sql->in($tagNames) . '))';
+            }
         }
 
         // Gleiche Semantik wie api/lib/RoutePackage/Media.php::handleMediaList()

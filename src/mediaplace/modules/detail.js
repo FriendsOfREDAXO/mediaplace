@@ -20,6 +20,8 @@ import { isFocuspointCanvasOpen, closeFocuspointCanvas } from './focuspoint.js';
 import { showAlertModal } from './modals.js';
 import { isCollectionTagName, splitSystemTags, mergeUniqueSystemTags } from './collections.js';
 import { pollOptimizeVideo } from './optimize.js';
+import { attachOwnFieldButton, attachClassicFieldButton } from './ai_alt.js';
+import { attachTagSuggestButton } from './ai_tags.js';
 
 var ctx = null;
 
@@ -228,6 +230,11 @@ export function openMetainfoCanvas(filename, label) {
             if (window.jQuery && window.jQuery.fn && window.jQuery.fn.selectpicker) {
                 window.jQuery('.selectpicker', formEl).selectpicker();
             }
+            // Optionaler "AI generieren"-Button neben dem klassischen
+            // med_alt-Feld (siehe modules/ai_alt.js) -- No-Op, falls kein
+            // eigenes JSON-Alt-Feld aktiv ist UND das Feature aus ist bzw.
+            // kein med_alt-Feld in diesem Formular vorkommt.
+            attachClassicFieldButton(formEl, filename);
             // metainfo_lang_fields: Klick-/Input-Handler sind auf document delegiert und
             // funktionieren bereits, aber das versteckte JSON-Feld jedes Sprachfelds wird
             // nur beim initialen Seitenladen befuellt (rex:ready) -- ohne diesen Aufruf
@@ -1083,6 +1090,27 @@ function renderDetail(jsonPayload) {
     });
 
     detailPanel.innerHTML = (jsonPayload && jsonPayload.detail_html) || '';
+
+    // Optionaler "AI generieren"-Button neben dem eigenen JSON-Alt-Feld
+    // (siehe modules/ai_alt.js) -- synchron direkt nach dem innerHTML-Setzen,
+    // garantiert korrektes Timing (kein separates Observer-Script noetig).
+    // No-Op, falls das Feature aus ist oder kein eigenes Alt-Feld existiert
+    // (attachOwnFieldButton() prueft beides selbst).
+    qsa('.mp3-alt-wrap[data-alt-key]', detailPanel).forEach(function (wrap) {
+        attachOwnFieldButton(wrap, selectedFile);
+    });
+
+    // Optionaler "KI-Tags vorschlagen"-Button im System-Tags-Widget (siehe
+    // modules/ai_tags.js) -- gleiches synchrones Timing wie oben. onAdd ruft
+    // addTagFromWidget() dieses Moduls auf, damit Vorschlaege exakt denselben
+    // Hinzufuegen-Pfad wie eine manuelle Tag-Auswahl durchlaufen (Dedup,
+    // Katalog-Farbe, Sammlungs-Namen-Sperre, Dirty-State).
+    var systemTagsWidget = qs('.mp3-json-field[data-field-key="__system_tags"] .mp3-tags-widget', detailPanel);
+    if (systemTagsWidget) {
+        attachTagSuggestButton(systemTagsWidget, selectedFile, function (tagName) {
+            addTagFromWidget(systemTagsWidget, tagName);
+        });
+    }
 
     // Cache-Buster nach Datei-Ersetzen erzwingen (mediaForceCacheTokens),
     // falls der Server-Render noch die vorherige updatedate eingebettet hat.

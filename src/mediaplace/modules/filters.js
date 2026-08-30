@@ -73,7 +73,12 @@ export function applyFilterSort(files) {
         result = result.filter(function (f) { return isFileSelectable(f.filename); });
     }
 
-    // Tag filter (independent from type filter)
+    // Tag-Filter wird inzwischen serverseitig angewandt (filter[tags], siehe
+    // buildBaseFilterParams()/loadFiles() in core.js -- ein Tag-Wechsel loest
+    // dort einen echten Reload aus, lastLoadedFiles enthaelt danach nur noch
+    // Treffer). Dieser Client-Filter bleibt trotzdem als guenstiges,
+    // redundantes Sicherheitsnetz stehen (z. B. falls hier mal Dateien aus
+    // einer aelteren, noch nicht neu geladenen Seite landen).
     var selectedTags = Object.keys(currentTagFilters);
     if (selectedTags.length) {
         result = result.filter(function (f) {
@@ -134,12 +139,15 @@ export function applyFilterSort(files) {
 export function updateFilterCounts() {
     if (!ctx.overlay) return;
     var selectedTags = Object.keys(currentTagFilters);
-    // Echte Server-Zaehler (fetchTypeCounts(), core.js) sind kategorie-/
-    // such-exakt, kennen aber keine Tags -- bei aktivem Tag-Filter faellt der
-    // Zaehler deshalb auf die alte, rein client-seitige Zaehlung innerhalb der
-    // bereits geladenen Seite(n) zurueck.
+    // Echte Server-Zaehler (fetchTypeCounts(), core.js) sind kategorie-/such-/
+    // tag-exakt (filter[tags] geht seit dem serverseitigen Tag-Filter mit in
+    // denselben Request ein, siehe buildBaseFilterParams()) -- der Schluessel-
+    // Vergleich stellt sicher, dass sie tatsaechlich zur aktuellen Auswahl
+    // passen (kurz nach einem Tag-Wechsel, bevor der neue Fetch durch ist,
+    // faellt es auf die client-seitige Zaehlung unten zurueck, genau wie bei
+    // einem Kategoriewechsel).
     var typeCounts = ctx.getTypeCounts();
-    var useServerCounts = typeCounts && ctx.getTypeCountsKey() === ctx.getCurrentTypeCountsKey() && !selectedTags.length;
+    var useServerCounts = typeCounts && ctx.getTypeCountsKey() === ctx.getCurrentTypeCountsKey();
 
     var base = null;
     if (!useServerCounts) {
@@ -395,6 +403,15 @@ export function toggleTagFilter(name) {
 
 export function clearTagFilters() {
     currentTagFilters = {};
+}
+
+/**
+ * @return {list<string>} Namen der aktuell ausgewaehlten Tags -- genutzt von
+ *   core.js fuer den serverseitigen Filter (filter[tags], siehe
+ *   buildBaseFilterParams()/mediaListFetcher()/currentTypeCountsKey()).
+ */
+export function getSelectedTagFilters() {
+    return Object.keys(currentTagFilters);
 }
 
 /** Setzt allen Filter-/Sortier-State fuer eine neue open()-Sitzung zurueck. */

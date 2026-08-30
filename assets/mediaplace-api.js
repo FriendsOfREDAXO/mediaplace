@@ -198,6 +198,109 @@
         });
     }
 
+    // Optionale KI-Alt-Text-Generierung (siehe AiAltTextService::isAvailable()) --
+    // beide URLs bleiben leer/undefiniert am #mp3-root, wenn das Feature aus
+    // ist oder ai_platform fehlt (boot.php), Aufrufer pruefen das VOR dem
+    // Aufruf selbst (modules/ai_alt.js).
+    function getAiAltUrl() {
+        var root = document.getElementById('mp3-root');
+        return root ? (root.dataset.aiAltUrl || '') : '';
+    }
+
+    function getAiAltBulkUrl() {
+        var root = document.getElementById('mp3-root');
+        return root ? (root.dataset.aiAltBulkUrl || '') : '';
+    }
+
+    // Einzeldatei-Generierung fuer den "AI generieren"-Button (Detail-Panel +
+    // nativer Canvas) -- schreibt serverseitig NICHT in die Datenbank, siehe
+    // Api\AiAltText.php-Docblock. imageData (optional) ist ein clientseitig
+    // auf Canvas gerendertes PNG als data:-URL, fuer SVGs (siehe
+    // rasterizeSvgToPngDataUrl() in modules/ai_alt.js).
+    function apiGenerateAiAltText(filename, imageData) {
+        var body = { filename: filename };
+        if (imageData) body.imageData = imageData;
+
+        return fetch(getAiAltUrl(), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+        }).then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || !json.success) {
+                    throw new Error((json && json.error) ? json.error : ('HTTP ' + r.status));
+                }
+                return json;
+            });
+        });
+    }
+
+    // Kategorieuebergreifende Massengenerierung (Zahnrad-Menue), siehe
+    // Api\AiAltBulk.php -- gleiches action-Feld-Dispatch-Muster wie
+    // apiCategoryBulkAction() oben.
+    function apiAiAltBulkAction(action, payload) {
+        var body = payload && typeof payload === 'object' ? payload : {};
+        body.action = action;
+
+        return fetch(getAiAltBulkUrl(), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+        }).then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || !json.success) {
+                    throw new Error((json && json.error) ? json.error : ('HTTP ' + r.status));
+                }
+                return json;
+            });
+        });
+    }
+
+    // Optionale KI-Auto-Tagging-Vorschlaege (siehe AiAutoTagService::isAvailable())
+    // -- URL bleibt leer/undefiniert am #mp3-root, wenn das Feature aus ist,
+    // ai_platform fehlt oder kein Tag fuer KI freigegeben ist (boot.php),
+    // Aufrufer prueft das VOR dem Aufruf selbst (modules/ai_tags.js).
+    function getAiAutoTagUrl() {
+        var root = document.getElementById('mp3-root');
+        return root ? (root.dataset.aiAutoTagUrl || '') : '';
+    }
+
+    // Einzeldatei-Tag-Vorschlaege fuer den "KI-Tags vorschlagen"-Button im
+    // Tag-Widget -- schreibt serverseitig NICHT, siehe Api\AiAutoTag.php-
+    // Docblock. imageData (optional) siehe apiGenerateAiAltText() oben.
+    function apiSuggestAiTags(filename, imageData) {
+        var body = { filename: filename };
+        if (imageData) body.imageData = imageData;
+
+        return fetch(getAiAutoTagUrl(), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+        }).then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || !json.success) {
+                    throw new Error((json && json.error) ? json.error : ('HTTP ' + r.status));
+                }
+                return json;
+            });
+        });
+    }
+
     function apiLoadSystemTagsForFiles(filenames) {
         var params = {};
         if (filenames && filenames.length) {
@@ -266,7 +369,7 @@
     // api ueberall >=1.3.1 ist, kann diese Funktion durch apiFetchRaw() ersetzt
     // und der Fallback-Endpunkt entfernt werden.
     // Gemeinsam von apiFetchMediaList() (Uebergangs-Fallback-Fall) und
-    // apiFetchCollectionMediaList() (siehe dort, IMMER ueber diesen Weg)
+    // apiFetchOwnMediaList() (siehe dort, IMMER ueber diesen Weg)
     // genutzt: haengt die Query eines api-Addon-foermigen endpoint-Strings an
     // fallbackUrl an, inkl. page/per_page -> mp3_page/mp3_per_page-Umbenennung
     // (siehe Kommentar unten).
@@ -316,19 +419,20 @@
         return fetchViaMediaListFallback(endpoint, fallbackUrl);
     }
 
-    // Sammlungen (rex_mediaplace_media_tags, "collection:"-Praefix) sind ein
-    // MediaPlace-eigenes Konzept, das FriendsOfRedaxo/api's /media-Route gar
-    // nicht kennt -- ein filter[collection] dort wuerde als unbekannter
-    // Parameter still ignoriert, die Antwort waere die ungefilterte
-    // Gesamtliste. Sammlungs-Anfragen laufen deshalb IMMER ueber den eigenen
-    // Endpunkt (rex_api_mediaplace_media_list.php), unabhaengig vom
-    // data-api-media-list-secure-Schalter oben (der betrifft nur die
-    // generische Kategorie-Rechtefilterung der normalen Medienliste).
-    function apiFetchCollectionMediaList(endpoint) {
+    // Sammlungen, "Medien ohne ALT-Text" und Tag-Filter (rex_mediaplace_tags/
+    // _media_tags) sind MediaPlace-eigene Konzepte, die FriendsOfRedaxo/api's
+    // /media-Route gar nicht kennt -- ein filter[collection]/[alt_missing]/
+    // [tags] dort wuerde als unbekannter Parameter still ignoriert, die
+    // Antwort waere die ungefilterte Gesamtliste. Anfragen mit einem dieser
+    // Filter laufen deshalb IMMER ueber den eigenen Endpunkt
+    // (Api\MediaList.php), unabhaengig vom data-api-media-list-secure-
+    // Schalter oben (der betrifft nur die generische Kategorie-
+    // Rechtefilterung der normalen Medienliste).
+    function apiFetchOwnMediaList(endpoint) {
         var root = document.getElementById('mp3-root');
         var fallbackUrl = root ? root.dataset.mediaListFallbackUrl : null;
         if (!fallbackUrl) {
-            return Promise.reject(new Error('Collection media list endpoint not available'));
+            return Promise.reject(new Error('Own media list endpoint not available'));
         }
         return fetchViaMediaListFallback(endpoint, fallbackUrl);
     }
@@ -1030,11 +1134,14 @@
     Core.api.getTagsApiUrl = getTagsApiUrl;
     Core.api.apiCollectionCatalogAction = apiCollectionCatalogAction;
     Core.api.apiCategoryBulkAction = apiCategoryBulkAction;
+    Core.api.apiGenerateAiAltText = apiGenerateAiAltText;
+    Core.api.apiAiAltBulkAction = apiAiAltBulkAction;
+    Core.api.apiSuggestAiTags = apiSuggestAiTags;
     Core.api.apiLoadSystemTagsForFiles = apiLoadSystemTagsForFiles;
     Core.api.apiFetch = apiFetch;
     Core.api.apiFetchRaw = apiFetchRaw;
     Core.api.apiFetchMediaList = apiFetchMediaList;
-    Core.api.apiFetchCollectionMediaList = apiFetchCollectionMediaList;
+    Core.api.apiFetchOwnMediaList = apiFetchOwnMediaList;
     Core.api.apiUpload = apiUpload;
     Core.api.apiUploadJsonOrError = apiUploadJsonOrError;
     Core.api.apiUploadInit = apiUploadInit;

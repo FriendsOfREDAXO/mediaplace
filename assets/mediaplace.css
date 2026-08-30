@@ -823,6 +823,137 @@ body.rex-theme-dark {
     background: var(--mp3-cat-hover-bg);
 }
 
+/* Zahnrad-Menue-Eintrag fuer die optionale KI-Massengenerierung -- gleiche
+   Zeilen-Optik wie .mp3-admin-menu-ext-btn/.mp3-admin-menu-darkmode-toggle. */
+#mp3-overlay .mp3-admin-menu-ai-alt-bulk-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: none;
+    border-bottom: 1px solid var(--mp3-toolbar-border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-text);
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-admin-menu-ai-alt-bulk-btn:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
+/* KI-Icon-Buttons (ALT-Text-Vorschlag + Tag-Vorschlaege) haengen sich ins
+   Feld-Label ein (siehe attachToLabel() in modules/ai_alt.js) statt als
+   eigener, ausgeschriebener Block im Formular zu stehen -- auf Nutzer-
+   Feedback hin bewusst kleingehalten ("muss nicht ausgeschrieben sein").
+   .mp3-edit-label-with-ai macht aus dem sonst reinen Text-Label eine
+   Flex-Zeile (Label-Text links, Icon rechtsbuendig), ohne die geteilte
+   .mp3-edit-label-Regel selbst anzufassen (gilt unveraendert fuer alle
+   anderen Feldtypen). Direkt im #mp3-overlay-Scope, daher voll
+   theme-bewusst ueber bestehende Variablen statt eigener Dark-Mode-Dopplung. */
+/* margin-left:auto aufs Icon selbst statt justify-content:space-between auf
+   dem Label -- Tags-Label hat neben dem reinen Text noch
+   .mp3-edit-kind-badge als weiteres Kind, ein drittes "space-between"-Item
+   wuerde das Icon in die Mitte statt an den Rand schieben. */
+#mp3-overlay .mp3-edit-label-with-ai {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Klassischer Metainfo-Canvas nutzt Bootstraps .control-label (eigene
+   Groesse/Gewicht) statt .mp3-edit-label -- hier zusaetzlich sicherstellen,
+   dass das Label selbst nicht die volle Breite einnimmt und das Icon
+   dadurch an den Formularrand rutscht. */
+#mp3-overlay .mp3-edit-label-with-ai-classic {
+    width: 100%;
+}
+
+#mp3-overlay .mp3-ai-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--mp3-filter-btn-text);
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-ai-icon-btn:hover {
+    color: var(--mp3-link-color);
+}
+
+#mp3-overlay .mp3-ai-icon-btn:disabled,
+#mp3-overlay .mp3-ai-icon-btn.mp3-ai-alt-busy,
+#mp3-overlay .mp3-ai-icon-btn.mp3-ai-tags-busy {
+    opacity: .5;
+    cursor: default;
+}
+
+#mp3-overlay .mp3-ai-alt-status {
+    font-size: 12px;
+    color: var(--mp3-status-text);
+    margin-bottom: 4px;
+}
+
+#mp3-overlay .mp3-ai-alt-status.mp3-ai-alt-status-error {
+    color: #c0392b;
+}
+
+#mp3-overlay .mp3-ai-tags-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+#mp3-overlay .mp3-ai-tags-hint {
+    font-size: 11px;
+    color: var(--mp3-status-text);
+    flex-basis: 100%;
+}
+
+#mp3-overlay .mp3-ai-tags-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border: 1px dashed var(--mp3-filter-btn-border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-filter-btn-text);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+#mp3-overlay .mp3-ai-tags-chip:hover {
+    background: var(--mp3-filter-hover-bg);
+    border-color: var(--mp3-filter-hover-border);
+    border-style: solid;
+}
+
+#mp3-overlay .mp3-ai-tags-empty {
+    font-size: 12px;
+    color: var(--mp3-status-text);
+}
+
+#mp3-overlay .mp3-ai-tags-error {
+    color: #c0392b;
+}
+
 /* Der Umschalter kann Dark Mode nur AUFsetzen (aus einer hellen Umgebung
    dunkel machen) -- es gibt bewusst keine #mp3-overlay:not(.mp3-dark-mode)-
    Regel, die eine bereits von REDAXO/System geerbte dunkle Vorgabe wieder
@@ -1050,6 +1181,29 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     #mp3-overlay .mp3-header,
     #mp3-overlay .mp3-header:active {
         cursor: default;
+    }
+}
+
+/* iOS Safari zoomt beim Fokussieren automatisch die GESAMTE Seite hinein,
+   sobald das computed font-size eines fokussierten Formularelements unter
+   16px liegt (WebKit-Heuristik "sonst zu klein zum Lesen") -- betraf u.a.
+   .mp3-search (12px) und liess beim Antippen des Suchfelds das komplette
+   Overlay inkl. Header aus dem sichtbaren Bereich rutschen. 16px hier statt
+   an jeder einzelnen Eingabe-Klasse einzeln nachgezogen, damit kein
+   zukuenftig neu hinzugefuegtes Formularelement denselben Fehler erneut
+   einschleppt. NICHT global (ausserhalb dieser Media Query), weil die
+   kompaktere Desktop-Optik (12-13px) bewusst so gewaehlt ist und iOS'
+   Auto-Zoom ein rein mobiles Problem ist. */
+@media (max-width: 768px) {
+    #mp3-overlay input[type="text"],
+    #mp3-overlay input[type="search"],
+    #mp3-overlay input[type="email"],
+    #mp3-overlay input[type="url"],
+    #mp3-overlay input[type="number"],
+    #mp3-overlay input[type="color"],
+    #mp3-overlay textarea,
+    #mp3-overlay select {
+        font-size: 16px;
     }
 }
 
@@ -5566,6 +5720,153 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
    in die sonst uebliche 480px-Modal-Breite nur sehr eng. */
 .mp3-bulk-progress-modal {
     max-width: 640px;
+}
+
+/* Review-vor-Speichern-Tabelle der AI-Massengenerierung (openBulkPanel() in
+   modules/ai_alt.js) -- breiter als das normale Bulk-Progress-Modal, damit
+   Thumbnail + Textfeld nebeneinander Platz haben. */
+.mp3-ai-alt-bulk-modal {
+    max-width: 720px;
+}
+
+.mp3-ai-alt-review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 50vh;
+    overflow-y: auto;
+    margin: 2px 0;
+}
+
+/* .mp3-ai-alt-review-row ist jetzt ein Spalten-Wrapper: die eigentliche
+   Zeile (.mp3-ai-alt-review-main) plus darunter die aufklappbare
+   Grossvorschau (.mp3-ai-alt-review-preview) -- Akkordeon-Muster, siehe
+   auch filepond_uploader's alt_checker.php (dort als eigene Tabellenzeile,
+   hier als Block innerhalb derselben Karte, da .mp3-ai-alt-review-row keine
+   <table> ist). */
+.mp3-ai-alt-review-row {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    border: 1px solid var(--mp3-detail-border);
+    background: var(--mp3-input-bg);
+}
+
+.mp3-ai-alt-review-row-failed {
+    border-color: #c9302c;
+}
+
+.mp3-ai-alt-review-main {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.mp3-ai-alt-review-thumb-btn {
+    flex-shrink: 0;
+    position: relative;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    line-height: 0;
+}
+
+.mp3-ai-alt-review-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    display: block;
+    background: var(--mp3-status-border);
+}
+
+.mp3-ai-alt-review-chevron {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    font-size: 9px;
+    color: #fff;
+    background: rgba(0, 0, 0, .55);
+    padding: 2px 3px;
+    line-height: 1;
+    transition: transform .15s ease;
+}
+
+.mp3-ai-alt-review-thumb-btn-open .mp3-ai-alt-review-chevron {
+    transform: rotate(90deg);
+}
+
+.mp3-ai-alt-review-preview {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--mp3-detail-border);
+    text-align: center;
+}
+
+.mp3-ai-alt-review-preview-img {
+    max-width: 100%;
+    max-height: 320px;
+    border-radius: 0;
+}
+
+.mp3-ai-alt-review-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mp3-ai-alt-review-filename {
+    font-size: 12px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--mp3-input-text);
+}
+
+.mp3-ai-alt-review-field {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.mp3-ai-alt-review-clang {
+    flex-shrink: 0;
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 5px;
+    background: rgba(128, 128, 128, .15);
+    color: inherit;
+}
+
+.mp3-ai-alt-review-input {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 8px;
+    border: 1px solid var(--mp3-input-border);
+    border-radius: 0;
+    background: var(--mp3-input-bg);
+    color: var(--mp3-input-text);
+    font-size: 12px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.mp3-ai-alt-review-remove {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--mp3-status-text);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 13px;
+}
+
+.mp3-ai-alt-review-remove:hover {
+    color: #c9302c;
 }
 
 /* Bewusst KEIN max-height/overflow-y hier: das Modal soll mitwachsen und

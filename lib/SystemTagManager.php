@@ -16,6 +16,13 @@ class SystemTagManager
             ->ensurePrimaryIdColumn()
             ->ensureColumn(new \rex_sql_column('name', 'varchar(190)', true))
             ->ensureColumn(new \rex_sql_column('color', 'varchar(7)', true, '#4a90d9'))
+            // Geschlossenes Vokabular fuer KI-Auto-Tagging-Vorschlaege (siehe
+            // AiAutoTagService): NUR explizit hier freigegebene Tags landen
+            // im Prompt -- die KI erfindet nie neue Tags, sie waehlt aus
+            // einer vom Menschen kuratierten Liste. Default 0 (opt-in), damit
+            // ein bestehender Tag-Katalog nicht ungefragt komplett KI-nutzbar
+            // wird, sobald das Feature aktiviert wird.
+            ->ensureColumn(new \rex_sql_column('ai_allowed', 'tinyint(1)', false, '0'))
             ->ensureColumn(new \rex_sql_column('create_user', 'varchar(255)'))
             ->ensureColumn(new \rex_sql_column('create_date', 'datetime'))
             ->ensureColumn(new \rex_sql_column('update_user', 'varchar(255)'))
@@ -37,7 +44,7 @@ class SystemTagManager
     }
 
     /**
-     * @return array<int, array{name:string,color:string}>
+     * @return array<int, array{name:string,color:string,ai_allowed:bool}>
      */
     public static function getCatalog(): array
     {
@@ -45,7 +52,7 @@ class SystemTagManager
 
         $sql = \rex_sql::factory();
         $rows = $sql->getArray(
-            'SELECT name, color FROM ' . \rex::getTable('mediaplace_tags') . ' ORDER BY name ASC',
+            'SELECT name, color, ai_allowed FROM ' . \rex::getTable('mediaplace_tags') . ' ORDER BY name ASC',
         );
 
         $out = [];
@@ -57,10 +64,65 @@ class SystemTagManager
             $out[] = [
                 'name' => $name,
                 'color' => self::normalizeColor((string) ($row['color'] ?? '')),
+                'ai_allowed' => (bool) ($row['ai_allowed'] ?? false),
             ];
         }
 
         return $out;
+    }
+
+    /**
+     * Geschlossenes Vokabular fuer AiAutoTagService::suggestTags() -- nur
+     * Tags, die in der Tag-Verwaltung explizit als "Für KI-Vorschläge
+     * freigeben" markiert wurden. Sammlungen sind hier grundsaetzlich
+     * ausgeschlossen (getTags() filtert sie bereits), unabhaengig vom
+     * ai_allowed-Wert einer Sammlung -- Sammlungen sind kein Content-Tag.
+     *
+     * @return list<string>
+     */
+    public static function getAiAllowedTagNames(): array
+    {
+        $names = [];
+        foreach (self::getTags() as $tag) {
+            if ($tag['ai_allowed']) {
+                $names[] = $tag['name'];
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * Schaltet die KI-Freigabe eines bestehenden Tags um (Tag-Verwaltung).
+     * Kein-Op fuer unbekannte/Sammlungs-Namen.
+     */
+    public static function setAiAllowed(string $name, bool $allowed): bool
+    {
+        self::ensureSchema();
+
+        $name = self::normalizeName($name);
+        if ('' === $name || self::isCollectionTagName($name)) {
+            return false;
+        }
+
+        $sql = \rex_sql::factory();
+        $existing = $sql->getArray(
+            'SELECT id FROM ' . \rex::getTable('mediaplace_tags') . ' WHERE name = :name',
+            ['name' => $name],
+        );
+        if ([] === $existing) {
+            return false;
+        }
+
+        $write = \rex_sql::factory();
+        $write->setTable(\rex::getTable('mediaplace_tags'));
+        $write->setWhere('name = :name', ['name' => $name]);
+        $write->setValue('ai_allowed', $allowed ? 1 : 0);
+        $write->setValue('update_user', \rex::getUser()?->getLogin() ?? 'system');
+        $write->setValue('update_date', date('Y-m-d H:i:s'));
+        $write->update();
+
+        return true;
     }
 
     /**
@@ -419,10 +481,12 @@ class SystemTagManager
         );
 
         if ([] === $target) {
+            // ai_allowed wird mitkopiert -- ein Umbenennen soll die
+            // KI-Freigabe eines Tags nicht stillschweigend zuruecksetzen.
             $copySql = \rex_sql::factory();
             $copySql->setQuery(
-                'INSERT INTO ' . \rex::getTable('mediaplace_tags') . ' (name, color, create_user, create_date)
-                 SELECT :new_name, color, :user, :now
+                'INSERT INTO ' . \rex::getTable('mediaplace_tags') . ' (name, color, ai_allowed, create_user, create_date)
+                 SELECT :new_name, color, ai_allowed, :user, :now
                  FROM ' . \rex::getTable('mediaplace_tags') . '
                  WHERE name = :old_name',
                 [

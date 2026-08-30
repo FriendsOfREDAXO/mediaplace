@@ -109,6 +109,7 @@ import {
     toggleUnusedOnlyFilter,
     toggleTagFilter,
     clearTagFilters,
+    getSelectedTagFilters,
     resetFilterState,
     getCurrentFilter,
     getCurrentSort,
@@ -156,6 +157,8 @@ import {
     doFolderUpload,
     mediaErrorMessage,
 } from './modules/upload.js';
+import { initAiAlt, openBulkPanel } from './modules/ai_alt.js';
+import { initAiTags } from './modules/ai_tags.js';
 import {
     initMultiselect,
     updateCollectionDragSelectionUI,
@@ -265,6 +268,17 @@ import {
     // gate Tagging-UI (System-Tags-Feld, Sidebar-Tag-Filter) bzw. Sammlungen-UI
     // (Sidebar-Sektion, Merken-Button, Drag&Drop) unabhaengig voneinander.
     var features = { tagging: true, collections: true, metainfoEditing: false, uploadResize: false, altMissingFilter: false };
+    // Optionale KI-Alt-Text-Generierung (siehe AiAltTextService::isAvailable()
+    // in boot.php) -- aiAltAvailable steuert den Einzeldatei-Button
+    // (modules/ai_alt.js), canAiAltBulk zusaetzlich den Zahnrad-Menue-Eintrag
+    // fuer die kategorieuebergreifende Massengenerierung (eigenes, engeres
+    // Recht, siehe MediaPermission::hasBulkOperationsAccess()).
+    var aiAltAvailable = false;
+    var canAiAltBulk = false;
+    // Optionale KI-Auto-Tagging-Vorschlaege (siehe AiAutoTagService::
+    // isAvailable() in boot.php) -- steuert den "KI-Tags vorschlagen"-Button
+    // im System-Tags-Widget (modules/ai_tags.js).
+    var aiAutoTagAvailable = false;
     var uploadResizeWidth = 2000;
     var uploadResizeHeight = 2000;
     // "Medien ohne ALT-Text"-Sidebar-Ansicht: analog zu activeCollectionId
@@ -321,7 +335,7 @@ import {
     var apiFetch = MP3Core.api.apiFetch;
     var apiFetchRaw = MP3Core.api.apiFetchRaw;
     var apiFetchMediaList = MP3Core.api.apiFetchMediaList;
-    var apiFetchCollectionMediaList = MP3Core.api.apiFetchCollectionMediaList;
+    var apiFetchOwnMediaList = MP3Core.api.apiFetchOwnMediaList;
     var apiUploadJsonOrError = MP3Core.api.apiUploadJsonOrError;
     var apiUploadInit = MP3Core.api.apiUploadInit;
     var apiUploadChunk = MP3Core.api.apiUploadChunk;
@@ -679,13 +693,10 @@ import {
         size_asc: 'filesize:asc'
     };
 
-    // Gemeinsamer Filter-Anteil (Kategorie/Suche/Rechte) fuer die eigentliche
-    // Medienliste UND fetchTypeCounts() -- beide muessen exakt denselben
-    // Ausschnitt beschreiben, sonst passen Zaehler und geladene Treffer nicht
-    // zusammen. Tags bleiben bewusst aussen vor: sie sind MediaPlace's eigenes
-    // System (rex_mediaplace_media_tags), die Medienliste (weder api-Addon
-    // noch der eigene Fallback) kennt sie nicht -- Tag-Filterung bleibt
-    // client-seitig auf den bereits geladenen Dateien (siehe applyFilterSort()).
+    // Gemeinsamer Filter-Anteil (Kategorie/Suche/Rechte/Tags) fuer die
+    // eigentliche Medienliste UND fetchTypeCounts() -- beide muessen exakt
+    // denselben Ausschnitt beschreiben, sonst passen Zaehler und geladene
+    // Treffer nicht zusammen.
     function buildBaseFilterParams() {
         // filter[term] durchsucht serverseitig Dateiname UND Titel (inkl.
         // "quoted phrases" und type:jpg,png) -- api-Addon CHANGELOG 1.3 (#64).
@@ -703,7 +714,7 @@ import {
         }
         // Sammlungs-Modus (currentCat ist dabei immer -1, siehe Sammlungs-Klick-
         // Handler): filter[collection] wird NUR vom eigenen Fallback-Endpunkt
-        // verstanden (siehe apiFetchCollectionMediaList()), das api-Addon kennt
+        // verstanden (siehe apiFetchOwnMediaList()), das api-Addon kennt
         // Sammlungen nicht. Ohne diesen Filter laedt der Sammlungs-Modus einfach
         // Seite 1 der unsortierten Gesamtliste und filtert sie clientseitig --
         // zeigt "0 Treffer", wenn die Mitglieder nicht zufaellig dort liegen.
@@ -717,6 +728,20 @@ import {
         // api-Addon nicht kennt.
         if (altMissingActive) {
             params += '&filter[alt_missing]=1';
+        }
+        // Tags (rex_mediaplace_media_tags) sind ebenfalls MediaPlace's eigenes
+        // System, das api-Addon kennt sie nicht -- filter[tags] wird nur vom
+        // eigenen Fallback-Endpunkt ausgewertet (siehe apiFetchOwnMediaList()/
+        // mediaListFetcher()). Ohne diesen Filter laed(e/t) die Tag-Ansicht
+        // nur Seite 1 der ungefilterten Liste und filtert clientseitig --
+        // zeigt bei "Alle Medien" mit vielen Dateien "0 Treffer", sobald die
+        // getaggten Dateien nicht zufaellig auf der ersten Seite liegen
+        // (exakt dasselbe Muster wie beim Sammlungs-Filter oben, vor dessen
+        // eigenem Fix). OR-Semantik (irgendeiner der ausgewaehlten Tags
+        // reicht) matcht applyFilterSort()'s bisherige Client-Logik.
+        var selectedTags = getSelectedTagFilters();
+        if (selectedTags.length) {
+            params += '&filter[tags]=' + encodeURIComponent(selectedTags.join(','));
         }
         if (mediaQuery) {
             params += '&filter[term]=' + encodeURIComponent(mediaQuery);
@@ -738,14 +763,47 @@ import {
         return endpoint;
     }
 
+    // "Medien ohne ALT-Text"-Sidebar-Eintrag: features.altMissingFilter
+    // (Einstellung + ueberhaupt ein nutzbares ALT-Feld vorhanden) sagt nur,
+    // ob das FEATURE grundsaetzlich existiert, nicht ob es gerade etwas zu
+    // zeigen gibt -- ohne diesen Check blieb der Eintrag auch dann sichtbar,
+    // wenn laengst alle Dateien einen ALT-Text haben. Rendert deshalb initial
+    // versteckt (siehe renderCategories()) und blendet sich hier per echtem
+    // Server-Count (per_page=1, nur meta.total gebraucht) ein/aus. Wird bei
+    // jedem renderCategories()-Aufruf erneut geprueft (open() + nach
+    // Kategorie-Strukturaenderungen) -- kein Live-Update waehrend der
+    // Session bei jedem einzelnen ALT-Text-Save, aber leichtgewichtig genug
+    // (ein Request), um den haeufigsten Fall (dauerhaft 0 fehlende) zu decken.
+    function refreshAltMissingNav() {
+        if (!features.altMissingFilter) return;
+        var wrap = qs('.mp3-alt-missing-nav-wrap', sidebar);
+        if (!wrap) return;
+
+        apiFetchOwnMediaList('media?per_page=1&filter[permitted_only]=1&filter[alt_missing]=1')
+            .then(function (payload) {
+                var total = parseInt((payload && payload.meta && payload.meta.total) || 0, 10) || 0;
+                // Waehrend die Ansicht selbst aktiv ist, den eigenen
+                // Navigationspunkt nicht verstecken, auch wenn der Count
+                // gerade auf 0 steht (z.B. unmittelbar nachdem die letzte
+                // fehlende Datei bearbeitet wurde).
+                wrap.style.display = (total > 0 || altMissingActive) ? '' : 'none';
+            })
+            .catch(function () {
+                // Fail-open: lieber ein im Zweifel ungenutzter Link als ein
+                // faelschlich verstecktes echtes Ergebnis bei einem Netzwerkfehler.
+                wrap.style.display = '';
+            });
+    }
+
     // Waehlt zwischen der normalen Medienliste (ggf. via Uebergangs-Fallback,
-    // siehe apiFetchMediaList()) und dem IMMER eigenen Sammlungs-Endpunkt
-    // (filter[collection], siehe buildBaseFilterParams()) -- an jeder Stelle
+    // siehe apiFetchMediaList()) und dem IMMER eigenen Endpunkt fuer
+    // MediaPlace-spezifische Filter (filter[collection]/filter[alt_missing]/
+    // filter[tags], siehe buildBaseFilterParams()) -- an jeder Stelle
     // genutzt, die eine Medienliste laedt (loadFiles(), fetchTypeCounts()),
-    // damit beide im Sammlungs-Modus konsistent den richtigen, gefilterten
-    // Bestand sehen statt der ungefilterten Gesamtliste.
+    // damit beide konsistent den richtigen, gefilterten Bestand sehen statt
+    // der ungefilterten Gesamtliste.
     function mediaListFetcher() {
-        return (getActiveCollectionId() || altMissingActive) ? apiFetchCollectionMediaList : apiFetchMediaList;
+        return (getActiveCollectionId() || altMissingActive || getSelectedTagFilters().length) ? apiFetchOwnMediaList : apiFetchMediaList;
     }
 
     // ---- Typ-Zaehler (Filter-Tabs) ----
@@ -754,8 +812,8 @@ import {
     // Kategorien falsche/0-Zaehler fuer Typen, die noch nicht mitgeladen
     // wurden. Holt stattdessen pro Typ die echte Gesamtzahl vom Server
     // (per_page=1, nur meta.total wird gebraucht) -- 5 sehr leichte Requests,
-    // gecacht ueber typeCountsKey (Kategorie+Suche), damit ein reiner
-    // Typ-Tab-Wechsel oder Tag-Filter keinen erneuten Abruf ausloest.
+    // gecacht ueber typeCountsKey (Kategorie+Suche+Tags), damit ein reiner
+    // Typ-Tab-Wechsel keinen erneuten Abruf ausloest.
     var typeCounts = null; // { all, images, videos, audio, documents, other }
     var typeCountsKey = null;
     var typeCountsRequestId = 0;
@@ -764,8 +822,11 @@ import {
         // getActiveCollectionId() mit rein: currentCat ist fuer JEDE Sammlung
         // gleich -1, ohne die Sammlungs-ID im Schluessel wuerden Zaehler beim
         // Wechsel zwischen zwei Sammlungen faelschlich aus dem Cache der
-        // vorherigen Sammlung bedient.
-        return currentCat + '|' + mediaQuery + '|' + (getActiveCollectionId() || '') + '|' + (altMissingActive ? '1' : '0');
+        // vorherigen Sammlung bedient. Tags analog: gehen jetzt serverseitig
+        // in denselben Request ein (siehe buildBaseFilterParams()), muessen
+        // also auch im Cache-Schluessel stehen, sonst zeigt ein Tag-Wechsel
+        // kurzzeitig die Zaehler des vorherigen Tag-Filters.
+        return currentCat + '|' + mediaQuery + '|' + (getActiveCollectionId() || '') + '|' + (altMissingActive ? '1' : '0') + '|' + getSelectedTagFilters().join(',');
     }
 
     function fetchTypeCounts() {
@@ -1082,6 +1143,9 @@ import {
         features.metainfoEditing = root.dataset.featureMetainfoEditing === '1';
         features.uploadResize = root.dataset.featureUploadResize === '1';
         features.altMissingFilter = root.dataset.altMissingFilterAvailable === '1';
+        aiAltAvailable = !!root.dataset.aiAltUrl;
+        canAiAltBulk = !!root.dataset.aiAltBulkUrl;
+        aiAutoTagAvailable = !!root.dataset.aiAutoTagUrl;
         uploadResizeWidth = parseInt(root.dataset.uploadResizeWidth, 10) || 2000;
         uploadResizeHeight = parseInt(root.dataset.uploadResizeHeight, 10) || 2000;
         canFilterUnused = root.dataset.canFilterUnused === '1';
@@ -1106,6 +1170,14 @@ import {
         var unusedFilterHtml = canFilterUnused
             ? '<button type="button" class="mp3-filter-btn mp3-unused-filter-btn" title="' + escAttr(t('mediaplace_unused_only_hint')) + '">' +
                 '<i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_unused_only') + '</button>'
+            : '';
+
+        // Eigenes, engeres Recht (MediaPermission::hasBulkOperationsAccess(),
+        // siehe canAiAltBulk-Parsing oben) -- Zahnrad-Menue-Eintrag fuer die
+        // kategorieuebergreifende KI-Massengenerierung, nur sichtbar wenn
+        // Feature+Recht beides gegeben sind.
+        var aiAltBulkMenuHtml = canAiAltBulk
+            ? '<button type="button" class="mp3-admin-menu-ai-alt-bulk-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + escAttr(t('mediaplace_ai_alt_bulk_menu_label')) + '</button>'
             : '';
 
         root.innerHTML =
@@ -1153,6 +1225,7 @@ import {
                             '<button type="button" class="mp3-admin-menu-btn" title="' + escAttr(t('mediaplace_admin_menu_title')) + '"><i class="fa-solid fa-gear"></i></button>' +
                             '<div class="mp3-admin-menu" id="mp3-admin-menu">' +
                                 '<button type="button" class="mp3-admin-menu-darkmode-toggle"><i class="fa-solid fa-moon"></i> <span class="mp3-admin-menu-darkmode-label">' + escAttr(t('mediaplace_dark_mode')) + '</span></button>' +
+                                aiAltBulkMenuHtml +
                                 '<div class="mp3-admin-menu-sort-slot" id="mp3-admin-menu-sort-slot"></div>' +
                                 '<div class="mp3-admin-menu-extensions" id="mp3-admin-menu-extensions"></div>' +
                                 '<div class="mp3-admin-menu-links" id="mp3-admin-menu-links"></div>' +
@@ -1393,6 +1466,16 @@ import {
             updateStatus: updateStatus,
         });
 
+        initAiAlt({
+            getAiAltAvailable: function () { return aiAltAvailable; },
+            getMediaBaseUrl: function () { return mediaBaseUrl; },
+        });
+
+        initAiTags({
+            getAiAutoTagAvailable: function () { return aiAutoTagAvailable; },
+            getMediaBaseUrl: function () { return mediaBaseUrl; },
+        });
+
         initDetail({
             overlay: overlay,
             detailPanel: detailPanel,
@@ -1494,6 +1577,7 @@ import {
             getCanBulkOperations: function () { return canBulkOperations; },
             loadFiles: loadFiles,
             refreshTagFilterSection: updateTagFilterOptions,
+            refreshAltMissingNav: refreshAltMissingNav,
         });
 
         initProviders({
@@ -1809,6 +1893,12 @@ import {
                     var item = adminMenuItems[id];
                     wrap.classList.remove('mp3-admin-menu-open');
                     if (item && typeof item.onClick === 'function') item.onClick();
+                    return;
+                }
+
+                if (e.target.closest('.mp3-admin-menu-ai-alt-bulk-btn')) {
+                    wrap.classList.remove('mp3-admin-menu-open');
+                    openBulkPanel();
                     return;
                 }
 
@@ -3502,7 +3592,13 @@ import {
                 if (!name) return;
                 toggleTagFilter(name);
                 updateTagFilterOptions();
-                refreshDisplay();
+                // Serverseitiger Filter (filter[tags], siehe buildBaseFilterParams())
+                // -- braucht einen echten Reload ab Seite 1, ein reines
+                // refreshDisplay() wuerde nur die bereits geladene(n) Seite(n)
+                // client-seitig nachfiltern und bei "Alle Medien"/grossen
+                // Kategorien faelschlich "0 Treffer" zeigen, wenn die getaggten
+                // Dateien nicht zufaellig schon geladen waren.
+                loadFiles(currentCat, true);
                 return;
             }
 
@@ -3511,7 +3607,7 @@ import {
                 e.stopPropagation();
                 clearTagFilters();
                 updateTagFilterOptions();
-                refreshDisplay();
+                loadFiles(currentCat, true);
                 return;
             }
 

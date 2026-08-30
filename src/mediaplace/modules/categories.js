@@ -200,7 +200,12 @@ export function renderCategories(treeHtml) {
         '</div>' +
         '</div>' +
         (ctx.features.altMissingFilter
-            ? '<div class="mp3-alt-missing-nav-wrap"><a class="mp3-cat mp3-alt-missing-nav' + (ctx.getAltMissingActive() ? ' mp3-cat-active' : '') + '"><i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_alt_missing_filter') + '</a></div>'
+            // Initial versteckt, AUSSER die Ansicht ist gerade aktiv (dann
+            // waere Verstecken des eigenen aktuellen Navigationspunkts
+            // verwirrend) -- ctx.refreshAltMissingNav() blendet unten per
+            // echtem Server-Count ein, nur wenn tatsaechlich Dateien ohne
+            // ALT-Text existieren.
+            ? '<div class="mp3-alt-missing-nav-wrap"' + (ctx.getAltMissingActive() ? '' : ' style="display:none"') + '><a class="mp3-cat mp3-alt-missing-nav' + (ctx.getAltMissingActive() ? ' mp3-cat-active' : '') + '"><i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_alt_missing_filter') + '</a></div>'
             : '') +
         (ctx.features.collections ? '<div id="mp3-collections-section">' + renderCollectionsSection() + '</div>' : '') +
         (ctx.features.tagging ? '<div class="mp3-sidebar-section mp3-tag-section-wrap' + (isSectionCollapsed('tags') ? ' mp3-sidebar-section-collapsed' : '') + '" data-section="tags" id="mp3-tag-filter-section"></div>' : '') +

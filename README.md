@@ -35,9 +35,17 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 - „Bild optimieren“-Button im Detail-Panel für Bestandsbilder, die größer als die konfigurierte Upload-Grenze sind
 - Cronjob „Vorschaubilder vorwärmen“ erzeugt Grid-Thumbnails (Bild & Video) im Hintergrund vor, statt bei jedem ersten Betrachten live zu generieren
 
+**Tags**
+- Eigene Combobox mit Mehrfachauswahl + „neu anlegen“-Option im Detail-Panel
+- Zentrale Tag-Verwaltung (eigene Backend-Seite): neue Tags direkt anlegen, umbenennen (kaskadiert automatisch auf alle Dateien), Farbe zentral ändern, löschen
+
 **Sammlungen**
 - Eigene Sammlungen anlegen, Medien per Lesezeichen-Button oder Drag & Drop zuordnen
 - Auch als Batch: mehrere Medien mit Cmd/Ctrl+Klick markieren und gemeinsam ziehen
+
+**KI-Funktionen** (optional, sobald das separate [ai_platform](https://github.com/FriendsOfREDAXO/ai_platform)-Addon installiert/konfiguriert und in den Einstellungen aktiviert ist)
+- **ALT-Text-Generierung**: „AI generieren“-Button neben dem ALT-Text-Feld (Einzeldatei) sowie „AI Bulk Management“ im Zahnrad-Menü (mehrere Dateien mit fehlendem ALT-Text nacheinander abarbeiten). Schreibt nie automatisch – Vorschläge werden erst nach Prüfung durch einen expliziten Klick übernommen.
+- **KI-Tag-Vorschläge**: schlägt beim Bearbeiten einer Datei passende Tags vor – ausschließlich aus Tags, die zuvor in der Tag-Verwaltung gezielt dafür freigegeben wurden (geschlossenes Vokabular, die KI legt nie eigenständig neue Tags an).
 
 **Mehrfachauswahl**
 - Im Picker-Modus: Dateien markieren, „Übernehmen“ liefert die Auswahl als Array zurück
@@ -67,6 +75,17 @@ Falls doch lieber der alte Medienpool gewünscht ist: unter **MediaPlace → Ein
 
 Ebenfalls in den Einstellungen: „Tagging (System-Tags) deaktivieren“ und „Sammlungen deaktivieren“ blenden die jeweiligen Bereiche unabhängig voneinander aus. Bereits gespeicherte Daten gehen dabei nicht verloren, nur die Bedienoberfläche verschwindet.
 
+### Tags verwalten
+
+Unter **MediaPlace → Tag-Verwaltung** (Recht `mediaplace[manage_tags]`) lassen sich System-Tags zentral verwalten, unabhängig davon, ob sie schon einer Datei zugewiesen sind:
+
+- **Neuen Tag anlegen** – Name, Farbe und optional direkt „Für KI-Vorschläge freigeben“ (siehe unten). So lässt sich eine Tag-Liste vorab kuratieren, statt sie erst durch Zuweisen an eine Datei entstehen zu lassen.
+- **Umbenennen** – kaskadiert automatisch auf alle Dateien, die den Tag tragen.
+- **Farbe ändern** – zentral für den Tag, gilt danach überall. Die Farbe eines *bestehenden* Tags ist nur noch hier änderbar; das Farb-Swatch im Tag-Widget einer Datei erscheint nur noch bei der Neuanlage.
+- **Löschen** – entfernt den Tag von allen Dateien.
+
+Sammlungen (`collection:`-Präfix) tauchen hier bewusst nicht auf – die haben ihre eigene Verwaltung („Sammlungen verwalten“ im Overlay).
+
 ### Bilder beim Upload verkleinern
 
 Unter **MediaPlace → Einstellungen → Upload** lässt sich „Bilder beim Upload verkleinern“ aktivieren (standardmäßig aus), mit maximaler Breite/Höhe in Pixeln. Zu große Bilder werden im Browser per Canvas herunterskaliert, bevor sie hochgeladen werden – Seitenverhältnis bleibt erhalten, kleinere Bilder werden nie vergrößert, und das Dateiformat bleibt unverändert. GIFs (könnten animiert sein) und SVGs (kein Rasterbild) werden dabei nie angefasst.
@@ -93,6 +112,21 @@ Ist das [cropper](https://github.com/FriendsOfREDAXO/cropper)-Addon installiert 
 ### Vorschaubilder im Hintergrund vorwärmen
 
 Ist das `cronjob`-Addon installiert, steht unter **Cronjobs** der Typ „MediaPlace: Vorschaubilder vorwärmen“ zur Verfügung: erzeugt Grid-Thumbnails (Bilder und, falls ffmpeg installiert ist, auch Videos) im Hintergrund vor, statt sie erst beim ersten Betrachten live zu generieren – schont den Server bei großen, noch nicht durchgewärmten Kategorien. Pro Lauf wird je Typ nur eine begrenzte, einstellbare Anzahl neuer Vorschaubilder erzeugt (bereits gecachte werden übersprungen), neueste Dateien zuerst.
+
+### KI-Funktionen: ALT-Text & Tag-Vorschläge
+
+Optional, sobald das separate [ai_platform](https://github.com/FriendsOfREDAXO/ai_platform)-Addon installiert und konfiguriert ist (mindestens ein Profil vom Typ „Bildverständnis“) – ohne `ai_platform` bleiben beide Funktionen unter **MediaPlace → Einstellungen → „KI-Funktionen“** einfach ausgeblendet.
+
+**ALT-Text-Generierung** (Schalter „KI-Alt-Text aktivieren“):
+- „AI generieren“-Button neben dem ALT-Text-Feld im Detail-Panel (eigenes JSON-Feld oder klassisches `med_alt`) – schreibt nur ins sichtbare Feld, gespeichert wird weiterhin über den normalen Speichern-Button.
+- „AI Bulk Management“ im Zahnrad-Menü: erzeugt zunächst nur Vorschläge für alle Dateien ohne ALT-Text (Thumbnail + editierbares Textfeld je Datei, größere Vorschau per Klick, einzelne Einträge verwerfbar), geschrieben wird erst nach „Übernehmen“. Ein Lauf ist auf 25 Dateien begrenzt (jede ist ein echter KI-Aufruf), „Weitere generieren“ holt bei Bedarf nach.
+- Prompt-Profil (Barrierefreiheit/Neutral/SEO) und eigener Prompt konfigurierbar. SVG-Dateien werden beim Einzeldatei-Button clientseitig auf Canvas gerendert (der Browser kann SVG selbst rendern, ein Server-Rasterizer wäre unzuverlässig) – in der Massengenerierung werden sie stattdessen übersprungen und separat gezählt. Zu große Bilder werden vor dem Senden automatisch verkleinert (Einstellung „Maximale Bildkantenlänge für die KI-Analyse“).
+
+**KI-Tag-Vorschläge** (Schalter „KI-Tag-Vorschläge aktivieren“):
+- „KI-Tags vorschlagen“-Button im Tag-Widget des Detail-Panels, Vorschläge erscheinen als anklickbare Chips – ein Klick fügt den Tag hinzu, gespeichert wird wie gewohnt über den Speichern-Button.
+- **Geschlossenes Vokabular**: die KI schlägt ausschließlich Tags vor, die in der Tag-Verwaltung explizit über die Spalte „KI-Vorschläge“ freigegeben wurden (Default: kein Tag freigegeben) – sie legt nie eigenständig neue Tags an. Obergrenze pro Datei konfigurierbar (Standard 3).
+
+Beide Funktionen teilen sich das konfigurierte Bildverständnis-Profil und die Bildgrößen-Einstellung. Zugriff ist rechtegeprüft: der Einzeldatei-Button braucht normalen Medienzugriff, „AI Bulk Management“ zusätzlich das granularere Recht `mediaplace[bulk_operations]`.
 
 ### Als Eingabefeld in Modulen/Formularen nutzen
 
