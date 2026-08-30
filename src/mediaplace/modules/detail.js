@@ -22,6 +22,7 @@ import { isCollectionTagName, splitSystemTags, mergeUniqueSystemTags } from './c
 import { pollOptimizeVideo } from './optimize.js';
 import { attachOwnFieldButton, attachClassicFieldButton } from './ai_alt.js';
 import { attachTagSuggestButton } from './ai_tags.js';
+import { renderFileTagDots } from './grid.js';
 
 var ctx = null;
 
@@ -868,6 +869,30 @@ export function updateDetailSaveState() {
     qsa('.mp3-edit-field-inline, .mp3-json-field', detailPanel).forEach(updateInlineDisplay);
 }
 
+/**
+ * Tag-Dots einer Kachel/Zeile nach dem Speichern direkt patchen (statt einen
+ * kompletten Reload zu erzwingen) -- gleiches Prinzip wie der bestehende
+ * Titel-Patch weiter unten, nur fuer .mp3-file-tag-dots. Deckt alle drei
+ * Ansichten ab (Grid-Kachel/Listen-Zeile/Media-Wall), da renderFileTagDots()
+ * fuer alle drei genutzt wird (siehe grid.js).
+ */
+function updateCardTagDots(filename, systemTags) {
+    var grid = ctx.grid;
+    var dotsHtml = renderFileTagDots({ system_tags: systemTags });
+    var containers = [
+        grid.querySelector('.mp3-card[data-filename="' + filename + '"] .mp3-info'),
+        grid.querySelector('.mp3-list-row[data-filename="' + filename + '"] .mp3-list-name-wrap'),
+        grid.querySelector('.mp3-masonry-card[data-filename="' + filename + '"] .mp3-info'),
+    ];
+    for (var i = 0; i < containers.length; i++) {
+        var container = containers[i];
+        if (!container) continue;
+        var existing = container.querySelector('.mp3-file-tag-dots');
+        if (existing) existing.remove();
+        if (dotsHtml) container.insertAdjacentHTML('beforeend', dotsHtml);
+    }
+}
+
 export function saveDetail() {
     var detailPanel = ctx.detailPanel;
     var grid = ctx.grid;
@@ -963,7 +988,10 @@ export function saveDetail() {
                 }, 1200);
             }
 
-            // After saving system tags: refresh catalog + filter options
+            // After saving system tags: refresh catalog + filter options + the
+            // Tag-Dots auf der gerade bearbeiteten Kachel/Zeile selbst (sonst
+            // zeigt nur die Sidebar den neuen Stand, die Kachel haengt bis zum
+            // naechsten vollen Reload hinterher).
             if (systemTagsChanged && selectedFile) {
                 apiLoadSystemTagsForFiles([selectedFile]).then(function (payload) {
                     ctx.setCurrentTagCatalog(Array.isArray(payload.catalog) ? payload.catalog : []);
@@ -979,7 +1007,22 @@ export function saveDetail() {
                         }
                     }
                     ctx.updateTagFilterOptions();
+                    updateCardTagDots(selectedFile, selectedFileTags);
                 }).catch(function () {});
+            }
+
+            // Eigenes JSON-Alt-Feld ist Teil von currentJson -- nach dem
+            // Speichern kann sich der "fehlt ALT-Text"-Status geaendert haben.
+            // refreshAltMissingNav() blendet den Sidebar-Eintrag ein/aus
+            // (echter Server-Count, siehe dort); ist die "Medien ohne
+            // ALT-Text"-Ansicht gerade aktiv, zusaetzlich neu laden, sonst
+            // bliebe eine gerade vervollstaendigte Datei dort haengen, bis man
+            // die Ansicht manuell verlaesst und wieder oeffnet.
+            if (jsonChanged) {
+                if (typeof ctx.refreshAltMissingNav === 'function') ctx.refreshAltMissingNav();
+                if (ctx.getAltMissingActive && ctx.getAltMissingActive() && typeof ctx.loadFiles === 'function') {
+                    ctx.loadFiles(-1, true);
+                }
             }
         })
         .catch(function (err) {

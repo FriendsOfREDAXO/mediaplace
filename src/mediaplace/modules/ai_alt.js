@@ -244,10 +244,14 @@ export function attachClassicFieldButton(canvas, filename) {
     formGroup.setAttribute('data-ai-alt-attached', '1');
 
     var btn = buildIconButton('mediaplace_ai_alt_generate');
-    // Bootstrap-.form-group-Markup (nicht das JSON-Widget-Label) -- eigenes
-    // <label> als direktes Kind, kein attachToLabel()-Fallback noetig, aber
-    // dieselbe Icon-only-Optik.
-    var classicLabel = qs(':scope > label', formGroup);
+    // Bootstrap-.form-group-Markup (nicht das JSON-Widget-Label) -- REDAXOs
+    // Standard-Formular-Fragment (core/form/form.php) rendert
+    // <dl class="form-group"><dt><label>...</label></dt><dd>...Feld...</dd></dl>,
+    // das <label> steckt also in <dt>, ist KEIN direktes Kind von
+    // .form-group -- ':scope > label' fand deshalb nie etwas, der Icon-Button
+    // landete ueber den insertBefore()-Fallback unterhalb des (vollbreiten)
+    // Eingabefelds statt im Label. Einfache Nachfahren-Suche behebt das.
+    var classicLabel = qs('label', formGroup);
     if (classicLabel) {
         classicLabel.classList.add('mp3-edit-label-with-ai', 'mp3-edit-label-with-ai-classic');
         classicLabel.appendChild(btn);

@@ -4,33 +4,52 @@
  * Settings for mediaplace.
  */
 
+use FriendsOfRedaxo\Mediaplace\AltTextFieldInstaller;
+use FriendsOfRedaxo\Mediaplace\AltTextStatus;
+
+// Klassisches ALT-Text-/Dekorativ-Metainfo-Feld anlegen (siehe
+// AltTextFieldInstaller) -- eigene, einmalige Anlage-Aktion, KEIN Teil des
+// rex_config_form unten (kein gespeicherter Einstellungswert). installAltField()/
+// installDecorativeField() sind einzeln idempotent (no-op, wenn das jeweilige
+// Feld schon existiert), deshalb hier immer beide anstossen -- deckt auch den
+// seltenen Fall ab, dass nur eines der beiden Felder fehlt.
+$altFieldInstallMsg = '';
+if (1 === rex_post('mediaplace_install_alt_fields', 'int', 0)) {
+    $altError = AltTextFieldInstaller::installAltField();
+    $decorativeError = AltTextFieldInstaller::installDecorativeField();
+    $installError = $altError ?? $decorativeError;
+    $altFieldInstallMsg = null === $installError
+        ? rex_view::success(rex_i18n::msg('mediaplace_settings_alt_field_install_success'))
+        : rex_view::error($installError);
+}
+
 $form = rex_config_form::factory('mediaplace');
 $form->addFieldset(rex_i18n::msg('mediaplace_settings_menu_legend'));
 
 $field = $form->addCheckboxField('replace_classic_mediapool');
-$field->addOption(rex_i18n::msg('mediaplace_settings_menu_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_menu_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_menu_hint'));
 
 $form->addFieldset(rex_i18n::msg('mediaplace_settings_features_legend'));
 
 $field = $form->addCheckboxField('enable_own_metadata');
-$field->addOption(rex_i18n::msg('mediaplace_settings_feature_own_metadata_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_feature_own_metadata_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_own_metadata_hint'));
 
 $field = $form->addCheckboxField('enable_metainfo_editing');
-$field->addOption(rex_i18n::msg('mediaplace_settings_feature_metainfo_editing_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_feature_metainfo_editing_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_metainfo_editing_hint'));
 
 $field = $form->addCheckboxField('enable_alt_missing_filter');
-$field->addOption(rex_i18n::msg('mediaplace_settings_feature_alt_missing_filter_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_feature_alt_missing_filter_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_alt_missing_filter_hint'));
 
 $field = $form->addCheckboxField('disable_tagging');
-$field->addOption(rex_i18n::msg('mediaplace_settings_feature_tagging_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_feature_tagging_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_tagging_hint'));
 
 $field = $form->addCheckboxField('disable_collections');
-$field->addOption(rex_i18n::msg('mediaplace_settings_feature_collections_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_feature_collections_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_feature_collections_hint'));
 
 // Nur relevant/sichtbar, wenn das ffmpeg-Addon installiert ist -- ohne ffmpeg
@@ -40,9 +59,9 @@ if (rex_addon::get('ffmpeg')->isAvailable()) {
     $field = $form->addSelectField('video_thumb_mode');
     $field->setLabel(rex_i18n::msg('mediaplace_settings_video_thumb_mode_label'));
     $select = $field->getSelect();
-    $select->addOption(rex_i18n::msg('mediaplace_settings_video_thumb_mode_off'), 'off');
-    $select->addOption(rex_i18n::msg('mediaplace_settings_video_thumb_mode_static'), 'static');
-    $select->addOption(rex_i18n::msg('mediaplace_settings_video_thumb_mode_animated'), 'animated');
+    $select->addOption(rex_i18n::rawMsg('mediaplace_settings_video_thumb_mode_off'), 'off');
+    $select->addOption(rex_i18n::rawMsg('mediaplace_settings_video_thumb_mode_static'), 'static');
+    $select->addOption(rex_i18n::rawMsg('mediaplace_settings_video_thumb_mode_animated'), 'animated');
     $field->setAttribute('class', 'form-control');
     $field->setNotice(rex_i18n::msg('mediaplace_settings_video_thumb_mode_hint'));
 }
@@ -50,7 +69,7 @@ if (rex_addon::get('ffmpeg')->isAvailable()) {
 $form->addFieldset(rex_i18n::msg('mediaplace_settings_upload_legend'));
 
 $field = $form->addCheckboxField('enable_upload_resize');
-$field->addOption(rex_i18n::msg('mediaplace_settings_upload_resize_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_upload_resize_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_upload_resize_hint'));
 
 $field = $form->addInputField('number', 'upload_resize_width', null, [
@@ -77,7 +96,7 @@ $field = $form->addSelectField('upload_provider', null, [
 ]);
 $field->setLabel(rex_i18n::msg('mediaplace_settings_upload_provider_label'));
 $select = $field->getSelect();
-$select->addOption(rex_i18n::msg('mediaplace_settings_upload_provider_builtin'), '');
+$select->addOption(rex_i18n::rawMsg('mediaplace_settings_upload_provider_builtin'), '');
 foreach ($uploadProviders as $providerId => $providerMeta) {
     $select->addOption((string) ($providerMeta['label'] ?? $providerId), $providerId);
 }
@@ -88,15 +107,15 @@ $form->addFieldset(rex_i18n::msg('mediaplace_settings_ai_alt_legend'));
 $aiPlatformAvailable = rex_addon::exists('ai_platform') && rex_addon::get('ai_platform')->isAvailable();
 
 $field = $form->addCheckboxField('enable_ai_alt_text');
-$field->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_enable_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_ai_alt_enable_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_ai_alt_enable_hint') . ($aiPlatformAvailable ? '' : ' <strong>' . rex_i18n::msg('mediaplace_settings_ai_alt_not_available_hint') . '</strong>'));
 
 $field = $form->addSelectField('ai_alt_prompt_profile');
 $field->setLabel(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_label'));
 $select = $field->getSelect();
-$select->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_accessibility'), 'accessibility');
-$select->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_neutral'), 'neutral');
-$select->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_seo'), 'seo');
+$select->addOption(rex_i18n::rawMsg('mediaplace_settings_ai_alt_prompt_profile_accessibility'), 'accessibility');
+$select->addOption(rex_i18n::rawMsg('mediaplace_settings_ai_alt_prompt_profile_neutral'), 'neutral');
+$select->addOption(rex_i18n::rawMsg('mediaplace_settings_ai_alt_prompt_profile_seo'), 'seo');
 $field->setAttribute('class', 'form-control');
 $field->setNotice(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_hint'));
 
@@ -123,7 +142,7 @@ if ($aiPlatformAvailable) {
 $field = $form->addSelectField('ai_alt_platform_profile_id');
 $field->setLabel(rex_i18n::msg('mediaplace_settings_ai_alt_platform_profile_label'));
 $select = $field->getSelect();
-$select->addOption(rex_i18n::msg('mediaplace_settings_ai_alt_platform_profile_default'), '0');
+$select->addOption(rex_i18n::rawMsg('mediaplace_settings_ai_alt_platform_profile_default'), '0');
 foreach ($aiPlatformProfiles as $profile) {
     $label = (string) ($profile['name'] ?? ($profile['provider'] ?? 'Profil') . ' (' . ($profile['model'] ?? '?') . ')');
     $select->addOption($label, (string) $profile['id']);
@@ -143,7 +162,7 @@ $field->setNotice(
 $aiAllowedTagCount = count(\FriendsOfRedaxo\Mediaplace\SystemTagManager::getAiAllowedTagNames());
 
 $field = $form->addCheckboxField('enable_ai_auto_tag');
-$field->addOption(rex_i18n::msg('mediaplace_settings_ai_auto_tag_enable_label'), 1);
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_ai_auto_tag_enable_label'), 1);
 $field->setNotice(
     rex_i18n::msg('mediaplace_settings_ai_auto_tag_enable_hint')
     . ($aiPlatformAvailable ? '' : ' <strong>' . rex_i18n::msg('mediaplace_settings_ai_alt_not_available_hint') . '</strong>')
@@ -195,4 +214,63 @@ $fragment = new rex_fragment();
 $fragment->setVar('class', 'edit', false);
 $fragment->setVar('title', rex_i18n::msg('mediaplace_settings_menu_legend'));
 $fragment->setVar('body', $formHtml, false);
-echo $fragment->parse('core/page/section.php');
+$mainSectionHtml = $fragment->parse('core/page/section.php');
+
+// Klassisches ALT-Text-Feld (med_alt) kennt bislang kein "absichtlich kein
+// ALT-Text noetig" (dekoratives Bild) -- eigenes JSON-Feld vom Widget-Typ
+// "alt" hat das laengst (siehe AltTextStatus::isOwnValueEmpty()). Eigene,
+// separate Box statt Teil des Formulars oben: keine gespeicherte Einstellung,
+// sondern eine einmalige Anlage-Aktion. Nur relevant/anzeigbar, wenn das
+// metainfo-Addon ueberhaupt verfuegbar ist.
+$altFieldSectionHtml = '';
+if (AltTextFieldInstaller::isAvailable()) {
+    $hasAltField = AltTextStatus::hasClassicAltField();
+    $hasDecorativeField = AltTextStatus::hasClassicDecorativeField();
+    $altFieldsComplete = $hasAltField && $hasDecorativeField;
+
+    ob_start();
+    ?>
+    <p><?php echo rex_i18n::msg('mediaplace_settings_alt_field_intro'); ?></p>
+    <?php echo $altFieldInstallMsg; ?>
+    <?php if ($altFieldsComplete): ?>
+        <p class="text-success"><i class="fa-solid fa-circle-check"></i> <?php echo rex_i18n::msg('mediaplace_settings_alt_field_both_exist'); ?></p>
+    <?php else: ?>
+        <form method="post">
+            <input type="hidden" name="mediaplace_install_alt_fields" value="1">
+            <button type="submit" class="btn btn-default">
+                <?php
+                if (!$hasAltField && !$hasDecorativeField) {
+                    echo rex_i18n::msg('mediaplace_settings_alt_field_install_both_btn');
+                } elseif (!$hasDecorativeField) {
+                    echo rex_i18n::msg('mediaplace_settings_alt_field_install_decorative_btn');
+                } else {
+                    echo rex_i18n::msg('mediaplace_settings_alt_field_install_alt_btn');
+                }
+                ?>
+            </button>
+        </form>
+    <?php endif; ?>
+    <?php
+    $altFieldHtml = ob_get_clean();
+
+    // Warnfarbe (statt der neutralen "edit"-Optik), solange etwas fehlt --
+    // faellt sofort auf, ohne den ganzen Text lesen zu muessen (siehe unten:
+    // ohnehin schon als Sidebar-Box direkt neben dem Formularanfang platziert,
+    // um sie ueberhaupt erst sichtbar zu machen).
+    $altFieldFragment = new rex_fragment();
+    $altFieldFragment->setVar('class', $altFieldsComplete ? 'edit' : 'warning', false);
+    $altFieldFragment->setVar('title', rex_i18n::msg('mediaplace_settings_alt_field_legend'));
+    $altFieldFragment->setVar('body', $altFieldHtml, false);
+    $altFieldSectionHtml = $altFieldFragment->parse('core/page/section.php');
+}
+
+// Zwei Spalten statt alles untereinander: die ALT-Text-Feld-Box ist eine
+// einmalige Aktion, kein Einstellungswert -- unter dem (langen) Formular
+// wuerde sie leicht uebersehen, als Sidebar direkt neben dessen Anfang
+// bleibt sie ohne Scrollen sichtbar.
+?>
+<div class="row">
+    <div class="col-sm-8"><?php echo $mainSectionHtml; ?></div>
+    <div class="col-sm-4"><?php echo $altFieldSectionHtml; ?></div>
+</div>
+<?php

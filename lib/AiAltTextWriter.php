@@ -76,14 +76,27 @@ class AiAltTextWriter
     private static function writeClassicField(\rex_media $media, array $textByClangId): void
     {
         $text = (string) reset($textByClangId);
+        $filename = $media->getFileName();
 
-        // rex_media_service::updateMedia() liest $data['title'] OHNE
-        // Fallback direkt -- 'title' muss deshalb immer mitgegeben werden
-        // (siehe Api\CategoryBulk.php fuer denselben bereits dokumentierten
-        // Stolperstein).
-        \rex_media_service::updateMedia($media->getFileName(), [
-            'title' => $media->getTitle(),
-            'med_alt' => $text,
-        ]);
+        // rex_media_service::updateMedia() ist HIER die falsche Wahl: die
+        // Funktion kennt nur title/category_id/Datei-Upload-Spalten fest
+        // verdrahtet, jedes 'med_alt' im $data-Array wird komplett ignoriert
+        // -- der Text landete also nie in der Datenbank. Schlimmer noch:
+        // sie liest $data['category_id'] OHNE Fallback (kein isset-Check),
+        // ein fehlender Key wuerde still zu (int) null = 0 und die Datei in
+        // die Wurzelkategorie verschieben. Direkt per rex_sql schreiben --
+        // exakt dasselbe, bereits bewaehrte Muster wie
+        // FocuspointIntegration::saveFocus() fuer ein einzelnes klassisches
+        // Metainfo-Feld (kein Formular-Roundtrip, gleiche Aufraeum-/
+        // Benachrichtigungskette wie ein normales Medien-Update).
+        $sql = \rex_sql::factory();
+        $sql->setTable(\rex::getTable('media'));
+        $sql->setWhere(['filename' => $filename]);
+        $sql->setValue('med_alt', $text);
+        $sql->addGlobalUpdateFields();
+        $sql->update();
+
+        \rex_media_cache::delete($filename);
+        \rex_extension::registerPoint(new \rex_extension_point('MEDIA_UPDATED', '', ['filename' => $filename, 'id' => $media->getId()]));
     }
 }

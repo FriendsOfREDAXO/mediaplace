@@ -21,6 +21,8 @@ var ctx = null;
  *   das ist der Name der hier exportierten Funktion, siehe unten)
  * - getMultiSelected()/setMultiSelected(v): noch-legacy-State
  * - refreshDisplay(): noch-legacy-Funktion
+ * - getActiveCollectionId(): aus modules/collections.js, direkt durchgereicht
+ *   (steuert, ob Verschieben/Loeschen oder "Aus Sammlung entfernen" gezeigt wird)
  */
 export function initMultiselect(theCtx) {
     ctx = theCtx;
@@ -89,6 +91,19 @@ export function updateCollectionDragSelectionUI() {
             batchSelAllBtn.innerHTML = '<i class="fa-solid ' + (allSelected ? 'fa-square' : 'fa-square-check') + '"></i> ' + batchSelAllLabel;
             batchSelAllBtn.title = batchSelAllLabel;
         }
+
+        // Innerhalb einer aktiven Sammlung sind Verschieben/Loeschen keine
+        // sinnvollen Sammlungs-Aktionen (Loeschen loescht die Dateien
+        // komplett aus dem Medienpool, nicht nur aus der Sammlung -- genau
+        // dieser Verwechslung soll hier vorgebeugt werden) -- stattdessen
+        // nur "Aus Sammlung entfernen" zeigen.
+        var inCollection = !!ctx.getActiveCollectionId();
+        var moveBtn = qs('.mp3-batch-move-btn', batchFooter);
+        var deleteBtn = qs('.mp3-batch-delete-btn', batchFooter);
+        var removeFromCollectionBtn = qs('.mp3-batch-remove-from-collection-btn', batchFooter);
+        if (moveBtn) moveBtn.style.display = inCollection ? 'none' : '';
+        if (deleteBtn) deleteBtn.style.display = inCollection ? 'none' : '';
+        if (removeFromCollectionBtn) removeFromCollectionBtn.style.display = inCollection ? '' : 'none';
     }
 }
 

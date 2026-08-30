@@ -219,6 +219,9 @@ export function renderCategories(treeHtml) {
     if (ctx.features.tagging && typeof ctx.refreshTagFilterSection === 'function') {
         ctx.refreshTagFilterSection();
     }
+    if (ctx.features.altMissingFilter && typeof ctx.refreshAltMissingNav === 'function') {
+        ctx.refreshAltMissingNav();
+    }
 }
 
 /**

@@ -234,7 +234,7 @@ Rendert in `#mp3-admin-menu-extensions`, oberhalb der klassischen
 Unterseiten-Links. Registrierung ist bewusst mehrfach-sicher: kann vor ODER
 nach dem ersten `open()` aufgerufen werden (Eintrag bleibt über
 open()/close()-Zyklen hinweg bestehen). Noch kein externer Nutzer – mediaplace's
-eigenes "AI Bulk Management" (optionale KI-Alt-Text-Generierung, siehe
+eigener "KI-Alt-Text-Generator" (optionale KI-Alt-Text-Generierung, siehe
 Einstellungen → "KI-Funktionen") ist direkt im Kern eingebaut, nicht über
 diesen Erweiterungspunkt angebunden (die Funktion braucht ohnehin Zugriff auf
 mediaplace-interne Klassen wie `AltTextStatus`, eine externe Anbindung hätte

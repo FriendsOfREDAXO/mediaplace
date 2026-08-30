@@ -49,7 +49,7 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 - Massenimport: Mehrfachauswahl per Checkbox oder „Alle im aktuellen Ordner“, einmalige Zielkategorie-Wahl, Fortschrittsanzeige mit Fehlerliste je Datei
 
 **KI-Funktionen** (optional, sobald das separate [ai_platform](https://github.com/FriendsOfREDAXO/ai_platform)-Addon installiert/konfiguriert und in den Einstellungen aktiviert ist)
-- **ALT-Text-Generierung**: „AI generieren“-Button neben dem ALT-Text-Feld (Einzeldatei) sowie „AI Bulk Management“ im Zahnrad-Menü (mehrere Dateien mit fehlendem ALT-Text nacheinander abarbeiten). Schreibt nie automatisch – Vorschläge werden erst nach Prüfung durch einen expliziten Klick übernommen.
+- **ALT-Text-Generierung**: „AI generieren“-Button neben dem ALT-Text-Feld (Einzeldatei) sowie „KI-Alt-Text-Generator“ im Zahnrad-Menü (mehrere Dateien mit fehlendem ALT-Text nacheinander abarbeiten). Schreibt nie automatisch – Vorschläge werden erst nach Prüfung durch einen expliziten Klick übernommen.
 - **KI-Tag-Vorschläge**: schlägt beim Bearbeiten einer Datei passende Tags vor – ausschließlich aus Tags, die zuvor in der Tag-Verwaltung gezielt dafür freigegeben wurden (geschlossenes Vokabular, die KI legt nie eigenständig neue Tags an).
 
 **Mehrfachauswahl**
@@ -126,20 +126,26 @@ Ist ein Storage-Provider-Addon installiert (z. B. [nextcloud](https://github.com
 
 Ist das `cronjob`-Addon installiert, steht unter **Cronjobs** der Typ „MediaPlace: Vorschaubilder vorwärmen“ zur Verfügung: erzeugt Grid-Thumbnails (Bilder und, falls ffmpeg installiert ist, auch Videos) im Hintergrund vor, statt sie erst beim ersten Betrachten live zu generieren – schont den Server bei großen, noch nicht durchgewärmten Kategorien. Pro Lauf wird je Typ nur eine begrenzte, einstellbare Anzahl neuer Vorschaubilder erzeugt (bereits gecachte werden übersprungen), neueste Dateien zuerst.
 
+### Klassisches ALT-Text-Feld: Bilder als dekorativ auszeichnen
+
+Nutzt du das klassische Metainfo-Feld `med_alt` statt eines eigenen JSON-Alt-Feldes, kannte MediaPlace bisher keine Möglichkeit, ein rein dekoratives Bild (bei dem laut Barrierefreiheits-Richtlinien bewusst `alt=""` korrekt ist) von einem tatsächlich fehlenden ALT-Text zu unterscheiden – ein leeres Feld zählte immer als "fehlt".
+
+Unter **MediaPlace → Einstellungen** findet sich dafür eine eigene Box „Klassisches ALT-Text-Feld“: fehlt `med_alt` und/oder das zusätzliche Dekorativ-Feld, lässt es sich dort per Klick anlegen (nutzt REDAXOs eigene Metainfo-API, keine manuelle Feldanlage nötig). Ist das Dekorativ-Feld bei einem Bild aktiviert, zählt es in der "Medien ohne ALT-Text"-Sidebar-Ansicht, im "ALT-Text fehlt"-Hinweis im Detail-Panel sowie überall sonst in MediaPlace nicht mehr als fehlend, unabhängig vom Inhalt von `med_alt`. Wird ein eigenes JSON-Alt-Feld genutzt (Widget-Typ „alt“), ist das nicht relevant – das hat sein eigenes „Dekorativ“-Flag bereits eingebaut.
+
 ### KI-Funktionen: ALT-Text & Tag-Vorschläge
 
 Optional, sobald das separate [ai_platform](https://github.com/FriendsOfREDAXO/ai_platform)-Addon installiert und konfiguriert ist (mindestens ein Profil vom Typ „Bildverständnis“) – ohne `ai_platform` bleiben beide Funktionen unter **MediaPlace → Einstellungen → „KI-Funktionen“** einfach ausgeblendet.
 
 **ALT-Text-Generierung** (Schalter „KI-Alt-Text aktivieren“):
 - „AI generieren“-Button neben dem ALT-Text-Feld im Detail-Panel (eigenes JSON-Feld oder klassisches `med_alt`) – schreibt nur ins sichtbare Feld, gespeichert wird weiterhin über den normalen Speichern-Button.
-- „AI Bulk Management“ im Zahnrad-Menü: erzeugt zunächst nur Vorschläge für alle Dateien ohne ALT-Text (Thumbnail + editierbares Textfeld je Datei, größere Vorschau per Klick, einzelne Einträge verwerfbar), geschrieben wird erst nach „Übernehmen“. Ein Lauf ist auf 25 Dateien begrenzt (jede ist ein echter KI-Aufruf), „Weitere generieren“ holt bei Bedarf nach.
+- „KI-Alt-Text-Generator“ im Zahnrad-Menü: erzeugt zunächst nur Vorschläge für alle Dateien ohne ALT-Text (Thumbnail + editierbares Textfeld je Datei, größere Vorschau per Klick, einzelne Einträge verwerfbar), geschrieben wird erst nach „Übernehmen“. Ein Lauf ist auf 25 Dateien begrenzt (jede ist ein echter KI-Aufruf), „Weitere generieren“ holt bei Bedarf nach.
 - Prompt-Profil (Barrierefreiheit/Neutral/SEO) und eigener Prompt konfigurierbar. SVG-Dateien werden beim Einzeldatei-Button clientseitig auf Canvas gerendert (der Browser kann SVG selbst rendern, ein Server-Rasterizer wäre unzuverlässig) – in der Massengenerierung werden sie stattdessen übersprungen und separat gezählt. Zu große Bilder werden vor dem Senden automatisch verkleinert (Einstellung „Maximale Bildkantenlänge für die KI-Analyse“).
 
 **KI-Tag-Vorschläge** (Schalter „KI-Tag-Vorschläge aktivieren“):
 - „KI-Tags vorschlagen“-Button im Tag-Widget des Detail-Panels, Vorschläge erscheinen als anklickbare Chips – ein Klick fügt den Tag hinzu, gespeichert wird wie gewohnt über den Speichern-Button.
 - **Geschlossenes Vokabular**: die KI schlägt ausschließlich Tags vor, die in der Tag-Verwaltung explizit über die Spalte „KI-Vorschläge“ freigegeben wurden (Default: kein Tag freigegeben) – sie legt nie eigenständig neue Tags an. Obergrenze pro Datei konfigurierbar (Standard 3).
 
-Beide Funktionen teilen sich das konfigurierte Bildverständnis-Profil und die Bildgrößen-Einstellung. Zugriff ist rechtegeprüft: der Einzeldatei-Button braucht normalen Medienzugriff, „AI Bulk Management“ zusätzlich das granularere Recht `mediaplace[bulk_operations]`.
+Beide Funktionen teilen sich das konfigurierte Bildverständnis-Profil und die Bildgrößen-Einstellung. Zugriff ist rechtegeprüft: der Einzeldatei-Button braucht normalen Medienzugriff, „KI-Alt-Text-Generator“ zusätzlich das granularere Recht `mediaplace[bulk_operations]`.
 
 ### Als Eingabefeld in Modulen/Formularen nutzen
 

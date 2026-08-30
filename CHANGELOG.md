@@ -1,5 +1,32 @@
 # Changelog
 
+## Version 1.23.0 – 2026-08-31
+
+„Aufgeräumt und nachgezählt." – kein großes Feuerwerk, dafür ein ordentlicher Batzen Kleinkram, den wir beim Testen der letzten Releases gefunden haben, plus zwei neue, nützliche Kleinigkeiten. Am wichtigsten: ein Bug, der bei der KI-Massengenerierung mit klassischem `med_alt` Dateien in die Wurzelkategorie verschoben hat, statt den ALT-Text zu schreiben – wer das nutzt, sollte unten unbedingt lesen.
+
+### Neu
+- **Speicherverbrauch im Zahnrad-Menü**: zeigt den kompletten Speicherverbrauch des Medienpools (Summe aller Dateigrößen über alle Kategorien) samt Dateianzahl, wird bei jedem Öffnen des Menüs frisch nachgeladen.
+- **Dekoratives klassisches ALT-Text-Feld**: neue Box in den Einstellungen legt bei Bedarf `med_alt` und ein zusätzliches `med_alt_decorative`-Checkbox-Feld an (über REDAXOs eigene Metainfo-API, ein Klick genügt). Für Installationen ohne eigenes JSON-Alt-Feld gab es bisher keine Möglichkeit, ein Bild bewusst als "kein ALT-Text nötig" zu markieren – ein leeres Feld zählte immer als fehlend. Wirkt sich überall aus, wo "ALT-Text fehlt" geprüft wird (Sidebar-Filter, Detail-Panel-Hinweis).
+- Sortierung "Zuletzt bearbeitet" ergänzt.
+- Sammlungen: Mehrfachauswahl bekommt einen eigenen "Auswahl aus Sammlung entfernen"-Button, der nur die Sammlungs-Zuordnung aufhebt.
+
+### Geändert
+- "AI Bulk Management" heißt jetzt "KI-Alt-Text-Generator" (bzw. "AI Alt-Text Generator" auf Englisch) – beschreibt treffender, was der Zahnrad-Menü-Eintrag tatsächlich tut.
+- Einstellungsseite zweispaltig: Haupt-Formular links, die neue ALT-Feld-Box rechts als Sidebar direkt sichtbar (vorher unter dem langen Formular leicht zu übersehen), mit Warnfarbe solange etwas fehlt.
+- Filter-Reset-Button sitzt jetzt stabil neben dem Zahnrad im Header (Desktop und Mobile identisch), statt mal isoliert in der Filterleiste umzubrechen oder auf Mobile ganz zu verschwinden – dazu farbig und leicht pulsierend, damit man ihn bei aktiven Filtern nicht übersieht.
+- Veraltete "Lesezeichen"-Hinweistexte rund um Sammlungen entfernt – die Zuordnung läuft längst über den Button im Detail-Panel, nicht mehr per Lesezeichen-Icon.
+
+### Bugfix
+- **Wichtig, betrifft KI-Massengenerierung mit klassischem `med_alt`**: schrieb den generierten ALT-Text gar nicht in die Datenbank UND verschob die bearbeitete Datei als Nebeneffekt in die Wurzelkategorie (Kategorie-ID 0). Ursache war eine falsche Verwendung von `rex_media_service::updateMedia()`, die weder `med_alt` kennt noch mit einer fehlenden `category_id` sauber umgeht. Betrifft nur Installationen ohne eigenes JSON-Alt-Feld – wer die KI-Funktionen mit dem klassischen Feld genutzt hat, sollte die betroffenen Dateien auf ihre Kategorie prüfen.
+- Sidebar-Eintrag "Medien ohne ALT-Text" erschien nie: die Funktion, die ihn ein-/ausblendet, war zwar geschrieben, aber nirgends aufgerufen.
+- Einstellungsseite zeigte an mehreren Stellen `&quot;` statt eines echten Anführungszeichens (doppeltes HTML-Escaping bei Checkbox-/Auswahl-Labels).
+- KI-Icon im klassischen Metainfo-Formular landete unter statt im Feld-Label (REDAXOs Standard-Formular verschachtelt das Label anders als angenommen).
+- Detail-Panel-Speichern aktualisierte die Ansicht nicht vollständig: Tag-Punkte auf der Kachel blieben nach Tag-Änderungen veraltet stehen, "Medien ohne ALT-Text" reagierte nicht sofort auf gerade vervollständigte Dateien.
+- Sammlungen: "Auswahl löschen" hat dort tatsächlich Dateien aus dem gesamten Medienpool gelöscht, obwohl "nur aus der Sammlung entfernen" gemeint war – jetzt behoben (siehe neuer Button oben).
+- Die "MediaPlace"-Hauptseite crashte für Redakteure ohne weitergehende Rechte mit einer kryptischen REDAXO-Fehlermeldung, weil keine ihrer Unterseiten für sie zugänglich war. Hauptseite ist jetzt konsequent admin-only, wie es ihre Unterseiten ohnehin schon sind.
+
+Kleines Extra nebenbei: das separate `nextcloud`-Addon hatte einen ähnlichen Rechte-Bug (feingranulare Rechte tauchten in der Rollenverwaltung nie auf) – bereits mit [nextcloud 1.7.1](https://github.com/FriendsOfREDAXO/nextcloud/releases/tag/1.7.1) separat behoben.
+
 ## Version 1.22.0 – 2026-08-30
 
 „Alles bestens beim Apfel." – volle Benutzbarkeit auf iOS sowie Massenimport aus Cloud-Speichern (Nextcloud & Co.). Löst die Zwischen-Beta 1.21.1-beta1 ab (Inhalt hier vollständig enthalten).

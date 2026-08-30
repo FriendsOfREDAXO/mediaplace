@@ -1,18 +1,27 @@
 package: mediaplace
-version: '1.22.0'
+version: '1.23.0'
 author: FriendsOfREDAXO
 supportpage: https://github.com/FriendsOfREDAXO
 
 page:
     title: 'MediaPlace'
     icon: rex-icon fa-photo-film
-    # Kein perm hier (frueher: admin) -- jede Unterseite gated sich selbst
-    # (settings/metainfo_fields/demo/help bleiben bewusst admin-only,
-    # tag_management bekommt die engere mediaplace[manage_tags]-Berechtigung).
-    # rex_be_page::checkPermission() prueft die komplette Eltern-Kette; ein
-    # perm hier wuerde jede engere Unterseiten-Berechtigung wieder auf dieses
-    # Niveau hochziehen. Der "MediaPlace"-Menuepunkt selbst ist dadurch fuer
-    # alle eingeloggten Backend-User sichtbar.
+    # perm: admin -- ALLE Unterseiten sind ohnehin admin- oder zumindest
+    # eingeschraenkt-gated (settings/metainfo_fields/demo/help bewusst
+    # admin-only, tag_management immerhin mediaplace[manage_tags]). Ganz
+    # ohne eigenes perm hier blieb der "MediaPlace"-Menuepunkt fuer JEDEN
+    # eingeloggten Backend-User sichtbar+anklickbar, obwohl ein Redakteur
+    # ohne admin/manage_tags dort auf jeder Unterseite abgewiesen wuerde --
+    # REDAXO versucht beim blossen Seitenaufruf (?page=mediaplace ohne
+    # Unterseite) eine zugaengliche Unterseite zu finden, findet keine und
+    # wirft "Current page ... is a main page and therefore has no sub-path"
+    # (rex_be_controller::includeCurrentPageSubPath()), statt den
+    # Menuepunkt einfach gar nicht erst anzuzeigen. Der eigentliche
+    # Medienpool-Picker (Overlay) ist davon nicht betroffen -- der laeuft
+    # ueber den separaten, umgebogenen "Medienpool"-Menuepunkt (siehe
+    # boot.php PAGES_PREPARED) und eigene MediaPermission-Checks, nicht
+    # ueber diese Admin-Seite hier.
+    perm: admin
     subpages:
         settings:
             title: 'Einstellungen'

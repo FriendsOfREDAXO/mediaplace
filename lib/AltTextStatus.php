@@ -11,6 +11,19 @@ namespace FriendsOfRedaxo\Mediaplace;
 class AltTextStatus
 {
     /**
+     * Klassisches Checkbox-Feld "kein ALT-Text noetig" (rein dekoratives
+     * Bild) -- Gegenstueck zum "decorative"-Flag, das das EIGENE JSON-Feld
+     * (Widget-Typ "alt") bereits laenger kennt (siehe isOwnValueEmpty()).
+     * Ohne dieses Feld gibt es fuer med_alt keine Moeglichkeit, ein Bild
+     * bewusst als "braucht keinen ALT-Text" auszuzeichnen -- leeres alt=""
+     * ist barrierefreiheits-technisch valide, wurde bisher aber immer als
+     * "fehlt" gewertet. Siehe AltTextFieldInstaller fuer die Anlage dieses
+     * Feldes (Settings-Seite).
+     */
+    public const CLASSIC_DECORATIVE_FIELD = 'med_alt_decorative';
+
+
+    /**
      * @param array<string, mixed> $ownData aktuelle Werte aus med_json_data
      */
     public static function isMissing(\rex_media $media, array $ownData): bool
@@ -97,9 +110,16 @@ class AltTextStatus
             return false;
         }
 
+        $decorativeExists = self::hasClassicDecorativeField();
+        $cols = 'med_alt' . ($decorativeExists ? ', ' . self::CLASSIC_DECORATIVE_FIELD : '');
+
         $sql = \rex_sql::factory();
-        $sql->setQuery('SELECT med_alt FROM ' . \rex::getTable('media') . ' WHERE id = ?', [$media->getId()]);
+        $sql->setQuery('SELECT ' . $cols . ' FROM ' . \rex::getTable('media') . ' WHERE id = ?', [$media->getId()]);
         if (1 !== $sql->getRows()) {
+            return false;
+        }
+
+        if ($decorativeExists && (bool) $sql->getValue(self::CLASSIC_DECORATIVE_FIELD)) {
             return false;
         }
 
@@ -108,6 +128,27 @@ class AltTextStatus
 
     private static function classicAltFieldExists(): bool
     {
+        return self::hasClassicAltField();
+    }
+
+    /** Oeffentlich fuer denselben Zweck wie hasClassicDecorativeField(). */
+    public static function hasClassicAltField(): bool
+    {
+        return self::metainfoFieldExists('med_alt');
+    }
+
+    /**
+     * Oeffentlich, damit sowohl die Settings-Seite (Zustand fuer den
+     * Installations-Button) als auch AltTextFieldInstaller (Idempotenz-Check
+     * vor dem Anlegen) dieselbe Abfrage nutzen koennen.
+     */
+    public static function hasClassicDecorativeField(): bool
+    {
+        return self::metainfoFieldExists(self::CLASSIC_DECORATIVE_FIELD);
+    }
+
+    private static function metainfoFieldExists(string $name): bool
+    {
         if (!\rex_addon::get('metainfo')->isAvailable()) {
             return false;
         }
@@ -115,7 +156,7 @@ class AltTextStatus
         $sql = \rex_sql::factory();
         $exists = $sql->getArray(
             'SELECT id FROM ' . \rex::getTable('metainfo_field') . ' WHERE name = :name',
-            ['name' => 'med_alt'],
+            ['name' => $name],
         );
 
         return [] !== $exists;
@@ -148,7 +189,10 @@ class AltTextStatus
             return [];
         }
 
-        $selectCol = null !== $ownField ? 'med_json_data' : 'med_alt';
+        $decorativeExists = null === $ownField && self::hasClassicDecorativeField();
+        $selectCol = null !== $ownField
+            ? 'med_json_data'
+            : 'med_alt' . ($decorativeExists ? ', ' . self::CLASSIC_DECORATIVE_FIELD : '');
         $sql = \rex_sql::factory();
         $rows = $sql->getArray(
             'SELECT filename, ' . $selectCol . " FROM " . \rex::getTable('media') . " WHERE filetype LIKE 'image/%'",
@@ -162,7 +206,12 @@ class AltTextStatus
                 if (self::isOwnValueEmpty($ownData[$ownField->getKey()] ?? null)) {
                     $missing[] = (string) $row['filename'];
                 }
-            } elseif ('' === trim((string) ($row['med_alt'] ?? ''))) {
+                continue;
+            }
+            if ($decorativeExists && !empty($row[self::CLASSIC_DECORATIVE_FIELD])) {
+                continue;
+            }
+            if ('' === trim((string) ($row['med_alt'] ?? ''))) {
                 $missing[] = (string) $row['filename'];
             }
         }

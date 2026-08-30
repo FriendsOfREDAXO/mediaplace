@@ -92,6 +92,28 @@
         });
     }
 
+    function getStorageUsageApiUrl() {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.storageUsageUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_storage_usage';
+        }
+        return baseUrl;
+    }
+
+    // Gesamt-Speicherverbrauch des kompletten Medienpools (Zahnrad-Menue,
+    // siehe refreshStorageUsage() in core.js) -- siehe Api\StorageUsage.php.
+    function apiFetchStorageUsage() {
+        return fetch(getStorageUsageApiUrl(), {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        });
+    }
+
     function apiMoveCategory(catId, newParentId) {
         return fetch(getCategoriesApiUrl(), {
             method: 'PATCH',
@@ -1153,6 +1175,7 @@
 
     Core.api.getCategoriesApiUrl = getCategoriesApiUrl;
     Core.api.apiCheckUnusedMedia = apiCheckUnusedMedia;
+    Core.api.apiFetchStorageUsage = apiFetchStorageUsage;
     Core.api.apiFetchAllCategoriesFlat = apiFetchAllCategoriesFlat;
     Core.api.apiMoveCategory = apiMoveCategory;
     Core.api.getTagsApiUrl = getTagsApiUrl;

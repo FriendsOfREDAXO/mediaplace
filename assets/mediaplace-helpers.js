@@ -35,7 +35,12 @@
         b = parseInt(b, 10) || 0;
         if (b < 1024) return b + ' B';
         if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
-        return (b / 1048576).toFixed(1) + ' MB';
+        // GB-Stufe noetig fuer den Zahnrad-Menue-Speicherverbrauch (Summe ueber
+        // den GESAMTEN Medienpool, siehe refreshStorageUsage() in core.js) --
+        // einzelne Dateien (der bisher einzige Aufrufer) erreichen praktisch
+        // nie GB-Groesse, aendert also nichts am bisherigen Verhalten.
+        if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+        return (b / 1073741824).toFixed(2) + ' GB';
     }
 
     function isImage(filename) {

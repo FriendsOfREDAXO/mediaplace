@@ -335,6 +335,7 @@ import {
     // (Alias-Pattern: Funktionsreferenzen, kein State-Sharing noetig, siehe dortige Header-Kommentare)
     var getCategoriesApiUrl = MP3Core.api.getCategoriesApiUrl;
     var apiCheckUnusedMedia = MP3Core.api.apiCheckUnusedMedia;
+    var apiFetchStorageUsage = MP3Core.api.apiFetchStorageUsage;
     var apiFetchAllCategoriesFlat = MP3Core.api.apiFetchAllCategoriesFlat;
     var apiMoveCategory = MP3Core.api.apiMoveCategory;
     var getTagsApiUrl = MP3Core.api.getTagsApiUrl;
@@ -552,6 +553,7 @@ import {
     var SORT_LABEL_KEYS = {
         date_desc: 'mediaplace_sort_newest',
         date_asc: 'mediaplace_sort_oldest',
+        updated_desc: 'mediaplace_sort_updated_desc',
         filename_asc: 'mediaplace_sort_filename_az',
         filename_desc: 'mediaplace_sort_filename_za',
         title_asc: 'mediaplace_sort_title_az',
@@ -693,6 +695,7 @@ import {
     var SORT_API_MAP = {
         date_desc: 'createdate:desc',
         date_asc: 'createdate:asc',
+        updated_desc: 'updatedate:desc',
         filename_asc: 'filename:asc',
         filename_desc: 'filename:desc',
         title_asc: 'title:asc',
@@ -945,9 +948,9 @@ import {
         if (activeCol) {
             parts.push('<i class="fa-solid fa-compact-disc mp3-hi-icon"></i> ' + escAttr(activeCol.name));
         }
-        if (typeof count === 'number') {
-            parts.push('<i class="fa-solid fa-images mp3-hi-icon"></i> ' + count);
-        }
+        // Dateianzahl bewusst NICHT mehr hier -- steht bereits im Footer
+        // (.mp3-page-footer, siehe updateStatus()), war hier redundant
+        // (Nutzer-Feedback).
 
         el.innerHTML = parts.join('<span class="mp3-hi-sep">|</span>');
     }
@@ -1208,6 +1211,7 @@ import {
                                 '<div class="mp3-sort-toggle-menu">' +
                                     '<button class="mp3-sort-option" data-sort="date_desc">' + escAttr(t('mediaplace_sort_newest')) + '</button>' +
                                     '<button class="mp3-sort-option" data-sort="date_asc">' + escAttr(t('mediaplace_sort_oldest')) + '</button>' +
+                                    '<button class="mp3-sort-option" data-sort="updated_desc">' + escAttr(t('mediaplace_sort_updated_desc')) + '</button>' +
                                     '<button class="mp3-sort-option" data-sort="filename_asc">' + escAttr(t('mediaplace_sort_filename_az')) + '</button>' +
                                     '<button class="mp3-sort-option" data-sort="filename_desc">' + escAttr(t('mediaplace_sort_filename_za')) + '</button>' +
                                     '<button class="mp3-sort-option" data-sort="title_asc">' + escAttr(t('mediaplace_sort_title_az')) + '</button>' +
@@ -1230,14 +1234,41 @@ import {
                                 '<input type="file" multiple style="display:none">' +
                             '</label>' +
                         '</div>' +
-                        '<div class="mp3-admin-menu-wrap">' +
-                            '<button type="button" class="mp3-admin-menu-btn" title="' + escAttr(t('mediaplace_admin_menu_title')) + '"><i class="fa-solid fa-gear"></i></button>' +
-                            '<div class="mp3-admin-menu" id="mp3-admin-menu">' +
-                                '<button type="button" class="mp3-admin-menu-darkmode-toggle"><i class="fa-solid fa-moon"></i> <span class="mp3-admin-menu-darkmode-label">' + escAttr(t('mediaplace_dark_mode')) + '</span></button>' +
-                                aiAltBulkMenuHtml +
-                                '<div class="mp3-admin-menu-sort-slot" id="mp3-admin-menu-sort-slot"></div>' +
-                                '<div class="mp3-admin-menu-extensions" id="mp3-admin-menu-extensions"></div>' +
-                                '<div class="mp3-admin-menu-links" id="mp3-admin-menu-links"></div>' +
+                        // Gemeinsamer Wrapper statt zwei einzelner Geschwister-Elemente
+                        // von .mp3-header: .mp3-compact/mobile pinnt diese Gruppe per
+                        // margin-left:auto an den rechten Rand (siehe CSS) -- an EINEM
+                        // Wrapper haengend bleibt das stabil, egal ob
+                        // .mp3-filter-reset-btn gerade sichtbar ist oder nicht (waere er
+                        // selbst der margin-left:auto-Traeger, verschwaende der
+                        // rechtsbuendige Pin fuer das Zahnrad jedes Mal mit, wenn kein
+                        // Filter aktiv ist). Nicht mehr Teil der Filter-Leiste
+                        // (.mp3-filter-bar/.mp3-filter-pills) -- die wird je nach
+                        // Bildschirmbreite/Filterzustand unterschiedlich umgebrochen bzw.
+                        // auf Mobile komplett durch die Dropdown-Zusammenfassung ersetzt
+                        // (.mp3-filter-pills selbst ist dort display:none), der Button
+                        // waere so mal isoliert umgebrochen, mal unsichtbar. Direkt neben
+                        // dem Zahnrad im Header ist er auf JEDER Breite an derselben,
+                        // stabilen Stelle sichtbar. Nur sichtbar, sobald tatsaechlich ein
+                        // Filter (Typ/Tag/"Nur unbenutzte") aktiv ist, siehe
+                        // updateFilterResetVisibility() in filters.js -- setzt bewusst
+                        // NICHT die Suche zurueck (eigene, unabhaengige Bedeutung).
+                        '<div class="mp3-header-actions">' +
+                            '<button type="button" class="mp3-filter-reset-btn" style="display:none" title="' + escAttr(t('mediaplace_filter_reset')) + '"><i class="fa-solid fa-filter-circle-xmark"></i></button>' +
+                            '<div class="mp3-admin-menu-wrap">' +
+                                '<button type="button" class="mp3-admin-menu-btn" title="' + escAttr(t('mediaplace_admin_menu_title')) + '"><i class="fa-solid fa-gear"></i></button>' +
+                                '<div class="mp3-admin-menu" id="mp3-admin-menu">' +
+                                    '<button type="button" class="mp3-admin-menu-darkmode-toggle"><i class="fa-solid fa-moon"></i> <span class="mp3-admin-menu-darkmode-label">' + escAttr(t('mediaplace_dark_mode')) + '</span></button>' +
+                                    aiAltBulkMenuHtml +
+                                    '<div class="mp3-admin-menu-sort-slot" id="mp3-admin-menu-sort-slot"></div>' +
+                                    '<div class="mp3-admin-menu-extensions" id="mp3-admin-menu-extensions"></div>' +
+                                    '<div class="mp3-admin-menu-links" id="mp3-admin-menu-links"></div>' +
+                                    // Gesamt-Speicherverbrauch des kompletten Medienpools (nicht nach
+                                    // Kategorie-Rechten gefiltert, siehe Api\StorageUsage.php) -- wird
+                                    // bei jedem Oeffnen des Menues frisch nachgeladen (siehe
+                                    // refreshStorageUsage(), Aufruf im .mp3-admin-menu-btn-Click-Handler
+                                    // unten), damit die Zahl waehrend der Sitzung aktuell bleibt.
+                                    '<div class="mp3-admin-menu-storage" id="mp3-admin-menu-storage"><i class="fa-solid fa-database"></i> <span class="mp3-admin-menu-storage-text"></span></div>' +
+                                '</div>' +
                             '</div>' +
                         '</div>' +
                         '<button type="button" class="mp3-fullscreen-toggle" title="' + escAttr(t('mediaplace_fullscreen')) + '"><i class="fa-solid fa-expand"></i></button>' +
@@ -1270,11 +1301,6 @@ import {
                                         '<i class="fa-solid fa-chevron-down"></i>' +
                                     '</button>' +
                                 '</div>' +
-                                // Nur sichtbar, sobald tatsaechlich ein Filter (Typ/Tag/"Nur
-                                // unbenutzte") aktiv ist, siehe updateFilterResetVisibility()
-                                // in filters.js -- setzt bewusst NICHT die Suche zurueck
-                                // (eigene, unabhaengige Bedeutung).
-                                '<button type="button" class="mp3-filter-reset-btn" style="display:none" title="' + escAttr(t('mediaplace_filter_reset')) + '"><i class="fa-solid fa-filter-circle-xmark"></i></button>' +
                             '</div>' +
                             '<div class="mp3-metainfo-pick-banner" id="mp3-metainfo-pick-banner" style="display:none">' +
                                 '<span class="mp3-metainfo-pick-banner-text"></span>' +
@@ -1394,6 +1420,16 @@ import {
                         '<div class="mp3-batch-actions">' +
                             '<button type="button" class="mp3-batch-move-btn" title="' + escAttr(t('mediaplace_move_selection')) + '"><i class="fa-solid fa-folder-open"></i> ' + t('mediaplace_move_selection') + '</button>' +
                             '<button type="button" class="mp3-batch-delete-btn" title="' + escAttr(t('mediaplace_delete_selection')) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete_selection') + '</button>' +
+                            // Nur sichtbar innerhalb einer aktiven Sammlung
+                            // (Verschieben/Loeschen dort ausgeblendet, siehe
+                            // updateCollectionDragSelectionUI() in
+                            // multiselect.js) -- entfernt die Auswahl NUR aus
+                            // der Sammlung (Tag-Zuordnung), loescht die Dateien
+                            // NICHT. Vorher konnte man in einer Sammlungsansicht
+                            // faelschlich "Auswahl loeschen" klicken und damit
+                            // die Dateien komplett aus dem Medienpool entfernen,
+                            // obwohl "nur aus der Sammlung nehmen" gemeint war.
+                            '<button type="button" class="mp3-batch-remove-from-collection-btn" style="display:none" title="' + escAttr(t('mediaplace_remove_selection_from_collection')) + '"><i class="fa-solid fa-bookmark-slash"></i> ' + t('mediaplace_remove_selection_from_collection') + '</button>' +
                             '<button type="button" class="mp3-batch-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_deselect_all_action') + '</button>' +
                         '</div>' +
                     '</div>' +
@@ -1535,6 +1571,9 @@ import {
             updateMultiUI: updateMultiUI,
             updateTagFilterOptions: updateTagFilterOptions,
             setCurrentTagCatalog: setCurrentTagCatalog,
+            getAltMissingActive: function () { return altMissingActive; },
+            refreshAltMissingNav: refreshAltMissingNav,
+            loadFiles: loadFiles,
         });
 
         initUpload({
@@ -1560,6 +1599,7 @@ import {
             setBatchSelectModeState: function (v) { batchSelectMode = v; },
             getMultiSelected: function () { return multiSelected; },
             refreshDisplay: refreshDisplay,
+            getActiveCollectionId: getActiveCollectionId,
         });
 
         initFilters({
@@ -1961,11 +2001,35 @@ import {
                 menu.style.top = top + 'px';
             }
 
+            // Bei jedem Oeffnen frisch nachgeladen (nicht nur einmalig beim
+            // build()) -- waehrend der Sitzung hochgeladene/geloeschte Dateien
+            // sollen sich hier zeitnah widerspiegeln, nicht erst nach einem
+            // kompletten Overlay-Neuaufbau. Kosten sind gering (eine einzelne
+            // SQL-SUM-Aggregation, siehe Api\StorageUsage.php).
+            var storageEl = qs('.mp3-admin-menu-storage-text', overlay);
+            function refreshStorageUsage() {
+                if (!storageEl) return;
+                storageEl.textContent = t('mediaplace_storage_usage_loading');
+                apiFetchStorageUsage()
+                    .then(function (payload) {
+                        storageEl.textContent = t('mediaplace_storage_usage_value', {
+                            size: formatBytes(payload.total_size),
+                            count: parseInt(payload.total_count, 10) || 0
+                        });
+                    })
+                    .catch(function () {
+                        storageEl.textContent = t('mediaplace_storage_usage_error');
+                    });
+            }
+
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 var willOpen = !wrap.classList.contains('mp3-admin-menu-open');
                 wrap.classList.toggle('mp3-admin-menu-open', willOpen);
-                if (willOpen) positionAdminMenu();
+                if (willOpen) {
+                    positionAdminMenu();
+                    refreshStorageUsage();
+                }
             });
 
             document.addEventListener('click', function (e) {
@@ -2784,6 +2848,16 @@ import {
                 return;
             }
 
+            // Sitzt im Header neben dem Zahnrad, nicht mehr in .mp3-filter-bar
+            // (siehe dortiger Markup-Kommentar) -- deshalb hier statt im
+            // filterBar-Click-Handler oben behandelt.
+            var filterResetBtn = e.target.closest('.mp3-filter-reset-btn');
+            if (filterResetBtn) {
+                clearAllFilters();
+                loadFiles(currentCat, true);
+                return;
+            }
+
             var selModeBtn = e.target.closest('.mp3-select-mode-toggle');
             if (selModeBtn) {
                 if (isProviderMode()) {
@@ -3030,6 +3104,51 @@ import {
                         }
 
                         deleteNext(0);
+                    }
+                });
+                return;
+            }
+
+            // Nur sichtbar innerhalb einer aktiven Sammlung (siehe
+            // updateCollectionDragSelectionUI() in multiselect.js) --
+            // entfernt die Auswahl NUR aus der Sammlung (Tag-Zuordnung
+            // aufheben, wie setFileCollectionMembership() es auch fuer eine
+            // einzelne Datei im "Sammlungen verwalten"-Dialog macht), loescht
+            // die Dateien NICHT aus dem Medienpool.
+            var batchRemoveFromCollectionBtn = e.target.closest('.mp3-batch-remove-from-collection-btn');
+            if (batchRemoveFromCollectionBtn) {
+                var removeFromCollectionFilenames = Object.keys(collectionDragSelected);
+                if (!removeFromCollectionFilenames.length) return;
+                var activeCol = getActiveCollection();
+                if (!activeCol) return;
+                showConfirmModal({
+                    title: t('mediaplace_remove_selection_from_collection'),
+                    message: t('mediaplace_confirm_remove_from_collection', {
+                        count: removeFromCollectionFilenames.length,
+                        unit: (1 === removeFromCollectionFilenames.length ? t('mediaplace_file_singular') : t('mediaplace_file_plural')),
+                        name: '<strong>' + escAttr(activeCol.name) + '</strong>'
+                    }),
+                    confirmLabel: t('mediaplace_remove'),
+                    onConfirm: function (ctx) {
+                        ctx.setBusy(true);
+                        var removeJobs = removeFromCollectionFilenames.map(function (fn) {
+                            return setFileCollectionMembership(fn, activeCol.name, false);
+                        });
+                        Promise.all(removeJobs)
+                            .then(function () {
+                                removeFromCollectionFilenames.forEach(function (fn) {
+                                    delete collectionDragSelected[fn];
+                                    delete multiSelected[fn];
+                                });
+                                if (selectedFile && removeFromCollectionFilenames.indexOf(selectedFile) !== -1) hideDetail();
+                                refreshCollectionsSection();
+                                loadFiles(currentCat, true);
+                                ctx.close();
+                            })
+                            .catch(function (err) {
+                                ctx.setBusy(false);
+                                ctx.showError(t('mediaplace_error_updating_collection', { msg: err.message }));
+                            });
                     }
                 });
                 return;
@@ -3622,17 +3741,9 @@ import {
         // Filter buttons (event delegation on filter bar)
         var filterBar = qs('.mp3-filter-bar', overlay);
         filterBar.addEventListener('click', function (e) {
-            // Kein data-filter -- deshalb vor dem generischen Typ-Filter-
-            // Handler unten geprueft, sonst wuerde currentFilter faelschlich
-            // auf 'all' zurueckgesetzt (bzw. hier: der Klick liefe ins Leere).
-            var resetBtn = e.target.closest('.mp3-filter-reset-btn');
-            if (resetBtn) {
-                clearAllFilters();
-                loadFiles(currentCat, true);
-                return;
-            }
-
-            // Unabhaengiger Toggle, kein data-filter -- gleicher Grund wie oben.
+            // Unabhaengiger Toggle, kein data-filter -- deshalb vor dem
+            // generischen Typ-Filter-Handler unten geprueft, sonst wuerde
+            // currentFilter faelschlich auf 'all' zurueckgesetzt.
             var unusedBtn = e.target.closest('.mp3-unused-filter-btn');
             if (unusedBtn) {
                 toggleUnusedOnlyFilter();
@@ -4222,7 +4333,7 @@ import {
             uploadProviders[id] = handler;
         },
         // Erweiterungspunkt fuer einen eigenen Eintrag im Zahnrad-Menue (z.B.
-        // "AI Bulk Management" von mediaplace_a11y) -- es gibt sonst keine
+        // ein "KI-Alt-Text-Generator" von mediaplace_a11y) -- es gibt sonst keine
         // Moeglichkeit, eine Aktion auszufuehren, die JS INNERHALB des
         // laufenden Overlays braucht (die klassische mediapool-Unterseiten-
         // Liste im selben Menue oeffnet immer eine echte Seite/ein Popup).

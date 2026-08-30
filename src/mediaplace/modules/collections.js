@@ -452,12 +452,6 @@ export function renderCollectionsSection() {
         html += '</div>';
     }
 
-    if (activeCollectionId) {
-        html += '<div class="mp3-collection-help">' + t('mediaplace_collection_help_active', { name: escAttr(activeCollectionId) }) + '</div>';
-    } else {
-        html += '<div class="mp3-collection-help">' + t('mediaplace_collection_help_inactive') + '</div>';
-    }
-
     html += '</div>'; // .mp3-sidebar-section-body
     html += '</div>'; // .mp3-collections-wrap
     return html;

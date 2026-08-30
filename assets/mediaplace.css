@@ -657,6 +657,19 @@ body.rex-theme-dark {
     --mp3-upload-summary: #ccc;
 }
 
+/* Wrapper um .mp3-filter-reset-btn + .mp3-admin-menu-wrap, siehe
+   core.js-Markup-Kommentar: der rechtsbuendige Pin im Compact-/Mobile-Layout
+   (margin-left:auto, siehe .mp3-compact .mp3-header-actions weiter unten)
+   haengt bewusst an diesem gemeinsamen Wrapper statt an .mp3-admin-menu-wrap
+   allein, damit das Zahnrad rechtsbuendig bleibt, egal ob der (nur bei
+   aktivem Filter sichtbare) Reset-Button gerade da ist oder nicht. */
+#mp3-overlay .mp3-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
 #mp3-overlay .mp3-admin-menu-wrap {
     position: relative;
     flex-shrink: 0;
@@ -756,6 +769,25 @@ body.rex-theme-dark {
 
 #mp3-overlay .mp3-admin-menu-darkmode-toggle.mp3-dark-mode-active i {
     color: #8ab8e8;
+}
+
+/* Info-Zeile (kein Button/Link, siehe refreshStorageUsage() in core.js) --
+   deshalb bewusst gedaempfter statt der normalen .mp3-admin-menu a-Textfarbe,
+   und Trennlinie oben statt unten (letzte Zeile im Menue, "Fusszeile"-Optik). */
+#mp3-overlay .mp3-admin-menu-storage {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--mp3-status-text);
+    border-top: 1px solid var(--mp3-toolbar-border);
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-admin-menu-storage i {
+    width: 16px;
+    text-align: center;
 }
 
 /* Sortierung wandert im Compact-Modus hierher (siehe relocateSortSelect()) --
@@ -874,10 +906,16 @@ body.rex-theme-dark {
 }
 
 /* Klassischer Metainfo-Canvas nutzt Bootstraps .control-label (eigene
-   Groesse/Gewicht) statt .mp3-edit-label -- hier zusaetzlich sicherstellen,
-   dass das Label selbst nicht die volle Breite einnimmt und das Icon
-   dadurch an den Formularrand rutscht. */
+   Groesse/Gewicht) statt .mp3-edit-label, die obige Regel greift hier also
+   nicht (die verlangt .mp3-edit-label zusaetzlich zu .mp3-edit-label-with-ai).
+   <label> ist von Haus aus inline -- ohne display:flex haette das Icon
+   keine erkennbare Position, width:100% allein bewirkt an einem
+   Inline-Element nichts. */
 #mp3-overlay .mp3-edit-label-with-ai-classic {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
     width: 100%;
 }
 
@@ -1172,7 +1210,7 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
    explizit zurueckgesetzt werden, sonst wird dort Ziehen suggeriert, das
    nicht funktioniert (Issue: github.com/FriendsOfREDAXO/mediaplace/issues/1). */
 #mp3-overlay .mp3-header-tools,
-#mp3-overlay .mp3-admin-menu-wrap {
+#mp3-overlay .mp3-header-actions {
     cursor: default;
 }
 #mp3-overlay .mp3-search {
@@ -1882,13 +1920,6 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     color: var(--mp3-status-text);
 }
 
-#mp3-overlay .mp3-collection-help {
-    margin-top: 6px;
-    padding: 6px 8px;
-    font-size: 11px;
-    color: var(--mp3-status-text);
-}
-
 /* ---- Cloud-Provider-Baum (siehe StorageProviderRegistry) ----
    Gleiche --mp3-cat-*-Variablen wie der lokale Kategoriebaum/Sammlungen --
    keine neuen Custom Properties noetig, erbt Light/Dark automatisch mit. */
@@ -2193,7 +2224,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 #mp3-overlay .mp3-filter-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 6px;
     padding: 6px 10px;
     border-bottom: 1px solid var(--mp3-filter-bar-border);
@@ -2241,31 +2272,47 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     border-color: var(--mp3-filter-active-hover-border);
 }
 
-/* Nur sichtbar, wenn tatsaechlich ein Filter aktiv ist (JS toggelt
-   style.display, siehe updateFilterResetVisibility() in filters.js) --
-   deshalb bewusst kein eigenes display:none/flex hier, das wuerde die
-   Inline-Steuerung ueberschreiben. Gleiche Boersen-/Rahmenoptik wie
-   .mp3-filter-btn, damit er sich als Teil derselben Leiste liest, statt
-   als Fremdkoerper. */
+/* Sitzt im Header neben dem Zahnrad (.mp3-header-actions, siehe core.js-
+   Markup-Kommentar dort), NICHT mehr in .mp3-filter-bar -- gleiche 36px-
+   Hoehe wie die uebrigen Header-Buttons (.mp3-admin-menu-btn/.mp3-close/
+   .mp3-fullscreen-toggle). Nur sichtbar, wenn tatsaechlich ein Filter aktiv
+   ist (JS toggelt style.display, siehe updateFilterResetVisibility() in
+   filters.js) -- deshalb bewusst kein eigenes display:none/flex hier, das
+   wuerde die Inline-Steuerung ueberschreiben. Bewusst NICHT dieselbe
+   dezente Optik wie die anderen Header-Buttons: soll auffallen (aktive
+   Filter uebersehen sich sonst leicht), deshalb eigene Warnfarbe +
+   Puls-Animation. */
 #mp3-overlay .mp3-filter-reset-btn {
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
     padding: 0;
-    border: 1px solid var(--mp3-filter-btn-border);
+    border: 1px solid #eea236;
     border-radius: 0;
-    background: var(--mp3-filter-btn-bg);
-    color: var(--mp3-filter-btn-text);
+    background: #f0ad4e;
+    color: #fff;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
     flex-shrink: 0;
+    animation: mp3FilterResetPulse 1.8s ease-in-out infinite;
 }
 
 #mp3-overlay .mp3-filter-reset-btn:hover {
-    background: #c9302c;
-    border-color: #c9302c;
+    background: #ec971f;
+    border-color: #d58512;
     color: #fff;
+    animation-play-state: paused;
+}
+
+@keyframes mp3FilterResetPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(240, 173, 78, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 0 5px rgba(240, 173, 78, 0);
+    }
 }
 
 #mp3-overlay .mp3-filter-count {
@@ -4621,6 +4668,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     #mp3-overlay .mp3-batch-select-all,
     #mp3-overlay .mp3-batch-move-btn,
     #mp3-overlay .mp3-batch-delete-btn,
+    #mp3-overlay .mp3-batch-remove-from-collection-btn,
     #mp3-overlay .mp3-batch-clear-btn,
     #mp3-overlay .mp3-provider-batch-select-all,
     #mp3-overlay .mp3-provider-batch-import-btn,
@@ -4634,6 +4682,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     #mp3-overlay .mp3-batch-select-all i,
     #mp3-overlay .mp3-batch-move-btn i,
     #mp3-overlay .mp3-batch-delete-btn i,
+    #mp3-overlay .mp3-batch-remove-from-collection-btn i,
     #mp3-overlay .mp3-batch-clear-btn i,
     #mp3-overlay .mp3-provider-batch-select-all i,
     #mp3-overlay .mp3-provider-batch-import-btn i,
@@ -4876,6 +4925,27 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 }
 #mp3-overlay .mp3-batch-delete-btn:hover {
     background: #c9302c;
+}
+
+/* Gleiche Optik wie .mp3-batch-move-btn (nicht .mp3-batch-delete-btn) --
+   "aus Sammlung entfernen" loescht keine Dateien, ist eine unkritische
+   Aktion, keine rote Warnfarbe angemessen. */
+#mp3-overlay .mp3-batch-remove-from-collection-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: var(--mp3-confirm-btn-bg);
+    color: #fff;
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+#mp3-overlay .mp3-batch-remove-from-collection-btn:hover {
+    background: var(--mp3-confirm-btn-hover-bg);
 }
 
 /* ---- Batch-Footer (Cloud-Provider-Massenimport, siehe
@@ -6163,13 +6233,21 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     display: none;
 }
 
-/* Rechtsbuendigkeit von Zahnrad/Schliessen wiederherstellen: .mp3-header-tools
-   ist normalerweise flex:1 und schiebt alles danach an den rechten Rand,
-   wraps im Compact-Modus aber auf eine eigene volle Zeile (order:10 oben) --
-   ohne eigenen Spacer wuerden Zahnrad+Schliessen in Zeile 1 sonst links neben
-   dem Titel kleben bleiben statt am rechten Rand zu sitzen. */
-#mp3-overlay.mp3-compact .mp3-admin-menu-wrap {
+/* Rechtsbuendigkeit von Filter-Reset/Zahnrad/Schliessen wiederherstellen:
+   .mp3-header-tools ist normalerweise flex:1 und schiebt alles danach an den
+   rechten Rand, wraps im Compact-Modus aber auf eine eigene volle Zeile
+   (order:10 oben) -- ohne eigenen Spacer wuerden Zahnrad+Schliessen in
+   Zeile 1 sonst links neben dem Titel kleben bleiben statt am rechten Rand
+   zu sitzen. Haengt am .mp3-header-actions-Wrapper (nicht an
+   .mp3-admin-menu-wrap allein), siehe dortiger Kommentar. */
+#mp3-overlay.mp3-compact .mp3-header-actions {
     margin-left: auto;
+}
+
+#mp3-overlay.mp3-compact .mp3-filter-reset-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
 }
 
 /* Touch-Ziele vergroessern (Richtwert ~40px) -- betrifft nur den Compact-
@@ -6263,6 +6341,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 #mp3-overlay.mp3-compact .mp3-batch-select-all,
 #mp3-overlay.mp3-compact .mp3-batch-move-btn,
 #mp3-overlay.mp3-compact .mp3-batch-delete-btn,
+#mp3-overlay.mp3-compact .mp3-batch-remove-from-collection-btn,
 #mp3-overlay.mp3-compact .mp3-batch-clear-btn,
 #mp3-overlay.mp3-compact .mp3-provider-batch-select-all,
 #mp3-overlay.mp3-compact .mp3-provider-batch-import-btn,
@@ -6276,6 +6355,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 #mp3-overlay.mp3-compact .mp3-batch-select-all i,
 #mp3-overlay.mp3-compact .mp3-batch-move-btn i,
 #mp3-overlay.mp3-compact .mp3-batch-delete-btn i,
+#mp3-overlay.mp3-compact .mp3-batch-remove-from-collection-btn i,
 #mp3-overlay.mp3-compact .mp3-batch-clear-btn i,
 #mp3-overlay.mp3-compact .mp3-provider-batch-select-all i,
 #mp3-overlay.mp3-compact .mp3-provider-batch-import-btn i,
