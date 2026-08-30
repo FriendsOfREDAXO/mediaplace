@@ -217,4 +217,25 @@ class MediaPermission
 
         return $user->hasPerm('mediaplace[view_unused_media]');
     }
+
+    /**
+     * Eigene, engere Berechtigung fuer die Kategorie-Massenaktionen
+     * (Api\CategoryBulk.php): potenziell tausende Dateien in einem Rutsch
+     * verschieben/loeschen/taggen ist ein deutlich groesseres Blast-Radius-
+     * Risiko als das ueber hasCategoryAccess() bereits abgedeckte normale
+     * Bearbeiten einzelner Dateien -- viele User mit Kategorie-Zugriff sollen
+     * das nicht automatisch auch duerfen.
+     */
+    public static function hasBulkOperationsAccess(): bool
+    {
+        $user = \rex::getUser();
+        if (!$user) {
+            return false;
+        }
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return $user->hasPerm('mediaplace[bulk_operations]');
+    }
 }

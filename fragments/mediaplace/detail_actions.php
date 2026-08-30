@@ -61,7 +61,7 @@ $downloadUrl = $apiBase . 'media/' . rawurlencode($filename) . '/file' . ($token
         <?php endif; ?>
         <button type="button" class="mp3-detail-save-btn" title="<?= rex_escape($this->i18n('mediaplace_save_changes')) ?>" disabled>
             <i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
-        <button class="mp3-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" title="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>">
+        <button class="mp3-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" data-in-use-detail="<?= rex_escape((string) ($info['is_in_use_detail'] ?? '')) ?>" title="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>">
             <i class="fa-solid fa-trash-can"></i></button>
     </div>
 </div>

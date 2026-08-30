@@ -8,6 +8,7 @@ rex_perm::register('mediaplace[manage_categories]', 'Ordner (Kategorien) umbenen
 rex_perm::register('mediaplace[optimize_video]', 'Videos optimieren (ffmpeg-Addon)');
 rex_perm::register('mediaplace[optimize_image]', 'Bilder optimieren');
 rex_perm::register('mediaplace[manage_tags]', 'Tags umbenennen, Farbe bestehender Tags ändern oder Tags löschen');
+rex_perm::register('mediaplace[bulk_operations]', 'Massenaktionen für ganze Kategorien (alle Dateien verschieben/löschen/taggen)');
 
 // Eigene rex_api_function-Endpunkte laufen unter dem Namespace
 // FriendsOfRedaxo\Mediaplace\Api (siehe https://redaxo.org/doku/5.x/api#namespace-registrierung)
@@ -19,6 +20,7 @@ rex_perm::register('mediaplace[manage_tags]', 'Tags umbenennen, Farbe bestehende
 // selbst braucht keinen eingeloggten Backend-User, das pruefen die einzelnen
 // Endpunkte (rex::getUser() + MediaPermission) ohnehin selbst in execute().
 rex_api_function::register('mediaplace_categories', \FriendsOfRedaxo\Mediaplace\Api\Categories::class);
+rex_api_function::register('mediaplace_category_bulk', \FriendsOfRedaxo\Mediaplace\Api\CategoryBulk::class);
 rex_api_function::register('mediaplace_crop', \FriendsOfRedaxo\Mediaplace\Api\Crop::class);
 rex_api_function::register('mediaplace_focuspoint', \FriendsOfRedaxo\Mediaplace\Api\Focuspoint::class);
 rex_api_function::register('mediaplace_image_optimize', \FriendsOfRedaxo\Mediaplace\Api\ImageOptimize::class);
@@ -233,6 +235,7 @@ if (rex::isBackend() && rex::getUser()) {
         $jsonUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_json_metainfo']);
         $tagsUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_tags']);
         $categoriesUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_categories']);
+        $categoryBulkUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_category_bulk']);
         $unusedUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_unused']);
         // Uebergangs-Fallback, solange die installierte FriendsOfRedaxo/api-Version
         // media/list noch keinen filter[permitted_only]-Parameter unterstuetzt
@@ -262,6 +265,7 @@ if (rex::isBackend() && rex::getUser()) {
         $apiMediaListSecure = version_compare($apiVersion, '1.3.2', '>=') ? '1' : '0';
         $mediaListFallbackUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_media_list']);
         $canFilterUnused = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasUnusedFilterAccess() ? '1' : '0';
+        $canBulkOperations = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasBulkOperationsAccess() ? '1' : '0';
         // "Medien ohne ALT-Text"-Sidebar-Eintrag nur anzeigen, wenn er in den
         // Einstellungen aktiviert ist (Default an, siehe package.yml
         // default_config) UND es ueberhaupt ein ALT-Text-Feld gibt (eigenes
@@ -332,6 +336,19 @@ if (rex::isBackend() && rex::getUser()) {
             ];
         }
 
+        // Upload-Provider (siehe UploadProviderRegistry): rein clientseitig,
+        // Uebernahme des Upload-Buttons/Drag&Drop erfolgt per
+        // MP3.registerUploadProvider() in core.js. Nur die AKTIVE Provider-ID
+        // wird ans Frontend gereicht (anders als Storage-Provider, von denen
+        // mehrere gleichzeitig koexistieren) -- "Eingebaut" (leerer Wert)
+        // bleibt Standard, solange kein Provider gewaehlt ist oder der
+        // gewaehlte fuer den aktuellen User laut seinem eigenen `perm` nicht
+        // verfuegbar ist.
+        $uploadProviderId = (string) rex_config::get($addonName, 'upload_provider', '');
+        if ('' !== $uploadProviderId && !isset(\FriendsOfRedaxo\Mediaplace\UploadProviderRegistry::getAvailableProviders()[$uploadProviderId])) {
+            $uploadProviderId = '';
+        }
+
         // Klassische Unterseiten (Struktur, Hochladen, Sync, ...) bleiben ueber
         // ein Verwaltungs-Icon im Overlay erreichbar.
         $subpages = [];
@@ -395,7 +412,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '"></div>'
+        $inject = '<div id="mp3-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '"></div>'
             . "\n" . '<script type="application/json" id="mp3-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         // Nur das LETZTE '</body>' ersetzen, nicht jedes Vorkommen: ein einfaches
         // str_replace() traf schon einmal versehentlich den Text eines eigenen

@@ -1,6 +1,10 @@
 # MediaPlace – Entwicklung am Overlay-Kern (mediaplace.js)
 
-Dieses Dokument beschreibt den Build-Workflow für den Overlay-Kern (`window.MP3`).
+Dieses Dokument beschreibt zwei Dinge: den Build-Workflow für den
+Overlay-Kern (`window.MP3`) und die Schnittstellen, über die andere Addons
+mit MediaPlace zusammenarbeiten (eigene Erweiterungspunkte, JS-API,
+Berechtigungen, REST-Endpunkte).
+
 Die Quelle liegt als echte ES-Module unter `src/mediaplace/` und wird per
 [esbuild](https://esbuild.github.io/) zu der einen ausgelieferten Datei
 `assets/mediaplace.js` gebündelt – nach demselben Muster, das im
@@ -106,6 +110,222 @@ Data-Loading (`loadFiles()`/`buildMediaEndpoint()`/`fetchTypeCounts()`),
 `multiMode`, `viewMode`, ...), das an zu vielen Stellen direkt gelesen/
 geschrieben wird, um sich ohne unverhältnismäßigen ctx-Umweg sauber
 auslagern zu lassen.
+
+## Schnittstellen für Drittanbieter-Addons
+
+MediaPlace ist an mehreren Stellen bewusst offen für andere Addons gebaut,
+statt Fähigkeiten hart zu verdrahten. Vier Kategorien:
+
+### 1. Eigene PHP-Erweiterungspunkte (`rex_extension::register`)
+
+| Erweiterungspunkt | Definiert in | Zweck |
+|---|---|---|
+| `MEDIAPLACE_WIDGET_TYPES` | `lib/MetainfoWidget.php` (`getRegisteredTypes()`) | Eigenen Feldtyp fürs Detail-Panel registrieren (Widget-Typ-Dropdown, Speicherlogik, Rendering) |
+| `MEDIAPLACE_STORAGE_PROVIDERS` | `lib/StorageProviderRegistry.php` (`getAllProviders()`) | Eigene Cloud-/externe Quelle als zusätzlichen Sidebar-Baum einklinken (Browsen + Import) |
+| `MEDIAPLACE_UPLOAD_PROVIDERS` | `lib/UploadProviderRegistry.php` (`getAllProviders()`) | Eigenen Upload-Dialog als Ersatz für den eingebauten Upload-Button/Drag&Drop anbieten (nur EIN Provider gleichzeitig aktiv, siehe Einstellung "Upload-Anbieter") |
+| `YFORM_MEDIA_IS_IN_USE` | `lib/yform/value/yform_value_mediaplace.php` (`isMediaInUse()`) | Zusätzliche YForm-Tabellen/Felder in die "Datei in Verwendung"-Prüfung einbeziehen |
+| `FOCUSPOINT_PREVIEW_SELECT` | `lib/FocuspointIntegration.php` (`getTypesForImage()`) | Dieselbe EP wie im eigenständigen `focuspoint`-Addon, hier innerhalb des MediaPlace-Canvas re-gefeuert – bestehende Registrierungen auf diese EP funktionieren unverändert auch hier |
+
+**`MEDIAPLACE_WIDGET_TYPES`** – Subject ist
+`array<string, array{label:string, class:class-string, fragment:string}>`,
+Startwert die 6 eingebauten Typen (`text`/`textarea`/`checkbox`/`select`/
+`alt`/`media_link`). Registrierte Klasse muss `MetainfoWidgetInterface`
+implementieren (eine einzige Methode `normalizeValue()`, siehe
+`lib/MetainfoWidgetInterface.php` – bewusst kein Zwang, von der abstrakten
+`MetainfoWidget` zu erben) und einen Konstruktor mit `MetainfoField`
+akzeptieren. Das `fragment` bekommt dieselben Variablen wie die eingebauten
+`detail_field_body_*.php` (`$field`, `$value`, `$info`, `$clangs`). Für
+Feldwerte, die nicht ins generische Sammel-Muster passen (ein
+`data-json-field`-Element, skalar oder pro Sprache), siehe
+`MP3.registerFieldCollector()` unten.
+
+```php
+rex_extension::register('MEDIAPLACE_WIDGET_TYPES', function (rex_extension_point $ep) {
+    $types = $ep->getSubject();
+    $types['my_widget'] = [
+        'label' => 'Mein Feldtyp',
+        'class' => MyAddon\MyWidget::class, // implements MetainfoWidgetInterface
+        'fragment' => 'my_addon/detail_field_body_my_widget.php',
+    ];
+    return $types;
+});
+```
+
+**`MEDIAPLACE_STORAGE_PROVIDERS`** – Subject ist
+`array<string, array{label:string, icon:string, perm:string, class:class-string<StorageProviderInterface>}>`,
+Startwert `[]`. Jeder Provider bringt sein **eigenes** Recht mit (kein
+globaler MediaPlace-Schalter) – `getAvailableProviders()` filtert per
+`$user->hasPerm($provider['perm'])`. Registrierte Klasse muss
+`StorageProviderInterface` implementieren (`listEntries()`, `hasSearch()`,
+`getThumbnail()`, `importToMediaPool()` – siehe
+`lib/StorageProviderInterface.php` für die exakten Rückgabeformen). `$path`
+ist provider-intern und wird von MediaPlace nur durchgereicht. Reales
+Beispiel: das `nextcloud`-Addon.
+
+```php
+rex_extension::register('MEDIAPLACE_STORAGE_PROVIDERS', function (rex_extension_point $ep) {
+    $providers = $ep->getSubject();
+    $providers['my_provider'] = [
+        'label' => 'Mein Cloud-Speicher',
+        'icon' => 'fa-solid fa-cloud',
+        'perm' => 'my_addon[mediaplace_browse]', // EIGENES Recht
+        'class' => MyAddon\MyStorageProvider::class, // implements StorageProviderInterface
+    ];
+    return $providers;
+});
+```
+
+**`MEDIAPLACE_UPLOAD_PROVIDERS`** – Subject ist
+`array<string, array{label:string, perm:string}>`, Startwert `[]`. Kein
+`class`-Feld (anders als bei Storage-Providern) – die Übernahme läuft rein
+clientseitig über `MP3.registerUploadProvider()` (siehe unten), PHP liefert
+hier nur Label + Recht für die Auswahlliste auf der Einstellungsseite. Jeder
+Provider bringt wieder sein **eigenes** Recht mit. Anders als bei
+Storage-Providern (koexistieren alle gleichzeitig) ist immer nur **ein**
+Upload-Provider aktiv – welcher, entscheidet die Einstellung
+"Upload-Anbieter" (`rex_config`-Key `upload_provider`, leer = eingebauter
+Upload). Reales Beispiel: das `filepond_uploader`-Addon.
+
+```php
+rex_extension::register('MEDIAPLACE_UPLOAD_PROVIDERS', function (rex_extension_point $ep) {
+    $providers = $ep->getSubject();
+    $providers['my_uploader'] = [
+        'label' => 'Mein Uploader',
+        'perm' => 'my_addon[mediaplace_upload]', // EIGENES Recht
+    ];
+    return $providers;
+});
+```
+
+Auf der JS-Seite muss dasselbe Addon zusätzlich `MP3.registerUploadProvider()`
+aufrufen (siehe unten) – erst wenn BEIDES vorhanden ist (hier registriert
+**und** als aktiver Provider eingestellt **und** clientseitig tatsächlich
+registriert), greift die Delegation. Ist der eingestellte Provider (noch)
+nicht registriert (Addon deaktiviert, Script nicht geladen), bleibt es beim
+eingebauten Upload – kein Fehlerzustand.
+
+### 2. Client-seitige Erweiterung (`window.MP3`)
+
+Drei echte Registrierungs-Mechanismen im JS-Kern:
+
+**`MP3.registerFieldCollector(widgetType, collector)`** – das
+JS-Gegenstück zu `MEDIAPLACE_WIDGET_TYPES` für Widget-Typen, deren Wert sich
+nicht über das generische Ein-`data-json-field`-Element-Muster einsammeln
+lässt. `collector(key, panelEl)` liefert den zu speichernden Wert zurück
+(`null` löscht das Feld). Siehe `src/mediaplace/modules/detail.js`
+(`fieldCollectors`) für den Konsumenten.
+
+**`MP3.registerUploadProvider(id, handler)`** – siehe Abschnitt 1 oben
+(`MEDIAPLACE_UPLOAD_PROVIDERS`).
+
+**`MP3.registerAdminMenuItem(id, { label, icon, onClick })`** – eigener
+Eintrag im Zahnrad-Menü, der JS-Code INNERHALB des laufenden Overlays
+ausführt (`onClick()`, ohne Argumente), statt wie die klassische
+Unterseiten-Liste im selben Menü immer eine echte Seite/ein Popup zu öffnen.
+`icon` ist eine `fa-solid`-Klasse (optional, Default ein Zauberstab-Icon).
+Rendert in `#mp3-admin-menu-extensions`, oberhalb der klassischen
+Unterseiten-Links. Registrierung ist bewusst mehrfach-sicher: kann vor ODER
+nach dem ersten `open()` aufgerufen werden (Eintrag bleibt über
+open()/close()-Zyklen hinweg bestehen). Reales Beispiel: das
+`mediaplace_a11y`-Addon ("AI Bulk Management").
+
+```js
+MP3.registerAdminMenuItem('my_addon_bulk', {
+    label: 'Mein Bulk-Feature',
+    icon: 'fa-solid fa-wand-magic-sparkles',
+    onClick: function () {
+        // eigenes Modal/Panel öffnen, eigene API-Calls, ...
+    }
+});
+```
+
+Ansonsten ist `window.MP3` bewusst schlank und bietet keine weitere
+Plugin-Registrierung, nur Aufruf-/Daten-Methoden:
+
+- `MP3.open(opts)` / `MP3.close()` – Overlay öffnen/schließen.
+- `MP3.openFile(filename, callback, opts)` – Overlay öffnen und direkt die
+  Detailansicht einer Datei zeigen.
+- `MP3.showFileDetail(filename)` – Detailansicht in einem bereits offenen
+  Overlay wechseln.
+- `MP3.startMetainfoPick(wrapper, isList)` – öffnet das Grid im
+  Auswahl-Modus für klassische `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets
+  *innerhalb* des Metainfo-Canvas (siehe `assets/mediaplace_classic.js`).
+
+`window.MP3Widget.init(scope)` initialisiert `input.mp3-widget`-Elemente in
+einem gegebenen DOM-Bereich neu (z. B. nach dynamisch nachgeladenem HTML).
+
+`window.MP3Core` (`i18n`/`helpers`/`api`, aufgebaut aus
+`mediaplace-i18n.js`/`-helpers.js`/`-api.js`) ist zwar global erreichbar und
+wird intern von `mediaplace.js`/`mediaplace_widget.js`/`mediaplace_classic.js`
+gemeinsam genutzt, aber **keine stabile Drittanbieter-API** – keine
+Versionsgarantie, kann sich zwischen Releases ändern.
+
+**Nicht vorhanden, trotz Erwähnung an anderer Stelle im Code:**
+`MP3.registerModule()` taucht nur als Kommentar in
+`src/mediaplace/modules/focuspoint.js` auf (Idee: Cropper-/Fokuspunkt-/
+Optimieren-Integration als optional nachladbare, eigene Bundles statt fest
+im Hauptbundle) – siehe "Architektur: Hub-and-Spoke" oben, bislang nicht
+umgesetzt. Ebenso existiert aktuell **kein** Erweiterungspunkt, um den
+eingebauten Upload-Dialog durch einen eines Drittanbieter-Addons (z. B.
+filepond/uppy) zu ersetzen.
+
+### 3. Wie MediaPlace selbst in REDAXO eingreift (native Extension Points)
+
+Relevant, wenn man MediaPlace' eigenes Verhalten verstehen oder gezielt
+zusätzlich beeinflussen will (`boot.php`, sofern nicht anders angegeben):
+
+| Extension Point | Was MediaPlace dort tut |
+|---|---|
+| `MEDIA_IS_IN_USE` | Registriert `rex_yform_value_mediaplace::isMediaInUse()` (nur wenn `yform` verfügbar) – durchsucht alle YForm-Felder vom Typ `mediaplace` nach Referenzen auf die Datei; feuert intern selbst nochmal `YFORM_MEDIA_IS_IN_USE` (siehe oben) |
+| `MEDIA_MANAGER_FILTERSET` | Liefert für MediaPlace's Video-Thumbnail-Typen ein leeres Effekt-Set, falls `ffmpeg` gerade nicht verfügbar ist (verhindert Fatal Error) |
+| `PAGES_PREPARED` | Biegt den klassischen "Medienpool"-Menüpunkt auf `MP3.open()` um (abschaltbar über die Einstellung "Klassischen Medienpool ersetzen") |
+| `METAINFO_CUSTOM_FIELD` | Zeigt `med_json_data` read-only im klassischen Medien-Bearbeiten-Formular (nur wenn `metainfo` verfügbar) |
+| `OUTPUT_FILTER` | Injiziert `#mp3-root` (API-URLs, Feature-Flags, Rechte, i18n-JSON) vor `</body>` jeder Backend-Seite – der Bootstrap-Mechanismus des gesamten Frontends |
+| `MEDIA_FORM_EDIT` / `MEDIA_UPDATED` | Nativer Metainfo-Canvas: `lib/Api/MetainfoForm.php` rendert/speichert echte `med_*`-Felder über REDAXOs eigenen Pfad (kein eigenes Feldtyp-System); `lib/FocuspointIntegration.php` feuert `MEDIA_UPDATED` manuell nach einem Direkt-SQL-Save, damit Listener denselben Effekt sehen wie bei einem normalen Update |
+
+### 4. REDAXO-Berechtigungen
+
+Alle über `rex_perm::register()` in `boot.php`, unconditional registriert
+(Rollenverwaltung muss sie unabhängig vom eingeloggten User auflisten
+können):
+
+| Recht | Bedeutung |
+|---|---|
+| `mediaplace[view_unused_media]` | Filter "Nur unbenutzte Medien" nutzen |
+| `mediaplace[manage_categories]` | Ordner (Kategorien) umbenennen/verschieben/löschen |
+| `mediaplace[optimize_video]` | Videos optimieren (ffmpeg-Addon) |
+| `mediaplace[optimize_image]` | Bilder optimieren |
+| `mediaplace[manage_tags]` | Tags umbenennen/Farbe ändern/löschen |
+| `mediaplace[bulk_operations]` | Massenaktionen für ganze Kategorien (alle Dateien verschieben/löschen/taggen) |
+
+### 5. Eigene REST-Endpunkte (`lib/Api/*.php`)
+
+Alle als `rex_api_function`-Subklassen unter dem Namespace
+`FriendsOfRedaxo\Mediaplace\Api`, explizit in `boot.php` registriert (folgen
+nicht der `rex_api_<name>`-Namenskonvention). Relevant beim Bauen eines
+eigenen, neuen Endpunkts: **`protected $published = true;`** setzen, sonst
+schlägt der Aufruf per `fetch()` fehl, sobald die aufrufende Seite nicht
+unter `/redaxo/...` läuft (siehe `rex_api_function::$published`-Verhalten) –
+keine Sicherheitslockerung, die eigentliche Rechteprüfung passiert weiterhin
+in `execute()` selbst (siehe `lib/MediaPermission.php`-Muster, das jeder
+dieser Endpunkte nutzt).
+
+| `rex-api-call` | Klasse | Zweck |
+|---|---|---|
+| `mediaplace_categories` | `Categories` | Kategoriebaum + CRUD (eigene Rechteprüfung statt `api`-Addon-Routen) |
+| `mediaplace_category_bulk` | `CategoryBulk` | Massenaktionen für alle Dateien einer Kategorie (verschieben/löschen/taggen/Sammlung) |
+| `mediaplace_crop` | `Crop` | Bettet die UI/Speicherlogik des `cropper`-Addons im Overlay ein |
+| `mediaplace_focuspoint` | `Focuspoint` | Fokuspunkt-Info/Speichern |
+| `mediaplace_image_optimize` | `ImageOptimize` | "Bild optimieren"-Button |
+| `mediaplace_json_metainfo` | `JsonMetainfo` | Speichert MediaPlace's eigene JSON-Metadaten |
+| `mediaplace_media_list` | `MediaList` | Übergangs-Fallback-Medienliste, nur aktiv bei zu alter `api`-Addon-Version |
+| `mediaplace_metainfo_form` | `MetainfoForm` | Nativer Metainfo-Canvas (`med_*`-Felder) über `MEDIA_FORM_EDIT`/`MEDIA_UPDATED` |
+| `mediaplace_provider` | `Provider` | Dispatcher für `StorageProviderInterface`-Provider (Browsen/Suche/Thumbnail/Import) |
+| `mediaplace_schema` | `Schema` | Feld-Schema (Präfix `med_` per Default) als JSON |
+| `mediaplace_tags` | `Tags` | System-Tags/Sammlungen-API |
+| `mediaplace_unused` | `Unused` | "Nur unbenutzte Medien"-Prüfung, gated auf `mediaplace[view_unused_media]` |
+| `mediaplace_video_info` | `VideoInfo` | Technische Videodaten (ffprobe) fürs Detail-Panel |
+| `mediaplace_video_optimize` | `VideoOptimize` | "Video optimieren"-Button (Wrapper um `ffmpeg`-Addon-Jobs) |
 
 ## Bekannte Stolperfallen
 

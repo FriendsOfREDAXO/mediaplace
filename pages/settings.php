@@ -65,6 +65,24 @@ $field = $form->addInputField('number', 'upload_resize_height', null, [
 ]);
 $field->setLabel(rex_i18n::msg('mediaplace_settings_upload_resize_height'));
 
+// Upload-Anbieter (siehe UploadProviderRegistry): "Eingebaut" (leerer Wert)
+// ersetzt den bisherigen Upload-Button/Drag&Drop durch nichts -- der eigene
+// Flow bleibt aktiv. Liste zeigt ALLE registrierten Provider (nicht nach
+// Recht des aktuell eingeloggten Admins gefiltert), da hier konfiguriert
+// wird, nicht genutzt -- die Rechtepruefung fuer den TATSAECHLICH
+// nutzenden User passiert separat in boot.php beim Ausliefern an #mp3-root.
+$uploadProviders = \FriendsOfRedaxo\Mediaplace\UploadProviderRegistry::getAllProviders();
+$field = $form->addSelectField('upload_provider', null, [
+    'class' => 'form-control selectpicker',
+]);
+$field->setLabel(rex_i18n::msg('mediaplace_settings_upload_provider_label'));
+$select = $field->getSelect();
+$select->addOption(rex_i18n::msg('mediaplace_settings_upload_provider_builtin'), '');
+foreach ($uploadProviders as $providerId => $providerMeta) {
+    $select->addOption((string) ($providerMeta['label'] ?? $providerId), $providerId);
+}
+$field->setNotice(rex_i18n::msg($uploadProviders ? 'mediaplace_settings_upload_provider_hint' : 'mediaplace_settings_upload_provider_hint_none'));
+
 $formHtml = $form->get();
 
 // rex_form_base::createElement() faellt bei einer NICHT abgeschickten Checkbox

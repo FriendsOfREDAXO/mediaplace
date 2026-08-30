@@ -787,6 +787,42 @@ body.rex-theme-dark {
     color: var(--mp3-status-text);
 }
 
+/* Drittanbieter-Eintraege ueber MP3.registerAdminMenuItem() (z.B. "AI Bulk
+   Management" von mediaplace_a11y) -- gleiche Zeilen-Optik wie
+   .mp3-admin-menu-darkmode-toggle. :empty blendet den Container komplett
+   aus (kein leerer Trennstrich), solange kein Drittanbieter etwas
+   registriert hat. */
+#mp3-overlay .mp3-admin-menu-extensions:empty {
+    display: none;
+}
+
+#mp3-overlay .mp3-admin-menu-ext-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: none;
+    border-bottom: 1px solid var(--mp3-toolbar-border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-text);
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-admin-menu-ext-btn i {
+    width: 16px;
+    text-align: center;
+    color: var(--mp3-status-text);
+}
+
+#mp3-overlay .mp3-admin-menu-ext-btn:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
 /* Der Umschalter kann Dark Mode nur AUFsetzen (aus einer hellen Umgebung
    dunkel machen) -- es gibt bewusst keine #mp3-overlay:not(.mp3-dark-mode)-
    Regel, die eine bereits von REDAXO/System geerbte dunkle Vorgabe wieder
@@ -830,9 +866,26 @@ body.rex-theme-dark #mp3-overlay .mp3-admin-menu-darkmode-toggle {
     outline: none;
 }
 
+/* Scroll-Lock der Hintergrundseite waehrend das Overlay offen ist (open()/
+   close() in core.js setzen/entfernen diese Klasse + body.style.top).
+   BEWUSST kein overflow:hidden: html/body haben im REDAXO-Backend eine feste
+   height:100% (html { overflow-y: scroll; height: 100% }, siehe
+   be_style/_scaffolding.scss) -- overflow:hidden auf einem Element mit fixer
+   Hoehe klappt dessen Inhalt unterhalb der Viewport-Hoehe weg und laesst
+   scrollTop auf 0 einrasten. position:fixed ruehrt overflow/height von html
+   gar nicht erst an: body traegt als fixed-Element nichts mehr zu html's
+   scrollHeight bei (macht die aeussere Dokument-Scrollbar inert, kein
+   zweiter tatsaechlich scrollbarer Balken mehr), scrollTop von html bleibt
+   dabei die ganze Zeit unangetastet. */
+body.mp3-scroll-lock {
+    position: fixed;
+    left: 0;
+    right: 0;
+}
+
 /* TinyMCE haengt alle Dialoge/Menues/Tooltips an einen einzigen globalen
    Wrapper (.tox-tinymce-aux), Standard z-index 1201 -- weit unter #mp3-overlay
-   (10500), macht sie im Editor-Canvas unsichtbar/unbedienbar, WENN sie aus
+   (999999), macht sie im Editor-Canvas unsichtbar/unbedienbar, WENN sie aus
    einem in #mp3-overlay eingebetteten Feld-Editor stammen (openMetainfoCanvas()
    setzt dafuer body.mp3-embedded-editor-active).
    !important noetig, da der Selektor sonst dieselbe Spezifitaet wie TinyMCEs
@@ -840,11 +893,16 @@ body.rex-theme-dark #mp3-overlay .mp3-admin-menu-darkmode-toggle {
    nativen 1201 -- wichtig fuer den umgekehrten Fall: ein STANDALONE-TinyMCE
    auf der Seite (Artikel-Inhalt) oeffnet seinen eigenen Bild-Dialog und ruft
    von dort aus MP3.open() auf (siehe tinymce-Addon, assets/scripts/base.js)
-   -- dort muss #mp3-overlay (10500) UEBER dem TinyMCE-Dialog liegen, nicht
+   -- dort muss #mp3-overlay (999999) UEBER dem TinyMCE-Dialog liegen, nicht
    umgekehrt; mit einer unbedingten Regel waere das Overlay in diesem Fall
-   unsichtbar hinter dem Dialog verschwunden. */
+   unsichtbar hinter dem Dialog verschwunden.
+   Werte hier (ab 1000100) mussten mit #mp3-overlay's eigenem z-index
+   (999999, urspruenglich niedriger) mitwachsen -- bei einer erneuten
+   Erhoehung von #mp3-overlay muessen auch diese hier + .for-a11y-panel unten
+   + .simple-modal (filepond_uploader/assets/filepond_modal.js) manuell
+   nachgezogen werden, es gibt aktuell keine gemeinsame CSS-Variable dafuer. */
 body.mp3-embedded-editor-active .tox-tinymce-aux {
-    z-index: 10600 !important;
+    z-index: 1000100 !important;
 }
 
 /* CKEditor5 haengt Panels/Dialoge/Balloons unter .ck-body-wrapper und
@@ -853,10 +911,10 @@ body.mp3-embedded-editor-active .tox-tinymce-aux {
    .ck-*-Element, damit es unabhaengig von internen Klassennamen bleibt.
    Gleiche Bedingung wie bei .tox-tinymce-aux oben, aus demselben Grund. */
 body.mp3-embedded-editor-active .ck-body-wrapper {
-    --ck-z-default: 10600;
-    --ck-z-panel: 10650;
-    --ck-z-dialog: 10700;
-    --ck-z-fullscreen: 10750;
+    --ck-z-default: 1000100;
+    --ck-z-panel: 1000150;
+    --ck-z-dialog: 1000200;
+    --ck-z-fullscreen: 1000250;
 }
 
 /* tinymce-Addon, custom_plugins/for_a11y: eigenes, an document.body
@@ -866,9 +924,11 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
    auf body.mp3-embedded-editor-active beschraenkt): das Panel bleibt waehrend
    der gesamten Pruefung als Checkliste sichtbar, auch wenn der User darueber
    z.B. ein Bild per MediaPlace austauscht -- es soll deshalb immer ueber
-   #mp3-overlay liegen, unabhaengig davon, woher dessen Aufruf kam. */
+   #mp3-overlay UND allen anderen Overlay-internen Dialogen (siehe oben,
+   sowie filepond_uploader's .simple-modal) liegen, unabhaengig davon, woher
+   dessen Aufruf kam. */
 .for-a11y-panel {
-    z-index: 10800 !important;
+    z-index: 1000300 !important;
 }
 
 #mp3-overlay.mp3-open {
@@ -895,7 +955,22 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 #mp3-overlay.mp3-fullscreen-mode .mp3-modal {
     width: 100vw !important;
     max-width: none !important;
+    /* Fallback-Kette statt starrem 100vh: iOS Safari berechnet 100vh anhand
+       der groesstmoeglichen Viewport-Hoehe (Adressleiste eingeklappt), nicht
+       der beim initialen Laden tatsaechlich sichtbaren Hoehe -- solange die
+       Leiste noch ausgefahren ist, ragt .mp3-modal dadurch unten aus dem
+       sichtbaren Bereich, Header wirkt verrutscht/Footer abgeschnitten, bis
+       Safari die Leiste einklappt (z.B. nach einer Scroll-Interaktion).
+       Browser, die eine Zeile nicht kennen, ignorieren nur diese eine
+       Deklaration und behalten die vorherige -- alte Browser bekommen vh,
+       etwas neuere 100% (erbt vom inset:0-Fixed-Parent #mp3-overlay),
+       moderne Mobile-Browser dvh (passt sich live an ein-/ausfahrende
+       Toolbars an). Bewusst NICHT svh (bleibt dauerhaft kleiner als noetig,
+       Overlay wackelt beim Einklappen sichtbar nach) oder lvh (hat exakt
+       denselben Bug wie klassisches vh). */
     height: 100vh !important;
+    height: 100% !important;
+    height: 100dvh !important;
     min-width: 0 !important;
     min-height: 0 !important;
     border-radius: 0;
@@ -1292,6 +1367,20 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
 #mp3-overlay .mp3-cat-menu-portal .mp3-cat-delete-btn:disabled {
     opacity: .5;
     cursor: not-allowed;
+}
+
+#mp3-overlay .mp3-cat-menu-divider {
+    margin: 4px 0;
+    border-top: 1px solid var(--mp3-toolbar-border);
+}
+
+#mp3-overlay .mp3-cat-menu-portal .mp3-cat-bulk-delete-btn:hover {
+    background: var(--mp3-delete-hover-bg);
+    color: var(--mp3-delete-hover-text);
+}
+
+#mp3-overlay .mp3-cat-menu-portal .mp3-cat-bulk-delete-btn:hover i {
+    color: var(--mp3-delete-hover-text);
 }
 
 /* ---- New category input ---- */
@@ -4878,6 +4967,126 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     background: var(--mp3-modal-bg);
 }
 
+/* MediaPlace Dark Mode -- Fix fuer natives REDAXO-Metainfo-Formular
+   (Fallback "Metadaten bearbeiten" + MediaPlace-Metadaten-Canvas
+   innerhalb von #mp3-overlay.mp3-dark-mode). Scope bewusst auf
+   #mp3-metainfo-canvas (Container-ID) statt #mp3-metainfo-form gesetzt --
+   sowohl die native Fallback-Ansicht als auch die eigene JSON-Canvas-
+   Ansicht nutzen dasselbe Formular-Element, beide sollen profitieren.
+   Alle Selektoren zielen auf REDAXO/Bootstrap-native Klassen (dt,
+   .control-label, .text-muted, .rex-form-group, .meta_lang_*,
+   .form-control, .bootstrap-select, .dropdown-menu), nicht auf
+   mp3-*-Klassen -- minimales Kollisionsrisiko mit den eigenen, bereits
+   korrekt gestylten Canvas-Feldern. */
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas dt,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .control-label,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas label {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas dd,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas p {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .text-muted {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .help-block.rex-note,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .rex-note {
+    color: #8fb4dd;
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .rex-form-group {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Sprachfeld-Box (Langtext-Widget) */
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .meta_lang_field_all {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .meta_lang_main_label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Ausnahme: die einzelne Sprachzeile (deutsch/en) hat ihren EIGENEN
+   hellen Hintergrund -- dort muessen die REDAXO-Originalfarben erhalten
+   bleiben, sonst wird der Text auf dem hellen Zeilen-Hintergrund
+   unlesbar. Ein zu breiter Label-Selektor oben haette dieses
+   verschachtelte Widget sonst mit weiss ueberschrieben. */
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .meta_lang_field_row,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .meta_lang_field_row .control-label,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .meta_lang_field_row label {
+    color: rgb(50, 64, 80);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .meta_lang_field_row .text-muted {
+    color: rgb(119, 119, 119);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .meta_lang_field_row .form-control {
+    background-color: rgb(243, 246, 251);
+    color: rgb(50, 64, 80);
+    border-color: rgb(193, 201, 212);
+}
+
+/* Eingabefelder / Icon-Buttons an Dark Mode anpassen */
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .form-control,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas select {
+    background-color: rgb(35, 42, 58);
+    color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: none;
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .btn-popup,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .rex-js-widget .btn,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .rex-medialist .btn {
+    background-color: rgb(45, 53, 71);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .btn-popup:hover,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .rex-js-widget .btn:hover,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .rex-medialist .btn:hover {
+    background-color: rgb(58, 68, 90);
+}
+
+/* "select"-Feld laeuft ueber bootstrap-select (kein natives Popup,
+   sondern eigenes HTML) -- eigener Button + eigenes Menue, reagieren
+   nicht auf .form-control/select-Regeln oben. !important nur hier, da
+   das Plugin dem Button teils Inline-Styles mitgibt, die sonst
+   gewinnen wuerden. */
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .bootstrap-select .dropdown-toggle {
+    background-color: rgb(35, 42, 58) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .dropdown-menu {
+    background-color: rgb(35, 42, 58);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .dropdown-menu > li > a {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .dropdown-menu > li > a:hover,
+#mp3-overlay.mp3-dark-mode #mp3-metainfo-canvas .dropdown-menu > .active > a {
+    background-color: rgb(58, 68, 90);
+    color: #fff;
+}
+
 @media (max-width: 768px) {
     #mp3-overlay .mp3-editor-canvas-body {
         padding: 10px;
@@ -5329,6 +5538,90 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     margin: 0;
     font-size: 12px;
     color: #c9302c;
+}
+
+/* Fortschrittsbalken fuer Kategorie-Massenaktionen (showBulkProgressModal()
+   in modules/categories.js) -- eigenes schlichtes Track/Fill statt eines
+   <progress>-Elements, damit die Fuellfarbe zur restlichen Optik passt. */
+.mp3-bulk-progress-text {
+    margin: 0 0 8px;
+    font-size: 12px;
+}
+
+.mp3-bulk-progress-track {
+    width: 100%;
+    height: 8px;
+    background: var(--mp3-status-border);
+    overflow: hidden;
+}
+
+.mp3-bulk-progress-fill {
+    height: 100%;
+    background: var(--mp3-cat-active-border);
+    transition: width 0.2s ease;
+}
+
+/* Etwas breiteres Modal fuer diesen einen Anwendungsfall: "in Benutzung"-
+   Meldungen (Artikelname + Link, ggf. mehrere Referenzen pro Datei) passen
+   in die sonst uebliche 480px-Modal-Breite nur sehr eng. */
+.mp3-bulk-progress-modal {
+    max-width: 640px;
+}
+
+/* Bewusst KEIN max-height/overflow-y hier: das Modal soll mitwachsen und
+   alle Meldungen auf einmal zeigen statt in einem kleinen Scroll-Feld zu
+   verstecken, siehe Bugreport. */
+.mp3-bulk-progress-errors {
+    margin: 8px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mp3-bulk-progress-error-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--mp3-upload-failed-bg, rgba(201, 48, 44, 0.08));
+    border-left: 3px solid #c9302c;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--mp3-cat-text);
+}
+
+.mp3-bulk-progress-error-item > i {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: #c9302c;
+    font-size: 12px;
+}
+
+/* Wichtigster Teil des Fixes: lange, leerzeichenfreie Dateinamen (z.B.
+   KI-generierte Upload-Namen) brechen ohne das hier aus dem Modal aus statt
+   umzubrechen, siehe Bugreport/Screenshot. min-width:0 noetig, damit ein
+   Flex-Kind ueberhaupt unter seine intrinsische Inhaltsbreite schrumpfen
+   darf (Flexbox-Default waere sonst min-width:auto). */
+.mp3-bulk-progress-error-text {
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* REDAXOs eigene "in Benutzung"-Meldung bringt eine rohe <ul> mit -- eigene,
+   kompaktere Optik statt Browser-Default-Einrueckung/-Abstand, die neben dem
+   Warn-Icon unpassend breit wirkte. */
+.mp3-bulk-progress-error-text ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+}
+
+.mp3-bulk-progress-error-text li {
+    margin: 2px 0;
+}
+
+.mp3-bulk-progress-error-text a {
+    color: var(--mp3-link-color);
 }
 
 .mp3-cat-new-error {

@@ -154,6 +154,50 @@
         });
     }
 
+    function getCategoryBulkApiUrl() {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.categoryBulkUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_category_bulk';
+        }
+        return baseUrl;
+    }
+
+    // Massenaktionen fuer ALLE Dateien einer Kategorie (verschieben/loeschen/
+    // zu Sammlung/Tag hinzufuegen), siehe Api\CategoryBulk.php -- categoryId
+    // steckt IMMER im Payload (category_id), gleiches action-Feld-Dispatch-
+    // Muster wie apiCollectionCatalogAction() oben. Optionaler dritter
+    // Parameter signal (AbortSignal) fuer den Cancel-Button im Fortschritts-
+    // Modal (showBulkProgressModal() in modules/categories.js) -- bricht den
+    // GERADE laufenden Batch-Request hart ab, nicht nur "keinen weiteren
+    // starten".
+    function apiCategoryBulkAction(action, payload, signal) {
+        var body = payload && typeof payload === 'object' ? payload : {};
+        body.action = action;
+
+        var fetchOpts = {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+        };
+        if (signal) fetchOpts.signal = signal;
+
+        return fetch(getCategoryBulkApiUrl(), fetchOpts)
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || json.error) {
+                    throw new Error((json && json.error) ? json.error : ('HTTP ' + r.status));
+                }
+                return json;
+            });
+        });
+    }
+
     function apiLoadSystemTagsForFiles(filenames) {
         var params = {};
         if (filenames && filenames.length) {
@@ -985,6 +1029,7 @@
     Core.api.apiMoveCategory = apiMoveCategory;
     Core.api.getTagsApiUrl = getTagsApiUrl;
     Core.api.apiCollectionCatalogAction = apiCollectionCatalogAction;
+    Core.api.apiCategoryBulkAction = apiCategoryBulkAction;
     Core.api.apiLoadSystemTagsForFiles = apiLoadSystemTagsForFiles;
     Core.api.apiFetch = apiFetch;
     Core.api.apiFetchRaw = apiFetchRaw;

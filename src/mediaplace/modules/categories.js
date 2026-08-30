@@ -19,8 +19,10 @@
  * navigateToCategory()/loadCategories() aufgerufen wird.
  */
 
-import { renderCollectionsSection, setActiveCollection } from './collections.js';
+import { renderCollectionsSection, setActiveCollection, getCollectionsForCurrentCategory, collectionTagToName } from './collections.js';
 import { hasProviders, renderProvidersSection } from './providers.js';
+import { showConfirmModal, showAlertModal, showPromptModal, showCategoryPickerModal } from './modals.js';
+import { getCurrentTagCatalog } from './filters.js';
 
 var ctx = null;
 
@@ -34,6 +36,7 @@ var apiFetchAllCategoriesFlat = MP3Core.api.apiFetchAllCategoriesFlat;
 var apiMoveCategory = MP3Core.api.apiMoveCategory;
 var apiCreateCategory = MP3Core.api.apiCreateCategory;
 var apiRenameCategory = MP3Core.api.apiRenameCategory;
+var apiCategoryBulkAction = MP3Core.api.apiCategoryBulkAction;
 
 /**
  * ctx-Vertrag:
@@ -49,6 +52,9 @@ var apiRenameCategory = MP3Core.api.apiRenameCategory;
  * - getAltMissingActive(): noch-legacy-State (read-only, "Medien ohne
  *   ALT-Text"-Modus -- Umschalten selbst passiert im Sidebar-Klick-Handler
  *   in core.js, hier nur fuer den aktiv-Zustand der Sidebar-Zeile gelesen)
+ * - getCanBulkOperations(): noch-legacy-State (read-only, steuert nur die
+ *   Sichtbarkeit der Kategorie-Massenaktionen-Menuepunkte -- der eigentliche
+ *   Schutz ist serverseitig in Api\CategoryBulk.php)
  * - loadFiles(): noch-legacy-Funktion (Data-Loading-Domaene)
  * - refreshTagFilterSection(): noch-legacy-Funktion (Tag-Katalog/-Filter-State
  *   lebt in core.js) -- fuellt den hier nur als leerer Platzhalter
@@ -253,6 +259,23 @@ export function openCatMenu(id, name, anchorBtn) {
     html += '<button class="mp3-cat-add-btn mp3-cat-add-sub" data-add-parent="' + id + '"><i class="fa-solid fa-plus"></i> ' + t('mediaplace_subcategory') + '</button>';
     if (canManage) {
         html += '<button class="mp3-cat-delete-btn" data-delete-cat="' + id + '" data-delete-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete') + '</button>';
+    }
+    // Massenaktionen fuer ALLE Dateien DIESER Kategorie (nicht die Kategorie
+    // selbst) -- eigene Berechtigung (MediaPermission::hasBulkOperationsAccess(),
+    // siehe getCanBulkOperations() im ctx-Vertrag), nicht an canManage
+    // (Eltern-Zugriff fuer Umbenennen/Verschieben/Loeschen der Kategorie-
+    // Struktur) gebunden -- Massenaktionen sind ein deutlich groesseres
+    // Blast-Radius-Risiko als das reine Bearbeiten einzelner Dateien, das
+    // schon ueber die normale Kategorie-Zugriffspruefung laeuft. Nur
+    // Wurzelkategorie (id=0) ausgenommen: "alle Dateien ohne Kategorie
+    // loeschen/verschieben" waere zu riskant als Ein-Klick-Aktion im Menue
+    // einer Kategorie, die eigentlich fuer "kein Ordner" steht.
+    if (id > 0 && ctx.getCanBulkOperations()) {
+        html += '<div class="mp3-cat-menu-divider"></div>' +
+            '<button class="mp3-cat-bulk-move-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-arrow-right-arrow-left"></i> ' + t('mediaplace_bulk_move_files') + '</button>' +
+            '<button class="mp3-cat-bulk-tag-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-tag"></i> ' + t('mediaplace_bulk_add_tag') + '</button>' +
+            '<button class="mp3-cat-bulk-collection-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-bookmark"></i> ' + t('mediaplace_bulk_add_to_collection') + '</button>' +
+            '<button class="mp3-cat-bulk-delete-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_bulk_delete_files') + '</button>';
     }
     portal.innerHTML = html;
     portal.classList.add('mp3-cat-menu-portal-open');
@@ -693,4 +716,324 @@ export function showMoveCategoryModal(catId, catName) {
                 okBtn.innerHTML = t('mediaplace_move');
             });
     });
+}
+
+/**
+ * Massenaktionen fuer ALLE Dateien einer Kategorie (Verschieben/Loeschen/
+ * Sammlung), siehe Api\CategoryBulk.php -- Gegenstueck zur Checkbox-
+ * Mehrfachauswahl fuer Faelle, in denen die Dateiliste selbst (X-tausend
+ * Dateien) nie vollstaendig geladen/dargestellt werden soll. Ausgeloest ueber
+ * das Kategorie-Kontextmenue (openCatMenu()), nicht ueber eine Datei-Auswahl.
+ */
+
+/**
+ * Eigenes, schlankes Fortschritts-Modal statt showConfirmModal(): der
+ * Bestaetigen/Abbrechen-Vertrag von showConfirmModal() passt nicht, sobald
+ * die Aktion einmal laeuft (kein "Abbrechen" mehr im ueblichen Sinn, sondern
+ * ein fortlaufender Fortschrittsbalken + ein Button, der waehrend des Laufs
+ * hart abbricht und danach zu "Schliessen" wird). Gleiches Grund-Markup
+ * (.mp3-cat-move-modal-*) fuer optische Konsistenz.
+ *
+ * "In Benutzung"-Fehler kommen als fertiges, von REDAXO selbst erzeugtes
+ * HTML (inkl. Links zu den referenzierenden Objekten, siehe
+ * rex_mediapool::mediaIsInUse()) -- addErrors() rendert diese bewusst als
+ * HTML (innerHTML), nicht als Text, sonst waeren die Links/Zeilenumbrueche
+ * nur als sichtbarer Roh-HTML-Quelltext zu sehen. Der Dateiname selbst wird
+ * separat und escaped als Ueberschrift gerendert, kein Roh-HTML von dort.
+ * Kein max-height/overflow auf dem Fehler-Container: das Modal soll in der
+ * Hoehe mitwachsen, ein Scroll-Feld waere hier keine Verbesserung.
+ */
+function showBulkProgressModal(title) {
+    var overlay = document.createElement('div');
+    overlay.className = 'mp3-cat-move-modal-overlay';
+    overlay.innerHTML =
+        '<div class="mp3-cat-move-modal mp3-bulk-progress-modal">' +
+        '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid fa-spinner fa-spin"></i> ' + escAttr(title) + '</h5>' +
+        '<p class="mp3-cat-move-modal-info mp3-bulk-progress-text"></p>' +
+        '<div class="mp3-bulk-progress-track"><div class="mp3-bulk-progress-fill" style="width:0%"></div></div>' +
+        '<div class="mp3-bulk-progress-errors" style="display:none"></div>' +
+        '<div class="mp3-cat-move-modal-actions">' +
+        '<button type="button" class="mp3-cat-move-modal-cancel mp3-bulk-progress-close">' + escAttr(t('mediaplace_cancel')) + '</button>' +
+        '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    var textEl = qs('.mp3-bulk-progress-text', overlay);
+    var fillEl = qs('.mp3-bulk-progress-fill', overlay);
+    var errorsEl = qs('.mp3-bulk-progress-errors', overlay);
+    var titleIcon = qs('.mp3-cat-move-modal-title i', overlay);
+    var closeBtn = qs('.mp3-bulk-progress-close', overlay);
+
+    var cancelled = false;
+    var finished = false;
+    // AbortController fuer den GERADE LAUFENDEN Request -- "hart abbrechen"
+    // heisst nicht nur "keinen naechsten Batch mehr starten" (das allein
+    // liesse den bereits laufenden Request zu Ende laufen), sondern auch das
+    // laufende fetch() selbst abbrechen.
+    var currentAbort = null;
+
+    function close() {
+        if (currentAbort) currentAbort.abort();
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+    closeBtn.addEventListener('click', function () {
+        if (finished) {
+            close();
+            return;
+        }
+        cancelled = true;
+        if (currentAbort) currentAbort.abort();
+        closeBtn.disabled = true;
+    });
+
+    return {
+        isCancelled: function () {
+            return cancelled;
+        },
+        // Vom Runner vor jedem Batch aufgerufen: liefert das AbortSignal fuer
+        // genau DIESEN einen Request, damit ein Klick auf "Abbrechen"
+        // waehrend ein Batch noch laeuft, den auch tatsaechlich sofort kappt.
+        beginRequest: function () {
+            currentAbort = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            return currentAbort ? currentAbort.signal : null;
+        },
+        setProgress: function (processed, total) {
+            textEl.textContent = t('mediaplace_bulk_progress', { processed: processed, total: total });
+            var pct = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+            fillEl.style.width = pct + '%';
+        },
+        addErrors: function (errList) {
+            if (!errList || !errList.length) return;
+            errorsEl.style.display = '';
+            errList.forEach(function (err) {
+                var block = document.createElement('div');
+                block.className = 'mp3-bulk-progress-error-item';
+                // Kein eigener Dateiname-Vorspann mehr: die Meldung (egal ob
+                // von REDAXO selbst wie bei "in Benutzung" oder von uns wie
+                // bei "nicht gefunden", siehe Api\CategoryBulk.php) nennt den
+                // Dateinamen bereits selbst -- ein zusaetzlicher fetter
+                // Vorspann duplizierte ihn nur sichtbar.
+                var messageHtml = (err && err.message) ? err.message : String(err);
+                block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp3-bulk-progress-error-text">' + messageHtml + '</div>';
+                errorsEl.appendChild(block);
+            });
+        },
+        finish: function (finalText) {
+            finished = true;
+            titleIcon.className = 'fa-solid fa-circle-check';
+            textEl.textContent = finalText;
+            fillEl.style.width = '100%';
+            closeBtn.disabled = false;
+            closeBtn.textContent = t('mediaplace_close');
+        }
+    };
+}
+
+/**
+ * Fuehrt eine Chunk-Aktion (move_batch/delete_batch) wiederholt aus, bis
+ * entweder alle Dateien verarbeitet sind ODER ein Batch KEINEN einzigen
+ * Erfolg hatte (succeeded=0) -- NICHT bis remaining=0, das koennte bei
+ * dauerhaft gesperrten Dateien (z.B. "in Benutzung") nie eintreten. Frueher
+ * wurde die Batch-GROESSE statt der tatsaechlichen Erfolge gezaehlt, wodurch
+ * so ein Fall zu einer Endlosschleife fuehrte (live aufgetreten: derselbe
+ * gesperrte Rest wurde jeden Batch erneut "verarbeitet", ohne je kleiner zu
+ * werden). Chunking (Standard-Limit siehe Api\CategoryBulk::
+ * BATCH_LIMIT_DEFAULT) schuetzt gegen PHP max_execution_time bei sehr
+ * grossen Kategorien.
+ */
+function runChunkedBulkAction(actionName, categoryId, extraPayload, progress, doneLabelKey) {
+    var succeededTotal = 0;
+
+    function step() {
+        if (progress.isCancelled()) {
+            progress.finish(t('mediaplace_bulk_cancelled', { count: succeededTotal }));
+            loadCategories();
+            ctx.loadFiles(ctx.getCurrentCat(), true);
+            return;
+        }
+
+        var payload = { category_id: categoryId, limit: 100 };
+        for (var key in extraPayload) {
+            if (Object.prototype.hasOwnProperty.call(extraPayload, key)) payload[key] = extraPayload[key];
+        }
+        var signal = progress.beginRequest();
+        apiCategoryBulkAction(actionName, payload, signal)
+            .then(function (result) {
+                progress.addErrors(result.errors);
+                var remaining = parseInt(result.remaining, 10) || 0;
+                var succeededThisBatch = parseInt(result.succeeded, 10) || 0;
+                succeededTotal += succeededThisBatch;
+                progress.setProgress(succeededTotal, succeededTotal + remaining);
+                if (remaining > 0 && succeededThisBatch > 0) {
+                    step();
+                } else {
+                    progress.finish(t(doneLabelKey, { count: succeededTotal }));
+                    if (remaining > 0) {
+                        progress.addErrors([{ message: t('mediaplace_bulk_stopped_early', { count: remaining }) }]);
+                    }
+                    loadCategories();
+                    ctx.loadFiles(ctx.getCurrentCat(), true);
+                }
+            })
+            .catch(function (err) {
+                if (err && 'AbortError' === err.name) {
+                    // Bewusster Abbruch (Cancel-Klick) -- der GERADE laufende
+                    // Request wurde hart gekappt, es kommt kein weiterer
+                    // step()-Aufruf mehr (isCancelled() wird nirgends sonst
+                    // mehr geprueft). finish() deshalb hier direkt aufrufen,
+                    // sonst bliebe das Modal mit deaktiviertem Button und
+                    // Dauer-Spinner haengen.
+                    progress.finish(t('mediaplace_bulk_cancelled', { count: succeededTotal }));
+                    loadCategories();
+                    ctx.loadFiles(ctx.getCurrentCat(), true);
+                    return;
+                }
+                progress.addErrors([{ message: escAttr(err.message) }]);
+                progress.finish(t(doneLabelKey, { count: succeededTotal }));
+            });
+    }
+    step();
+}
+
+export function startBulkMoveFiles(categoryId, categoryName) {
+    showCategoryPickerModal({
+        icon: 'fa-solid fa-arrow-right-arrow-left',
+        title: escAttr(t('mediaplace_bulk_move_files')),
+        hint: t('mediaplace_bulk_move_hint', { name: '<strong>' + escAttr(categoryName) + '</strong>' }),
+        confirmLabel: escAttr(t('mediaplace_move')),
+        onConfirm: function (targetCatId) {
+            if (targetCatId === categoryId) return;
+            var progress = showBulkProgressModal(t('mediaplace_bulk_move_files'));
+            progress.setProgress(0, 0);
+            runChunkedBulkAction('move_batch', categoryId, { target_category_id: targetCatId }, progress, 'mediaplace_bulk_move_done');
+        }
+    });
+}
+
+export function startBulkAddToCollection(categoryId, categoryName) {
+    var existingNames = getCollectionsForCurrentCategory().map(function (c) { return c.name; });
+    showPromptModal({
+        icon: 'fa-bookmark',
+        title: t('mediaplace_bulk_add_to_collection'),
+        label: t('mediaplace_bulk_collection_hint', { name: '<strong>' + escAttr(categoryName) + '</strong>' }) +
+            (existingNames.length ? '<br><small>' + escAttr(t('mediaplace_bulk_collection_existing', { names: existingNames.join(', ') })) + '</small>' : ''),
+        confirmLabel: t('mediaplace_save')
+    }).then(function (name) {
+        if (!name) return;
+        apiCategoryBulkAction('add_to_collection', { category_id: categoryId, collection_name: name })
+            .then(function (result) {
+                refreshCollectionsSection();
+                showAlertModal({
+                    icon: 'fa-circle-check',
+                    title: t('mediaplace_bulk_add_to_collection'),
+                    message: escAttr(t('mediaplace_bulk_collection_done', { count: result.affected }))
+                });
+            })
+            .catch(function (err) {
+                showAlertModal({ icon: 'fa-triangle-exclamation', title: t('mediaplace_error'), message: escAttr(err.message), dangerous: true });
+            });
+    });
+}
+
+/**
+ * Bietet NUR bestehende Tags zur Auswahl an (kein Freitext/Neuanlegen) --
+ * anders als startBulkAddToCollection(), das per showPromptModal() auch
+ * neue Sammlungsnamen zulaesst. Tag-Katalog kommt aus dem bereits
+ * client-seitig gecachten currentTagCatalog (siehe filters.js,
+ * ueblicherweise durch vorherige Datei-/Detail-Ladevorgaenge befuellt),
+ * kein eigener Fetch -- collectionTagToName() filtert Sammlungs- von
+ * echten Tag-Eintraegen (beide teilen denselben Katalog, siehe
+ * SystemTagManager::getCatalog()). Gleiches ".mp3-catpick-*"-Markup wie
+ * showCategoryPickerModal() (modals.js), hier direkt gebaut statt dort
+ * generalisiert, da die Optionsliste lokal/synchron vorliegt statt per
+ * Server-Fetch.
+ */
+export function startBulkTagFiles(categoryId, categoryName) {
+    var existingTags = getCurrentTagCatalog().filter(function (tag) {
+        return !collectionTagToName(tag.name);
+    });
+    if (!existingTags.length) {
+        showAlertModal({
+            icon: 'fa-tag',
+            title: t('mediaplace_bulk_add_tag'),
+            message: escAttr(t('mediaplace_bulk_tag_none_available'))
+        });
+        return;
+    }
+
+    var modal = document.createElement('div');
+    modal.className = 'mp3-catpick-modal';
+    var optionsHtml = existingTags.map(function (tag) {
+        return '<option value="' + escAttr(tag.name) + '">' + escAttr(tag.name) + '</option>';
+    }).join('');
+    modal.innerHTML =
+        '<div class="mp3-catpick-box">' +
+        '<div class="mp3-catpick-title"><i class="fa-solid fa-tag"></i> ' + escAttr(t('mediaplace_bulk_add_tag')) + '</div>' +
+        '<p class="mp3-catpick-info">' + t('mediaplace_bulk_tag_hint', { name: '<strong>' + escAttr(categoryName) + '</strong>' }) + '</p>' +
+        '<select class="mp3-catpick-select">' + optionsHtml + '</select>' +
+        '<div class="mp3-catpick-actions">' +
+        '<button type="button" class="mp3-catpick-cancel">' + escAttr(t('mediaplace_cancel')) + '</button>' +
+        '<button type="button" class="mp3-catpick-confirm">' + escAttr(t('mediaplace_save')) + '</button>' +
+        '</div>' +
+        '</div>';
+    ctx.overlay.appendChild(modal);
+
+    var select = qs('.mp3-catpick-select', modal);
+
+    modal.querySelector('.mp3-catpick-cancel').addEventListener('click', function () {
+        modal.remove();
+    });
+
+    modal.querySelector('.mp3-catpick-confirm').addEventListener('click', function () {
+        var tagName = select.value;
+        modal.remove();
+        if (!tagName) return;
+        apiCategoryBulkAction('add_tag', { category_id: categoryId, tag_name: tagName })
+            .then(function (result) {
+                if (ctx.refreshTagFilterSection) ctx.refreshTagFilterSection();
+                showAlertModal({
+                    icon: 'fa-circle-check',
+                    title: t('mediaplace_bulk_add_tag'),
+                    message: escAttr(t('mediaplace_bulk_tag_done', { count: result.affected }))
+                });
+            })
+            .catch(function (err) {
+                showAlertModal({ icon: 'fa-triangle-exclamation', title: t('mediaplace_error'), message: escAttr(err.message), dangerous: true });
+            });
+    });
+}
+
+export function startBulkDeleteFiles(categoryId, categoryName) {
+    apiCategoryBulkAction('count', { category_id: categoryId })
+        .then(function (countResult) {
+            var total = parseInt(countResult.total, 10) || 0;
+            if (total === 0) {
+                return showAlertModal({
+                    icon: 'fa-circle-info',
+                    title: t('mediaplace_bulk_delete_files'),
+                    message: escAttr(t('mediaplace_bulk_delete_empty'))
+                });
+            }
+            // Bewusst KEINE Eingabe des Kategorienamens zur Bestaetigung mehr
+            // (fruehere Version) -- stattdessen eine deutliche, unmissverstaendliche
+            // Warnung mit der echten Dateianzahl ueber showConfirmModal(), das
+            // dieselbe "dangerous" (rot eingefaerbte) Optik nutzt wie das
+            // Loeschen einer einzelnen Datei/Kategorie.
+            return showConfirmModal({
+                icon: 'fa-triangle-exclamation',
+                title: t('mediaplace_bulk_delete_files'),
+                message: t('mediaplace_bulk_delete_confirm_hint', { count: total, name: '<strong>' + escAttr(categoryName) + '</strong>' }),
+                confirmLabel: t('mediaplace_delete'),
+                dangerous: true,
+                onConfirm: function (confirmCtx) {
+                    confirmCtx.close();
+                    var progress = showBulkProgressModal(t('mediaplace_bulk_delete_files'));
+                    progress.setProgress(0, total);
+                    runChunkedBulkAction('delete_batch', categoryId, {}, progress, 'mediaplace_bulk_delete_done');
+                }
+            });
+        })
+        .catch(function (err) {
+            showAlertModal({ icon: 'fa-triangle-exclamation', title: t('mediaplace_error'), message: escAttr(err.message), dangerous: true });
+        });
 }

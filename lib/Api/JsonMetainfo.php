@@ -152,11 +152,23 @@ class JsonMetainfo extends rex_api_function
      */
     private function buildFastInfoFields(\rex_media $media): array
     {
+        // mediaIsInUse() liefert false ODER ein fertiges, von REDAXO selbst
+        // erzeugtes HTML-Fragment inkl. Links zu den referenzierenden Objekten
+        // (Artikel, plus was auch immer andere Addons per MEDIA_IS_IN_USE
+        // Extension Point beisteuern, siehe yform_value_mediaplace::
+        // isMediaInUse() fuer unser eigenes Beispiel) -- bisher wurde das auf
+        // ein reines Bool verkuerzt und der Rest verworfen. isInUseDetail
+        // wird jetzt zusaetzlich mitgegeben, damit "Datei in Benutzung"-
+        // Hinweise ueberall (Detail-Panel-Loeschen, Massenaktionen, ...)
+        // dieselbe verlinkte Detailauskunft zeigen koennen wie der klassische
+        // Medienpool selbst, statt einer generischen Meldung ohne Kontext.
         try {
-            $isInUse = false !== \rex_mediapool::mediaIsInUse($media->getFileName());
+            $inUseResult = \rex_mediapool::mediaIsInUse($media->getFileName());
         } catch (\Throwable $e) {
-            $isInUse = false;
+            $inUseResult = false;
         }
+        $isInUse = false !== $inUseResult;
+        $isInUseDetail = $isInUse ? (string) $inUseResult : null;
 
         return [
             'filename' => $media->getFileName(),
@@ -172,6 +184,7 @@ class JsonMetainfo extends rex_api_function
             'updateuser' => (string) $media->getUpdateUser(),
             'is_image' => (bool) $media->isImage(),
             'is_in_use' => $isInUse,
+            'is_in_use_detail' => $isInUseDetail,
             'file_exists' => (bool) $media->fileExists(),
             'category_id' => (int) $media->getCategoryId(),
             'focuspoint_available' => $media->isImage() && \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit(),
@@ -255,6 +268,7 @@ class JsonMetainfo extends rex_api_function
             'updatedate' => $updatedate,
             'is_image' => (bool) ($apiInfo['is_image'] ?? $media->isImage()),
             'is_in_use' => (bool) ($apiInfo['is_in_use'] ?? false),
+            'is_in_use_detail' => $apiInfo['is_in_use_detail'] ?? null,
             'file_exists' => (bool) ($apiInfo['file_exists'] ?? $media->fileExists()),
             'category_id' => (int) ($apiInfo['category_id'] ?? $media->getCategoryId()),
             'focuspoint_available' => (bool) ($apiInfo['focuspoint_available'] ?? false),

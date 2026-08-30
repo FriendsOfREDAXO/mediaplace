@@ -93,6 +93,10 @@ import {
     categoryErrorMessage,
     showRenameCategoryModal,
     showMoveCategoryModal,
+    startBulkMoveFiles,
+    startBulkAddToCollection,
+    startBulkTagFiles,
+    startBulkDeleteFiles,
 } from './modules/categories.js';
 import {
     initFilters,
@@ -219,6 +223,22 @@ import {
     // selbst lebt in modules/filters.js (unusedOnlyFilter/unusedStatusCache),
     // dieses Flag nur, weil das Recht schon beim Seitenaufbau feststeht.
     var canFilterUnused = false;
+    // Eigene, engere Berechtigung fuer die Kategorie-Massenaktionen (Alle
+    // Dateien verschieben/loeschen/taggen) -- steuert nur die Sichtbarkeit
+    // der Menuepunkte in openCatMenu(), der eigentliche Schutz ist serverseitig
+    // in Api\CategoryBulk.php (MediaPermission::hasBulkOperationsAccess()).
+    var canBulkOperations = false;
+    // Upload-Provider (siehe UploadProviderRegistry/MP3.registerUploadProvider()):
+    // uploadProviders bleibt UEBER open()/close()-Zyklen hinweg bestehen (ein
+    // Drittanbieter-Addon registriert sich einmalig beim Laden seines eigenen
+    // Scripts, nicht bei jedem Overlay-Oeffnen neu) -- nur activeUploadProviderId
+    // wird pro build() aus #mp3-root neu gelesen (Einstellungsseite).
+    var uploadProviders = {};
+    var activeUploadProviderId = '';
+    // Zahnrad-Menue-Erweiterungspunkt (siehe MP3.registerAdminMenuItem()):
+    // gleiches Bestehen-ueber-open()/close()-Zyklen-Prinzip wie uploadProviders.
+    // id -> { label, icon, onClick }.
+    var adminMenuItems = {};
     // Kategorie 0 ("kein Ordner"/"Medienpool"-Wurzel) braucht ein eigenes
     // hasCategoryPerm(0), das viele auf einzelne Kategorien eingeschraenkte
     // User nicht haben (siehe MediaPermission::hasCategoryAccess(0) +
@@ -1065,6 +1085,8 @@ import {
         uploadResizeWidth = parseInt(root.dataset.uploadResizeWidth, 10) || 2000;
         uploadResizeHeight = parseInt(root.dataset.uploadResizeHeight, 10) || 2000;
         canFilterUnused = root.dataset.canFilterUnused === '1';
+        canBulkOperations = root.dataset.canBulkOperations === '1';
+        activeUploadProviderId = root.dataset.uploadProvider || '';
         canCropper = root.dataset.cropperAvailable === '1';
         videoThumbType = root.dataset.videoThumbType || '';
         videoThumbStatic = root.dataset.videoThumbStatic === '1';
@@ -1132,6 +1154,7 @@ import {
                             '<div class="mp3-admin-menu" id="mp3-admin-menu">' +
                                 '<button type="button" class="mp3-admin-menu-darkmode-toggle"><i class="fa-solid fa-moon"></i> <span class="mp3-admin-menu-darkmode-label">' + escAttr(t('mediaplace_dark_mode')) + '</span></button>' +
                                 '<div class="mp3-admin-menu-sort-slot" id="mp3-admin-menu-sort-slot"></div>' +
+                                '<div class="mp3-admin-menu-extensions" id="mp3-admin-menu-extensions"></div>' +
                                 '<div class="mp3-admin-menu-links" id="mp3-admin-menu-links"></div>' +
                             '</div>' +
                         '</div>' +
@@ -1468,6 +1491,7 @@ import {
             getOnMultiSelect: function () { return onMultiSelect; },
             getLoadSessionId: function () { return loadSessionId; },
             getAltMissingActive: function () { return altMissingActive; },
+            getCanBulkOperations: function () { return canBulkOperations; },
             loadFiles: loadFiles,
             refreshTagFilterSection: updateTagFilterOptions,
         });
@@ -1768,11 +1792,26 @@ import {
                 }).join('');
             }
 
+            // Bereits VOR diesem build() registrierte Eintraege (siehe
+            // MP3.registerAdminMenuItem()) nachtragen -- deren eigener
+            // renderAdminMenuExtensions()-Aufruf zur Registrierungszeit lief
+            // ins Leere, da #mp3-admin-menu-extensions damals noch nicht existierte.
+            renderAdminMenuExtensions();
+
             // Klassische Seiten in einem Popup-Fenster oeffnen (wie der alte Medienpool
             // es tut), statt den Hintergrund/Overlay durch echte Navigation zu verlassen.
             // Der Einstellungen-Eintrag (data-popup="0", echte MediaPlace-Seite statt
             // klassisches Popup-Formular) navigiert stattdessen ganz normal.
             menu.addEventListener('click', function (e) {
+                var extBtn = e.target.closest('.mp3-admin-menu-ext-btn');
+                if (extBtn) {
+                    var id = extBtn.getAttribute('data-admin-menu-ext');
+                    var item = adminMenuItems[id];
+                    wrap.classList.remove('mp3-admin-menu-open');
+                    if (item && typeof item.onClick === 'function') item.onClick();
+                    return;
+                }
+
                 var link = e.target.closest('a');
                 if (!link) return;
                 e.preventDefault();
@@ -1819,6 +1858,32 @@ import {
         document.addEventListener('click', function (e) {
             if (e.target.closest('#mp3-overlay')) return;
             closeCatMenu();
+        });
+
+        // "In Benutzung"-Hinweise (Loeschen-Versuch, Detail-Panel wie auch
+        // Kategorie-Massenaktionen) enthalten von REDAXO selbst erzeugte
+        // Links im Format href="javascript:openPage('URL')" (siehe
+        // rex_mediapool::mediaIsInUse(), openPage() in mediapool.js). Deren
+        // eigene Implementierung ist auf ein POPUP-Fenster ausgelegt
+        // (window.opener.location.href = ...; self.close();) -- in unserem
+        // Fall laeuft MediaPlace aber als Vollbild-Overlay im SELBEN Fenster,
+        // window.opener ist hier nicht das, was der User erwartet (meist
+        // null/undefined, self.close() wuerde entweder nichts tun oder vom
+        // Browser blockiert). Stattdessen die Ziel-URL selbst aus dem href
+        // extrahieren, MediaPlace schliessen und im aktuellen Fenster dorthin
+        // navigieren -- gescoped auf .mp3-cat-move-modal-overlay (gemeinsame
+        // Basisklasse von showAlertModal()/showConfirmModal()/
+        // showBulkProgressModal()), nicht global, um kein unabhaengiges
+        // openPage()-Vorkommen anderswo auf der Seite zu beeinflussen.
+        document.addEventListener('click', function (e) {
+            var link = e.target.closest('.mp3-cat-move-modal-overlay a[href^="javascript:openPage("]');
+            if (!link) return;
+            var match = /^javascript:openPage\('([^']*)'\)$/.exec(link.getAttribute('href') || '');
+            if (!match) return;
+            e.preventDefault();
+            var targetUrl = match[1];
+            close();
+            window.location.href = targetUrl;
         });
 
         // Click backdrop to close (but not after drag/resize)
@@ -2114,6 +2179,50 @@ import {
                             });
                     }
                 });
+                return;
+            }
+
+            var bulkMoveBtn = e.target.closest('.mp3-cat-bulk-move-btn');
+            if (bulkMoveBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeCatMenu();
+                var bulkMoveCatId = parseInt(bulkMoveBtn.getAttribute('data-bulk-cat'), 10) || 0;
+                if (bulkMoveCatId <= 0) return;
+                startBulkMoveFiles(bulkMoveCatId, bulkMoveBtn.getAttribute('data-bulk-cat-name') || String(bulkMoveCatId));
+                return;
+            }
+
+            var bulkCollectionBtn = e.target.closest('.mp3-cat-bulk-collection-btn');
+            if (bulkCollectionBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeCatMenu();
+                var bulkCollectionCatId = parseInt(bulkCollectionBtn.getAttribute('data-bulk-cat'), 10) || 0;
+                if (bulkCollectionCatId <= 0) return;
+                startBulkAddToCollection(bulkCollectionCatId, bulkCollectionBtn.getAttribute('data-bulk-cat-name') || String(bulkCollectionCatId));
+                return;
+            }
+
+            var bulkTagBtn = e.target.closest('.mp3-cat-bulk-tag-btn');
+            if (bulkTagBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeCatMenu();
+                var bulkTagCatId = parseInt(bulkTagBtn.getAttribute('data-bulk-cat'), 10) || 0;
+                if (bulkTagCatId <= 0) return;
+                startBulkTagFiles(bulkTagCatId, bulkTagBtn.getAttribute('data-bulk-cat-name') || String(bulkTagCatId));
+                return;
+            }
+
+            var bulkDeleteBtn = e.target.closest('.mp3-cat-bulk-delete-btn');
+            if (bulkDeleteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeCatMenu();
+                var bulkDeleteCatId = parseInt(bulkDeleteBtn.getAttribute('data-bulk-cat'), 10) || 0;
+                if (bulkDeleteCatId <= 0) return;
+                startBulkDeleteFiles(bulkDeleteCatId, bulkDeleteBtn.getAttribute('data-bulk-cat-name') || String(bulkDeleteCatId));
                 return;
             }
         });
@@ -2796,7 +2905,18 @@ import {
                 var delFilename = deleteBtn.getAttribute('data-filename');
                 var inUse = deleteBtn.getAttribute('data-in-use') === '1';
                 if (inUse) {
-                    alert(t('mediaplace_file_in_use_cannot_delete'));
+                    // data-in-use-detail: dasselbe von REDAXO selbst erzeugte
+                    // HTML (inkl. Links zu den referenzierenden Objekten) wie
+                    // im klassischen Medienpool, siehe rex_mediapool::
+                    // mediaIsInUse()/buildFastInfoFields(). showAlertModal()
+                    // rendert message bewusst als HTML, kein escAttr() hier.
+                    var inUseDetail = deleteBtn.getAttribute('data-in-use-detail') || '';
+                    showAlertModal({
+                        icon: 'fa-triangle-exclamation',
+                        title: t('mediaplace_delete_file'),
+                        message: escAttr(t('mediaplace_file_in_use_cannot_delete')) + inUseDetail,
+                        dangerous: true
+                    });
                     return;
                 }
                 showConfirmModal({
@@ -3499,7 +3619,9 @@ import {
         var uploadInput = qs('.mp3-upload-btn input[type="file"]', overlay);
         uploadInput.addEventListener('change', function (e) {
             if (e.target.files && e.target.files.length) {
-                doUpload(e.target.files);
+                if (!delegateToUploadProvider(e.target.files)) {
+                    doUpload(e.target.files);
+                }
             }
             e.target.value = '';
         });
@@ -3539,6 +3661,13 @@ import {
             // zuverlaessig lesbar -> synchron sichern, bevor es async weitergeht.
             var fallbackFiles = e.dataTransfer.files;
             var dtItems = e.dataTransfer.items;
+
+            // Aktiver Upload-Provider bekommt die rohe, flache Dateiliste --
+            // OHNE Ordner-Auswertung (readDroppedItems() ist eine
+            // mediaplace-eigene Zusatzfunktion, siehe delegateToUploadProvider()).
+            if (delegateToUploadProvider(fallbackFiles)) {
+                return;
+            }
 
             // Ordner per Drag&Drop: rekursiv einlesen und je Ordner eine passende
             // Kategorie anlegen/wiederverwenden. Faellt auf die flache Dateiliste
@@ -3597,7 +3726,9 @@ import {
                 gridWrap.classList.add('mp3-pasteover');
                 setTimeout(function () { gridWrap.classList.remove('mp3-pasteover'); }, 300);
             }
-            doUpload(files);
+            if (!delegateToUploadProvider(files)) {
+                doUpload(files);
+            }
         });
     }
 
@@ -3665,14 +3796,28 @@ import {
 
         overlay.classList.add('mp3-open');
         overlay.classList.toggle('mp3-multi-mode', multiMode);
-        // Kein overflow:hidden auf html/body: Da beide im REDAXO-Backend eine feste
-        // height:100% haben (html { overflow-y: scroll; height: 100% }), klappt
-        // overflow:hidden jeglichen Inhalt unterhalb der Viewport-Hoehe weg, wodurch
-        // scrollTop auf 0 einrastet -- unabhaengig davon, was man danach zurueckschreibt.
-        // Das Overlay liegt ohnehin als position:fixed vollflaechig ueber allem und faengt
-        // alle Klick-/Wheel-Events ab, ein zusaetzliches Scroll-Lock ist nicht noetig.
-        // Scrollposition des Hintergrunds trotzdem fuer ~500ms aktiv festhalten, falls
-        // z.B. der Fokus-Aufruf unten (preventScroll) in manchen Browsern doch scrollt.
+        // KEIN overflow:hidden auf html/body (frueher versucht, siehe Git-Historie):
+        // beide haben im REDAXO-Backend eine feste height:100% (html {
+        // overflow-y: scroll; height: 100% }, body/.rex-page ebenso, siehe
+        // be_style/_scaffolding.scss -- gilt auch mobil). overflow:hidden auf
+        // einem Element mit fixer Hoehe klappt dessen Inhalt unterhalb der
+        // Viewport-Hoehe komplett weg, wodurch scrollTop auf 0 einrastet,
+        // unabhaengig davon, was man danach zurueckschreibt.
+        //
+        // Stattdessen die uebliche "position:fixed mit negativem top"-Technik:
+        // <html> selbst bleibt unangetastet (overflow-y:scroll/scrollTop
+        // funktionieren die ganze Zeit normal weiter), nur <body> wird visuell
+        // an der aktuellen Scroll-Position "eingefroren" -- body traegt als
+        // position:fixed-Element nichts mehr zu html's scrollHeight bei, die
+        // aeussere Dokument-Scrollbar wird dadurch inert (kein zweiter,
+        // tatsaechlich scrollbarer Balken mehr neben dem internen Grid-Scroll).
+        // Kein Effekt auf scrollTop bei Restore, siehe close().
+        document.body.classList.add('mp3-scroll-lock');
+        document.body.style.top = (-pageScrollTopBeforeOpen) + 'px';
+        // Overlay liegt ohnehin als position:fixed vollflaechig ueber allem und
+        // faengt alle Klick-/Wheel-Events ab. Scrollposition trotzdem fuer
+        // ~500ms aktiv festhalten, falls z.B. der Fokus-Aufruf unten
+        // (preventScroll) in manchen Browsern doch scrollt.
         pinScrollPosition(500);
         // Focus overlay so paste events (Cmd+V) are received without triggering scroll jumps.
         setTimeout(function () {
@@ -3764,6 +3909,15 @@ import {
         closeLightbox();
         setFullscreenMode(false);
         closeProviderMode();
+        // Gegenstueck zum position:fixed-Scroll-Lock in open(): body zuerst
+        // wieder in den normalen Fluss zuruecknehmen, DANACH scrollTop restaurieren
+        // (waehrend body noch fixed ist, hat ein Scroll-Aufruf auf html keine
+        // sichtbare Wirkung, html wurde aber ohnehin nie tatsaechlich verstellt --
+        // das Zuruecksetzen hier ist nur ein zusaetzliches Sicherheitsnetz).
+        document.body.classList.remove('mp3-scroll-lock');
+        document.body.style.top = '';
+        var scrollDocOnClose = document.scrollingElement || document.documentElement;
+        if (scrollDocOnClose) scrollDocOnClose.scrollTop = pageScrollTopBeforeOpen;
         if (overlay) {
             overlay.classList.remove('mp3-open');
             overlay.classList.remove('mp3-multi-mode');
@@ -3788,6 +3942,59 @@ import {
             closeHrefTarget = null;
             window.location.href = target;
         }
+    }
+
+    /**
+     * Uebergibt Dateien an den aktiven, registrierten Upload-Provider (siehe
+     * MP3.registerUploadProvider() unten) statt an mediaplace's eigenen
+     * Upload-Flow -- gilt fuer Button-Auswahl, Drag&Drop und Paste
+     * gleichermassen (siehe die drei Aufrufstellen weiter unten in build()).
+     * Bewusst OHNE Ordner-Kategorie-Zuordnung (siehe doFolderUpload()) --
+     * das ist eine mediaplace-eigene Zusatzfunktion, kein Teil des
+     * Erweiterungspunkt-Vertrags; ein Provider bekommt immer die flache
+     * Dateiliste. catId kann -1 sein (Sammlungs-/"Alle Medien"-Modus ohne
+     * konkrete Zielkategorie, siehe getCurrentCat()) -- der Provider
+     * entscheidet selbst, wie er damit umgeht (z.B. eigene Kategoriewahl).
+     *
+     * Gibt true zurueck, wenn delegiert wurde (Aufrufer darf dann NICHT
+     * zusaetzlich doUpload()/doFolderUpload() rufen), false, wenn kein
+     * Provider aktiv/registriert ist (nativer Upload greift wie bisher).
+     */
+    function delegateToUploadProvider(fileList) {
+        if (!activeUploadProviderId || !fileList || !fileList.length) return false;
+        var handler = uploadProviders[activeUploadProviderId];
+        if (typeof handler !== 'function') return false;
+        try {
+            handler({
+                files: fileList,
+                catId: currentCat,
+                onDone: function () { loadFiles(currentCat, true); }
+            });
+        } catch (err) {
+            console.error('MP3 upload provider "' + activeUploadProviderId + '" failed:', err);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Rendert die per MP3.registerAdminMenuItem() registrierten Eintraege in
+     * #mp3-admin-menu-extensions (Zahnrad-Menue) -- no-op, falls das Overlay
+     * noch nicht gebaut wurde (registerAdminMenuItem() wird typischerweise
+     * beim Laden des registrierenden Scripts aufgerufen, lange bevor der User
+     * das Overlay ueberhaupt oeffnet; initAdminMenu() ruft diese Funktion
+     * beim naechsten build() dann selbst noch einmal auf).
+     */
+    function renderAdminMenuExtensions() {
+        if (!overlay) return;
+        var container = qs('#mp3-admin-menu-extensions', overlay);
+        if (!container) return;
+        var ids = Object.keys(adminMenuItems);
+        container.innerHTML = ids.map(function (id) {
+            var item = adminMenuItems[id];
+            var icon = item.icon || 'fa-solid fa-wand-magic-sparkles';
+            return '<button type="button" class="mp3-admin-menu-ext-btn" data-admin-menu-ext="' + escAttr(id) + '"><i class="' + escAttr(icon) + '"></i> ' + escAttr(item.label || id) + '</button>';
+        }).join('');
     }
 
     // ---- Public API ----
@@ -3819,6 +4026,32 @@ import {
         registerFieldCollector: function (widgetType, collector) {
             if (!widgetType || typeof collector !== 'function') return;
             fieldCollectors[widgetType] = collector;
+        },
+        // Erweiterungspunkt fuer Dritt-Uploader (z.B. filepond_uploader), die
+        // MediaPlace's eingebauten Upload-Button/Drag&Drop durch ihren
+        // eigenen Dialog ersetzen wollen (siehe UploadProviderRegistry/
+        // MEDIAPLACE_UPLOAD_PROVIDERS in PHP fuer die Server-Registrierung +
+        // Einstellungsseite "Upload-Anbieter" fuer die Aktivierung). handler
+        // bekommt { files: FileList|File[], catId: number, onDone: function }
+        // -- ruft onDone() auf, wenn MediaPlace die Dateiliste neu laden soll.
+        // Registrierung ist reine Bereitschaftserklaerung: greift nur, wenn
+        // dieselbe Provider-ID auch als aktiver Anbieter eingestellt ist.
+        registerUploadProvider: function (id, handler) {
+            if (!id || typeof handler !== 'function') return;
+            uploadProviders[id] = handler;
+        },
+        // Erweiterungspunkt fuer einen eigenen Eintrag im Zahnrad-Menue (z.B.
+        // "AI Bulk Management" von mediaplace_a11y) -- es gibt sonst keine
+        // Moeglichkeit, eine Aktion auszufuehren, die JS INNERHALB des
+        // laufenden Overlays braucht (die klassische mediapool-Unterseiten-
+        // Liste im selben Menue oeffnet immer eine echte Seite/ein Popup).
+        // opts: { label, icon (fa-solid-Klasse, optional), onClick() }.
+        // onClick bekommt keine Argumente -- der Aufrufer kennt seinen
+        // eigenen Zustand selbst (z.B. ueber sein eigenes #mp3-root-Pendant).
+        registerAdminMenuItem: function (id, opts) {
+            if (!id || !opts || typeof opts.onClick !== 'function') return;
+            adminMenuItems[id] = opts;
+            renderAdminMenuExtensions();
         },
         // Aufgerufen von mediaplace_classic.js, wenn im Metainfo-Canvas ein
         // klassisches REX_MEDIA[n]/REX_MEDIALIST[n]-Widget geklickt wird --
