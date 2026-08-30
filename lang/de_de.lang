@@ -197,6 +197,7 @@ mediaplace_sort_title_az = Titel A–Z
 mediaplace_sort_title_za = Titel Z–A
 mediaplace_sort_size_desc = Größe (größte zuerst)
 mediaplace_sort_size_asc = Größe (kleinste zuerst)
+mediaplace_view_mode = Ansicht
 mediaplace_tiles = Kacheln
 mediaplace_list = Liste
 mediaplace_media_wall = Media Wall

@@ -495,6 +495,36 @@ import {
         if (control) control.style.display = (viewMode !== 'list') ? '' : 'none';
     }
 
+    // Trigger-Icon des Ansicht-Umschalters (.mp3-view-toggle-btn) auf die
+    // aktuell aktive Ansicht synchron halten -- Modul-Scope, weil sowohl vom
+    // Dropdown-Klick-Handler als auch von der State-Wiederherstellung in
+    // open() aufgerufen (siehe dort).
+    var VIEW_MODE_ICONS = { grid: 'fa-table-cells', list: 'fa-list', mediawall: 'fa-table-cells-large' };
+    function updateViewToggleTrigger() {
+        var triggerIcon = qs('.mp3-view-toggle-btn i', overlay);
+        if (triggerIcon) triggerIcon.className = 'fa-solid ' + (VIEW_MODE_ICONS[viewMode] || VIEW_MODE_ICONS.grid);
+    }
+
+    // Gleiches Prinzip fuer den Sortierungs-Popover (.mp3-sort-toggle-btn):
+    // Label-Text im Trigger auf die aktuell aktive Sortierung synchron halten.
+    var SORT_LABEL_KEYS = {
+        date_desc: 'mediaplace_sort_newest',
+        date_asc: 'mediaplace_sort_oldest',
+        filename_asc: 'mediaplace_sort_filename_az',
+        filename_desc: 'mediaplace_sort_filename_za',
+        title_asc: 'mediaplace_sort_title_az',
+        title_desc: 'mediaplace_sort_title_za',
+        size_desc: 'mediaplace_sort_size_desc',
+        size_asc: 'mediaplace_sort_size_asc'
+    };
+    function updateSortToggleTrigger() {
+        var label = qs('.mp3-sort-toggle-label', overlay);
+        if (label) label.textContent = t(SORT_LABEL_KEYS[getCurrentSort()] || SORT_LABEL_KEYS.date_desc);
+        qsa('.mp3-sort-option', overlay).forEach(function (b) {
+            b.classList.toggle('mp3-sort-option-active', b.getAttribute('data-sort') === getCurrentSort());
+        });
+    }
+
     // Analog zur Sidebar-Breite (SIDEBAR_MIN/MAX in initDragResize()) --
     // eigene Konstanten, weil Detail-Panel und Sidebar unabhaengig voneinander
     // sinnvolle Grenzen haben. Muss von showDetail()/hideDetail() aus
@@ -1068,20 +1098,28 @@ import {
                                 '<i class="fa-solid fa-magnifying-glass"></i>' +
                                 '<input type="text" class="mp3-search" placeholder="' + escAttr(t('mediaplace_search_placeholder')) + '">' +
                             '</div>' +
-                            '<select class="mp3-sort-select" title="' + escAttr(t('mediaplace_sorting')) + '">' +
-                                '<option value="date_desc">' + t('mediaplace_sort_newest') + '</option>' +
-                                '<option value="date_asc">' + t('mediaplace_sort_oldest') + '</option>' +
-                                '<option value="filename_asc">' + t('mediaplace_sort_filename_az') + '</option>' +
-                                '<option value="filename_desc">' + t('mediaplace_sort_filename_za') + '</option>' +
-                                '<option value="title_asc">' + t('mediaplace_sort_title_az') + '</option>' +
-                                '<option value="title_desc">' + t('mediaplace_sort_title_za') + '</option>' +
-                                '<option value="size_desc">' + t('mediaplace_sort_size_desc') + '</option>' +
-                                '<option value="size_asc">' + t('mediaplace_sort_size_asc') + '</option>' +
-                            '</select>' +
-                            '<div class="mp3-view-toggle">' +
-                                '<button class="mp3-view-btn mp3-view-active" data-view="grid" title="' + escAttr(t('mediaplace_tiles')) + '"><i class="fa-solid fa-table-cells"></i></button>' +
-                                '<button class="mp3-view-btn" data-view="list" title="' + escAttr(t('mediaplace_list')) + '"><i class="fa-solid fa-list"></i></button>' +
-                                '<button class="mp3-view-btn" data-view="mediawall" title="' + escAttr(t('mediaplace_media_wall')) + '"><i class="fa-solid fa-table-cells-large"></i></button>' +
+                            '<div class="mp3-sort-toggle-wrap">' +
+                                '<button type="button" class="mp3-sort-toggle-btn" title="' + escAttr(t('mediaplace_sorting')) + '">' +
+                                    '<i class="fa-solid fa-arrow-down-wide-short"></i> <span class="mp3-sort-toggle-label"></span>' +
+                                '</button>' +
+                                '<div class="mp3-sort-toggle-menu">' +
+                                    '<button class="mp3-sort-option" data-sort="date_desc">' + escAttr(t('mediaplace_sort_newest')) + '</button>' +
+                                    '<button class="mp3-sort-option" data-sort="date_asc">' + escAttr(t('mediaplace_sort_oldest')) + '</button>' +
+                                    '<button class="mp3-sort-option" data-sort="filename_asc">' + escAttr(t('mediaplace_sort_filename_az')) + '</button>' +
+                                    '<button class="mp3-sort-option" data-sort="filename_desc">' + escAttr(t('mediaplace_sort_filename_za')) + '</button>' +
+                                    '<button class="mp3-sort-option" data-sort="title_asc">' + escAttr(t('mediaplace_sort_title_az')) + '</button>' +
+                                    '<button class="mp3-sort-option" data-sort="title_desc">' + escAttr(t('mediaplace_sort_title_za')) + '</button>' +
+                                    '<button class="mp3-sort-option" data-sort="size_desc">' + escAttr(t('mediaplace_sort_size_desc')) + '</button>' +
+                                    '<button class="mp3-sort-option" data-sort="size_asc">' + escAttr(t('mediaplace_sort_size_asc')) + '</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="mp3-view-toggle-wrap">' +
+                                '<button type="button" class="mp3-view-toggle-btn" title="' + escAttr(t('mediaplace_view_mode')) + '"><i class="fa-solid fa-table-cells"></i></button>' +
+                                '<div class="mp3-view-toggle-menu" id="mp3-view-toggle-menu">' +
+                                    '<button class="mp3-view-btn mp3-view-active" data-view="grid"><i class="fa-solid fa-table-cells"></i> ' + escAttr(t('mediaplace_tiles')) + '</button>' +
+                                    '<button class="mp3-view-btn" data-view="list"><i class="fa-solid fa-list"></i> ' + escAttr(t('mediaplace_list')) + '</button>' +
+                                    '<button class="mp3-view-btn" data-view="mediawall"><i class="fa-solid fa-table-cells-large"></i> ' + escAttr(t('mediaplace_media_wall')) + '</button>' +
+                                '</div>' +
                             '</div>' +
                             '<label class="mp3-upload-btn" title="' + escAttr(t('mediaplace_upload_files')) + '">' +
                                 '<i class="fa-solid fa-cloud-arrow-up"></i>' +
@@ -1093,6 +1131,7 @@ import {
                             '<button type="button" class="mp3-admin-menu-btn" title="' + escAttr(t('mediaplace_admin_menu_title')) + '"><i class="fa-solid fa-gear"></i></button>' +
                             '<div class="mp3-admin-menu" id="mp3-admin-menu">' +
                                 '<button type="button" class="mp3-admin-menu-darkmode-toggle"><i class="fa-solid fa-moon"></i> <span class="mp3-admin-menu-darkmode-label">' + escAttr(t('mediaplace_dark_mode')) + '</span></button>' +
+                                '<div class="mp3-admin-menu-sort-slot" id="mp3-admin-menu-sort-slot"></div>' +
                                 '<div class="mp3-admin-menu-links" id="mp3-admin-menu-links"></div>' +
                             '</div>' +
                         '</div>' +
@@ -1481,6 +1520,25 @@ import {
             }
             applySidebarWidth();
 
+            // Sortierung wandert im Compact-Modus aus der Werkzeugleiste ins
+            // Zahnrad-Menue (ein Icon-Ziel weniger in der ohnehin schon vollen
+            // mobilen Kopfzeile) -- derselbe Popover-Wrap wird per appendChild()
+            // umgehaengt statt dupliziert, damit sein bestehender Klick-Handler
+            // (siehe initFiltersAndSort()) unveraendert weiterfunktioniert.
+            var sortToggleWrapEl = qs('.mp3-sort-toggle-wrap', overlay);
+            var sortSelectSlot = qs('#mp3-admin-menu-sort-slot', overlay);
+            function relocateSortSelect(isCompact) {
+                if (!sortToggleWrapEl || !sortSelectSlot) return;
+                if (isCompact) {
+                    sortSelectSlot.appendChild(sortToggleWrapEl);
+                } else {
+                    var viewToggle = qs('.mp3-view-toggle-wrap', overlay);
+                    if (viewToggle && viewToggle.parentNode) {
+                        viewToggle.parentNode.insertBefore(sortToggleWrapEl, viewToggle);
+                    }
+                }
+            }
+
             // Track compact mode via ResizeObserver
             var COMPACT_BREAKPOINT = 760;
             if (typeof ResizeObserver !== 'undefined') {
@@ -1491,6 +1549,7 @@ import {
                         var wasCompact = overlay.classList.contains('mp3-compact');
                         if (isCompact !== wasCompact) {
                             overlay.classList.toggle('mp3-compact', isCompact);
+                            relocateSortSelect(isCompact);
                             // Close sidebar & detail when leaving compact mode
                             if (!isCompact) {
                                 if (sidebar) {
@@ -3159,28 +3218,88 @@ import {
             updateScrollPill();
         });
 
-        // Sort dropdown
-        var sortSelect = qs('.mp3-sort-select', overlay);
-        sortSelect.addEventListener('change', function () {
-            setCurrentSort(sortSelect.value);
-            refreshDisplay();
-        });
-
-        // View toggle (grid / list)
-        var viewToggle = qs('.mp3-view-toggle', overlay);
-        viewToggle.addEventListener('click', function (e) {
-            var btn = e.target.closest('.mp3-view-btn');
-            if (!btn) return;
-            var mode = btn.getAttribute('data-view');
-            if (mode === viewMode) return;
-            viewMode = mode;
-            localStorage.setItem('mp3_view', viewMode);
-            qsa('.mp3-view-btn', viewToggle).forEach(function (b) {
-                b.classList.toggle('mp3-view-active', b.getAttribute('data-view') === mode);
+        // Sort-Popover -- gleiches Muster wie der Ansicht-Umschalter unten
+        // (Trigger-Button + Dropdown statt eines nativen <select>, dessen
+        // Options-Liste sich nicht durchgaengig stylen laesst).
+        var sortToggleWrap = qs('.mp3-sort-toggle-wrap', overlay);
+        var sortToggleBtn = qs('.mp3-sort-toggle-btn', overlay);
+        var sortToggleMenu = qs('.mp3-sort-toggle-menu', overlay);
+        if (sortToggleWrap && sortToggleBtn && sortToggleMenu) {
+            function positionSortToggleMenu() {
+                var rect = sortToggleBtn.getBoundingClientRect();
+                var menuW = Math.max(sortToggleMenu.offsetWidth, 180);
+                var left = Math.max(8, Math.min(rect.left, window.innerWidth - menuW - 8));
+                var top = rect.bottom + 1;
+                sortToggleMenu.style.left = left + 'px';
+                sortToggleMenu.style.top = top + 'px';
+            }
+            sortToggleBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var willOpen = !sortToggleWrap.classList.contains('mp3-sort-toggle-open');
+                sortToggleWrap.classList.toggle('mp3-sort-toggle-open', willOpen);
+                if (willOpen) positionSortToggleMenu();
             });
-            updateTileSizeVisibility();
-            refreshDisplay();
-        });
+            document.addEventListener('click', function (e) {
+                if (!sortToggleWrap.classList.contains('mp3-sort-toggle-open')) return;
+                if (e.target.closest('.mp3-sort-toggle-wrap')) return;
+                sortToggleWrap.classList.remove('mp3-sort-toggle-open');
+            });
+            sortToggleMenu.addEventListener('click', function (e) {
+                var btn = e.target.closest('.mp3-sort-option');
+                if (!btn) return;
+                var sort = btn.getAttribute('data-sort');
+                sortToggleWrap.classList.remove('mp3-sort-toggle-open');
+                if (sort === getCurrentSort()) return;
+                setCurrentSort(sort);
+                updateSortToggleTrigger();
+                refreshDisplay();
+            });
+        }
+
+        // View toggle (grid / list / media wall) -- ein einzelner Trigger-Button
+        // statt frueher 3 einzelner Icon-Buttons (auch auf Desktop, nicht nur
+        // mobil, siehe Bugreport): oeffnet ein kleines Dropdown-Menue
+        // (gleiches Muster wie initAdminMenu() unten), der Trigger zeigt dabei
+        // immer das Icon der aktuell aktiven Ansicht.
+        var viewToggleWrap = qs('.mp3-view-toggle-wrap', overlay);
+        var viewToggleBtn = qs('.mp3-view-toggle-btn', overlay);
+        var viewToggleMenu = qs('.mp3-view-toggle-menu', overlay);
+        if (viewToggleWrap && viewToggleBtn && viewToggleMenu) {
+            function positionViewToggleMenu() {
+                var rect = viewToggleBtn.getBoundingClientRect();
+                var menuW = Math.max(viewToggleMenu.offsetWidth, 160);
+                var left = Math.max(8, Math.min(rect.left, window.innerWidth - menuW - 8));
+                var top = rect.bottom + 1;
+                viewToggleMenu.style.left = left + 'px';
+                viewToggleMenu.style.top = top + 'px';
+            }
+            viewToggleBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var willOpen = !viewToggleWrap.classList.contains('mp3-view-toggle-open');
+                viewToggleWrap.classList.toggle('mp3-view-toggle-open', willOpen);
+                if (willOpen) positionViewToggleMenu();
+            });
+            document.addEventListener('click', function (e) {
+                if (!viewToggleWrap.classList.contains('mp3-view-toggle-open')) return;
+                if (e.target.closest('.mp3-view-toggle-wrap')) return;
+                viewToggleWrap.classList.remove('mp3-view-toggle-open');
+            });
+            viewToggleMenu.addEventListener('click', function (e) {
+                var btn = e.target.closest('.mp3-view-btn');
+                if (!btn) return;
+                var mode = btn.getAttribute('data-view');
+                viewToggleWrap.classList.remove('mp3-view-toggle-open');
+                if (mode === viewMode) return;
+                viewMode = mode;
+                localStorage.setItem('mp3_view', viewMode);
+                qsa('.mp3-view-btn', viewToggleMenu).forEach(function (b) {
+                    b.classList.toggle('mp3-view-active', b.getAttribute('data-view') === mode);
+                });
+                updateViewToggleTrigger();
+                updateTileSizeVisibility();
+                refreshDisplay();
+            });
+        }
 
         // Tile size slider (Kachel- und Media-Wall-Ansicht)
         var tileSizeSliderEl = qs('.mp3-tile-size-slider', overlay);
@@ -3620,8 +3739,8 @@ import {
         qsa('.mp3-view-btn', overlay).forEach(function (b) {
             b.classList.toggle('mp3-view-active', b.getAttribute('data-view') === viewMode);
         });
-        var sortSel = qs('.mp3-sort-select', overlay);
-        if (sortSel) sortSel.value = getCurrentSort();
+        updateViewToggleTrigger();
+        updateSortToggleTrigger();
         var perPageSel = qs('.mp3-per-page-select', overlay);
         if (perPageSel) perPageSel.value = String(mediaPerPage);
         localStorage.setItem('mp3_per_page', String(mediaPerPage));
