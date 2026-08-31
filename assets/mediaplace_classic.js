@@ -36,6 +36,18 @@
         return null; // rex-icon-delete-media bleibt unveraendert
     }
 
+    // mediapool/lib/var_media.php und var_medialist.php bauen fuer jeden
+    // Funktions-Button ein inline onclick wie
+    // "addREXMedia('42', '&rex_file_category=5');return false;" -- das
+    // konfigurierte "category"-Arg des Widgets steckt darin als
+    // rex_file_category=N. Kein sauberer data-*-Zugriff moeglich (REDAXO-
+    // Core rendert das nicht separat aus), deshalb Regex auf das onclick.
+    function categoryFromLink(link) {
+        var onclick = link.getAttribute('onclick') || '';
+        var match = onclick.match(/rex_file_category=(\d+)/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
     // Ermittelt die "Ansehen"-Zieldatei fuer beide Widget-Typen -- genutzt
     // sowohl fuer den normalen Fall (handleMediaWidget/handleMedialistWidget)
     // als auch fuer den Metainfo-Canvas-Fall unten (dort bisher komplett
@@ -54,7 +66,7 @@
     }
 
     // ---- REX_MEDIA[n] (Einzelauswahl) ----
-    function handleMediaWidget(wrapper, action) {
+    function handleMediaWidget(wrapper, action, link) {
         var input = qs('input[id^="REX_MEDIA_"]', wrapper);
         if (!input) return;
 
@@ -69,14 +81,21 @@
 
         if (action === 'view' && input.value) {
             MP3.openFile(input.value, setValue);
+        } else if (action === 'add') {
+            // "+": direkt in den Upload-Modus statt erst Browsen -- feste
+            // Ziel-Kategorie, falls das Widget mit einem "category"-Arg
+            // konfiguriert ist, sonst fragt MP3.openUpload() wie gewohnt
+            // (aktuelle Kategorie bzw. Modal-Abfrage, siehe doUpload()).
+            var categoryId = categoryFromLink(link);
+            MP3.openUpload(setValue, null !== categoryId ? { categoryId: categoryId } : undefined);
         } else {
-            // 'open' und 'add' (Hochladen erfolgt im Overlay selbst ueber den Upload-Button)
+            // 'open': normales Browsen/Auswaehlen
             MP3.open(setValue);
         }
     }
 
     // ---- REX_MEDIALIST[n] (Mehrfachauswahl) ----
-    function handleMedialistWidget(wrapper, action) {
+    function handleMedialistWidget(wrapper, action, link) {
         var select = qs('select[id^="REX_MEDIALIST_SELECT_"]', wrapper);
         if (!select) return;
         var listId = select.id.slice('REX_MEDIALIST_SELECT_'.length);
@@ -91,6 +110,12 @@
             }
         }
 
+        if (action === 'add') {
+            var categoryId = categoryFromLink(link);
+            MP3.openUpload(addFilenames, { multiple: true, categoryId: null !== categoryId ? categoryId : undefined });
+            return;
+        }
+
         if (action === 'view') {
             var selected = null;
             for (var i = 0; i < select.options.length; i++) {
@@ -102,7 +127,8 @@
             }
         }
 
-        // 'open', 'add' und 'view' ohne Auswahl: Mehrfachauswahl-Overlay
+        // 'open' und 'view' ohne Auswahl: Mehrfachauswahl-Overlay ('add' bereits
+        // oben per return behandelt)
         MP3.open(addFilenames, { multiple: true });
     }
 
@@ -144,9 +170,9 @@
         e.stopImmediatePropagation();
 
         if (wrapper.classList.contains('rex-js-widget-medialist')) {
-            handleMedialistWidget(wrapper, action);
+            handleMedialistWidget(wrapper, action, link);
         } else {
-            handleMediaWidget(wrapper, action);
+            handleMediaWidget(wrapper, action, link);
         }
     }, true); // Capture-Phase: laeuft vor dem inline onclick des Buttons
 

@@ -38,6 +38,13 @@ var resolveFolderCategories = MP3Core.api.resolveFolderCategories;
  * - getFeatures(): noch-legacy-State (features.uploadResize)
  * - getUploadResizeWidth()/getUploadResizeHeight(): noch-legacy-State
  * - loadFiles(catId, reset): noch-legacy-Funktion
+ * - getUploadPickerMode()/getUploadTargetCategoryId()/getOnSelect()/
+ *   getOnMultiSelect()/clearOnSelect()/close(): fuer MP3.openUpload() (siehe
+ *   core.js) -- explizite Ziel-Kategorie ueberspringt die normale
+ *   currentCat/Abfrage-Logik unten in doUpload(), und nach erfolgreichem
+ *   Upload wird der Picker-Callback direkt mit der/den hochgeladenen
+ *   Datei(en) aufgerufen + der Overlay geschlossen, statt im Grid
+ *   weiterzumachen.
  */
 export function initUpload(theCtx) {
     ctx = theCtx;
@@ -123,6 +130,31 @@ export function doUpload(fileList) {
     if (!fileList || !fileList.length) return;
 
     var files = Array.prototype.slice.call(fileList);
+
+    // MP3.openUpload()-Aufrufer mit einer expliziten Ziel-Kategorie (z.B. ein
+    // klassisches Widget mit fest konfiguriertem "category"-Arg, siehe
+    // mediaplace_classic.js) ueberspringen die currentCat/Abfrage-Logik
+    // komplett -- die Kategorie ist bereits eindeutig bekannt.
+    var uploadTargetCategoryId = ctx.getUploadTargetCategoryId ? ctx.getUploadTargetCategoryId() : null;
+    if (null !== uploadTargetCategoryId) {
+        startUpload(files, uploadTargetCategoryId, null);
+        return;
+    }
+
+    // Im Upload-Picker-Kurzweg (siehe openUpload() in core.js) OHNE explizite
+    // Kategorie IMMER fragen, statt stillschweigend die zuletzt in MediaPlace
+    // durchsuchte Kategorie (localStorage mp3_cat, ueber currentCat) wieder-
+    // zuverwenden -- der Aufrufer (z.B. ein klassisches Widget auf einer
+    // beliebigen Seite) hat keinen echten Browsing-Kontext, aus dem "aktuelle
+    // Kategorie" sinnvoll abgeleitet werden koennte, und currentCat kann
+    // vollkommen unabhaengig von diesem Aufruf auf irgendeiner alten
+    // Kategorie stehen geblieben sein (Nutzer-Feedback: "ich werde nicht
+    // gefragt in welche Kategorie").
+    if (ctx.getUploadPickerMode && ctx.getUploadPickerMode()) {
+        showUploadPickerCategoryPicker(files);
+        return;
+    }
+
     var currentCat = ctx.getCurrentCat();
 
     // In collection mode: ask which category to upload to, then assign to collection
@@ -235,6 +267,25 @@ function showCollectionUploadCategoryPicker(files, collection) {
     });
 }
 
+/**
+ * Eigener, von showCollectionUploadCategoryPicker() unabhaengiger Dialog fuer
+ * den Upload-Picker-Kurzweg (openUpload() ohne explizite Kategorie, siehe
+ * doUpload() oben) -- keine Sammlung involviert, deshalb ein eigener,
+ * unmissverstaendlicher Hinweistext statt der leeren "der Sammlung {name}
+ * zugeordnet"-Formulierung, die bei collection=null entstehen wuerde.
+ */
+function showUploadPickerCategoryPicker(files) {
+    showCategoryPickerModal({
+        icon: 'fa-solid fa-folder-open',
+        title: t('mediaplace_pick_upload_category'),
+        hint: t('mediaplace_upload_picker_category_hint'),
+        confirmLabel: t('mediaplace_upload'),
+        onConfirm: function (catId) {
+            startUpload(files, catId, null);
+        }
+    });
+}
+
 // isResizableImageType()/resizeImageFile() leben in MP3Core.helpers (geteilt
 // mit mediaplace_widget.js fuer dessen eigenen Direkt-Upload).
 function maybeResizeUploadFile(file) {
@@ -283,6 +334,25 @@ function startUpload(files, catId, assignToCollectionName) {
         if (idx >= files.length) {
             // All done — optionally assign to collection
             var finalize = function () {
+                // MP3.openUpload()-Kurzweg (siehe core.js): Picker-Callback
+                // direkt mit der/den hochgeladenen Datei(en) aufrufen und
+                // schliessen -- keine Zusammenfassung/Toast noetig, der
+                // Overlay verschwindet ohnehin sofort wieder (ein Toast im
+                // Overlay selbst waere mit ihm zusammen weg, bevor er
+                // wahrgenommen werden koennte).
+                if (ctx.getUploadPickerMode && ctx.getUploadPickerMode() && uploadedFilenames.length) {
+                    var multiCb = ctx.getOnMultiSelect ? ctx.getOnMultiSelect() : null;
+                    var singleCb = ctx.getOnSelect ? ctx.getOnSelect() : null;
+                    if (ctx.clearOnSelect) ctx.clearOnSelect();
+                    if (multiCb) {
+                        multiCb(uploadedFilenames);
+                    } else if (singleCb) {
+                        singleCb(uploadedFilenames[0]);
+                    }
+                    if (ctx.close) ctx.close();
+                    return;
+                }
+
                 var toastMsg = t('mediaplace_upload_summary', { done: done, total: total });
                 if (failed > 0) toastMsg += t('mediaplace_upload_failed_suffix', { count: failed });
                 var summaryEl = document.getElementById('mp3-upload-summary');

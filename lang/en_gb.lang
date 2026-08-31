@@ -200,6 +200,7 @@ mediaplace_loading_ellipsis = ⏳ Loading…
 mediaplace_error_moving = Error moving: {msg}
 mediaplace_pick_upload_category = Choose upload category
 mediaplace_upload_category_hint = In collection mode a category must be chosen. Files will then be automatically assigned to the collection {name}.
+mediaplace_upload_picker_category_hint = Please choose the target category for the upload.
 mediaplace_pick_import_category = Choose import target category
 mediaplace_import_category_hint = Which category should {name} be imported into?
 mediaplace_root_no_category = (Root / no category)

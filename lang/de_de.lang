@@ -200,6 +200,7 @@ mediaplace_loading_ellipsis = ⏳ Lädt…
 mediaplace_error_moving = Fehler beim Verschieben: {msg}
 mediaplace_pick_upload_category = Kategorie für Upload wählen
 mediaplace_upload_category_hint = Im Sammlungs-Modus muss eine Kategorie gewählt werden. Die Dateien werden danach automatisch der Sammlung {name} zugeordnet.
+mediaplace_upload_picker_category_hint = Bitte wähle die Zielkategorie für den Upload.
 mediaplace_pick_import_category = Zielkategorie für Import wählen
 mediaplace_import_category_hint = In welche Kategorie soll {name} importiert werden?
 mediaplace_root_no_category = (Stamm / kein Kategorie)

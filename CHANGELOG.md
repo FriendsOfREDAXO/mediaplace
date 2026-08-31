@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.26.0 – 2026-08-31
+
+### Neu
+- **Direkter Upload über die klassischen `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets**: der "+"-Button öffnet MediaPlace jetzt direkt im Upload-Modus (nativer Datei-Dialog sofort, kein Umweg über Browsen-dann-Hochladen) statt der normalen Auswahlansicht. Ist am Widget eine feste Zielkategorie konfiguriert, wird direkt dorthin hochgeladen; sonst wird – wie beim regulären Upload-Button auch – nach der Zielkategorie gefragt. Nach dem Upload wird die Datei automatisch ausgewählt und der Overlay schließt sich. Neuer öffentlicher Einstiegspunkt `MP3.openUpload(callback, opts)` für eigenen Code mit demselben Bedürfnis.
+
 ## Version 1.25.0 – 2026-08-31
 
 ### Neu

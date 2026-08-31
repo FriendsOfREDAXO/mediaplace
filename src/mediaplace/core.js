@@ -206,6 +206,19 @@ import {
     // Server-Endpunkt (func=replace), siehe replaceFromProviderFile() in
     // modules/providers.js.
     var replaceTargetFilename = null;
+    // Gesetzt von openUpload() (siehe unten) -- der native Datei-Dialog wird
+    // sofort nach dem Oeffnen ausgeloest statt der normalen Rasteransicht,
+    // und nach erfolgreichem Upload wird onSelect/onMultiSelect direkt mit
+    // der/den hochgeladenen Datei(en) aufgerufen + der Overlay geschlossen
+    // (siehe startUpload() in modules/upload.js), statt wie beim normalen
+    // Upload-Button einfach im Grid weiterzumachen. Fuer den "+"-Button an
+    // klassischen REX_MEDIA[n]/REX_MEDIALIST[n]-Widgets, siehe mediaplace_classic.js.
+    var uploadPickerMode = false;
+    // Optionale, EXPLIZITE Ziel-Kategorie fuer den Upload-Picker-Modus (aus
+    // dem konfigurierten "category"-Arg des klassischen Widgets, falls
+    // vorhanden) -- ueberschreibt die sonst uebliche currentCat/Kategorie-
+    // Abfrage-Logik in doUpload() komplett, siehe getUploadTargetCategoryId().
+    var uploadTargetCategoryId = null;
     var closeHrefTarget = null; // options.closeHref (open()) -- Navigationsziel fuer close(),
                                  // nur gesetzt wenn MP3 als echte Seite (nicht als Popup-Ersatz
                                  // auf einer bereits geladenen Seite) geoeffnet wurde.
@@ -1612,6 +1625,16 @@ import {
             getUploadResizeWidth: function () { return uploadResizeWidth; },
             getUploadResizeHeight: function () { return uploadResizeHeight; },
             loadFiles: loadFiles,
+            // Fuer openUpload() (siehe oben) -- explizite Ziel-Kategorie
+            // ueberspringt die normale currentCat/Abfrage-Logik in doUpload(),
+            // und nach erfolgreichem Upload wird direkt der Picker-Callback
+            // aufgerufen + geschlossen, statt im Grid weiterzumachen.
+            getUploadPickerMode: function () { return uploadPickerMode; },
+            getUploadTargetCategoryId: function () { return uploadTargetCategoryId; },
+            getOnSelect: function () { return onSelect; },
+            getOnMultiSelect: function () { return onMultiSelect; },
+            clearOnSelect: function () { onSelect = null; onMultiSelect = null; },
+            close: close,
         });
 
         initMultiselect({
@@ -4235,6 +4258,8 @@ import {
         // sauber, statt ihn stillschweigend aus einer vorherigen Sitzung
         // mitzuschleppen.
         replaceTargetFilename = null;
+        uploadPickerMode = false; // siehe openUpload() -- setzt dies erst NACH diesem Aufruf
+        uploadTargetCategoryId = null;
         onMultiSelect = (multiMode && typeof callback === 'function') ? callback : null;
         closeHrefTarget = (typeof options.closeHref === 'string' && options.closeHref) ? options.closeHref : null;
         onCloseCallback = (typeof options.onClose === 'function') ? options.onClose : null;
@@ -4388,6 +4413,34 @@ import {
         loadFiles(currentCat, true);
     }
 
+    /**
+     * Kurzweg fuer "direkt hochladen statt browsen" -- oeffnet den Overlay wie
+     * open(), loest aber sofort den nativen Datei-Dialog aus (denselben, den
+     * der Upload-Button im Header nutzt) statt die Rasteransicht zu zeigen.
+     * Nach erfolgreichem Upload wird der/die uebergebene(n) Callback(s) direkt
+     * mit der/den hochgeladenen Datei(en) aufgerufen und der Overlay wieder
+     * geschlossen (siehe startUpload() in modules/upload.js) -- fuer
+     * Aufrufer, die (wie die klassischen REX_MEDIA[n]/REX_MEDIALIST[n]-
+     * "+"-Buttons, siehe mediaplace_classic.js) nur "waehle/lade eine Datei
+     * aus" wollen, nicht das volle Browsing-Erlebnis.
+     *
+     * opts.categoryId (optional): explizite Ziel-Kategorie, ueberschreibt die
+     * sonst uebliche currentCat/Kategorie-Abfrage-Logik komplett (siehe
+     * doUpload() in modules/upload.js) -- fuer klassische Widgets, die selbst
+     * mit einem festen "category"-Arg konfiguriert sind. Ohne Angabe verhaelt
+     * sich der Upload genau wie der normale Header-Button: aktuelle Kategorie,
+     * oder falls keine eindeutig ist (Sammlungs-/"Alle Medien"-Modus), Abfrage
+     * per Modal.
+     */
+    function openUpload(callbackOrOpts, opts) {
+        open(callbackOrOpts, opts);
+        uploadPickerMode = true;
+        var resolvedOpts = (typeof callbackOrOpts === 'object' && callbackOrOpts) ? callbackOrOpts : (opts || {});
+        uploadTargetCategoryId = (typeof resolvedOpts.categoryId === 'number' && resolvedOpts.categoryId >= 0) ? resolvedOpts.categoryId : null;
+        var input = qs('.mp3-upload-btn input[type="file"]', overlay);
+        if (input) input.click();
+    }
+
     function close() {
         loadSessionId++;
         stopScrollPin();
@@ -4418,6 +4471,8 @@ import {
         onSelect = null;
         onMultiSelect = null;
         replaceTargetFilename = null;
+        uploadPickerMode = false;
+        uploadTargetCategoryId = null;
         if (onCloseCallback) {
             var cb = onCloseCallback;
             onCloseCallback = null;
@@ -4487,6 +4542,7 @@ import {
     window.MP3 = {
         open: open,
         close: close,
+        openUpload: openUpload,
         // Opens the overlay and immediately shows the detail panel for a given file.
         // Used to replicate the classic "Ansehen"/"View" button of the core widgets.
         openFile: function (filename, callback, opts) {
