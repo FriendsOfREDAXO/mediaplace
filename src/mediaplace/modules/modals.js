@@ -145,13 +145,22 @@ export function showAlertModal(opts) {
 // gleiche Cancel-Semantik wie prompt() selbst.
 export function showPromptModal(opts) {
     return new Promise(function (resolve) {
+        // opts.datalist (optional): Liste bereits vorhandener Werte (z.B.
+        // Sammlungsnamen) als natives <datalist> -- erlaubt weiterhin freien
+        // Text (neuen Namen tippen), zeigt per Autocomplete/Dropdown-Pfeil
+        // aber auch bestehende Werte zur Auswahl an, statt sie nur als reinen
+        // Info-Text darzustellen, den man exakt selbst abtippen muesste
+        // (siehe startBulkAddToCollection() in categories.js).
+        var hasDatalist = Array.isArray(opts.datalist) && opts.datalist.length > 0;
+        var datalistId = hasDatalist ? 'mp3-prompt-modal-datalist-' + Math.random().toString(36).slice(2) : '';
         var overlay = document.createElement('div');
         overlay.className = 'mp3-cat-move-modal-overlay';
         overlay.innerHTML =
             '<div class="mp3-cat-move-modal">' +
             '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid ' + escAttr(opts.icon || 'fa-pen') + '"></i> ' + opts.title + '</h5>' +
             (opts.label ? '<p class="mp3-cat-move-modal-info">' + opts.label + '</p>' : '') +
-            '<input type="text" class="mp3-cat-move-modal-input" value="' + escAttr(opts.value || '') + '">' +
+            '<input type="text" class="mp3-cat-move-modal-input" value="' + escAttr(opts.value || '') + '"' + (hasDatalist ? ' list="' + datalistId + '"' : '') + '>' +
+            (hasDatalist ? '<datalist id="' + datalistId + '">' + opts.datalist.map(function (v) { return '<option value="' + escAttr(v) + '">'; }).join('') + '</datalist>' : '') +
             '<div class="mp3-cat-move-modal-actions">' +
             '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
             '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +

@@ -19,7 +19,7 @@
  * navigateToCategory()/loadCategories() aufgerufen wird.
  */
 
-import { renderCollectionsSection, setActiveCollection, getCollectionsForCurrentCategory, collectionTagToName } from './collections.js';
+import { renderCollectionsSection, setActiveCollection, getCollectionsForCurrentCategory, collectionTagToName, refreshCollectionsSection, setCollectionCounts } from './collections.js';
 import { hasProviders, renderProvidersSection } from './providers.js';
 import { showConfirmModal, showAlertModal, showPromptModal, showCategoryPickerModal } from './modals.js';
 import { getCurrentTagCatalog } from './filters.js';
@@ -37,6 +37,7 @@ var apiMoveCategory = MP3Core.api.apiMoveCategory;
 var apiCreateCategory = MP3Core.api.apiCreateCategory;
 var apiRenameCategory = MP3Core.api.apiRenameCategory;
 var apiCategoryBulkAction = MP3Core.api.apiCategoryBulkAction;
+var apiLoadSystemTagsForFiles = MP3Core.api.apiLoadSystemTagsForFiles;
 
 /**
  * ctx-Vertrag:
@@ -924,13 +925,34 @@ export function startBulkAddToCollection(categoryId, categoryName) {
         icon: 'fa-bookmark',
         title: t('mediaplace_bulk_add_to_collection'),
         label: t('mediaplace_bulk_collection_hint', { name: '<strong>' + escAttr(categoryName) + '</strong>' }) +
+            // Zusaetzlich zum <datalist>-Autocomplete unten (opts.datalist) noch
+            // als Text sichtbar -- der kleine Dropdown-Pfeil eines <datalist>-
+            // Inputs faellt nicht jedem sofort auf.
             (existingNames.length ? '<br><small>' + escAttr(t('mediaplace_bulk_collection_existing', { names: existingNames.join(', ') })) + '</small>' : ''),
-        confirmLabel: t('mediaplace_save')
+        confirmLabel: t('mediaplace_save'),
+        datalist: existingNames,
     }).then(function (name) {
         if (!name) return;
         apiCategoryBulkAction('add_to_collection', { category_id: categoryId, collection_name: name })
             .then(function (result) {
-                refreshCollectionsSection();
+                // collectionCounts (siehe collections.js) wird sonst nur beim
+                // normalen Datei-Laden (apiLoadSystemTagsForFiles() je geladener
+                // Seite) sowie optimistisch +/-1 pro Einzeldatei-Toggle
+                // aktualisiert (setFileCollectionMembership()) -- diese
+                // Massenaktion aendert potenziell viele Dateien serverseitig auf
+                // einen Schlag, ohne dass der Client die genaue Anzahl kennt.
+                // Ohne diesen Refetch bliebe die Sidebar-Zahl auf dem alten
+                // Stand haengen, bis irgendwann zufaellig eine Dateiliste neu
+                // geladen wird (Bugreport: Sammlung hatte 8 Dateien, Sidebar
+                // zeigte weiterhin 2). Leerer filenames-Aufruf reicht, die
+                // Zaehler sind serverseitig ohnehin global (siehe
+                // Api\Tags.php::collection_counts).
+                apiLoadSystemTagsForFiles([]).then(function (payload) {
+                    setCollectionCounts(payload.collection_counts);
+                    refreshCollectionsSection();
+                }).catch(function () {
+                    refreshCollectionsSection();
+                });
                 showAlertModal({
                     icon: 'fa-circle-check',
                     title: t('mediaplace_bulk_add_to_collection'),

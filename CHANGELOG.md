@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 1.23.1 – 2026-08-31
+
+### Bugfix
+- "Alle Dateien zu Sammlung hinzufügen" (Kategorie-Kontextmenü) crashte beim Speichern mit "Can't find variable: refreshCollectionsSection" – Funktion war nicht importiert, ist jetzt behoben.
+- Sammlungs-Mitgliederzahl in der Sidebar blieb nach dieser Massenaktion auf dem alten Stand stehen, da die Aktion (anders als das Einzeldatei-Umschalten) dem Client nicht mitteilt, wie viele Dateien tatsächlich geändert wurden – wird jetzt frisch vom Server nachgeladen.
+- Der "Bestehend oder neu"-Sammlungsname beim Massen-Hinzufügen ließ sich nur exakt abtippen, obwohl vorhandene Sammlungen als Hinweistext angezeigt wurden – jetzt per Autocomplete auswählbar.
+
 ## Version 1.23.0 – 2026-08-31
 
 „Aufgeräumt und nachgezählt." – kein großes Feuerwerk, dafür ein ordentlicher Batzen Kleinkram, den wir beim Testen der letzten Releases gefunden haben, plus zwei neue, nützliche Kleinigkeiten. Am wichtigsten: ein Bug, der bei der KI-Massengenerierung mit klassischem `med_alt` Dateien in die Wurzelkategorie verschoben hat, statt den ALT-Text zu schreiben – wer das nutzt, sollte unten unbedingt lesen.
