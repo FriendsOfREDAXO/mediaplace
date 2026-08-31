@@ -124,7 +124,8 @@
     /* Card */
     --mp3-card-bg: #fff;
     --mp3-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    --mp3-card-hover-border: #324050;
+    --mp3-card-hover-border: #2f80ed;
+    --mp3-card-hover-glow: rgba(47, 128, 237, 0.35);
     --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     --mp3-card-icon-bg: #f3f6fb;
     --mp3-card-icon-color: #68727d;
@@ -161,8 +162,8 @@
     --mp3-table-td-label: #777;
 
     /* Detail Actions */
-    --mp3-select-btn-bg: #324050;
-    --mp3-select-btn-hover: #283542;
+    --mp3-select-btn-bg: #22c55e;
+    --mp3-select-btn-hover: #16a34a;
     --mp3-action-icon-bg: transparent;
     --mp3-action-icon-text: #68727d;
     --mp3-action-icon-hover-bg: #dfe3e9;
@@ -171,20 +172,23 @@
     --mp3-delete-hover-text: #d9534f;
 
     /* Selected State */
-    --mp3-selected-border: #324050;
-    --mp3-selected-shadow: rgba(50, 64, 80, 0.3);
+    --mp3-selected-border: #4ade80;
+    --mp3-selected-shadow: rgba(74, 222, 128, 0.35);
+    --mp3-selected-hover-border: #7fb8f5;
+    --mp3-selected-hover-shadow: rgba(127, 184, 245, 0.4);
 
     /* List View */
     --mp3-list-th-bg: #f3f6fb;
     --mp3-list-th-text: #777;
     --mp3-list-th-border: #dfe3e9;
-    --mp3-list-hover-bg: #dbedf7;
+    --mp3-list-hover-bg: rgba(47, 128, 237, 0.12);
     --mp3-list-td-border: #dfe3e9;
     --mp3-list-td-text: #324050;
     --mp3-list-name: #324050;
     --mp3-list-meta: #777;
-    --mp3-list-selected-bg: #dbedf7;
-    --mp3-list-selected-border: #c1e8f0;
+    --mp3-list-selected-bg: rgba(74, 222, 128, 0.18);
+    --mp3-list-selected-border: #4ade80;
+    --mp3-list-selected-hover-bg: rgba(127, 184, 245, 0.25);
     --mp3-list-icon: #68727d;
 
     /* Multi-Select */
@@ -195,7 +199,7 @@
     --mp3-multi-select-border: #c7ccd3;
     --mp3-multi-select-hover-bg: #dfe3e9;
     --mp3-multi-select-hover-border: #68727d;
-    --mp3-multi-selected-bg: rgba(75, 154, 217, 0.08);
+    --mp3-multi-selected-bg: rgba(74, 222, 128, 0.18);
 
     /* Upload Tracker */
     --mp3-upload-header: #324050;
@@ -288,7 +292,8 @@ body.rex-theme-dark {
     --mp3-dragover-bg: rgba(108, 155, 210, 0.1);
     --mp3-card-bg: #2d3748;
     --mp3-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    --mp3-card-hover-border: #6c9bd2;
+    --mp3-card-hover-border: #2f80ed;
+    --mp3-card-hover-glow: rgba(47, 128, 237, 0.4);
     --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     --mp3-card-icon-bg: #212836;
     --mp3-card-icon-color: #666;
@@ -317,26 +322,29 @@ body.rex-theme-dark {
     --mp3-table-td-border: #333;
     --mp3-table-td-text: #ccc;
     --mp3-table-td-label: #888;
-    --mp3-select-btn-bg: #4b6078;
-    --mp3-select-btn-hover: #6c9bd2;
+    --mp3-select-btn-bg: #22c55e;
+    --mp3-select-btn-hover: #16a34a;
     --mp3-action-icon-bg: transparent;
     --mp3-action-icon-text: #888;
     --mp3-action-icon-hover-bg: #384252;
     --mp3-action-icon-hover-text: #eee;
     --mp3-delete-hover-bg: #3a2020;
     --mp3-delete-hover-text: #e74c3c;
-    --mp3-selected-border: #6c9bd2;
-    --mp3-selected-shadow: rgba(108, 155, 210, 0.3);
+    --mp3-selected-border: #4ade80;
+    --mp3-selected-shadow: rgba(74, 222, 128, 0.35);
+    --mp3-selected-hover-border: #7fb8f5;
+    --mp3-selected-hover-shadow: rgba(127, 184, 245, 0.4);
     --mp3-list-th-bg: #1a202c;
     --mp3-list-th-text: #888;
     --mp3-list-th-border: #444;
-    --mp3-list-hover-bg: #2d3748;
+    --mp3-list-hover-bg: rgba(47, 128, 237, 0.18);
     --mp3-list-td-border: #333;
     --mp3-list-td-text: #ccc;
     --mp3-list-name: #ddd;
     --mp3-list-meta: #888;
-    --mp3-list-selected-bg: #2d3748;
-    --mp3-list-selected-border: #3d4f68;
+    --mp3-list-selected-bg: rgba(74, 222, 128, 0.22);
+    --mp3-list-selected-border: #4ade80;
+    --mp3-list-selected-hover-bg: rgba(127, 184, 245, 0.3);
     --mp3-list-icon: #666;
     --mp3-multi-footer-bg: #1a2636;
     --mp3-multi-footer-border: #2d3e50;
@@ -345,7 +353,7 @@ body.rex-theme-dark {
     --mp3-multi-select-border: #3d5068;
     --mp3-multi-select-hover-bg: #253344;
     --mp3-multi-select-hover-border: #4d6a8a;
-    --mp3-multi-selected-bg: rgba(60, 141, 188, 0.15);
+    --mp3-multi-selected-bg: rgba(95, 184, 122, 0.15);
     --mp3-upload-header: #ccc;
     --mp3-upload-progress-bg: #333;
     --mp3-upload-item-bg: #2d3748;
@@ -438,8 +446,9 @@ body.rex-theme-dark {
         --mp3-dragover-bg: rgba(108, 155, 210, 0.1);
         --mp3-card-bg: #2d3748;
         --mp3-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        --mp3-card-hover-border: #6c9bd2;
-        --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        --mp3-card-hover-border: #2f80ed;
+        --mp3-card-hover-glow: rgba(47, 128, 237, 0.4);
+    --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         --mp3-card-icon-bg: #212836;
         --mp3-card-icon-color: #666;
         --mp3-card-info-bg: #2d3748;
@@ -467,26 +476,29 @@ body.rex-theme-dark {
         --mp3-table-td-border: #333;
         --mp3-table-td-text: #ccc;
         --mp3-table-td-label: #888;
-        --mp3-select-btn-bg: #4b6078;
-        --mp3-select-btn-hover: #6c9bd2;
+        --mp3-select-btn-bg: #22c55e;
+        --mp3-select-btn-hover: #16a34a;
         --mp3-action-icon-bg: transparent;
         --mp3-action-icon-text: #888;
         --mp3-action-icon-hover-bg: #384252;
         --mp3-action-icon-hover-text: #eee;
         --mp3-delete-hover-bg: #3a2020;
         --mp3-delete-hover-text: #e74c3c;
-        --mp3-selected-border: #6c9bd2;
-        --mp3-selected-shadow: rgba(108, 155, 210, 0.3);
+        --mp3-selected-border: #4ade80;
+        --mp3-selected-shadow: rgba(74, 222, 128, 0.35);
+    --mp3-selected-hover-border: #7fb8f5;
+    --mp3-selected-hover-shadow: rgba(127, 184, 245, 0.4);
         --mp3-list-th-bg: #1a202c;
         --mp3-list-th-text: #888;
         --mp3-list-th-border: #444;
-        --mp3-list-hover-bg: #2d3748;
+        --mp3-list-hover-bg: rgba(47, 128, 237, 0.18);
         --mp3-list-td-border: #333;
         --mp3-list-td-text: #ccc;
         --mp3-list-name: #ddd;
         --mp3-list-meta: #888;
-        --mp3-list-selected-bg: #2d3748;
-        --mp3-list-selected-border: #3d4f68;
+        --mp3-list-selected-bg: rgba(74, 222, 128, 0.22);
+        --mp3-list-selected-border: #4ade80;
+        --mp3-list-selected-hover-bg: rgba(127, 184, 245, 0.3);
         --mp3-list-icon: #666;
         --mp3-multi-footer-bg: #1a2636;
         --mp3-multi-footer-border: #2d3e50;
@@ -495,7 +507,7 @@ body.rex-theme-dark {
         --mp3-multi-select-border: #3d5068;
         --mp3-multi-select-hover-bg: #253344;
         --mp3-multi-select-hover-border: #4d6a8a;
-        --mp3-multi-selected-bg: rgba(60, 141, 188, 0.15);
+        --mp3-multi-selected-bg: rgba(95, 184, 122, 0.15);
         --mp3-upload-header: #ccc;
         --mp3-upload-progress-bg: #333;
         --mp3-upload-item-bg: #2d3748;
@@ -588,7 +600,8 @@ body.rex-theme-dark {
     --mp3-dragover-bg: rgba(108, 155, 210, 0.1);
     --mp3-card-bg: #2d3748;
     --mp3-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    --mp3-card-hover-border: #6c9bd2;
+    --mp3-card-hover-border: #2f80ed;
+    --mp3-card-hover-glow: rgba(47, 128, 237, 0.4);
     --mp3-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     --mp3-card-icon-bg: #212836;
     --mp3-card-icon-color: #666;
@@ -617,26 +630,29 @@ body.rex-theme-dark {
     --mp3-table-td-border: #333;
     --mp3-table-td-text: #ccc;
     --mp3-table-td-label: #888;
-    --mp3-select-btn-bg: #4b6078;
-    --mp3-select-btn-hover: #6c9bd2;
+    --mp3-select-btn-bg: #22c55e;
+    --mp3-select-btn-hover: #16a34a;
     --mp3-action-icon-bg: transparent;
     --mp3-action-icon-text: #888;
     --mp3-action-icon-hover-bg: #384252;
     --mp3-action-icon-hover-text: #eee;
     --mp3-delete-hover-bg: #3a2020;
     --mp3-delete-hover-text: #e74c3c;
-    --mp3-selected-border: #6c9bd2;
-    --mp3-selected-shadow: rgba(108, 155, 210, 0.3);
+    --mp3-selected-border: #4ade80;
+    --mp3-selected-shadow: rgba(74, 222, 128, 0.35);
+    --mp3-selected-hover-border: #7fb8f5;
+    --mp3-selected-hover-shadow: rgba(127, 184, 245, 0.4);
     --mp3-list-th-bg: #1a202c;
     --mp3-list-th-text: #888;
     --mp3-list-th-border: #444;
-    --mp3-list-hover-bg: #2d3748;
+    --mp3-list-hover-bg: rgba(47, 128, 237, 0.18);
     --mp3-list-td-border: #333;
     --mp3-list-td-text: #ccc;
     --mp3-list-name: #ddd;
     --mp3-list-meta: #888;
-    --mp3-list-selected-bg: #2d3748;
-    --mp3-list-selected-border: #3d4f68;
+    --mp3-list-selected-bg: rgba(74, 222, 128, 0.22);
+    --mp3-list-selected-border: #4ade80;
+    --mp3-list-selected-hover-bg: rgba(127, 184, 245, 0.3);
     --mp3-list-icon: #666;
     --mp3-multi-footer-bg: #1a2636;
     --mp3-multi-footer-border: #2d3e50;
@@ -645,7 +661,7 @@ body.rex-theme-dark {
     --mp3-multi-select-border: #3d5068;
     --mp3-multi-select-hover-bg: #253344;
     --mp3-multi-select-hover-border: #4d6a8a;
-    --mp3-multi-selected-bg: rgba(60, 141, 188, 0.15);
+    --mp3-multi-selected-bg: rgba(95, 184, 122, 0.15);
     --mp3-upload-header: #ccc;
     --mp3-upload-progress-bg: #333;
     --mp3-upload-item-bg: #2d3748;
@@ -1594,6 +1610,71 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     color: var(--mp3-delete-hover-text);
 }
 
+#mp3-overlay .mp3-cat-menu-info {
+    padding: 6px 12px 8px;
+}
+
+#mp3-overlay .mp3-cat-menu-info-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+    font-size: 12px;
+}
+
+#mp3-overlay .mp3-cat-menu-info-label {
+    color: var(--mp3-status-text);
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-cat-menu-info-value {
+    color: var(--mp3-cat-text);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-cat-menu-info-value-name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-weight: 400;
+    min-width: 0;
+}
+
+/* Hoehere Spezifitaet als die generische ".mp3-cat-menu-portal button"-Regel
+   (die u.a. width:100%/padding:8px 12px/gap:8px setzt) noetig -- sonst
+   gewinnt dort der Typselektor "button" trotz gleicher ID+Klassenanzahl und
+   der Copy-Button reisst als flex-basis:100% praktisch die ganze Zeile an
+   sich, die ID-Anzeige wird dabei fast auf 0 Breite gequetscht. */
+#mp3-overlay .mp3-cat-menu-portal button.mp3-cat-menu-info-copy {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-left: auto;
+    padding: 0;
+    gap: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-status-text);
+    font-size: 11px;
+    cursor: pointer;
+    flex-shrink: 0;
+    flex-grow: 0;
+    opacity: 0.7;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+#mp3-overlay .mp3-cat-menu-portal button.mp3-cat-menu-info-copy:hover {
+    opacity: 1;
+    background: transparent;
+    color: var(--mp3-cat-text);
+}
+
 /* ---- New category input ---- */
 #mp3-overlay .mp3-cat-new-wrap {
     margin: 2px 0;
@@ -2015,11 +2096,11 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 #mp3-overlay #mp3-toast-container {
     position: absolute;
     left: 50%;
-    bottom: 24px;
-    transform: translateX(-50%);
+    top: 50%;
+    transform: translate(-50%, -50%);
     z-index: 20;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: center;
     gap: 8px;
     max-width: calc(100% - 32px);
@@ -2970,7 +3051,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 
 #mp3-overlay .mp3-card:hover {
     border-color: var(--mp3-card-hover-border);
-    box-shadow: var(--mp3-card-hover-shadow);
+    box-shadow: 0 0 0 2px var(--mp3-card-hover-glow), 0 4px 16px var(--mp3-card-hover-glow);
 }
 
 /* =====================================================================
@@ -4270,7 +4351,15 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 
 #mp3-overlay .mp3-card-selected {
     border-color: var(--mp3-selected-border) !important;
-    box-shadow: 0 0 0 2px var(--mp3-selected-shadow) !important;
+    box-shadow: 0 0 0 2px var(--mp3-selected-shadow), 0 4px 16px var(--mp3-selected-shadow) !important;
+}
+
+/* Hover auf einer bereits ausgewaehlten Karte: eigener, hellerer Blauton
+   statt entweder des normalen Hover-Blaus oder des Auswahl-Gruens -- macht
+   sichtbar, dass beide Zustaende gleichzeitig zutreffen. */
+#mp3-overlay .mp3-card-selected:hover {
+    border-color: var(--mp3-selected-hover-border) !important;
+    box-shadow: 0 0 0 2px var(--mp3-selected-hover-shadow), 0 4px 16px var(--mp3-selected-hover-shadow) !important;
 }
 
 /* ---- Responsive ---- */
@@ -4314,25 +4403,85 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-/* Kein transform/z-index auf Hover: Safari re-balanciert bei jedem Layer-
+/* Drei Zustaende, konsistent mit der Grid-Ansicht: normaler Hover (blau),
+   Auswahl (gruen), Hover+Auswahl gleichzeitig (helleres Blau -- eigene
+   Farbe statt einfach eines der beiden, macht sichtbar dass beide
+   Zustaende zutreffen). Alle drei mit Ring+Glow (siehe --mp3-*-glow/-shadow-
+   Variablen).
+
+   Kein transform/z-index auf Hover: Safari re-balanciert bei jedem Layer-
    Wechsel eines Kindelements die ganze Mehrspalten-Ansicht neu, was als
    Flackern anderer Kacheln (v. a. in der letzten Spalte) sichtbar wird.
-   Reine Paint-Eigenschaften (Rahmen/Schatten) loesen das nicht aus. */
+   Per Nutzer-Test (2026-08-31) reicht dafuer schon eine reine Box-Shadow/
+   Border-Color-Transition auf dem NORMALEN (nicht ausgewaehlten) Hover --
+   deshalb unten Safari-only per Klasse "mp3-safari" (JS-Sniff in core.js,
+   siehe dortigen Kommentar) NUR dieser eine Zustand auf ein flaches Outline
+   ohne Blur-Glow reduziert. Die Auswahl-Zustaende (auch in Kombination mit
+   Hover) sind kein Interaktions-Repaint-Loop -- sie aendern sich nicht bei
+   jeder Mausbewegung, sondern nur bei einem expliziten Klick -- und blieben
+   im Test unauffaellig, behalten deshalb ueberall den vollen Glow. */
 #mp3-overlay .mp3-masonry-card:hover {
     border-color: var(--mp3-card-hover-border);
-    box-shadow:
-        0 16px 34px rgba(0, 0, 0, 0.36),
-        0 0 0 1px rgba(90, 180, 255, 0.35),
-        0 0 22px rgba(90, 180, 255, 0.28);
+    box-shadow: 0 0 0 2px var(--mp3-card-hover-glow), 0 4px 16px var(--mp3-card-hover-glow);
 }
 
 #mp3-overlay .mp3-masonry-card.mp3-masonry-card-selected {
     border-color: var(--mp3-selected-border);
-    box-shadow: 0 0 0 2px var(--mp3-selected-shadow);
+    box-shadow: 0 0 0 2px var(--mp3-selected-shadow), 0 4px 16px var(--mp3-selected-shadow);
+}
+
+#mp3-overlay .mp3-masonry-card.mp3-masonry-card-selected:hover {
+    border-color: var(--mp3-selected-hover-border);
+    box-shadow: 0 0 0 2px var(--mp3-selected-hover-shadow), 0 4px 16px var(--mp3-selected-hover-shadow);
 }
 
 #mp3-overlay .mp3-masonry-card.mp3-masonry-card-multi {
     outline: 2px solid var(--mp3-select-btn-bg);
+    outline-offset: -2px;
+}
+
+#mp3-overlay .mp3-masonry-card.mp3-masonry-card-multi:hover {
+    border-color: var(--mp3-selected-hover-border);
+    box-shadow: 0 0 0 2px var(--mp3-selected-hover-shadow), 0 4px 16px var(--mp3-selected-hover-shadow);
+    outline: 2px solid var(--mp3-selected-hover-border);
+    outline-offset: -2px;
+}
+
+/* Safari-only (Klasse "mp3-safari", siehe Kommentar oben): NUR der normale
+   Hover-Zustand wird auf ein flaches Outline ohne Blur-Glow reduziert,
+   transition komplett aus, damit kein animiertes Repaint mehr entsteht,
+   das WebKit zur Neuberechnung der Mehrspalten-Ansicht verleitet. */
+#mp3-overlay.mp3-safari .mp3-masonry-card {
+    transition: none;
+}
+
+#mp3-overlay.mp3-safari .mp3-masonry-card:hover {
+    border-color: transparent;
+    box-shadow: var(--mp3-card-shadow);
+    outline: 2px solid var(--mp3-card-hover-border);
+    outline-offset: -2px;
+}
+
+/* Spezifitaets-Falle: ".mp3-safari .mp3-masonry-card:hover" oben hat
+   dieselbe Spezifitaet wie die universellen ".mp3-masonry-card-selected:
+   hover"/"-multi:hover"-Regeln weiter oben (je 1 ID + 3 Klassen/Pseudo) --
+   ohne diese beiden, noch spezifischeren Overrides (1 ID + 4 Klassen/
+   Pseudo) wuerde in Safari beim Hover einer ausgewaehlten Karte wieder die
+   Auswahl-Kennzeichnung verschwinden, exakt der bereits einmal gefundene
+   Bug vom 2026-08-31. Werte identisch zu den universellen Regeln (kein
+   Grund zur Abweichung, "0 0 0 2px"-Ring+Glow gilt laut Test als sicher --
+   nur der GROSSE, animierte Hover-Glow des normalen, nicht ausgewaehlten
+   Zustands war das Problem). */
+#mp3-overlay.mp3-safari .mp3-masonry-card.mp3-masonry-card-selected:hover {
+    border-color: var(--mp3-selected-hover-border);
+    box-shadow: 0 0 0 2px var(--mp3-selected-hover-shadow), 0 4px 16px var(--mp3-selected-hover-shadow);
+    outline: none;
+}
+
+#mp3-overlay.mp3-safari .mp3-masonry-card.mp3-masonry-card-multi:hover {
+    border-color: var(--mp3-selected-hover-border);
+    box-shadow: 0 0 0 2px var(--mp3-selected-hover-shadow), 0 4px 16px var(--mp3-selected-hover-shadow);
+    outline: 2px solid var(--mp3-selected-hover-border);
     outline-offset: -2px;
 }
 
@@ -4381,6 +4530,19 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 #mp3-overlay .mp3-masonry-card-selected .mp3-masonry-toolbar,
 #mp3-overlay .mp3-masonry-card-multi .mp3-masonry-toolbar {
     opacity: 1;
+}
+
+/* Safari-only (siehe "mp3-safari"-Kommentar bei .mp3-masonry-card weiter
+   oben): auch diese Opacity-Transition ist ein Hover-bedingtes Repaint des
+   Kindelements einer Mehrspalten-Karte. Reicht laut Nutzer-Test
+   (2026-08-31) allein schon aus, um am Ende der VORHERIGEN Spalte einen
+   sichtbaren Glow-Rest aufblitzen zu lassen, obwohl der grosse Hover-Glow
+   der Karte selbst dort bereits deaktiviert ist. Toolbar in Safari daher
+   permanent sichtbar statt einblendend -- kein Opacity-Wechsel mehr, der
+   ein Repaint ausloesen koennte. */
+#mp3-overlay.mp3-safari .mp3-masonry-toolbar {
+    opacity: 1;
+    transition: none;
 }
 
 #mp3-overlay .mp3-masonry-check {
@@ -4549,6 +4711,10 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 
 #mp3-overlay .mp3-list-row-selected td {
     border-bottom-color: var(--mp3-list-selected-border);
+}
+
+#mp3-overlay .mp3-list-row-selected:hover {
+    background: var(--mp3-list-selected-hover-bg) !important;
 }
 
 /* ---- Lightbox ---- */
@@ -4989,7 +5155,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.6);
 }
 #mp3-overlay .mp3-card-multi-selected {
-    outline: 3px solid #3c8dbc !important;
+    outline: 3px solid var(--mp3-select-btn-bg) !important;
     outline-offset: -3px;
 }
 
@@ -5004,10 +5170,13 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     width: 30px;
 }
 #mp3-overlay .mp3-list-row-multi-selected .mp3-list-cell-check {
-    color: #3c8dbc;
+    color: var(--mp3-select-btn-bg);
 }
 #mp3-overlay .mp3-list-row-multi-selected {
     background: var(--mp3-multi-selected-bg) !important;
+}
+#mp3-overlay .mp3-list-row-multi-selected:hover {
+    background: var(--mp3-list-selected-hover-bg) !important;
 }
 
 /* Multi-Mode: cards need position relative for checkbox */

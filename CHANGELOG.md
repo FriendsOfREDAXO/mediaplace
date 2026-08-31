@@ -1,5 +1,19 @@
 # Changelog
 
+## Version 1.27.0 – 2026-08-31
+
+Ein bisschen Politur am Kategorie-Menü, Toasts die man auch wirklich sieht, und ein handfestes Safari-Rendering-Problem in der Media-Wall-Ansicht ausgemerzt – inklusive einer generalüberholten Hover-/Auswahl-Farblogik, die jetzt überall (Grid, Media Wall, Liste) gleich tickt.
+
+### Neu
+- **Infobereich im Kategorie-Dreipunkt-Menü**: zeigt am Ende des Menüs Kategorie-ID (mit Kopieren-Button), Namen und – sofern Massenaktionen erlaubt sind – die Dateianzahl der Kategorie an.
+- **Neue Hover-/Auswahl-Farblogik**: Hover ist jetzt durchgängig auffällig blau (mit weichem Glow), eine ausgewählte Datei leuchtet hell grün (ebenfalls mit Glow), und wer eine bereits ausgewählte Datei hovert, bekommt ein eigenes, helleres Blau – so ist auf einen Blick klar, welcher Zustand gerade zutrifft. Gilt einheitlich für Grid-, Media-Wall- und Listenansicht, Light- und Dark-Theme.
+
+### Verbessert
+- **Toast-Benachrichtigungen** erscheinen jetzt mittig im Overlay statt unten, wo sie leicht untergingen.
+
+### Behoben
+- **Safari: Rendering-Glitch in der Media-Wall-Ansicht** – beim Hover einer Kachel konnte WebKit die komplette Mehrspalten-Ansicht neu balancieren, sichtbar als flackernde Nachbarkacheln bzw. eine kurze Nahtlinie am Ende der vorherigen Spalte. Betraf nur den normalen (nicht ausgewählten) Hover-Zustand und ist jetzt Safari-spezifisch entschärft, ohne dass Chrome/Firefox etwas davon merken.
+
 ## Version 1.26.0 – 2026-08-31
 
 ### Neu

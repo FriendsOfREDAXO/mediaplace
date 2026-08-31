@@ -310,10 +310,43 @@ export function openCatMenu(id, name, anchorBtn) {
             '<button class="mp3-cat-bulk-collection-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-bookmark"></i> ' + t('mediaplace_bulk_add_to_collection') + '</button>' +
             '<button class="mp3-cat-bulk-delete-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_bulk_delete_files') + '</button>';
     }
+    // Infobereich immer am Ende des Menues -- vor allem die Kategorie-ID,
+    // die z.B. fuer REX_MEDIA-Widgets/YForm-Konfiguration/Templates
+    // gebraucht wird und sonst nirgends im Overlay direkt sichtbar ist.
+    // Die Dateianzahl braucht einen eigenen Request (CategoryBulk-Endpunkt,
+    // gleiche hasBulkOperationsAccess()-Schranke wie die Massenaktionen
+    // oben) und wird deshalb erst NACH dem Rendern des Menues nachgeladen --
+    // gleiche id>0-Einschraenkung wie der Massenaktionen-Block (Wurzel hat
+    // keine sinnvolle "eigene" Dateianzahl).
+    var showCount = id > 0 && ctx.getCanBulkOperations();
+    html += '<div class="mp3-cat-menu-divider"></div>' +
+        '<div class="mp3-cat-menu-info">' +
+        '<div class="mp3-cat-menu-info-row"><span class="mp3-cat-menu-info-label">' + t('mediaplace_cat_info_id') + '</span>' +
+        '<span class="mp3-cat-menu-info-value">' + id + '</span>' +
+        '<button class="mp3-cat-menu-info-copy" data-copy-cat-id="' + id + '" title="' + escAttr(t('mediaplace_cat_info_copy')) + '"><i class="fa-solid fa-copy"></i></button></div>' +
+        '<div class="mp3-cat-menu-info-row"><span class="mp3-cat-menu-info-label">' + t('mediaplace_cat_info_name') + '</span>' +
+        '<span class="mp3-cat-menu-info-value mp3-cat-menu-info-value-name">' + escAttr(name) + '</span></div>' +
+        (showCount ? ('<div class="mp3-cat-menu-info-row"><span class="mp3-cat-menu-info-label">' + t('mediaplace_cat_info_count') + '</span>' +
+            '<span class="mp3-cat-menu-info-value mp3-cat-menu-info-count">…</span></div>') : '') +
+        '</div>';
     portal.innerHTML = html;
     portal.classList.add('mp3-cat-menu-portal-open');
     portal.setAttribute('data-open-for', String(id));
     anchorBtn.classList.add('mp3-cat-menu-btn-active');
+
+    if (showCount) {
+        apiCategoryBulkAction('count', { category_id: id })
+            .then(function (result) {
+                if (portal.getAttribute('data-open-for') !== String(id)) return;
+                var countEl = qs('.mp3-cat-menu-info-count', portal);
+                if (countEl) countEl.textContent = String(parseInt(result.total, 10) || 0);
+            })
+            .catch(function () {
+                if (portal.getAttribute('data-open-for') !== String(id)) return;
+                var countEl = qs('.mp3-cat-menu-info-count', portal);
+                if (countEl) countEl.textContent = '–';
+            });
+    }
 
     var rect = anchorBtn.getBoundingClientRect();
     var menuW = portal.offsetWidth;

@@ -1495,6 +1495,19 @@ import {
 
         overlay   = qs('#mp3-overlay');
         overlay.setAttribute('tabindex', '-1');
+        // Safari (Desktop UND iOS) re-balanciert die Media-Wall-Mehrspalten-
+        // Ansicht bei jedem Hover-bedingten Repaint einer Kachel neu (siehe
+        // .mp3-masonry-card:hover in mediaplace.css) -- sichtbar als kurzer
+        // Glow-Rest am Ende der VORHERIGEN Spalte. @supports(-webkit-touch-
+        // callout) als CSS-only-Erkennung greift NUR auf iOS (die Property
+        // existiert im Desktop-Safari-Parser gar nicht, @supports lieferte
+        // dort also faelschlich false) -- deshalb hier stattdessen ein
+        // klassischer UA/vendor-Sniff, der beide erfasst und die eigentliche
+        // CSS-Ausnahme in mediaplace.css ueber die Klasse "mp3-safari"
+        // scoped statt ueber @supports.
+        var ua = navigator.userAgent || '';
+        var isSafariBrowser = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\//.test(ua) && /Apple/.test(navigator.vendor || '');
+        overlay.classList.toggle('mp3-safari', isSafariBrowser);
         sidebar   = qs('#mp3-sidebar');
         grid      = qs('#mp3-grid');
         gridWrap  = qs('#mp3-grid-wrap');
@@ -2462,6 +2475,19 @@ import {
                 var bulkDeleteCatId = parseInt(bulkDeleteBtn.getAttribute('data-bulk-cat'), 10) || 0;
                 if (bulkDeleteCatId <= 0) return;
                 startBulkDeleteFiles(bulkDeleteCatId, bulkDeleteBtn.getAttribute('data-bulk-cat-name') || String(bulkDeleteCatId));
+                return;
+            }
+
+            var copyIdBtn = e.target.closest('.mp3-cat-menu-info-copy');
+            if (copyIdBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                var copyId = copyIdBtn.getAttribute('data-copy-cat-id') || '';
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(copyId).then(function () {
+                        showToast(t('mediaplace_cat_info_copied'), 'success');
+                    });
+                }
                 return;
             }
         });
