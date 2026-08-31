@@ -368,6 +368,7 @@ if (rex::isBackend() && rex::getUser()) {
                 'id' => $providerId,
                 'label' => (string) ($providerMeta['label'] ?? $providerId),
                 'icon' => (string) ($providerMeta['icon'] ?? 'fa-solid fa-cloud'),
+                'color' => (string) ($providerMeta['color'] ?? ''),
             ];
         }
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.25.0 – 2026-08-31
+
+### Neu
+- **Akzentfarbe je Cloud-Verbindung**: eine in `cloudconnect` konfigurierte Verbindung kann jetzt eine eigene Akzentfarbe bekommen (siehe dortige Einstellungsseite) – das Cloud-Icon in der Sidebar färbt sich entsprechend ein, hilft mehrere gleichzeitig aktive Verbindungen desselben Typs (z. B. zwei Nextcloud-Accounts) auf einen Blick zu unterscheiden. Ohne gesetzte Farbe unverändertes Verhalten.
+
 ## Version 1.24.0 – 2026-08-31
 
 Mobile Nutzung im Fokus: ein informeller Usability-Test auf sehr schmalen Bildschirmen hat mehrere konkrete Schwachstellen aufgedeckt, hier größtenteils behoben. Dazu ein hartnäckiger Anzeige-Bug bei "Medien ohne ALT-Text", spürbar besseres Upload-Feedback im Eingabe-Widget und die Möglichkeit, eine Datei auch aus einer Cloud-Quelle heraus zu ersetzen.

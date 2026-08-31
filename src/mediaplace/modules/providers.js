@@ -111,8 +111,15 @@ export function renderProvidersSection() {
     }
     for (var i = 0; i < providers.length; i++) {
         var p = providers[i];
+        // Akzentfarbe kommt optional aus cloudconnect (siehe ConnectionStore::create()/
+        // setColor()) -- rein zur Unterscheidung mehrerer gleichzeitig aktiver
+        // Verbindungen desselben Typs (z.B. zwei Nextcloud-Accounts), unabhaengig
+        // vom aktiv/inaktiv-Zustand (border-left uebernimmt weiterhin NUR die
+        // "gerade durchsucht"-Markierung, siehe CSS .mp3-provider-root-active).
+        // Faerbt direkt das Icon ein statt eines separaten Punkts (Nutzer-Feedback).
+        var iconStyle = p.color ? ' style="color:' + escAttr(p.color) + '"' : '';
         html += '<a class="mp3-provider-root' + (activeProvider === p.id ? ' mp3-provider-root-active' : '') + '" data-provider-id="' + escAttr(p.id) + '" data-provider-label="' + escAttr(p.label) + '">' +
-            '<i class="' + escAttr(p.icon || 'fa-solid fa-cloud') + '"></i> ' + escAttr(p.label) + '</a>';
+            '<i class="' + escAttr(p.icon || 'fa-solid fa-cloud') + '"' + iconStyle + '></i> ' + escAttr(p.label) + '</a>';
     }
     html += '</div>';
     return html;
