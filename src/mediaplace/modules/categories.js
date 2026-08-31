@@ -170,7 +170,17 @@ export function renderCategories(treeHtml) {
     var currentCat = ctx.getCurrentCat();
     var canAccessRootCategory = ctx.getCanAccessRootCategory();
     var catCollapsed = isSectionCollapsed('categories');
-    var html = '<div class="mp3-sidebar-section mp3-cat-section-wrap' + (catCollapsed ? ' mp3-sidebar-section-collapsed' : '') + '" data-section="categories">' +
+    // Nur auf Mobile sichtbar (siehe CSS) -- auf schmalen Screens verdeckt
+    // das Offcanvas-Sidebar sonst den Schliessen-/Zahnrad-Button im Header
+    // vollstaendig, ohne dass ein eigener Rueckweg sichtbar bleibt (Nutzer-
+    // Feedback). closeSidebar() wird ueber die bestehende, delegierte
+    // Sidebar-Click-Listener in core.js aufgerufen (gleiches Muster wie der
+    // .mp3-cat-Klick, der die Sidebar dort ebenfalls schon schliesst).
+    var html = '<div class="mp3-sidebar-mobile-header">' +
+        '<span class="mp3-sidebar-mobile-title">' + t('mediaplace_categories') + '</span>' +
+        '<button type="button" class="mp3-sidebar-mobile-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
+        '</div>' +
+        '<div class="mp3-sidebar-section mp3-cat-section-wrap' + (catCollapsed ? ' mp3-sidebar-section-collapsed' : '') + '" data-section="categories">' +
         '<div class="mp3-sidebar-section-head">' +
             '<span class="mp3-sidebar-section-title"><i class="rex-icon rex-icon-media"></i> ' + t('mediaplace_categories') + '</span>' +
             '<button type="button" class="mp3-sidebar-section-toggle" data-section="categories" title="' + escAttr(t('mediaplace_toggle_section')) + '"><i class="fa-solid fa-chevron-down"></i></button>' +
@@ -223,6 +233,20 @@ export function renderCategories(treeHtml) {
     if (ctx.features.altMissingFilter && typeof ctx.refreshAltMissingNav === 'function') {
         ctx.refreshAltMissingNav();
     }
+}
+
+/**
+ * Nur die Cloud-Provider-Sektion neu rendern (gleiches Muster wie
+ * refreshCollectionsSection() in collections.js) -- fuer den "Aus Cloud
+ * ersetzen"-Hinweis (siehe providers.js renderProvidersSection()), der sich
+ * unabhaengig vom restlichen Kategorie-Baum aendert (core.js
+ * startReplaceFromCloud() und die lokalen Navigations-Handler, die einen
+ * laufenden Ersetzen-Versuch abbrechen).
+ */
+export function refreshProvidersSection() {
+    if (!hasProviders() || ctx.getOnMultiSelect()) return;
+    var section = document.getElementById('mp3-providers-section');
+    if (section) section.innerHTML = renderProvidersSection();
 }
 
 /**

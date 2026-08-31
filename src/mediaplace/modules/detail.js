@@ -77,6 +77,10 @@ export function setDetailOriginalSystemTags(v) {
  * - getSelectedFile()/setSelectedFile(v): noch-legacy-State
  * - getMultiMode()/setMultiMode(v), getMultiSelected()/setMultiSelected(v): noch-legacy-State
  * - getOnSelect()/getOnMultiSelect(): noch-legacy-State (nur gelesen hier)
+ * - hasProviders()/startReplaceFromCloud(filename): "Aus Cloud ersetzen"-
+ *   Button (siehe renderDetail() unten) + core.js-Einstiegspunkt in den
+ *   Ersetzen-Modus (eigentlich aus modules/providers.js, core.js reicht
+ *   hasProviders() nur durch)
  * - getMediaBaseUrl(): noch-legacy-State
  * - getLastLoadedFiles(): noch-legacy-State
  * - getMetainfoCanvasOpen()/setMetainfoCanvasOpen(v): noch-legacy-State
@@ -1140,6 +1144,61 @@ function renderDetail(jsonPayload) {
     });
 
     detailPanel.innerHTML = (jsonPayload && jsonPayload.detail_html) || '';
+
+    // "Ersetzen" wird zu einem kleinen Dropdown (Vom Geraet / Aus der Cloud),
+    // sobald Cloud-Provider konfiguriert sind -- per JS statt im PHP-Fragment
+    // ergaenzt, weil das serverseitige Rendering zur Renderzeit nicht weiss,
+    // ob ueberhaupt Cloud-Provider konfiguriert sind (das lebt nur
+    // clientseitig in modules/providers.js, ueber ctx.hasProviders()
+    // gebrueckt). Gleiches synchrones Timing wie attachOwnFieldButton()
+    // unten. Bewusst EIN Trigger-Button statt zwei separaten Icon-Buttons
+    // nebeneinander (frueherer Versuch) -- die Aktionen-Zeile hat nur Platz
+    // fuer eine feste Anzahl 36px-Icons (siehe .mp3-detail-actions-row),
+    // ein zusaetzliches Icon liess "Loeschen" ganz rechts abgeschnitten
+    // wirken (Nutzer-Feedback/Screenshot). Kein Dropdown, wenn keine
+    // Provider konfiguriert sind: das bestehende <label> bleibt unveraendert
+    // klickbar, oeffnet weiterhin direkt den nativen Datei-Dialog.
+    var replaceBtnLabel = qs('.mp3-detail-replace-btn', detailPanel);
+    if (replaceBtnLabel && ctx.hasProviders && ctx.hasProviders() && selectedFile) {
+        var replaceWrap = document.createElement('div');
+        replaceWrap.className = 'mp3-detail-replace-wrap';
+        replaceBtnLabel.parentNode.insertBefore(replaceWrap, replaceBtnLabel);
+
+        var replaceTrigger = document.createElement('button');
+        replaceTrigger.type = 'button';
+        replaceTrigger.className = 'mp3-detail-replace-trigger';
+        replaceTrigger.title = replaceBtnLabel.getAttribute('title') || '';
+        replaceTrigger.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
+        replaceWrap.appendChild(replaceTrigger);
+
+        var replaceMenu = document.createElement('div');
+        replaceMenu.className = 'mp3-detail-replace-menu';
+
+        // Bestehendes Icon im Label umlabeln (Geraet-Icon statt allgemeinem
+        // Ersetzen-Icon) + Textlabel ergaenzen, das versteckte <input> bleibt
+        // unveraendert (inkl. accept-Attribut) einfach als Kind erhalten.
+        var replaceLabelIcon = qs('i', replaceBtnLabel);
+        if (replaceLabelIcon) replaceLabelIcon.className = 'fa-solid fa-desktop';
+        var replaceLabelText = document.createElement('span');
+        replaceLabelText.textContent = t('mediaplace_replace_from_device');
+        if (replaceLabelIcon) {
+            replaceLabelIcon.insertAdjacentElement('afterend', replaceLabelText);
+        } else {
+            replaceBtnLabel.insertBefore(replaceLabelText, replaceBtnLabel.firstChild);
+        }
+        replaceBtnLabel.classList.add('mp3-detail-replace-device-item');
+        replaceBtnLabel.removeAttribute('title');
+        replaceMenu.appendChild(replaceBtnLabel);
+
+        var replaceCloudItem = document.createElement('button');
+        replaceCloudItem.type = 'button';
+        replaceCloudItem.className = 'mp3-detail-replace-cloud-item';
+        replaceCloudItem.setAttribute('data-filename', selectedFile);
+        replaceCloudItem.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><span>' + escAttr(t('mediaplace_replace_from_cloud')) + '</span>';
+        replaceMenu.appendChild(replaceCloudItem);
+
+        replaceWrap.appendChild(replaceMenu);
+    }
 
     // Optionaler "AI generieren"-Button neben dem eigenen JSON-Alt-Feld
     // (siehe modules/ai_alt.js) -- synchron direkt nach dem innerHTML-Setzen,

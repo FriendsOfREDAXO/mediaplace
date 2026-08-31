@@ -13,6 +13,7 @@
 import { getActiveCollection, setFileCollectionMembership } from './collections.js';
 import { showCategoryPickerModal } from './modals.js';
 import { loadCategories } from './categories.js';
+import { showToast } from './toast.js';
 
 var ctx = null;
 
@@ -282,15 +283,21 @@ function startUpload(files, catId, assignToCollectionName) {
         if (idx >= files.length) {
             // All done — optionally assign to collection
             var finalize = function () {
+                var toastMsg = t('mediaplace_upload_summary', { done: done, total: total });
+                if (failed > 0) toastMsg += t('mediaplace_upload_failed_suffix', { count: failed });
                 var summaryEl = document.getElementById('mp3-upload-summary');
                 if (summaryEl) {
-                    var msg = t('mediaplace_upload_summary', { done: done, total: total });
-                    if (failed > 0) msg += t('mediaplace_upload_failed_suffix', { count: failed });
+                    var msg = toastMsg;
                     if (assignToCollectionName && uploadedFilenames.length) {
                         msg += t('mediaplace_upload_assign_collection', { name: escAttr(assignToCollectionName) });
                     }
                     summaryEl.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#28a745;"></i> ' + msg;
                 }
+                // Eigene Erfolgs-/Fehlermeldung zusaetzlich zur Panel-Summary
+                // oben: die verschwindet nach dem Grid-Reload unten wieder
+                // (setTimeout), auf Mobile/bei laengerer Grid-Ladezeit war
+                // dadurch kein Abschluss-Feedback mehr sichtbar (Nutzer-Feedback).
+                showToast(toastMsg, failed > 0 ? 'error' : 'success');
                 setTimeout(function () { ctx.loadFiles(ctx.getCurrentCat(), true); }, 1500);
             };
 

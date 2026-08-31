@@ -1358,6 +1358,17 @@ body.mp3-embedded-editor-active .ck-body-wrapper {
     padding: 8px 0;
 }
 
+/* Eigener Schliessen-Button innerhalb der Sidebar (siehe renderCategories()
+   in categories.js) -- nur auf Mobile sichtbar (siehe @media/.mp3-compact
+   unten), wo das Offcanvas-Sidebar sonst den Header samt .mp3-close/
+   .mp3-admin-menu-btn vollstaendig verdeckt und kein Rueckweg ausser dem
+   Antippen eines Kategorie-Eintrags sichtbar war. Auf dem Desktop (Sidebar
+   ist dort ein normales, immer sichtbares Panel neben dem Grid) ergibt ein
+   eigener Schliessen-Button keinen Sinn, deshalb default display:none. */
+#mp3-overlay .mp3-sidebar-mobile-header {
+    display: none;
+}
+
 /* Sidebar per Drag-Handle breiter/schmaler ziehen (initDragResize() in
    mediaplace.js, Breite in localStorage gemerkt). Im Compact-Modus (Sidebar
    wird zum Offcanvas) nicht sichtbar -- dort ergibt Resize keinen Sinn. */
@@ -1939,6 +1950,21 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
     color: var(--mp3-cat-text);
 }
 
+/* "Aus Cloud ersetzen"-Hinweis (siehe startReplaceFromCloud() in core.js) --
+   gleiche Akzentfarbe wie eine aktive Sammlung (.mp3-detail-collection-btn.is-active),
+   keine neuen Custom Properties noetig. */
+#mp3-overlay .mp3-providers-replace-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    background: var(--mp3-cat-active-bg);
+    color: var(--mp3-cat-active-border);
+    font-size: 11px;
+    line-height: 1.3;
+}
+
 #mp3-overlay .mp3-provider-root {
     display: flex;
     align-items: center;
@@ -1978,6 +2004,64 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 #mp3-overlay .mp3-grid-error-text {
     flex: 1;
     word-break: break-word;
+}
+
+/* ---- Toast-Benachrichtigung (siehe modules/toast.js) ----
+   Absolut positioniert innerhalb von #mp3-overlay (dessen eigenes
+   position:fixed macht das effektiv fixed zum Viewport, kein eigener
+   fixed-Layer noetig). Nutzt ausschliesslich bereits vorhandene
+   --mp3-*-Variablen (Erfolg/Fehler-Akzentfarben aus dem Loeschen-Button/
+   Bestaetigen-Buttons uebernommen) -- keine neuen Custom Properties. */
+#mp3-overlay #mp3-toast-container {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100% - 32px);
+    pointer-events: none;
+}
+
+#mp3-overlay .mp3-toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--mp3-modal-bg);
+    color: var(--mp3-cat-text);
+    border-left: 4px solid var(--mp3-success-color);
+    border-radius: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    font-size: 13px;
+    line-height: 1.3;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: auto;
+    max-width: 100%;
+}
+
+#mp3-overlay .mp3-toast-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#mp3-overlay .mp3-toast i {
+    color: var(--mp3-success-color);
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-toast-error {
+    border-left-color: var(--mp3-delete-hover-text);
+}
+
+#mp3-overlay .mp3-toast-error i {
+    color: var(--mp3-delete-hover-text);
 }
 
 #mp3-overlay .mp3-grid-error-close {
@@ -4026,6 +4110,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 #mp3-overlay .mp3-detail-download-btn,
 #mp3-overlay .mp3-detail-delete-btn,
 #mp3-overlay .mp3-detail-replace-btn,
+#mp3-overlay .mp3-detail-replace-trigger,
 #mp3-overlay .mp3-detail-collection-btn {
     display: flex;
     align-items: center;
@@ -4045,6 +4130,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 
 #mp3-overlay .mp3-detail-download-btn:hover,
 #mp3-overlay .mp3-detail-replace-btn:hover,
+#mp3-overlay .mp3-detail-replace-trigger:hover,
 #mp3-overlay .mp3-detail-collection-btn:hover {
     background: var(--mp3-action-icon-hover-bg);
     color: var(--mp3-action-icon-hover-text);
@@ -4066,6 +4152,60 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
 #mp3-overlay .mp3-detail-replace-btn.is-loading {
     opacity: 0.6;
     pointer-events: none;
+}
+
+/* Ersetzen-Dropdown (Vom Geraet / Aus der Cloud) -- nur eingefuegt, wenn
+   Cloud-Provider konfiguriert sind (siehe modules/detail.js renderDetail()).
+   Gleiches Trigger+Menue-Prinzip wie .mp3-sort-toggle-wrap, aber bewusst
+   simpel per CSS (position:absolute relativ zum Wrap) statt JS-berechneter
+   Position -- das Detail-Panel ist immer ein schmaler, feststehender
+   Seitenbereich, kein breites Toolbar-Overflow-Risiko wie beim Sortier-Menue. */
+#mp3-overlay .mp3-detail-replace-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+#mp3-overlay .mp3-detail-replace-wrap.mp3-detail-replace-open .mp3-detail-replace-trigger {
+    background: var(--mp3-action-icon-hover-bg);
+    color: var(--mp3-action-icon-hover-text);
+}
+
+#mp3-overlay .mp3-detail-replace-menu {
+    display: none;
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 4px;
+    min-width: 180px;
+    background: var(--mp3-modal-bg);
+    border: 1px solid var(--mp3-toolbar-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+}
+
+#mp3-overlay .mp3-detail-replace-wrap.mp3-detail-replace-open .mp3-detail-replace-menu {
+    display: block;
+}
+
+#mp3-overlay .mp3-detail-replace-device-item,
+#mp3-overlay .mp3-detail-replace-cloud-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    border: none;
+    background: transparent;
+    color: var(--mp3-cat-text);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#mp3-overlay .mp3-detail-replace-device-item:hover,
+#mp3-overlay .mp3-detail-replace-cloud-item:hover {
+    background: var(--mp3-cat-hover-bg);
 }
 
 #mp3-overlay .mp3-detail-delete-btn:hover {
@@ -4521,6 +4661,48 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
         box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
     }
 
+    /* Eigener Schliessen-Header im Offcanvas -- sticky, damit er beim
+       Scrollen durch eine lange Kategorieliste nicht mit wegwandert. Siehe
+       Kommentar bei der Default-Regel (display:none) weiter oben. */
+    #mp3-overlay .mp3-sidebar-mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding: 8px 8px 8px 14px;
+        margin-bottom: 4px;
+        background: var(--mp3-sidebar-bg);
+        border-bottom: 1px solid var(--mp3-sidebar-border);
+    }
+
+    #mp3-overlay .mp3-sidebar-mobile-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--mp3-cat-text);
+    }
+
+    #mp3-overlay .mp3-sidebar-mobile-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        color: var(--mp3-cat-text);
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    #mp3-overlay .mp3-sidebar-mobile-close:hover {
+        background: var(--mp3-cat-hover-bg);
+    }
+
     /* Sidebar backdrop - real overlay element */
     #mp3-overlay .mp3-sidebar-backdrop {
         display: none;
@@ -4597,6 +4779,64 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-missing-nav {
         width: 38px;
         height: 38px;
         font-size: 22px;
+    }
+
+    /* Aktionen-Zeile (Ersetzen/Herunterladen/Merken/Speichern/Loeschen, siehe
+       detail_actions.php) lief auf schmalen Screens ueber die Panel-Breite
+       hinaus -- "Loeschen" war dadurch grossteils abgeschnitten. flex-wrap
+       als Sicherheitsnetz (gleiches Prinzip wie .mp3-multi-footer/
+       .mp3-batch-footer oben), zusaetzlich "Speichern" auf Icon-only
+       verkleinert (staerkster Platzverbrauch durch den Text): gleiche
+       font-size:0-Technik wie bei den Batch-Buttons, da der Text hier
+       ebenfalls als reiner Textknoten neben dem <i> steht. */
+    #mp3-overlay .mp3-detail-actions-row {
+        flex-wrap: wrap;
+    }
+
+    #mp3-overlay .mp3-detail-save-btn {
+        padding: 0 10px;
+        font-size: 0;
+    }
+
+    #mp3-overlay .mp3-detail-save-btn i {
+        font-size: 14px;
+    }
+
+    /* Touch-Ziele vergroessern (Empfehlung u.a. WCAG 2.5.5: min. 44x44px) --
+       nur die Klickflaeche, nicht das Icon selbst (bleibt bei seiner
+       bisherigen font-size, nur mehr unsichtbares Padding drumherum). Bewusst
+       nur hier im Mobile-Block, nicht global: auf dem Desktop mit
+       Maus-Bedienung wuerde das nur unnoetig Platz kosten (siehe Kommentar
+       bei .mp3-close oben zur bewusst dichten 36px-Desktop-Reihe). */
+    #mp3-overlay .mp3-collection-add-btn,
+    #mp3-overlay .mp3-collection-rename-btn,
+    #mp3-overlay .mp3-collection-delete-btn,
+    #mp3-overlay .mp3-sidebar-section-toggle {
+        width: 44px;
+        height: 44px;
+    }
+
+    #mp3-overlay .mp3-select-mode-toggle {
+        width: 44px;
+        height: 44px;
+    }
+
+    #mp3-overlay .mp3-status .mp3-select-mode-toggle {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* Symbolleisten-Buttons (Kategorien/Ansicht/Verwaltung/Schliessen) --
+       teilen sich normalerweise bewusst dieselbe 36px-Hoehe (siehe Kommentar
+       bei .mp3-close weiter oben), hier auf Mobile einheitlich alle vier
+       zusammen vergroessert statt nur einzelne -- sonst waere die absichtlich
+       einheitliche Reihe wieder uneinheitlich. */
+    #mp3-overlay .mp3-close,
+    #mp3-overlay .mp3-admin-menu-btn,
+    #mp3-overlay .mp3-mobile-cat-btn,
+    #mp3-overlay .mp3-view-toggle-btn {
+        width: 44px;
+        height: 44px;
     }
 
     /* Grid adjustments */
@@ -6245,38 +6485,42 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
 }
 
 #mp3-overlay.mp3-compact .mp3-filter-reset-btn {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     font-size: 16px;
 }
 
-/* Touch-Ziele vergroessern (Richtwert ~40px) -- betrifft nur den Compact-
-   Pfad, die kompakteren Maus-Groessen auf dem Desktop bleiben unveraendert. */
+/* Touch-Ziele vergroessern (Empfehlung u.a. WCAG 2.5.5: min. 44x44px) --
+   betrifft nur den Compact-Pfad, die kompakteren Maus-Groessen auf dem
+   Desktop bleiben unveraendert. Alle Header-Buttons UND Suchfeld/Upload-
+   Button teilen sich bewusst dieselbe Hoehe (frueher 38px, jetzt 44px) --
+   frueher schon mal separat vereinheitlicht (Upload-Button/Suchfeld hatten
+   davor padding-basierte statt fester Hoehe und drifteten sichtbar ab,
+   siehe Bugreport), ein spaeterer Touch-Ziel-Fix hat nur einen Teil dieser
+   Gruppe auf 44px angehoben und die Konsistenz erneut kaputtgemacht --
+   deshalb hier bewusst ALLE zusammen in einem Block, nicht mehr aufteilen. */
 #mp3-overlay.mp3-compact .mp3-mobile-cat-btn,
 #mp3-overlay.mp3-compact .mp3-view-toggle-btn {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     box-sizing: border-box;
     font-size: 15px;
 }
 
-/* Upload-Button und Suchfeld hatten bisher padding-basierte statt fester
-   Hoehe -- driftete dadurch sichtbar von den 38px der Icon-Buttons daneben
-   ab (siehe Bugreport, gleiche Ursache wie zuvor schon im Desktop-Header). */
 #mp3-overlay.mp3-compact .mp3-upload-btn {
-    height: 38px;
+    height: 44px;
     box-sizing: border-box;
     padding: 0 12px;
     font-size: 15px;
 }
 
 #mp3-overlay.mp3-compact .mp3-search {
-    height: 38px;
+    height: 44px;
 }
 
 #mp3-overlay.mp3-compact .mp3-admin-menu-btn {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     box-sizing: border-box;
     font-size: 16px;
 }
@@ -6285,7 +6529,7 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 38px;
+    height: 44px;
     box-sizing: border-box;
     padding: 0 12px;
     font-size: 22px;
@@ -6387,6 +6631,46 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
 }
 
+/* Siehe Kommentar im @media (max-width: 768px)-Block oben. */
+#mp3-overlay.mp3-compact .mp3-sidebar-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 8px 8px 8px 14px;
+    margin-bottom: 4px;
+    background: var(--mp3-sidebar-bg);
+    border-bottom: 1px solid var(--mp3-sidebar-border);
+}
+
+#mp3-overlay.mp3-compact .mp3-sidebar-mobile-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mp3-cat-text);
+}
+
+#mp3-overlay.mp3-compact .mp3-sidebar-mobile-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--mp3-cat-text);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#mp3-overlay.mp3-compact .mp3-sidebar-mobile-close:hover {
+    background: var(--mp3-cat-hover-bg);
+}
+
 /* Backdrop (absolute within modal) */
 #mp3-overlay.mp3-compact .mp3-sidebar-backdrop {
     display: none;
@@ -6455,6 +6739,30 @@ body.rex-theme-dark #mp3-overlay .mp3-alt-hint {
     width: 38px;
     height: 38px;
     font-size: 22px;
+}
+
+/* Siehe Kommentar im @media (max-width: 768px)-Block oben. */
+#mp3-overlay.mp3-compact .mp3-detail-actions-row {
+    flex-wrap: wrap;
+}
+
+#mp3-overlay.mp3-compact .mp3-detail-save-btn {
+    padding: 0 10px;
+    font-size: 0;
+}
+
+#mp3-overlay.mp3-compact .mp3-detail-save-btn i {
+    font-size: 14px;
+}
+
+/* Siehe Kommentar im @media (max-width: 768px)-Block oben. */
+#mp3-overlay.mp3-compact .mp3-collection-add-btn,
+#mp3-overlay.mp3-compact .mp3-collection-rename-btn,
+#mp3-overlay.mp3-compact .mp3-collection-delete-btn,
+#mp3-overlay.mp3-compact .mp3-sidebar-section-toggle,
+#mp3-overlay.mp3-compact .mp3-select-mode-toggle {
+    width: 44px;
+    height: 44px;
 }
 
 /* Grid */

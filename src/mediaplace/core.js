@@ -27,6 +27,9 @@ import {
     selectAllProviderFilesInFolder,
     clearProviderSelection,
     startProviderBulkImport,
+    hasProviders,
+    getSingleProvider,
+    replaceFromProviderFile,
 } from './modules/providers.js';
 import {
     initModals,
@@ -35,6 +38,7 @@ import {
     showCategoryPickerModal,
     showAlertModal,
 } from './modules/modals.js';
+import { initToast, showToast } from './modules/toast.js';
 import {
     initLightbox,
     isFullscreenMode,
@@ -103,6 +107,7 @@ import {
     startBulkAddToCollection,
     startBulkTagFiles,
     startBulkDeleteFiles,
+    refreshProvidersSection,
 } from './modules/categories.js';
 import {
     initFilters,
@@ -193,6 +198,14 @@ import {
     var currentCat = -1;
     var onSelect = null;
     var onMultiSelect = null;  // callback for multi-select mode: receives array of filenames
+    // Dateiname der ueber "Aus Cloud ersetzen" zu ueberschreibenden BESTEHENDEN
+    // Datei (siehe startReplaceFromCloud()/finishProviderReplace() unten) --
+    // bewusst eigener State statt onSelect-Wiederverwendung: onSelect erwartet
+    // eine NEU importierte Datei (importProviderFile()), Ersetzen ueberschreibt
+    // stattdessen genau diese eine bestehende Datei ueber einen eigenen
+    // Server-Endpunkt (func=replace), siehe replaceFromProviderFile() in
+    // modules/providers.js.
+    var replaceTargetFilename = null;
     var closeHrefTarget = null; // options.closeHref (open()) -- Navigationsziel fuer close(),
                                  // nur gesetzt wenn MP3 als echte Seite (nicht als Popup-Ersatz
                                  // auf einer bereits geladenen Seite) geoeffnet wurde.
@@ -683,6 +696,16 @@ import {
             statusBar.textContent = txt;
         }
         updateHeaderInfo(count);
+    }
+
+    // Provider-Modus (siehe modules/providers.js) nutzt updateStatus() fuer
+    // die eigene Trefferzahl mit -- ohne diesen Reset beim Betreten wuerde
+    // der "X von Y geladen"-Zusatz aus der zuletzt aktiven lokalen Ansicht
+    // (mediaTotal/lastLoadedFiles, s.o.) fuer die gesamte Provider-Sitzung
+    // stehen bleiben, unabhaengig davon, was der Provider tatsaechlich liefert.
+    function resetLoadedState() {
+        mediaTotal = 0;
+        lastLoadedFiles = [];
     }
 
     // currentSort -> api-Addon-Sortsyntax "feld:richtung" (ListHelper::parseSort()).
@@ -1476,6 +1499,7 @@ import {
         lightboxCaption = qs('.mp3-lightbox-caption', overlay);
 
         initModals({ overlay: overlay });
+        initToast(overlay);
 
         initLightbox({
             overlay: overlay,
@@ -1556,6 +1580,8 @@ import {
             setMultiSelected: function (v) { multiSelected = v; },
             getOnSelect: function () { return onSelect; },
             getOnMultiSelect: function () { return onMultiSelect; },
+            hasProviders: hasProviders,
+            startReplaceFromCloud: startReplaceFromCloud,
             getMediaBaseUrl: function () { return mediaBaseUrl; },
             getLastLoadedFiles: function () { return lastLoadedFiles; },
             getMetainfoCanvasOpen: function () { return metainfoCanvasOpen; },
@@ -1666,10 +1692,14 @@ import {
             getViewMode: function () { return viewMode; },
             getOnSelect: function () { return onSelect; },
             clearOnSelect: function () { onSelect = null; },
+            getReplaceTarget: function () { return replaceTargetFilename; },
+            clearReplaceTarget: function () { replaceTargetFilename = null; },
+            finishReplace: finishProviderReplace,
             hideDetail: hideDetail,
             setActiveCollection: setActiveCollection,
             updateSidebarActiveState: updateSidebarActiveState,
             updateStatus: updateStatus,
+            resetLoadedState: resetLoadedState,
             close: close,
         }, parsedProviders);
 
@@ -2493,6 +2523,14 @@ import {
             if (altMissingNav) {
                 e.stopPropagation();
                 closeProviderMode();
+                // Lokale Navigation bricht einen laufenden "Aus Cloud
+                // ersetzen"-Versuch ab (siehe startReplaceFromCloud()) --
+                // ohne dies wuerde der Hinweis in renderProvidersSection()
+                // stehen bleiben, obwohl der Nutzer sichtbar etwas anderes tut.
+                if (replaceTargetFilename) {
+                    replaceTargetFilename = null;
+                    refreshProvidersSection();
+                }
                 // Toggle: "Medien ohne ALT-Text" XOR Kategorie/Sammlung --
                 // gleiches Ausschluss-Muster wie beim Sammlungs-Klick unten.
                 altMissingActive = !altMissingActive;
@@ -2501,7 +2539,6 @@ import {
                 }
                 currentCat = altMissingActive ? -1 : 0;
                 localStorage.setItem('mp3_cat', String(currentCat));
-                localStorage.setItem('mp3_alt_missing_active', altMissingActive ? '1' : '0');
                 buildBreadcrumb(currentCat);
                 refreshCollectionsSection();
                 updateSidebarActiveState();
@@ -2513,6 +2550,10 @@ import {
             if (collection) {
                 e.stopPropagation();
                 closeProviderMode();
+                if (replaceTargetFilename) { // siehe Kommentar oben (altMissingNav)
+                    replaceTargetFilename = null;
+                    refreshProvidersSection();
+                }
                 var collectionId = String(collection.getAttribute('data-collection-id') || '');
                 if (!collectionId) return;
                 // Toggle: Sammlung XOR Kategorie. Wenn Sammlung aktiv, verlasse Kategorie-Modus
@@ -2521,7 +2562,6 @@ import {
                 } else {
                     setActiveCollection(collectionId);
                     altMissingActive = false;
-                    localStorage.setItem('mp3_alt_missing_active', '0');
                 }
                 // Reset category to -1 (show all) when entering collection mode
                 currentCat = getActiveCollectionId() ? -1 : 0;
@@ -2549,13 +2589,16 @@ import {
             // unten zu NaN werden und currentCat kaputt setzen.
             if (!cat || cat.classList.contains('mp3-cat-disabled') || !cat.hasAttribute('data-cat')) return;
             closeProviderMode();
+            if (replaceTargetFilename) { // siehe Kommentar oben (altMissingNav)
+                replaceTargetFilename = null;
+                refreshProvidersSection();
+            }
             var catId = parseInt(cat.getAttribute('data-cat'), 10);
             currentCat = catId;
             localStorage.setItem('mp3_cat', catId);
             // Exit collection/alt-missing mode when clicking a category
             setActiveCollection(null);
             altMissingActive = false;
-            localStorage.setItem('mp3_alt_missing_active', '0');
 
             // Mark active in sidebar
             qsa('.mp3-cat', sidebar).forEach(function (c) {
@@ -2842,6 +2885,16 @@ import {
 
         // Detail panel events (event delegation)
         overlay.addEventListener('click', function (e) {
+            // Ersetzen-Dropdown von aussen schliessen (siehe .mp3-detail-replace-trigger/
+            // -cloud-item weiter unten) -- als erstes im Handler, damit jeder
+            // andere Klick innerhalb des Overlays ein offenes Menue zuverlaessig
+            // schliesst, ohne die restliche Klick-Verarbeitung zu unterbrechen
+            // (kein return hier).
+            var openReplaceWrap = qs('.mp3-detail-replace-wrap.mp3-detail-replace-open', overlay);
+            if (openReplaceWrap && !e.target.closest('.mp3-detail-replace-wrap')) {
+                openReplaceWrap.classList.remove('mp3-detail-replace-open');
+            }
+
             var fsBtn = e.target.closest('.mp3-fullscreen-toggle');
             if (fsBtn) {
                 setFullscreenMode(!isFullscreenMode());
@@ -2905,6 +2958,18 @@ import {
                 var importPath = providerImportBtn.getAttribute('data-provider-import-path') || '';
                 var importName = providerImportBtn.getAttribute('data-provider-import-name') || '';
                 if (importPath) promptProviderImport(importPath, importName, providerImportBtn);
+                return;
+            }
+
+            // Ersetzen-Modus-Pendant zu .mp3-provider-import-btn oben (siehe
+            // showProviderDetail()'s dritter Zweig) -- eigene Klasse, damit
+            // dieser Zweig hier VOR dem generischen Check greift, ohne dessen
+            // Kategorie-Abfrage auszuloesen.
+            var providerReplaceBtn = e.target.closest('.mp3-provider-replace-btn');
+            if (providerReplaceBtn) {
+                var replacePath = providerReplaceBtn.getAttribute('data-provider-replace-path') || '';
+                var replaceName = providerReplaceBtn.getAttribute('data-provider-replace-name') || '';
+                if (replacePath) replaceFromProviderFile(replacePath, replaceName, providerReplaceBtn);
                 return;
             }
 
@@ -3223,6 +3288,29 @@ import {
                 return;
             }
 
+            // Ersetzen-Dropdown (.mp3-detail-replace-wrap, siehe
+            // modules/detail.js renderDetail()) -- nur vorhanden, wenn
+            // hasProviders() true ist. Trigger oeffnet/schliesst das Menue,
+            // der Cloud-Eintrag darin startet den Ersetzen-Modus; der
+            // "Vom Geraet"-Eintrag ist das bestehende, unveraendert
+            // funktionierende .mp3-detail-replace-btn-<label> (eigener Zweig
+            // weiter oben in dieser Datei, kein neuer Code noetig).
+            var replaceTriggerBtn = e.target.closest('.mp3-detail-replace-trigger');
+            if (replaceTriggerBtn) {
+                var replaceWrapEl = replaceTriggerBtn.closest('.mp3-detail-replace-wrap');
+                if (replaceWrapEl) replaceWrapEl.classList.toggle('mp3-detail-replace-open');
+                return;
+            }
+
+            var replaceCloudItem = e.target.closest('.mp3-detail-replace-cloud-item');
+            if (replaceCloudItem) {
+                var replaceCloudFilename = replaceCloudItem.getAttribute('data-filename') || '';
+                var replaceCloudWrapEl = replaceCloudItem.closest('.mp3-detail-replace-wrap');
+                if (replaceCloudWrapEl) replaceCloudWrapEl.classList.remove('mp3-detail-replace-open');
+                if (replaceCloudFilename) startReplaceFromCloud(replaceCloudFilename);
+                return;
+            }
+
             var loadMoreBtn = e.target.closest('.mp3-load-more-btn');
             if (loadMoreBtn) {
                 loadFiles(currentCat, false);
@@ -3420,6 +3508,31 @@ import {
             }, 150);
         });
 
+        // Thumbnail-<img> (rex_media_type=...) koennen sehr selten mit einem
+        // transienten 500er scheitern -- REDAXOs eigener rex_clang-Cache
+        // (src/core/lib/clang/clang.php) ist nicht gegen parallele Requests
+        // abgesichert, ein Request kurz nach einem Cache-Clear kann auf einen
+        // gerade neu geschriebenen, kurzzeitig leeren Cache treffen
+        // ("LogicException: No clang found."). Gleicher Hintergrund wie der
+        // fetch()-Retry in mediaplace-api.js, hier aber fuer <img>-Requests,
+        // die nie durch fetch() laufen. error-Events auf <img> bubblen nicht,
+        // deshalb Capture-Phase auf dem Overlay-Root. Cache-Buster-Query-Param
+        // beim Retry, nicht einfach dieselbe src erneut zuweisen -- manche
+        // Browser wiederholen sonst keinen echten Request. data-mp3-retried
+        // verhindert eine Endlosschleife, falls das Bild wirklich dauerhaft
+        // fehlt (z.B. echtes 404).
+        overlay.addEventListener('error', function (e) {
+            var img = e.target;
+            if (!img || 'IMG' !== img.tagName || !img.src) return;
+            if (-1 === img.src.indexOf('rex_media_type=')) return;
+            if (img.dataset.mp3Retried) return;
+            img.dataset.mp3Retried = '1';
+            var retrySrc = img.src + (-1 === img.src.indexOf('?') ? '?' : '&') + '_mp3retry=' + Date.now();
+            setTimeout(function () {
+                img.src = retrySrc;
+            }, 300);
+        }, true);
+
         overlay.addEventListener('change', function (e) {
             var perPageSelect = e.target.closest('.mp3-per-page-select');
             if (perPageSelect) {
@@ -3473,6 +3586,11 @@ import {
 
             var replaceInput = e.target.closest('.mp3-detail-replace-input');
             if (replaceInput) {
+                // Falls das Dropdown-Menue offen war (siehe .mp3-detail-replace-wrap):
+                // nach Dateiauswahl schliessen, unabhaengig vom weiteren Ausgang.
+                var replaceInputWrap = replaceInput.closest('.mp3-detail-replace-wrap');
+                if (replaceInputWrap) replaceInputWrap.classList.remove('mp3-detail-replace-open');
+
                 var file = replaceInput.files && replaceInput.files[0] ? replaceInput.files[0] : null;
                 if (!file || !selectedFile) return;
 
@@ -3500,6 +3618,10 @@ import {
                         updateSidebarActiveState();
                         loadFiles(reloadCat, true);
                         showDetail(selectedFile);
+                        // Gleiches Feedback wie beim Cloud-Ersetzen (siehe
+                        // finishProviderReplace()) -- vorher gab es bei
+                        // Erfolg ueberhaupt keine sichtbare Rueckmeldung.
+                        showToast(t('mediaplace_replace_success', { name: selectedFile }), 'success');
                     })
                     .catch(function (err) {
                         alert(t('mediaplace_error_replacing_file', { msg: err.message }));
@@ -3726,6 +3848,10 @@ import {
 
         // Close sidebar on category select (mobile)
         sidebar.addEventListener('click', function (e) {
+            if (e.target.closest('.mp3-sidebar-mobile-close')) {
+                closeSidebar();
+                return;
+            }
             if (e.target.closest('.mp3-cat') && window.innerWidth <= 768) {
                 closeSidebar();
             }
@@ -4007,6 +4133,56 @@ import {
         });
     }
 
+    // ---- Ersetzen aus Cloud-Quelle ----
+    // Aufgerufen aus dem Detail-Panel-Klick-Handler unten (".mp3-detail-replace-cloud-item"
+    // im Ersetzen-Dropdown, per JS ergaenzt, siehe modules/detail.js renderDetail()) --
+    // der Overlay ist zu diesem Zeitpunkt bereits offen (Detail-Panel einer
+    // lokalen Datei sichtbar), deshalb KEIN erneuter open()-Aufruf noetig/
+    // gewuenscht (wuerde Scroll-Position/Filter/Kategorie-Kontext unnoetig
+    // zuruecksetzen). Bei genau einem konfigurierten Provider direkt in
+    // dessen Browsing springen, sonst zeigt die (durch hasProviders() ohnehin
+    // sichtbare) Sidebar-Sektion die Auswahl.
+    function startReplaceFromCloud(filename) {
+        if (!filename || !hasProviders()) return;
+        replaceTargetFilename = filename;
+        hideDetail();
+        var single = getSingleProvider();
+        if (single) {
+            openProvider(single.id, single.label);
+        } else {
+            // Mehr als ein Provider: kein automatischer Sprung moeglich
+            // (welcher waere der richtige?) -- Hinweis in der Sidebar-Sektion
+            // muss selbst aktualisiert werden, ein Kategorie-/Sammlungs-Klick
+            // haette das ohnehin nur zufaellig mit-erledigt.
+            refreshProvidersSection();
+        }
+    }
+
+    // Gegenstueck zum lokalen Ersetzen-Erfolgspfad (siehe
+    // ".mp3-detail-replace-input"-Handler unten) -- gleiches Reload-Muster
+    // wie die closeProviderMode()-Aufrufe im Sidebar-Klick-Handler (Kategorie/
+    // Sammlung wechseln): Provider-Modus verlassen, lokale Ansicht fuer die
+    // aktuelle (beim Betreten des Cloud-Browsings auf -1 gesetzte) Kategorie
+    // neu laden, Detail-Panel der jetzt aktualisierten Datei zeigen.
+    function finishProviderReplace(filename) {
+        closeProviderMode();
+        // ctx.clearReplaceTarget() (providers.js) lief bereits VOR diesem
+        // Aufruf -- die Sidebar-Sektion traegt aber noch die alte, per JS
+        // eingefuegte Hinweis-Zeile (".mp3-providers-replace-hint") und wird
+        // sonst an keiner Stelle in diesem Erfolgspfad neu gerendert (Bug-
+        // Report: Hinweis blieb nach erfolgreichem Ersetzen sichtbar stehen).
+        refreshProvidersSection();
+        buildBreadcrumb(currentCat);
+        updateSidebarActiveState();
+        loadFiles(currentCat, true);
+        showDetail(filename);
+        // Eigene Erfolgsmeldung noetig, weil der kurze Status-Text im
+        // Cloud-Detail-Panel (".mp3-provider-replace-status") durch den
+        // showDetail()-Panel-Wechsel hier sofort wieder ueberschrieben wird,
+        // bevor er wahrnehmbar war (Bug-Report: kein sichtbares Feedback).
+        showToast(t('mediaplace_replace_success', { name: filename }), 'success');
+    }
+
     // ---- Open / Close ----
     function open(callbackOrOpts, opts) {
         // Invalidiert alle noch laufenden Requests einer vorherigen, nicht
@@ -4052,6 +4228,13 @@ import {
         // als kleineren Auswahl-Dialog innerhalb einer anderen Seite.
         setFullscreenMode(!!options.fullscreen);
         onSelect = (!multiMode && typeof callback === 'function') ? callback : null;
+        // Ersetzen-Modus wird ausschliesslich ueber startReplaceFromCloud()
+        // AUS einem bereits offenen Overlay heraus gestartet (Klick im
+        // Detail-Panel einer lokalen Datei) -- jeder echte open()-Aufruf
+        // (auch ein erneuter waehrend derselben Seite) beendet ihn deshalb
+        // sauber, statt ihn stillschweigend aus einer vorherigen Sitzung
+        // mitzuschleppen.
+        replaceTargetFilename = null;
         onMultiSelect = (multiMode && typeof callback === 'function') ? callback : null;
         closeHrefTarget = (typeof options.closeHref === 'string' && options.closeHref) ? options.closeHref : null;
         onCloseCallback = (typeof options.onClose === 'function') ? options.onClose : null;
@@ -4154,7 +4337,17 @@ import {
             viewMode = 'grid';
         }
         setActiveCollection(features.collections ? (localStorage.getItem('mp3_active_collection') || null) : null);
-        altMissingActive = features.altMissingFilter && localStorage.getItem('mp3_alt_missing_active') === '1';
+        // Bewusst NICHT ueber localStorage persistiert (anders als
+        // mp3_active_collection/mp3_cat oben) -- "Medien ohne ALT-Text" ist
+        // eine Wartungs-/Diagnoseansicht, kein Arbeitsbereich, in den man
+        // automatisch zurueckkehren will. Mit Persistenz blieb der Nutzer
+        // nach dem einmaligen Beheben aller fehlenden ALT-Texte bei jedem
+        // erneuten Oeffnen von MediaPlace in dieser (dann leeren) Ansicht
+        // haengen -- der Navigationspunkt selbst blendet sich waehrend er
+        // aktiv ist bewusst nicht aus (siehe refreshAltMissingNav()), was
+        // dadurch faelschlich wie "es gibt doch noch fehlende ALT-Texte"
+        // aussah, obwohl der Server-Count laengst 0 war (Nutzer-Feedback).
+        altMissingActive = false;
         setDarkMode(localStorage.getItem('mp3_dark_mode') === '1');
         closeFocuspointCanvas();
 
@@ -4224,6 +4417,7 @@ import {
         metainfoPickTarget = null;
         onSelect = null;
         onMultiSelect = null;
+        replaceTargetFilename = null;
         if (onCloseCallback) {
             var cb = onCloseCallback;
             onCloseCallback = null;

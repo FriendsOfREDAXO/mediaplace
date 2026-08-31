@@ -504,19 +504,34 @@
         if (!apiUpload) return;
 
         var progressEl = this.progressEl;
+        var total = files.length;
         var done = 0;
         var failed = 0;
         var uploaded = [];
 
-        function setProgress() {
-            progressEl.style.display = '';
-            progressEl.textContent = t('mediaplace_upload_summary', { done: done, total: files.length });
+        // Balken + Text statt nur eines Textknotens (Nutzer-Feedback: der
+        // Direkt-Upload im Widget wirkte "stumm" im Vergleich zum Overlay,
+        // das einen echten Fortschrittsbalken + eine kurz sichtbar bleibende
+        // Erfolgsmeldung hat -- gleiches Muster hier, nur kompakter fuers
+        // kleine Widget-Format). onProgress wird jetzt tatsaechlich an
+        // apiUpload() durchgereicht (vorher ungenutzt mit null uebergeben).
+        progressEl.innerHTML =
+            '<div class="mp3w-upload-progress-text"></div>' +
+            '<div class="mp3w-upload-progress-bar"><div class="mp3w-upload-progress-fill"></div></div>';
+        var textEl = progressEl.querySelector('.mp3w-upload-progress-text');
+        var fillEl = progressEl.querySelector('.mp3w-upload-progress-fill');
+        progressEl.classList.remove('mp3w-upload-progress-done');
+        progressEl.style.display = '';
+
+        function setProgress(fileFraction) {
+            textEl.textContent = t('mediaplace_upload_summary', { done: done, total: total });
+            var pct = Math.round(((done + failed + (fileFraction || 0)) / total) * 100);
+            fillEl.style.width = Math.min(100, Math.max(0, pct)) + '%';
         }
-        setProgress();
+        setProgress(0);
 
         function uploadNext(idx) {
-            if (idx >= files.length) {
-                progressEl.style.display = 'none';
+            if (idx >= total) {
                 if (uploaded.length) {
                     if (self.multiple) {
                         var current = self._getFiles();
@@ -530,15 +545,25 @@
                         self._setFiles([uploaded[0]]);
                     }
                 }
-                if (failed > 0) {
-                    alert(t('mediaplace_upload_summary', { done: done, total: files.length }) + t('mediaplace_upload_failed_suffix', { count: failed }));
-                }
+                var summary = t('mediaplace_upload_summary', { done: done, total: total });
+                if (failed > 0) summary += t('mediaplace_upload_failed_suffix', { count: failed });
+                progressEl.classList.add('mp3w-upload-progress-done');
+                textEl.innerHTML = '<i class="fa-solid ' + (failed > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check') + '"></i> ' + escAttr(summary);
+                // Kurz sichtbar stehen bleiben statt sofort zu verschwinden
+                // (gleiches Timing wie die Erfolgsmeldung im Overlay), sonst
+                // wirkt ein erfolgreicher Upload wie "nichts ist passiert".
+                setTimeout(function () {
+                    progressEl.style.display = 'none';
+                    progressEl.classList.remove('mp3w-upload-progress-done');
+                }, 1500);
                 return;
             }
 
             maybeResizeFile(files[idx])
                 .then(function (fileToSend) {
-                    return apiUpload(fileToSend, catId, null);
+                    return apiUpload(fileToSend, catId, function (sent, fileTotal) {
+                        setProgress(fileTotal ? sent / fileTotal : 0);
+                    });
                 })
                 .then(function (resp) {
                     done++;
@@ -549,7 +574,7 @@
                     console.error('MP3Widget upload failed:', files[idx].name, err);
                 })
                 .then(function () {
-                    setProgress();
+                    setProgress(0);
                     uploadNext(idx + 1);
                 });
         }

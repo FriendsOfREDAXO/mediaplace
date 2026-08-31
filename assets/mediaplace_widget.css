@@ -215,6 +215,26 @@
     background: #f3f6fb;
     border: 1px solid #dfe3e9;
 }
+.mp3w-upload-progress-text {
+    margin-bottom: 3px;
+}
+.mp3w-upload-progress-bar {
+    height: 4px;
+    background: #dfe3e9;
+    overflow: hidden;
+}
+.mp3w-upload-progress-fill {
+    height: 100%;
+    width: 0;
+    background: #4b9ad9;
+    transition: width 0.15s ease;
+}
+.mp3w-upload-progress.mp3w-upload-progress-done {
+    color: #28a745;
+}
+.mp3w-upload-progress.mp3w-upload-progress-done .mp3w-upload-progress-bar {
+    display: none;
+}
 
 /* ---- Listenansicht (Umschalter im Toolbar) ---- */
 .mp3w-previews.mp3w-view-list {
@@ -424,6 +444,12 @@ body.rex-theme-dark .mp3w-upload-progress {
     border-color: #2d3e50;
     color: #8ab8e8;
 }
+body.rex-theme-dark .mp3w-upload-progress-bar {
+    background: #2d3e50;
+}
+body.rex-theme-dark .mp3w-upload-progress.mp3w-upload-progress-done {
+    color: #4caf50;
+}
 body.rex-theme-dark .mp3w-catpick-box {
     background: #1e2a3a;
     color: #cfe0ee;
@@ -495,6 +521,12 @@ body.rex-theme-dark .mp3w-catpick-cancel {
         background: #253344;
         border-color: #2d3e50;
         color: #8ab8e8;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-upload-progress-bar {
+        background: #2d3e50;
+    }
+    body.rex-has-theme:not(.rex-theme-light) .mp3w-upload-progress.mp3w-upload-progress-done {
+        color: #4caf50;
     }
     body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-box {
         background: #1e2a3a;

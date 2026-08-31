@@ -1,5 +1,25 @@
 # Changelog
 
+## Version 1.24.0 – 2026-08-31
+
+Mobile Nutzung im Fokus: ein informeller Usability-Test auf sehr schmalen Bildschirmen hat mehrere konkrete Schwachstellen aufgedeckt, hier größtenteils behoben. Dazu ein hartnäckiger Anzeige-Bug bei "Medien ohne ALT-Text", spürbar besseres Upload-Feedback im Eingabe-Widget und die Möglichkeit, eine Datei auch aus einer Cloud-Quelle heraus zu ersetzen.
+
+### Neu
+- **Datei ersetzen aus Cloud-Quelle**: neben dem bestehenden "Ersetzen"-Dialog (lokaler Datei-Upload) steht in der Detailansicht jetzt ein zweiter Button bereit, sofern über `cloudconnect` mindestens eine Cloud-Verbindung (WebDAV/Nextcloud/Dropbox) konfiguriert ist – öffnet das Cloud-Browsing, die gewählte Datei ersetzt Inhalt/Dateigröße der bestehenden Datei direkt (Dateiname/Kategorie/`rex_media`-ID bleiben unverändert, es wird keine neue Datei angelegt). Ohne konfigurierte Cloud-Verbindung bleibt der Ersetzen-Dialog unverändert.
+- **Toast-Benachrichtigung**: neue, wiederverwendbare kurze Erfolgs-/Fehlermeldung (statt stillem Verschwinden) – nach Datei-Ersetzen (lokal wie aus der Cloud) und nach Datei-Upload im Overlay.
+
+### Verbessert
+- **Detailansicht auf schmalen Screens**: die untere Aktionsleiste (Ersetzen/Herunterladen/Merken/Speichern/Löschen) bricht jetzt um statt "Löschen" abzuschneiden; "Speichern" wird dabei auf ein reines Icon verkleinert.
+- **Touch-Ziele vergrößert**: mehrere Symbolleisten- und Sidebar-Icons (Kategorien/Ansicht/Verwaltung/Schließen im Header, Sammlung bearbeiten/umbenennen/löschen, Ein-/Ausklappen, Mehrfachauswahl-Umschalter) waren auf Mobile deutlich unter gängigen Touch-Ziel-Empfehlungen (u. a. WCAG 2.5.5) – jetzt mindestens 44×44px, nur auf schmalen Screens, Desktop bleibt unverändert kompakt.
+- **Kategorie-/Sammlungs-Sidebar auf Mobile**: eigener, sticky Schließen-Header ergänzt – vorher verdeckte das Offcanvas-Menü auf schmalen Screens den Header (Schließen-/Zahnrad-Button) komplett, ohne erkennbaren Rückweg außer dem Antippen eines Eintrags.
+- **Upload-Feedback im Eingabe-Widget** (`data-mp3-upload`): echter Fortschrittsbalken statt nur einer Textzeile, plus kurz sichtbar bleibende Erfolgs-/Fehlermeldung (vorher verschwand die Anzeige beim Abschluss sofort, Fehler kamen nur als blockierender Browser-`alert()`).
+- **Upload-Feedback im Overlay**: zusätzlich zur bestehenden Fortschrittsanzeige/Zusammenfassung im Panel jetzt eine kurze Toast-Meldung nach Abschluss (siehe oben) – vorher war nach dem automatischen Grid-Reload keine Abschlussmeldung mehr sichtbar.
+
+### Bugfix
+- Datei-Vorschau beim Browsen einer Cloud-Quelle (WebDAV/Nextcloud/Dropbox, siehe `cloudconnect`-Addon) hatte keinen eigenen Schließen-Button – auf Mobile ließ sich die Vorschau dadurch nicht mehr verlassen.
+- "Medien ohne ALT-Text" blieb nach einmaligem Aufrufen dauerhaft als aktive Ansicht gespeichert und erschien deshalb bei jedem erneuten Öffnen von MediaPlace wieder – auch wenn längst alle Dateien einen ALT-Text hatten. Der Zustand wird jetzt nicht mehr über Sitzungen hinweg gespeichert.
+- Eigene API-Aufrufe sowie Thumbnail-Bilder werden bei einem seltenen, transienten 500er jetzt einmal automatisch wiederholt (Hintergrund: eine Race Condition in REDAXOs eigenem Sprach-Cache direkt nach einem Cache-Clear, siehe [redaxo/core#6648](https://github.com/redaxo/core/issues/6648) – kein mediaplace-spezifischer Fehler, MediaPlace trifft die seltene Race durch mehrere parallele Requests beim Öffnen aber überproportional oft).
+
 ## Version 1.23.1 – 2026-08-31
 
 ### Bugfix

@@ -14,6 +14,41 @@
 
     var API_BASE = '/api/backend/';
 
+    // Schattiert das globale fetch() innerhalb dieses Closures -- alle
+    // bestehenden fetch(...)-Aufrufe in dieser Datei (20+ Stellen) laufen
+    // dadurch automatisch mit einmaligem Retry bei einem 500er, ohne jede
+    // Stelle einzeln anfassen zu muessen. Hintergrund: REDAXOs eigener
+    // rex_clang-Cache (src/core/lib/clang/clang.php) ist nicht gegen
+    // parallele Requests abgesichert -- unmittelbar nach einem Cache-Clear
+    // kann ein Request auf einen gerade neu geschriebenen, kurzzeitig leeren
+    // Cache treffen und mit "LogicException: No clang found." (HTTP 500)
+    // scheitern. Betrifft REDAXO-weit jeden Request, nicht mediaplace-
+    // spezifisch (siehe system.log-Eintraege u.a. zu page=credits) --
+    // MediaPlace trifft die seltene Race nur ueberproportional oft, weil es
+    // beim Oeffnen mehrere parallele Requests gleichzeitig abfeuert (ein
+    // Fetch je Dateityp-Filterpille). Kein Fix der eigentlichen Ursache
+    // (die liegt in REDAXO-Core), nur eine Abfederung auf Client-Seite.
+    // Nur GET (impliziter Default oder explizit) wird retried -- POST/PATCH/
+    // DELETE bewusst NICHT, ein Upload/Update/Delete darf nicht unbeabsichtigt
+    // doppelt ausgefuehrt werden, nur weil die erste Antwort zufaellig ein
+    // 500er war.
+    var nativeFetch = window.fetch.bind(window);
+
+    function fetch(url, opts) {
+        var method = (opts && opts.method ? String(opts.method) : 'GET').toUpperCase();
+        var request = nativeFetch(url, opts);
+        if ('GET' !== method) return request;
+
+        return request.then(function (response) {
+            if (response.status < 500) return response;
+            return new Promise(function (resolve) {
+                setTimeout(resolve, 200);
+            }).then(function () {
+                return nativeFetch(url, opts);
+            });
+        });
+    }
+
     // Gemeinsame Response-Behandlung fuer die Medienliste (apiFetchRaw() und
     // apiFetchMediaList()): bei Fehlern den HTTP-Status als err.status
     // anhaengen, damit Aufrufer z.B. 403 (keine Kategorie-Berechtigung)
@@ -932,6 +967,24 @@
         });
     }
 
+    // Ersetzt den Inhalt einer BESTEHENDEN lokalen Datei durch eine Cloud-Datei
+    // (Gegenstueck zu apiReplaceFile() unten, das vom lokalen Datei-Dialog
+    // kommt) -- Api\Provider.php::handleReplace(), legt keine neue rex_media-
+    // Zeile an. Gleiches GET-mit-Query-Params-Muster wie apiImportProviderFile()
+    // (auch dieses mutiert serverseitig, trotzdem GET, siehe dortiger Endpunkt).
+    function apiReplaceFileFromProvider(provider, path, filename) {
+        return fetch(getProviderApiUrl('replace', { provider: provider, path: path, filename: filename }), {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || json.error) throw new Error(json.error || 'HTTP ' + r.status);
+                return json; // {filename: "..."}
+            });
+        });
+    }
+
     // Mehrfachauswahl-Import ("Ausgewaehlte importieren"/"Alle im Ordner
     // importieren", siehe providers.js) -- category_id bleibt Query-Param
     // wie beim Einzel-Import, paths kommt als JSON-Body (Api\Provider.php,
@@ -1213,6 +1266,7 @@
     Core.api.getProviderThumbnailUrl = getProviderThumbnailUrl;
     Core.api.apiImportProviderFile = apiImportProviderFile;
     Core.api.apiImportProviderFilesBatch = apiImportProviderFilesBatch;
+    Core.api.apiReplaceFileFromProvider = apiReplaceFileFromProvider;
     Core.api.apiCreateCategory = apiCreateCategory;
     Core.api.resolveFolderCategories = resolveFolderCategories;
     Core.api.apiRenameCategory = apiRenameCategory;

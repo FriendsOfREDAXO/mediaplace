@@ -52,6 +52,7 @@ var apiFetchProviderEntries = MP3Core.api.apiFetchProviderEntries;
 var getProviderThumbnailUrl = MP3Core.api.getProviderThumbnailUrl;
 var apiImportProviderFile = MP3Core.api.apiImportProviderFile;
 var apiImportProviderFilesBatch = MP3Core.api.apiImportProviderFilesBatch;
+var apiReplaceFileFromProvider = MP3Core.api.apiReplaceFileFromProvider;
 
 /**
  * Von core.js einmalig am Ende von build() aufgerufen, sobald DOM-Refs
@@ -66,6 +67,12 @@ var apiImportProviderFilesBatch = MP3Core.api.apiImportProviderFilesBatch;
  * - mediaForceCacheTokens: Objekt-Referenz (wird in-place mutiert)
  * - getOnMultiSelect()/getCurrentCat()/setCurrentCat()/getViewMode()/
  *   getOnSelect()/clearOnSelect(): Zugriff auf noch-legacy-State
+ * - getReplaceTarget()/clearReplaceTarget(): Dateiname der ueber
+ *   "Aus Cloud ersetzen" zu ueberschreibenden BESTEHENDEN Datei, siehe
+ *   core.js startReplaceFromCloud()/showProviderDetail()'s dritter Zweig
+ * - finishReplace(filename): nach erfolgreichem Ersetzen zurueck in die
+ *   lokale Ansicht + Detail-Panel der (jetzt aktualisierten) Datei, siehe
+ *   core.js finishProviderReplace()
  * - hideDetail()/setActiveCollection()/updateSidebarActiveState()/
  *   updateStatus()/close(): noch-legacy-Funktionen
  * showCategoryPickerModal() kommt direkt aus modules/modals.js (kein
@@ -92,6 +99,16 @@ export function renderProvidersSection() {
 
     var html = '<div class="mp3-providers-wrap">';
     html += '<div class="mp3-providers-head"><span class="mp3-providers-title">' + t('mediaplace_cloud_providers') + '</span></div>';
+    // Ersetzen-Modus (siehe core.js startReplaceFromCloud()): bei mehr als
+    // einem konfigurierten Provider springt der Aufrufer NICHT automatisch in
+    // eine bestimmte Quelle (welche waere die richtige?) -- ohne diesen
+    // Hinweis wuerde der Nutzer nach dem Klick auf "Aus Cloud ersetzen" ohne
+    // erkennbaren Grund wieder in der normalen lokalen Ansicht landen.
+    var replaceTargetHint = ctx.getReplaceTarget ? ctx.getReplaceTarget() : null;
+    if (replaceTargetHint) {
+        html += '<div class="mp3-providers-replace-hint"><i class="fa-solid fa-arrows-rotate"></i> ' +
+            escAttr(t('mediaplace_replace_pick_hint', { name: replaceTargetHint })) + '</div>';
+    }
     for (var i = 0; i < providers.length; i++) {
         var p = providers[i];
         html += '<a class="mp3-provider-root' + (activeProvider === p.id ? ' mp3-provider-root-active' : '') + '" data-provider-id="' + escAttr(p.id) + '" data-provider-label="' + escAttr(p.label) + '">' +
@@ -103,6 +120,14 @@ export function renderProvidersSection() {
 
 export function hasProviders() {
     return providers.length > 0;
+}
+
+// Fuer den "Aus Cloud ersetzen"-Einstieg (siehe core.js startReplaceFromCloud()):
+// bei genau einem konfigurierten Provider direkt in dessen Browsing springen
+// statt den Nutzer erst in der Sidebar auf die (dann ohnehin einzige) Cloud-
+// Quelle klicken zu lassen.
+export function getSingleProvider() {
+    return 1 === providers.length ? providers[0] : null;
 }
 
 export function isProviderMode() {
@@ -220,6 +245,7 @@ export function openProvider(providerId, label) {
     if ('provider' === gridMode && activeProvider === providerId) return; // schon aktiv
     closeProviderMode(); // vorherigen Provider (falls anderer) sauber verlassen
     ctx.hideDetail();
+    ctx.resetLoadedState(); // sonst haengt die "X von Y geladen"-Anzeige der vorherigen lokalen Ansicht
     gridMode = 'provider';
     activeProvider = providerId;
     activeProviderPath = '/';
@@ -422,12 +448,14 @@ export function showProviderDetail(path, name) {
     if (!entry) return;
 
     var isPicker = !!ctx.getOnSelect();
+    var replaceTarget = ctx.getReplaceTarget ? ctx.getReplaceTarget() : null;
     var previewHtmlStr = entry.hasThumbnail
         ? '<img src="' + escAttr(getProviderThumbnailUrl(activeProvider, path)) + '" alt="' + escAttr(name) + '">'
         : '<div class="mp3-icon"><i class="' + escAttr(fileIcon(name)) + '"></i></div>';
 
     var html = '<div class="mp3-detail-inner">';
-    html += '<div class="mp3-detail-header"><span class="mp3-detail-header-name" title="' + escAttr(name) + '">' + escAttr(name) + '</span></div>';
+    html += '<div class="mp3-detail-header"><span class="mp3-detail-header-name" title="' + escAttr(name) + '">' + escAttr(name) + '</span>' +
+        '<button class="mp3-detail-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button></div>';
     html += '<div class="mp3-detail-preview">' + previewHtmlStr + '</div>';
     html += '<table class="mp3-detail-table">';
     html += '<tr><td>' + escAttr(t('mediaplace_field_filename')) + '</td><td>' + escAttr(name) + '</td></tr>';
@@ -437,10 +465,21 @@ export function showProviderDetail(path, name) {
     }
     html += '</table>';
     html += '<div class="mp3-detail-actions">';
-    html += '<button type="button" class="mp3-image-optimize-btn mp3-provider-import-btn" data-provider-import-path="' + escAttr(path) + '" data-provider-import-name="' + escAttr(name) + '">' +
-        '<i class="fa-solid fa-cloud-arrow-down"></i> ' + escAttr(isPicker ? t('mediaplace_provider_import_and_select') : t('mediaplace_provider_import')) +
-        '</button>';
-    html += '<div class="mp3-image-optimize-status mp3-provider-import-status" style="display:none"></div>';
+    if (replaceTarget) {
+        // Ersetzen-Modus (siehe core.js startReplaceFromCloud()): eigener
+        // Button/Klick-Handler statt promptProviderImport() -- keine
+        // Kategorie-Abfrage, ueberschreibt die bestehende Datei statt eine
+        // neue anzulegen (siehe replaceFromProviderFile()).
+        html += '<button type="button" class="mp3-image-optimize-btn mp3-provider-replace-btn" data-provider-replace-path="' + escAttr(path) + '" data-provider-replace-name="' + escAttr(name) + '">' +
+            '<i class="fa-solid fa-arrows-rotate"></i> ' + escAttr(t('mediaplace_provider_replace_confirm')) +
+            '</button>';
+        html += '<div class="mp3-image-optimize-status mp3-provider-replace-status" style="display:none"></div>';
+    } else {
+        html += '<button type="button" class="mp3-image-optimize-btn mp3-provider-import-btn" data-provider-import-path="' + escAttr(path) + '" data-provider-import-name="' + escAttr(name) + '">' +
+            '<i class="fa-solid fa-cloud-arrow-down"></i> ' + escAttr(isPicker ? t('mediaplace_provider_import_and_select') : t('mediaplace_provider_import')) +
+            '</button>';
+        html += '<div class="mp3-image-optimize-status mp3-provider-import-status" style="display:none"></div>';
+    }
     html += '</div>';
     html += '</div>';
 
@@ -501,6 +540,41 @@ function importProviderFile(path, name, btn, categoryId) {
         })
         .catch(function (err) {
             setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_importing_provider_file', { msg: err.message }));
+            if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+        });
+}
+
+/**
+ * Klick auf ".mp3-provider-replace-btn" (Ersetzen-Modus, siehe
+ * showProviderDetail()): ersetzt den Inhalt der ueber core.js'
+ * startReplaceFromCloud() gemerkten BESTEHENDEN Datei -- anders als
+ * importProviderFile() keine Kategorie-Abfrage (die Zielkategorie ist die
+ * schon vorhandene Kategorie der zu ersetzenden Datei, wird serverseitig in
+ * Api\Provider.php::handleReplace() ermittelt) und kein neuer Datensatz.
+ */
+export function replaceFromProviderFile(path, name, btn) {
+    var targetFilename = ctx.getReplaceTarget ? ctx.getReplaceTarget() : null;
+    if (!targetFilename) return;
+
+    var statusEl = btn ? btn.parentNode.querySelector('.mp3-provider-replace-status') : null;
+    var setStatus = function (html) {
+        if (!statusEl) return;
+        statusEl.style.display = '';
+        statusEl.innerHTML = html;
+    };
+
+    if (btn) { btn.disabled = true; btn.classList.add('is-loading'); }
+    setStatus('<i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_provider_replace_running'));
+
+    apiReplaceFileFromProvider(activeProvider, path, targetFilename)
+        .then(function (result) {
+            setStatus('<i class="fa-solid fa-check"></i> ' + t('mediaplace_provider_replace_done'));
+            ctx.mediaForceCacheTokens[result.filename] = Date.now();
+            ctx.clearReplaceTarget();
+            ctx.finishReplace(result.filename);
+        })
+        .catch(function (err) {
+            setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_replacing_provider_file', { msg: err.message }));
             if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
         });
 }

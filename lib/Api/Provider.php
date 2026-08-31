@@ -17,6 +17,7 @@ use rex_api_result;
  * GET  ?rex-api-call=mediaplace_provider&func=thumbnail&provider=X&path=P
  * GET  ?rex-api-call=mediaplace_provider&func=import&provider=X&path=P&category_id=C
  * POST ?rex-api-call=mediaplace_provider&func=import_batch&provider=X, JSON-Body {paths:[...], category_id:C}
+ * GET  ?rex-api-call=mediaplace_provider&func=replace&provider=X&path=P&filename=F
  */
 class Provider extends rex_api_function
 {
@@ -51,6 +52,7 @@ class Provider extends rex_api_function
             'thumbnail' => $this->handleThumbnail($provider),
             'import' => $this->handleImport($provider),
             'import_batch' => $this->handleImportBatch($provider),
+            'replace' => $this->handleReplace($provider),
             default => $this->handleUnknownFunc(),
         };
         exit;
@@ -166,6 +168,74 @@ class Provider extends rex_api_function
         }
 
         \rex_response::sendJson(['results' => $results]);
+    }
+
+    /**
+     * Ersetzt den Inhalt einer BESTEHENDEN lokalen Datei durch eine Cloud-
+     * Datei (Gegenstueck zum lokalen "Ersetzen"-Dateidialog, siehe
+     * apiReplaceFile() in mediaplace-api.js) -- anders als handleImport()
+     * wird KEINE neue rex_media-Zeile angelegt, Dateiname/Kategorie/ID
+     * bleiben unveraendert, nur Inhalt/Dateigroesse/Filetype werden
+     * aktualisiert. Nur fuer Provider verfuegbar, die
+     * StorageProviderContentInterface implementieren (rohe Datei-Bytes,
+     * nicht nur Thumbnail/Import-als-neue-Datei) -- z.B. das aeltere,
+     * eigenstaendige nextcloud-Addon bietet das (noch) nicht an, wird
+     * deshalb hier sauber mit einer Fehlermeldung abgelehnt statt eines
+     * TypeErrors.
+     */
+    private function handleReplace(\FriendsOfRedaxo\Mediaplace\StorageProviderInterface $provider): void
+    {
+        if (!$provider instanceof \FriendsOfRedaxo\Mediaplace\StorageProviderContentInterface) {
+            \rex_response::setStatus(\rex_response::HTTP_BAD_REQUEST);
+            \rex_response::sendJson(['error' => 'This provider does not support replacing files.']);
+            return;
+        }
+
+        $path = rex_request('path', 'string', '');
+        $filename = rex_request('filename', 'string', '');
+
+        $media = '' !== $filename ? \rex_media::get($filename) : null;
+        if (!$media) {
+            \rex_response::setStatus(\rex_response::HTTP_NOT_FOUND);
+            \rex_response::sendJson(['error' => 'Media not found']);
+            return;
+        }
+
+        // Aktuelle (nicht eine Ziel-)Kategorie der zu ersetzenden Datei
+        // pruefen -- anders als handleImport()/handleImportBatch(), die die
+        // Ziel-Kategorie einer NEUEN Datei pruefen.
+        if (!\FriendsOfRedaxo\Mediaplace\MediaPermission::hasCategoryAccess($media->getCategoryId())) {
+            \rex_response::setStatus(\rex_response::HTTP_FORBIDDEN);
+            \rex_response::sendJson(['error' => 'Permission denied']);
+            return;
+        }
+
+        $tmpFile = \rex_path::cache('mediaplace_replace_' . \rex_string::normalize($filename));
+
+        try {
+            $content = $provider->getContent($path);
+            \rex_file::put($tmpFile, $content);
+
+            // WICHTIG: 'tmp_name', NICHT 'path' -- rex_media_service::updateMedia()
+            // ueberschreibt $file['path'] unconditional mit $file['tmp_name']
+            // (anders als addMedia(), das ein gesetztes 'path' respektiert).
+            $result = \rex_media_service::updateMedia($filename, [
+                'title' => $media->getTitle(),
+                'category_id' => $media->getCategoryId(),
+                'file' => [
+                    'name' => basename($path),
+                    'tmp_name' => $tmpFile,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            \rex_response::setStatus(\rex_response::HTTP_INTERNAL_ERROR);
+            \rex_response::sendJson(['error' => $e->getMessage()]);
+            return;
+        } finally {
+            \rex_file::delete($tmpFile);
+        }
+
+        \rex_response::sendJson(['filename' => (string) $result['filename']]);
     }
 
     private function handleUnknownFunc(): void
