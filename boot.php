@@ -31,6 +31,7 @@ rex_api_function::register('mediaplace_provider', \FriendsOfRedaxo\Mediaplace\Ap
 rex_api_function::register('mediaplace_schema', \FriendsOfRedaxo\Mediaplace\Api\Schema::class);
 rex_api_function::register('mediaplace_storage_usage', \FriendsOfRedaxo\Mediaplace\Api\StorageUsage::class);
 rex_api_function::register('mediaplace_tags', \FriendsOfRedaxo\Mediaplace\Api\Tags::class);
+rex_api_function::register('mediaplace_thumb_warmup', \FriendsOfRedaxo\Mediaplace\Api\ThumbWarmup::class);
 rex_api_function::register('mediaplace_unused', \FriendsOfRedaxo\Mediaplace\Api\Unused::class);
 rex_api_function::register('mediaplace_video_info', \FriendsOfRedaxo\Mediaplace\Api\VideoInfo::class);
 rex_api_function::register('mediaplace_video_optimize', \FriendsOfRedaxo\Mediaplace\Api\VideoOptimize::class);

@@ -27,6 +27,10 @@ page:
             title: 'Einstellungen'
             icon: rex-icon fa-gear
             perm: admin
+        thumb_warmup:
+            title: 'Vorschaubilder vorwärmen'
+            icon: rex-icon fa-fire
+            perm: admin
         metainfo_fields:
             title: 'Metainfo Felder'
             icon: rex-icon fa-sliders

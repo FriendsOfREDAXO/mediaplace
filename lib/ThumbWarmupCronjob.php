@@ -33,10 +33,11 @@ use rex_sql;
  */
 class ThumbWarmupCronjob extends rex_cronjob
 {
-    private const IMAGE_TYPE = 'mediaplace_thumb';
+    /** Auch von Api\ThumbWarmup genutzt (manuelles Vorwaermen mit Fortschrittsanzeige) -- ein Typ/eine Extension-Liste, nicht zweimal pflegen. */
+    public const IMAGE_TYPE = 'mediaplace_thumb';
 
     /** Deckungsgleich mit isImage() in assets/mediaplace-helpers.js (ohne "ico", siehe DetailPanelFormatter::isImageFilename()). */
-    private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'bmp'];
+    public const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'bmp'];
 
     /** Ein Bild-Resize ist deutlich billiger als eine Video-Konvertierung -- niedrigerer Schwellwert. */
     private const IMAGE_SLOW_THRESHOLD_SECONDS = 0.05;

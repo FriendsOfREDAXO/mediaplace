@@ -2189,6 +2189,7 @@ import {
                 }
                 e.preventDefault();
                 setFullscreenMode(!isFullscreenMode());
+                localStorage.setItem('mp3_fullscreen', isFullscreenMode() ? '1' : '0');
             }
 
         });
@@ -2947,6 +2948,7 @@ import {
             var fsBtn = e.target.closest('.mp3-fullscreen-toggle');
             if (fsBtn) {
                 setFullscreenMode(!isFullscreenMode());
+                localStorage.setItem('mp3_fullscreen', isFullscreenMode() ? '1' : '0');
                 return;
             }
 
@@ -4274,8 +4276,12 @@ import {
         // options.fullscreen: startet direkt im Vollbild-Modus statt im normalen
         // verschiebbaren/skalierbaren Fenster-Modal -- fuer Aufrufe, die MP3 als
         // vollwertigen Seitenersatz oeffnen (z.B. mediapool_takeover.php), nicht
-        // als kleineren Auswahl-Dialog innerhalb einer anderen Seite.
-        setFullscreenMode(!!options.fullscreen);
+        // als kleineren Auswahl-Dialog innerhalb einer anderen Seite. Kein
+        // Aufrufer setzt das je explizit auf false, daher: truthy = erzwungen,
+        // sonst den zuletzt vom Nutzer per Toggle-Button/F-Taste gewaehlten
+        // Zustand aus localStorage uebernehmen statt immer bei "normal" zu
+        // starten.
+        setFullscreenMode(options.fullscreen ? true : localStorage.getItem('mp3_fullscreen') === '1');
         onSelect = (!multiMode && typeof callback === 'function') ? callback : null;
         // Ersetzen-Modus wird ausschliesslich ueber startReplaceFromCloud()
         // AUS einem bereits offenen Overlay heraus gestartet (Klick im

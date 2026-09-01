@@ -105,12 +105,29 @@ class FfmpegIntegration
      */
     public static function canOptimize(string $filename): bool
     {
-        if (!self::isAvailable() || !self::isSupportedVideo($filename)) {
+        if (!self::isAvailable() || !self::isSupportedVideo($filename) || !self::hasJobEngineV2()) {
             return false;
         }
         $user = \rex::getUser();
 
         return $user instanceof \rex_user && $user->hasPerm('mediaplace[optimize_video]');
+    }
+
+    /**
+     * Converter::startOverwriteJob()/pollJob()/getActiveJobInfo() sowie
+     * Job\OptimizedVideoRegistry gibt es erst seit der globalen Job-Engine-
+     * Neufassung in ffmpeg 4.5.0/4.5.1 (siehe dortiges CHANGELOG) -- aeltere,
+     * weiterhin lauffaehige ffmpeg-Installationen (Vorschau funktioniert dort
+     * unveraendert weiter, siehe isAvailable()) wuerden bei jedem dieser
+     * Aufrufe mit "Call to undefined method" abstuerzen. Deshalb eigener,
+     * gezielter Versions-Check statt eines Ausbaus von isAvailable() selbst
+     * -- die Vorschau-Faehigkeit soll auf alten ffmpeg-Versionen weiterhin
+     * funktionieren, nur das "Optimieren"-Feature muss dort ausgeblendet
+     * bleiben.
+     */
+    private static function hasJobEngineV2(): bool
+    {
+        return version_compare((string) (\rex_addon::get('ffmpeg')->getVersion() ?: '0'), '4.5.0', '>=');
     }
 
     /**
@@ -250,7 +267,7 @@ class FfmpegIntegration
      */
     public static function getActiveJobForFile(string $filename): ?array
     {
-        if (!self::isAvailable()) {
+        if (!self::isAvailable() || !self::hasJobEngineV2()) {
             return null;
         }
         $job = \FriendsOfRedaxo\FFmpeg\Api\Converter::getActiveJobInfo();
@@ -274,7 +291,7 @@ class FfmpegIntegration
      */
     public static function getOptimizedStatus(string $filename): ?array
     {
-        if (!self::isAvailable()) {
+        if (!self::isAvailable() || !self::hasJobEngineV2()) {
             return null;
         }
         $media = \rex_media::get($filename);
