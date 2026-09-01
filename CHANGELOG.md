@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 1.28.0 – 2026-09-01
+
+### Neu
+- **Vorschaubilder vorwärmen** (neue Admin-Seite): erzeugt den kompletten Bestand an Grid-Vorschaubildern einmal vollständig vorab, statt sie erst beim ersten Betrachten "on demand" zu generieren – hilfreich nach einer Migration/Erstinstallation mit vielen bereits vorhandenen Dateien, wenn auf einem langsamen Server viele gleichzeitige Vorschau-Anfragen beim Scrollen spürbar bremsen. Zwei Modi: **im Hintergrund** (läuft als abgekoppelter Server-Prozess weiter, auch wenn der Tab geschlossen wird – Seite neu laden zeigt den Fortschritt weiter an) oder **im Browser** (treibt den Vorgang direkt an, Tab muss offen bleiben; automatischer Rückfall, falls der Server keine Hintergrundprozesse erlaubt). Mit Live-Vorschau des zuletzt erzeugten Vorschaubilds. Ergänzt den bestehenden Cronjob, der nur laufend neue Dateien nachzieht.
+- **Vollbild-Zustand wird gemerkt**: der Overlay startet jetzt im zuletzt gewählten Vollbild-/Fenster-Modus statt immer im normalen Fenster.
+
+### Behoben
+- **ffmpeg-Integration**: "Video optimieren" und der zugehörige Status im Detail-Panel setzten stillschweigend ffmpeg-Addon-Version 4.5.0+ voraus (globale Job-Engine) – auf älteren, weiterhin funktionsfähigen ffmpeg-Installationen (Vorschau lief dort einwandfrei weiter) führte das zu "Call to undefined method"-Fehlern. Jetzt sauber versionsgeprüft: fehlt die passende ffmpeg-Version, bleibt nur das Optimieren-Feature ausgeblendet, alles andere funktioniert unverändert.
+
 ## Version 1.27.0 – 2026-08-31
 
 Ein bisschen Politur am Kategorie-Menü, Toasts die man auch wirklich sieht, und ein handfestes Safari-Rendering-Problem in der Media-Wall-Ansicht ausgemerzt – inklusive einer generalüberholten Hover-/Auswahl-Farblogik, die jetzt überall (Grid, Media Wall, Liste) gleich tickt.
