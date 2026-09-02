@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.28.1 – 2026-09-02
+
+### Behoben
+- **"Datei ersetzen" schlug immer mit "Method not allowed" fehl**: der lokale Datei-Ersetzen-Dialog schickte einen `POST`-Request an die api-Addon-Route `media/{filename}/update`, die aber ausschließlich `PUT`/`PATCH` akzeptiert (der Server hat dafür sogar einen eigenen Multipart-Parser, weil PHP `$_FILES` nur bei POST automatisch befüllt). Betraf jede Installation, nicht nur einzelne Server – auf `PATCH` umgestellt.
+
 ## Version 1.28.0 – 2026-09-01
 
 ### Neu

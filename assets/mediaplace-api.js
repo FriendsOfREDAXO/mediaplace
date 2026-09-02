@@ -1145,9 +1145,16 @@
         var fd = new FormData();
         fd.append('file', file);
 
-        // permitted_only=1: siehe apiDelete().
+        // permitted_only=1: siehe apiDelete(). Die api-Addon-Route
+        // media/{filename}/update akzeptiert NUR PUT/PATCH (nie POST, siehe
+        // RoutePackage/Media.php) -- deren Controller hat extra einen
+        // manuellen Multipart-Parser fuer PUT/PATCH gebaut, weil PHP $_FILES
+        // nur bei POST automatisch befuellt. Ein POST hier liefert immer
+        // 405 (verifiziert per curl gegen die lokale Instanz), unabhaengig
+        // vom Server -- war ein eigenstaendiger Bug, keine Server-/Hosting-
+        // Einschraenkung.
         return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update?permitted_only=1', {
-            method: 'POST',
+            method: 'PATCH',
             credentials: 'same-origin',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
