@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.28.2 – 2026-09-02
+
+### Behoben
+- **"Datei ersetzen" meldete Erfolg, tauschte die Datei aber tatsächlich nie aus**: der 1.28.1-Fix (Umstellung auf `PATCH`) behob zwar den sichtbaren "Method not allowed"-Fehler, deckte aber ein zweites, unabhängiges Problem auf – ist PHPs `enable_post_data_reading` aktiv (php.ini-Default), liest PHP den kompletten Datei-Upload schon vor jedem eigenen Code aus dem Request und verwirft ihn bei PUT/PATCH-Requests wieder, ohne ihn nutzbar zu machen. Für den Server blieb dann nichts mehr zum Verarbeiten übrig, meldete aber trotzdem "erfolgreich ersetzt" (nur Metadaten wurden aktualisiert, die Datei selbst nie). "Datei ersetzen" läuft jetzt über einen eigenen, schlanken MediaPlace-Endpunkt (echtes POST, direkt auf REDAXOs Medien-Service) statt über die betroffene api-Addon-Route – keine Änderung am api-Addon nötig oder vorgenommen, der zugrundeliegende Bug dort ist als [Issue #81](https://github.com/FriendsOfREDAXO/api/issues/81) gemeldet. Mehrfach per echtem Browser-Test verifiziert.
+
 ## Version 1.28.1 – 2026-09-02
 
 ### Behoben

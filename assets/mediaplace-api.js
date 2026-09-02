@@ -1141,20 +1141,38 @@
         });
     }
 
+    function getReplaceFileApiUrl() {
+        var root = document.getElementById('mp3-root');
+        var baseUrl = root ? root.dataset.replaceFileUrl : null;
+        if (!baseUrl) {
+            baseUrl = 'index.php?rex-api-call=mediaplace_replace_file';
+        }
+        return baseUrl;
+    }
+
+    // Eigener MediaPlace-Endpunkt statt der api-Addon-Route
+    // media/{filename}/update: die akzeptiert dort ausschliesslich PUT/PATCH
+    // (RoutePackage/Media.php) -- und genau das ist auf PHP-Installationen mit
+    // aktivem (Default) enable_post_data_reading ein echtes Problem: PHP liest
+    // den kompletten multipart/form-data-Body bereits VOR jedem Nutzcode aus
+    // php://input, um ihn (nur bei POST) in $_FILES zu befuellen. Bei
+    // PATCH/PUT wird der Body dabei TROTZDEM restlos konsumiert, aber
+    // verworfen, ohne $_FILES zu befuellen -- fuer den servereigenen
+    // Multipart-Parser bleibt dann nichts mehr uebrig (verifiziert per Debug-
+    // Log + echtem Browser-Request: "Ersetzen" meldete Erfolg, die Datei
+    // blieb aber unveraendert, kein Fehler sichtbar). Das api-Addon ist ein
+    // fremdes Repo (nicht aenderbar) -- deshalb dieser eigene, schlanke
+    // Endpunkt: echtes POST, PHP befuellt $_FILES damit nativ und
+    // zuverlaessig, kein eigener Multipart-Parser noetig. Ruft serverseitig
+    // dieselbe REDAXO-Core-Methode (rex_media_service::updateMedia()) wie
+    // der klassische Medienpool auf, siehe Api\ReplaceFile.php.
     function apiReplaceFile(filename, file) {
         var fd = new FormData();
         fd.append('file', file);
+        fd.append('filename', filename);
 
-        // permitted_only=1: siehe apiDelete(). Die api-Addon-Route
-        // media/{filename}/update akzeptiert NUR PUT/PATCH (nie POST, siehe
-        // RoutePackage/Media.php) -- deren Controller hat extra einen
-        // manuellen Multipart-Parser fuer PUT/PATCH gebaut, weil PHP $_FILES
-        // nur bei POST automatisch befuellt. Ein POST hier liefert immer
-        // 405 (verifiziert per curl gegen die lokale Instanz), unabhaengig
-        // vom Server -- war ein eigenstaendiger Bug, keine Server-/Hosting-
-        // Einschraenkung.
-        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/update?permitted_only=1', {
-            method: 'PATCH',
+        return fetch(getReplaceFileApiUrl(), {
+            method: 'POST',
             credentials: 'same-origin',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
