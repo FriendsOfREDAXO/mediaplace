@@ -34,5 +34,5 @@ $rawValue = is_scalar($value) ? (string) $value : '';
 $text = trim($rawValue);
 $placeholder = $this->i18n('mediaplace_click_to_edit');
 ?>
-<div class="mp3-edit-display" data-inline-toggle="<?= rex_escape($key) ?>"><span class="mp3-edit-text<?= '' !== $text ? '' : ' mp3-edit-placeholder' ?>"><?= rex_escape('' !== $text ? $text : $placeholder) ?></span><i class="fa-solid fa-pen mp3-edit-pen"></i></div>
-<div class="mp3-inline-edit-wrap" style="display:none"><input class="mp3-edit-input" type="text" data-json-field="<?= rex_escape($key) ?>" value="<?= rex_escape($rawValue) ?>"></div>
+<div class="mp-edit-display" data-inline-toggle="<?= rex_escape($key) ?>"><span class="mp-edit-text<?= '' !== $text ? '' : ' mp-edit-placeholder' ?>"><?= rex_escape('' !== $text ? $text : $placeholder) ?></span><i class="fa-solid fa-pen mp-edit-pen"></i></div>
+<div class="mp-inline-edit-wrap" style="display:none"><input class="mp-edit-input" type="text" data-json-field="<?= rex_escape($key) ?>" value="<?= rex_escape($rawValue) ?>"></div>

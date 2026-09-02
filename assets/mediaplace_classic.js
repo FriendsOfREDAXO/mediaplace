@@ -4,7 +4,7 @@
  * Faengt die "Oeffnen"/"Hinzufuegen"/"Ansehen"-Buttons der klassischen
  * REX_MEDIA[n]- und REX_MEDIALIST[n]-Widgets (core/mediapool) per
  * Event-Delegation ab, bevor deren inline onclick (openREXMedia, ...)
- * das alte Popup-Fenster oeffnet, und nutzt stattdessen den MP3-Overlay.
+ * das alte Popup-Fenster oeffnet, und nutzt stattdessen den MP-Overlay.
  *
  * Bewusst NICHT ueberschrieben werden die globalen Funktionen
  * (openREXMedia, openMediaPool, ...) selbst, da TinyMCE und CKEditor5
@@ -80,17 +80,17 @@
         }
 
         if (action === 'view' && input.value) {
-            MP3.openFile(input.value, setValue);
+            MP.openFile(input.value, setValue);
         } else if (action === 'add') {
             // "+": direkt in den Upload-Modus statt erst Browsen -- feste
             // Ziel-Kategorie, falls das Widget mit einem "category"-Arg
-            // konfiguriert ist, sonst fragt MP3.openUpload() wie gewohnt
+            // konfiguriert ist, sonst fragt MP.openUpload() wie gewohnt
             // (aktuelle Kategorie bzw. Modal-Abfrage, siehe doUpload()).
             var categoryId = categoryFromLink(link);
-            MP3.openUpload(setValue, null !== categoryId ? { categoryId: categoryId } : undefined);
+            MP.openUpload(setValue, null !== categoryId ? { categoryId: categoryId } : undefined);
         } else {
             // 'open': normales Browsen/Auswaehlen
-            MP3.open(setValue);
+            MP.open(setValue);
         }
     }
 
@@ -112,7 +112,7 @@
 
         if (action === 'add') {
             var categoryId = categoryFromLink(link);
-            MP3.openUpload(addFilenames, { multiple: true, categoryId: null !== categoryId ? categoryId : undefined });
+            MP.openUpload(addFilenames, { multiple: true, categoryId: null !== categoryId ? categoryId : undefined });
             return;
         }
 
@@ -122,21 +122,21 @@
                 if (select.options[i].selected) { selected = select.options[i]; break; }
             }
             if (selected) {
-                MP3.openFile(selected.value);
+                MP.openFile(selected.value);
                 return;
             }
         }
 
         // 'open' und 'view' ohne Auswahl: Mehrfachauswahl-Overlay ('add' bereits
         // oben per return behandelt)
-        MP3.open(addFilenames, { multiple: true });
+        MP.open(addFilenames, { multiple: true });
     }
 
     document.addEventListener('click', function (e) {
         var link = e.target.closest('a.btn-popup');
         if (!link) return;
 
-        // Im Metainfo-Canvas: eigenes Grid statt REDAXOs Popup nutzen (MP3.startMetainfoPick()
+        // Im Metainfo-Canvas: eigenes Grid statt REDAXOs Popup nutzen (MP.startMetainfoPick()
         // in mediaplace.js), sonst wuerde das Popup unseren gerade offenen Overlay verdecken.
         // "Ansehen" (das Auge-Icon) ist davon ausgenommen: die Datei ist ja schon
         // ausgewaehlt, es soll kein Auswahl-Modus starten, sondern nur das eigene
@@ -144,17 +144,17 @@
         // diese Datei umschalten -- frueher landete "Ansehen" hier faelschlich
         // ebenfalls im Picker-Modus, weil nur auf "irgendeine Aktion", nicht auf die
         // konkrete Aktion geprueft wurde.
-        if (link.closest('#mp3-metainfo-canvas')) {
+        if (link.closest('#mp-metainfo-canvas')) {
             var mcWrapper = link.closest('.rex-js-widget-media, .rex-js-widget-medialist');
             var mcAction = mcWrapper ? actionFromLink(link) : null;
-            if (mcWrapper && mcAction && window.MP3) {
+            if (mcWrapper && mcAction && window.MP) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 var viewFilename = mcAction === 'view' ? resolveViewFilename(mcWrapper) : null;
-                if (viewFilename && typeof window.MP3.showFileDetail === 'function') {
-                    window.MP3.showFileDetail(viewFilename);
-                } else if (typeof window.MP3.startMetainfoPick === 'function') {
-                    window.MP3.startMetainfoPick(mcWrapper, mcWrapper.classList.contains('rex-js-widget-medialist'));
+                if (viewFilename && typeof window.MP.showFileDetail === 'function') {
+                    window.MP.showFileDetail(viewFilename);
+                } else if (typeof window.MP.startMetainfoPick === 'function') {
+                    window.MP.startMetainfoPick(mcWrapper, mcWrapper.classList.contains('rex-js-widget-medialist'));
                 }
             }
             return;
@@ -178,6 +178,6 @@
 
     // Hinweis: Der "Medienpool"-Popup-Link (mediapool/package.yml: popup: openMediaPool())
     // wird nicht mehr per JS abgefangen, sondern serverseitig in boot.php via
-    // PAGES_PREPARED / rex_be_page::setPopup() direkt auf "MP3.open()" umgestellt.
+    // PAGES_PREPARED / rex_be_page::setPopup() direkt auf "MP.open()" umgestellt.
 
 })();

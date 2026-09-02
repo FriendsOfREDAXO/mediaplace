@@ -4,7 +4,7 @@
  * nehmen ihre Daten ueber Parameter/Rueckgabewerte entgegen, ohne auf die
  * geteilten Overlay-Statusvariablen (currentCat, selectedFile, ...)
  * zuzugreifen -- deshalb per einfachem Alias in mediaplace.js einbindbar
- * (var apiFetch = MP3Core.api.apiFetch; usw.), ohne dass mediaplace.js
+ * (var apiFetch = MPCore.api.apiFetch; usw.), ohne dass mediaplace.js
  * selbst umgebaut werden musste.
  */
 (function (Core) {
@@ -75,7 +75,7 @@
     var CHUNK_UPLOAD_SIZE = 4 * 1024 * 1024;
 
     function getCategoriesApiUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.categoriesUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_categories';
@@ -98,7 +98,7 @@
     }
 
     function getUnusedApiUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.unusedUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_unused';
@@ -128,7 +128,7 @@
     }
 
     function getStorageUsageApiUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.storageUsageUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_storage_usage';
@@ -169,7 +169,7 @@
     }
 
     function getTagsApiUrl(params) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.tagsUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_tags';
@@ -212,7 +212,7 @@
     }
 
     function getCategoryBulkApiUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.categoryBulkUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_category_bulk';
@@ -256,16 +256,16 @@
     }
 
     // Optionale KI-Alt-Text-Generierung (siehe AiAltTextService::isAvailable()) --
-    // beide URLs bleiben leer/undefiniert am #mp3-root, wenn das Feature aus
+    // beide URLs bleiben leer/undefiniert am #mp-root, wenn das Feature aus
     // ist oder ai_platform fehlt (boot.php), Aufrufer pruefen das VOR dem
     // Aufruf selbst (modules/ai_alt.js).
     function getAiAltUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         return root ? (root.dataset.aiAltUrl || '') : '';
     }
 
     function getAiAltBulkUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         return root ? (root.dataset.aiAltBulkUrl || '') : '';
     }
 
@@ -324,11 +324,11 @@
     }
 
     // Optionale KI-Auto-Tagging-Vorschlaege (siehe AiAutoTagService::isAvailable())
-    // -- URL bleibt leer/undefiniert am #mp3-root, wenn das Feature aus ist,
+    // -- URL bleibt leer/undefiniert am #mp-root, wenn das Feature aus ist,
     // ai_platform fehlt oder kein Tag fuer KI freigegeben ist (boot.php),
     // Aufrufer prueft das VOR dem Aufruf selbst (modules/ai_tags.js).
     function getAiAutoTagUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         return root ? (root.dataset.aiAutoTagUrl || '') : '';
     }
 
@@ -429,7 +429,7 @@
     // Gemeinsam von apiFetchMediaList() (Uebergangs-Fallback-Fall) und
     // apiFetchOwnMediaList() (siehe dort, IMMER ueber diesen Weg)
     // genutzt: haengt die Query eines api-Addon-foermigen endpoint-Strings an
-    // fallbackUrl an, inkl. page/per_page -> mp3_page/mp3_per_page-Umbenennung
+    // fallbackUrl an, inkl. page/per_page -> mp_page/mp_per_page-Umbenennung
     // (siehe Kommentar unten).
     function fetchViaMediaListFallback(endpoint, fallbackUrl) {
         // Reines String-Anhaengen wie bei getCategoriesApiUrl()/getUnusedApiUrl();
@@ -442,13 +442,13 @@
         // selbst, um die Backend-Seite zu waehlen. Ein &page=1 im Query-String
         // wuerde deshalb als "zeig Backend-Seite '1'" interpretiert und auf die
         // Standardseite umleiten (HTML statt JSON). Server-seitig entsprechend
-        // in rex_api_mediaplace_media_list.php als mp3_page/mp3_per_page erwartet.
+        // in rex_api_mediaplace_media_list.php als mp_page/mp_per_page erwartet.
         if (params.has('page')) {
-            params.set('mp3_page', params.get('page'));
+            params.set('mp_page', params.get('page'));
             params.delete('page');
         }
         if (params.has('per_page')) {
-            params.set('mp3_per_page', params.get('per_page'));
+            params.set('mp_per_page', params.get('per_page'));
             params.delete('per_page');
         }
         var extraQuery = params.toString();
@@ -466,7 +466,7 @@
     }
 
     function apiFetchMediaList(endpoint) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var secure = root ? root.dataset.apiMediaListSecure === '1' : true;
         var fallbackUrl = root ? root.dataset.mediaListFallbackUrl : null;
 
@@ -487,7 +487,7 @@
     // Schalter oben (der betrifft nur die generische Kategorie-
     // Rechtefilterung der normalen Medienliste).
     function apiFetchOwnMediaList(endpoint) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var fallbackUrl = root ? root.dataset.mediaListFallbackUrl : null;
         if (!fallbackUrl) {
             return Promise.reject(new Error('Own media list endpoint not available'));
@@ -653,7 +653,7 @@
     }
 
     function getJsonApiUrl(filename) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.jsonUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_json_metainfo';
@@ -720,9 +720,9 @@
     }
 
     // Echte Metainfo-Feld-Bearbeitung, siehe rex_api_mediaplace_metainfo_form.php
-    // (boot.php liefert die URL ueber #mp3-root[data-metainfo-form-url]).
+    // (boot.php liefert die URL ueber #mp-root[data-metainfo-form-url]).
     function getMetainfoFormApiUrl(filename) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.metainfoFormUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_metainfo_form';
@@ -751,7 +751,7 @@
         });
     }
 
-    // formData = ein FormData-Objekt aus dem #mp3-metainfo-form (echtes
+    // formData = ein FormData-Objekt aus dem #mp-metainfo-form (echtes
     // multipart/form-data, KEIN JSON -- REDAXOs eigener Metainfo-Speicherpfad
     // liest $_POST direkt, siehe rex_api_mediaplace_metainfo_form.php).
     function apiSaveMetainfoForm(filename, formData) {
@@ -773,9 +773,9 @@
     }
 
     // Zuschneiden (cropper-Addon-Integration), siehe rex_api_mediaplace_crop.php
-    // (boot.php liefert die URL ueber #mp3-root[data-cropper-url]).
+    // (boot.php liefert die URL ueber #mp-root[data-cropper-url]).
     function getCropApiUrl(filename) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.cropperUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_crop';
@@ -804,7 +804,7 @@
         });
     }
 
-    // formData = ein FormData-Objekt aus dem #mp3-crop-canvas-Formular (echtes
+    // formData = ein FormData-Objekt aus dem #mp-crop-canvas-Formular (echtes
     // multipart/form-data -- cropper's eigener CropperExecutor liest $_POST
     // direkt, siehe rex_api_mediaplace_crop.php::handleSave()).
     function apiSaveCrop(filename, formData) {
@@ -831,7 +831,7 @@
     // kein {success:true}-Wrapper wie bei Crop/Metainfo), daher hier nur auf
     // r.ok bzw. ein "error"-Feld pruefen.
     function getOptimizeVideoApiUrl(func, params) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.optimizeVideoUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_video_optimize';
@@ -874,7 +874,7 @@
     // Lazy nachgeladene Video-Technikdaten fuer den "Technische Details"-
     // Bereich, siehe rex_api_mediaplace_video_info.php.
     function apiLoadVideoDetails(filename) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.videoInfoUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_video_info';
@@ -896,7 +896,7 @@
     // "Bild optimieren" -- anders als beim Video ein einzelner synchroner
     // Request (kein Start/Poll-Zyklus), siehe rex_api_mediaplace_image_optimize.php.
     function apiOptimizeImage(filename) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.optimizeImageUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_image_optimize';
@@ -917,7 +917,7 @@
 
     // ---- Cloud-Provider (siehe rex_api_mediaplace_provider.php) ----
     function getProviderApiUrl(func, params) {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.providerUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_provider';
@@ -1142,7 +1142,7 @@
     }
 
     function getReplaceFileApiUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.replaceFileUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_replace_file';
@@ -1193,7 +1193,7 @@
 
 
     function getFocuspointApiUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         var baseUrl = root ? root.dataset.focuspointUrl : null;
         if (!baseUrl) {
             baseUrl = 'index.php?rex-api-call=mediaplace_focuspoint';
@@ -1299,4 +1299,4 @@
     Core.api.apiReplaceFile = apiReplaceFile;
     Core.api.apiLoadFocuspointInfo = apiLoadFocuspointInfo;
     Core.api.apiSaveFocuspoint = apiSaveFocuspoint;
-})(window.MP3Core = window.MP3Core || {});
+})(window.MPCore = window.MPCore || {});

@@ -34,16 +34,16 @@ $indent = ($depth + 1) * 16;
 // bereits zutrifft.
 $canManage = \FriendsOfRedaxo\Mediaplace\MediaPermission::hasParentCategoryAccess($category->getParentId());
 ?>
-<div class="mp3-cat-node" data-cat-id="<?= $id ?>">
-    <div class="mp3-cat-row">
-        <a class="mp3-cat<?= $currentCat === $id ? ' mp3-cat-active' : '' ?>" data-cat="<?= $id ?>" title="<?= rex_escape($name) ?>" style="padding-left:<?= $indent ?>px;">
+<div class="mp-cat-node" data-cat-id="<?= $id ?>">
+    <div class="mp-cat-row">
+        <a class="mp-cat<?= $currentCat === $id ? ' mp-cat-active' : '' ?>" data-cat="<?= $id ?>" title="<?= rex_escape($name) ?>" style="padding-left:<?= $indent ?>px;">
 <?php if ($hasKids): ?>
-            <i class="fa-solid fa-chevron-right mp3-cat-toggle" data-toggle-cat="<?= $id ?>"></i>
+            <i class="fa-solid fa-chevron-right mp-cat-toggle" data-toggle-cat="<?= $id ?>"></i>
 <?php else: ?>
-            <i class="fa-solid fa-folder mp3-cat-folder-icon"></i>
+            <i class="fa-solid fa-folder mp-cat-folder-icon"></i>
 <?php endif; ?>
             <?= rex_escape($name) ?></a>
-        <button class="mp3-cat-menu-btn" data-cat-menu-toggle="<?= $id ?>" data-cat-menu-name="<?= rex_escape($name) ?>" data-can-manage="<?= $canManage ? '1' : '0' ?>" title="<?= rex_escape($this->i18n('mediaplace_cat_actions')) ?>">
+        <button class="mp-cat-menu-btn" data-cat-menu-toggle="<?= $id ?>" data-cat-menu-name="<?= rex_escape($name) ?>" data-can-manage="<?= $canManage ? '1' : '0' ?>" title="<?= rex_escape($this->i18n('mediaplace_cat_actions')) ?>">
             <i class="fa-solid fa-ellipsis-vertical"></i></button>
     </div>
 <?php if ($hasKids): ?>

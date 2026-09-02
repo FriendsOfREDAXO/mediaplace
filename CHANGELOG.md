@@ -1,5 +1,21 @@
 # Changelog
 
+## Version 2.0.0 – 2026-09-02
+
+### Breaking Change
+- **"mp3"-Namenskürzel durchgängig auf "mp" umgestellt**: MediaPlace hieß ursprünglich "MediaPool 3.0" (daher "mp3"), die interne Namenskonvention wurde bei der Umbenennung zu "MediaPlace" nie mitgezogen. Betrifft die komplette öffentliche Oberfläche:
+  - Widget-CSS-Klasse `mp3-widget` → `mp-widget`
+  - Widget-Daten-Attribute `data-mp3-multiple`/`data-mp3-upload`/`data-mp3-types`/`data-mp3-max`/`data-mp3-view` → `data-mp-*`
+  - JS-API `window.MP3` → `window.MP` (`MP3.open()` → `MP.open()`, `MP3.close()`, `MP3.registerX()` → analog)
+  - Widget-JS-API `window.MP3Widget` → `window.MPWidget`
+  - Overlay-CSS-Klassen (`.mp3-*` → `.mp-*`), CSS-Variablen (`--mp3-*` → `--mp-*`), Widget-CSS-Klassen (`mp3w-*` → `mpw-*`)
+  - Interne Details ohne öffentliche Wirkung (localStorage-Keys, Cache-Buster-Parameter) sind mitgezogen, betreffen aber nur den eigenen Browser-Zustand.
+
+  Bestehende Integrationen (Modul-Vorlagen, YForm-Templates, eigener JS-Code, der `window.MP3`/`data-mp3-*` nutzt) müssen entsprechend angepasst werden. Da das Addon noch nicht produktiv im Einsatz war, wurde bewusst kein Kompatibilitäts-Alias eingebaut – sauberer Neustart der Namenskonvention. `README.md`/`DEV.md`/das Demo-Tab sind vollständig aktualisiert.
+
+### Behoben
+- **Einstellungen: Checkboxen wurden nie zuverlässig gespeichert.** Die Einstellungsseite (`pages/settings.php`) hat POST-Daten bisher unter dem festen Schlüssel `mediaplace` gesucht, um deaktivierte Checkboxen korrekt als `false` zu speichern (Checkboxen senden beim Abschicken keinen Wert, wenn sie deaktiviert sind – ein bekanntes `rex_config_form`-Verhalten). Tatsächlich gruppiert REDAXO die POST-Felder aber nach dem jeweiligen Fieldset-Legendentext (`klassischer_medienpool`, `funktionen`, `upload`, `ki_funktionen`, je nach Sprache), nie nach dem Addon-Namen – der Abgleich lief also immer ins Leere, wodurch `rex_config::set()` nie aufgerufen wurde und `rex_config::get()` beim nächsten Laden auf den hartkodierten Default zurückfiel. Betroffen waren alle 9 Checkboxen der Einstellungsseite, u.a. "Klassischen Medienpool-Menüpunkt ersetzen", das sich dadurch nie abschalten ließ. Die Erkennung "Formular wurde abgeschickt" läuft jetzt über den vom Save-Button-Namen abgeleiteten, sprachunabhängigen Schlüssel (`md5($addonName) . '_save'`), das Auslesen der Checkbox-Werte scannt generisch alle POST-Gruppen.
+
 ## Version 1.28.2 – 2026-09-02
 
 ### Behoben

@@ -24,13 +24,13 @@ var optimizeVideoPoll = null;
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var apiStartOptimizeVideo = MP3Core.api.apiStartOptimizeVideo;
-var apiPollOptimizeVideo = MP3Core.api.apiPollOptimizeVideo;
-var apiOptimizeImage = MP3Core.api.apiOptimizeImage;
-var apiLoadVideoDetails = MP3Core.api.apiLoadVideoDetails;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var apiStartOptimizeVideo = MPCore.api.apiStartOptimizeVideo;
+var apiPollOptimizeVideo = MPCore.api.apiPollOptimizeVideo;
+var apiOptimizeImage = MPCore.api.apiOptimizeImage;
+var apiLoadVideoDetails = MPCore.api.apiLoadVideoDetails;
 
 /**
  * ctx-Vertrag:
@@ -47,7 +47,7 @@ export function initOptimize(theCtx) {
 // waehrenddessen normal sichtbar/bedienbar, nur der Button + eine kleine
 // Statuszeile darunter zeigen den Fortschritt.
 export function startOptimizeVideo(filename, btn) {
-    var statusEl = btn ? btn.parentNode.querySelector('.mp3-video-optimize-status') : null;
+    var statusEl = btn ? btn.parentNode.querySelector('.mp-video-optimize-status') : null;
     var setStatus = function (html) {
         if (!statusEl) return;
         statusEl.style.display = '';
@@ -132,7 +132,7 @@ export function pollOptimizeVideo(filename, jobId, btn, statusEl) {
 // Detail-Panel mit frischen Daten neu rendert und optimize_image_available
 // dann false ist.
 export function startOptimizeImage(filename, btn) {
-    var statusEl = btn ? btn.parentNode.querySelector('.mp3-image-optimize-status') : null;
+    var statusEl = btn ? btn.parentNode.querySelector('.mp-image-optimize-status') : null;
     var setStatus = function (html) {
         if (!statusEl) return;
         statusEl.style.display = '';
@@ -162,7 +162,7 @@ export function startOptimizeImage(filename, btn) {
 // FfmpegIntegration::getVideoDetails()) -- lazy nachgeladen erst beim
 // ersten Aufklappen, danach nur noch lokal ein-/ausgeblendet.
 export function toggleVideoDetails(btn) {
-    var body = btn.parentNode.querySelector('.mp3-video-details-body');
+    var body = btn.parentNode.querySelector('.mp-video-details-body');
     if (!body) return;
     var expanded = btn.getAttribute('aria-expanded') === 'true';
 
@@ -180,7 +180,7 @@ export function toggleVideoDetails(btn) {
     if (body.dataset.loaded === '1') return;
 
     var filename = btn.getAttribute('data-video-details-file') || '';
-    body.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_loading_more') + '</div>';
+    body.innerHTML = '<div class="mp-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_loading_more') + '</div>';
 
     apiLoadVideoDetails(filename)
         .then(function (details) {
@@ -188,7 +188,7 @@ export function toggleVideoDetails(btn) {
             body.innerHTML = renderVideoDetailsTable(details);
         })
         .catch(function (err) {
-            body.innerHTML = '<div class="mp3-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
+            body.innerHTML = '<div class="mp-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
         });
 }
 
@@ -205,7 +205,7 @@ function renderVideoDetailsTable(d) {
         ['mediaplace_video_details_audio_samplerate', d.audio_samplerate ? (d.audio_samplerate + ' Hz') : ''],
         ['mediaplace_video_details_audio_channels', d.audio_channels || '']
     ];
-    var html = '<table class="mp3-detail-table">';
+    var html = '<table class="mp-detail-table">';
     rows.forEach(function (row) {
         if (!row[1]) return;
         html += '<tr><td>' + escAttr(t(row[0])) + '</td><td>' + escAttr(String(row[1])) + '</td></tr>';

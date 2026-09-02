@@ -22,33 +22,33 @@ var DISMISS_MS = 4000;
 export function showToast(message, type) {
     if (!overlay || !message) return;
 
-    var container = overlay.querySelector('#mp3-toast-container');
+    var container = overlay.querySelector('#mp-toast-container');
     if (!container) {
         container = document.createElement('div');
-        container.id = 'mp3-toast-container';
+        container.id = 'mp-toast-container';
         overlay.appendChild(container);
     }
 
     var isError = 'error' === type;
     var toast = document.createElement('div');
-    toast.className = 'mp3-toast' + (isError ? ' mp3-toast-error' : ' mp3-toast-success');
-    toast.innerHTML = '<i class="fa-solid ' + (isError ? 'fa-triangle-exclamation' : 'fa-circle-check') + '"></i> <span class="mp3-toast-text"></span>';
-    toast.querySelector('.mp3-toast-text').textContent = message;
+    toast.className = 'mp-toast' + (isError ? ' mp-toast-error' : ' mp-toast-success');
+    toast.innerHTML = '<i class="fa-solid ' + (isError ? 'fa-triangle-exclamation' : 'fa-circle-check') + '"></i> <span class="mp-toast-text"></span>';
+    toast.querySelector('.mp-toast-text').textContent = message;
     container.appendChild(toast);
 
     // Erzwingt einen Reflow, damit die CSS-Transition beim direkt danach
-    // hinzugefuegten ".mp3-toast-visible" tatsaechlich greift (sonst wuerde
+    // hinzugefuegten ".mp-toast-visible" tatsaechlich greift (sonst wuerde
     // der Browser Start- und Endzustand im selben Frame zusammenfassen,
     // keine sichtbare Einblend-Animation).
     void toast.offsetWidth;
-    toast.classList.add('mp3-toast-visible');
+    toast.classList.add('mp-toast-visible');
 
     var dismissed = false;
     function dismiss() {
         if (dismissed) return;
         dismissed = true;
         clearTimeout(timer);
-        toast.classList.remove('mp3-toast-visible');
+        toast.classList.remove('mp-toast-visible');
         setTimeout(function () { toast.remove(); }, 250);
     }
     var timer = setTimeout(dismiss, DISMISS_MS);

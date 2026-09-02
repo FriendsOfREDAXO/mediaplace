@@ -191,10 +191,10 @@
     function withMediaCacheBuster(url, mediaOrFilename, forceTokens, loadedFiles) {
         var token = getMediaCacheToken(mediaOrFilename, forceTokens, loadedFiles);
         if (!token) return url;
-        return url + (url.indexOf('?') === -1 ? '?' : '&') + 'mp3v=' + encodeURIComponent(token);
+        return url + (url.indexOf('?') === -1 ? '?' : '&') + 'mpv=' + encodeURIComponent(token);
     }
 
-    // mediaBaseUrl kommt von rex_url::media() (PHP, boot.php -> #mp3-root
+    // mediaBaseUrl kommt von rex_url::media() (PHP, boot.php -> #mp-root
     // data-media-base-url) statt clientseitig geraten zu werden -- ein
     // relativer Pfad wie "../media/" oder ein Split auf "/redaxo/" im
     // aktuellen URL-Pfad (siehe filepond_uploader) waere nur zuverlaessig,
@@ -300,8 +300,8 @@
                     } catch (e) {
                         resized = blob;
                     }
-                    if (file.__mp3CategoryId != null) {
-                        resized.__mp3CategoryId = file.__mp3CategoryId;
+                    if (file.__mpCategoryId != null) {
+                        resized.__mpCategoryId = file.__mpCategoryId;
                     }
                     resolve(resized);
                 }, file.type);
@@ -339,4 +339,4 @@
     Core.helpers.isImageFile = isImageFile;
     Core.helpers.isResizableImageType = isResizableImageType;
     Core.helpers.resizeImageFile = resizeImageFile;
-})(window.MP3Core = window.MP3Core || {});
+})(window.MPCore = window.MPCore || {});

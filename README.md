@@ -151,29 +151,29 @@ Beide Funktionen teilen sich das konfigurierte Bildverständnis-Profil und die B
 
 ```html
 <!-- Einzelbild -->
-<input class="mp3-widget" name="REX_INPUT_VALUE[1]" value="REX_VALUE[1]">
+<input class="mp-widget" name="REX_INPUT_VALUE[1]" value="REX_VALUE[1]">
 
 <!-- Galerie (mehrere Dateien, kommasepariert) -->
-<input class="mp3-widget" data-mp3-multiple="true" name="REX_INPUT_VALUE[2]" value="REX_VALUE[2]">
+<input class="mp-widget" data-mp-multiple="true" name="REX_INPUT_VALUE[2]" value="REX_VALUE[2]">
 
 <!-- Mit Direkt-Upload: Dateien per Drag&Drop oder Klick direkt hochladen
      (Kategorie-Auswahl-Dialog vor dem Upload), zusätzlich zum normalen
-     Picker. Nur Bilder erlauben mit data-mp3-types (Syntax wie natives
+     Picker. Nur Bilder erlauben mit data-mp-types (Syntax wie natives
      <input accept>). -->
-<input class="mp3-widget" data-mp3-multiple="true" data-mp3-upload="true" data-mp3-types="image/*" name="REX_INPUT_VALUE[3]" value="REX_VALUE[3]">
+<input class="mp-widget" data-mp-multiple="true" data-mp-upload="true" data-mp-types="image/*" name="REX_INPUT_VALUE[3]" value="REX_VALUE[3]">
 ```
 
-Klick auf ➕ öffnet den Picker. Werden Felder dynamisch nachgeladen (z. B. MBlock), einfach `MP3Widget.init()` erneut aufrufen. Bei Mehrfachauswahl lässt sich die Galerie per Umschalter im Toolbar zwischen Kacheln- und Listenansicht wechseln (Einstellung gilt geteilt für alle Widgets auf der Seite).
+Klick auf ➕ öffnet den Picker. Werden Felder dynamisch nachgeladen (z. B. MBlock), einfach `MPWidget.init()` erneut aufrufen. Bei Mehrfachauswahl lässt sich die Galerie per Umschalter im Toolbar zwischen Kacheln- und Listenansicht wechseln (Einstellung gilt geteilt für alle Widgets auf der Seite).
 
 ### Den Picker direkt per JavaScript öffnen
 
 ```javascript
-MP3.open(function (filename) {
+MP.open(function (filename) {
     console.log('Gewählt:', filename);
 });
 
 // Mehrfachauswahl
-MP3.open(function (filenames) {
+MP.open(function (filenames) {
     console.log('Gewählt:', filenames);
 }, { multiple: true });
 ```
@@ -189,12 +189,12 @@ TinyMCE und CKEditor5 rufen `openREXMedia()`/`openMediaPool()` dagegen direkt pe
 Baut ihr einen eigenen Picker oder Feldtyp und wollt aktiv MediaPlace nutzen, statt die alte Popup-Kompatibilität nachzubauen, ruft einfach direkt die JS-API auf:
 
 ```javascript
-MP3.open(function (filename) {
+MP.open(function (filename) {
     // Datei ausgewählt, z.B. ins eigene Eingabefeld schreiben
 });
 
 // bestehende Auswahl im Detail-Panel ansehen, ohne sie zu ändern
-MP3.openFile('bild.jpg');
+MP.openFile('bild.jpg');
 ```
 
 ### Eigene API-Endpunkte
@@ -276,40 +276,40 @@ rex_extension::register('MEDIAPLACE_WIDGET_TYPES', function (rex_extension_point
 });
 ```
 
-`MyWidget` implementiert nur `normalizeValue(mixed $value): mixed` fürs Speichern; das Fragment bekommt `$field`, `$value`, `$info` und `$clangs` und liefert nur den Feldkörper (die Hülle kommt vom Dispatcher). Passt der Wert nicht ins generische Einzelfeld-Schema, lässt sich das Auslesen beim Speichern per `MP3.registerFieldCollector(widgetType, function (key, panelEl) { return value; })` anpassen.
+`MyWidget` implementiert nur `normalizeValue(mixed $value): mixed` fürs Speichern; das Fragment bekommt `$field`, `$value`, `$info` und `$clangs` und liefert nur den Feldkörper (die Hülle kommt vom Dispatcher). Passt der Wert nicht ins generische Einzelfeld-Schema, lässt sich das Auslesen beim Speichern per `MP.registerFieldCollector(widgetType, function (key, panelEl) { return value; })` anpassen.
 
 ### Eigenes Backend-Theme mit MediaPlace kombinieren
 
-Das Overlay ist komplett über CSS-Custom-Properties (`--mp3-*`) eingefärbt, keine Farbe steht hart im Markup oder JS. Ob und wie es auf Dark Mode reagiert, entscheiden vier Blöcke in `assets/mediaplace.css`:
+Das Overlay ist komplett über CSS-Custom-Properties (`--mp-*`) eingefärbt, keine Farbe steht hart im Markup oder JS. Ob und wie es auf Dark Mode reagiert, entscheiden vier Blöcke in `assets/mediaplace.css`:
 
 ```css
-:root { --mp3-modal-bg: #fff; /* ... */ }                 /* Light-Default */
+:root { --mp-modal-bg: #fff; /* ... */ }                 /* Light-Default */
 
-body.rex-theme-dark { --mp3-modal-bg: #1a202c; /* ... */ } /* manuell gewähltes Dark-Theme */
+body.rex-theme-dark { --mp-modal-bg: #1a202c; /* ... */ } /* manuell gewähltes Dark-Theme */
 
 @media (prefers-color-scheme: dark) {
-    body.rex-has-theme:not(.rex-theme-light) { --mp3-modal-bg: #1a202c; /* ... */ }
+    body.rex-has-theme:not(.rex-theme-light) { --mp-modal-bg: #1a202c; /* ... */ }
 }                                                            /* System-Präferenz, sofern nicht explizit "Hell" gewählt */
 
-#mp3-overlay.mp3-dark-mode { --mp3-modal-bg: #1a202c; /* ... */ } /* eigener Dark-Mode-Toggle im Overlay, unabhängig vom Backend-Theme */
+#mp-overlay.mp-dark-mode { --mp-modal-bg: #1a202c; /* ... */ } /* eigener Dark-Mode-Toggle im Overlay, unabhängig vom Backend-Theme */
 ```
 
 `rex-theme-dark` / `rex-theme-light` / `rex-has-theme` sind **REDAXOs eigene Backend-Konvention** (gesetzt in `core/layout/top.php`, ausgewertet z. B. vom mitgelieferten `be_style`-Addon) – kein MediaPlace-Spezifikum. Setzt euer eigenes Backend-Theme-Addon beim manuellen Umschalten auf Dark ebenfalls die Klasse `rex-theme-dark` auf `<body>` (statt eines eigenen Mechanismus), greift MediaPlaces Dark Mode automatisch mit, ganz ohne Anpassung hier.
 
-Soll MediaPlace stattdessen eine andere Dark-Palette als die eingebaute bekommen, oder nutzt euer Theme eine abweichende Erkennung (eigene Body-Klasse, eigener Selector), reicht es, die betroffenen `--mp3-*`-Variablen im eigenen, **nach** `mediaplace/assets/mediaplace.css` geladenen Stylesheet neu zu definieren:
+Soll MediaPlace stattdessen eine andere Dark-Palette als die eingebaute bekommen, oder nutzt euer Theme eine abweichende Erkennung (eigene Body-Klasse, eigener Selector), reicht es, die betroffenen `--mp-*`-Variablen im eigenen, **nach** `mediaplace/assets/mediaplace.css` geladenen Stylesheet neu zu definieren:
 
 ```css
 /* eigenes Backend-Theme-AddOn, eigene CSS-Datei, nach MediaPlace geladen */
 body.mein-theme-dark {
-    --mp3-modal-bg: #101010;
-    --mp3-header-bg: #181818;
-    /* weitere --mp3-*-Variablen nach Bedarf, siehe :root-Block in mediaplace.css für die vollständige Liste */
+    --mp-modal-bg: #101010;
+    --mp-header-bg: #181818;
+    /* weitere --mp-*-Variablen nach Bedarf, siehe :root-Block in mediaplace.css für die vollständige Liste */
 }
 ```
 
 Die vollständige Variablenliste steht am Anfang von `assets/mediaplace.css` im `:root`-Block (Light-Defaults) – alle vier Blöcke definieren dieselben Namen, nur mit anderen Werten.
 
-Wichtig: Das gilt nur für den MediaPlace-Overlay selbst (`#mp3-overlay`). Die klassischen REDAXO-Metainfo-Feldtypen im normalen Medienpool-Bearbeiten-Formular (Copyright, Auswahllisten, Medienlisten-Widget usw.) rendern über REDAXOs eigene Core-Fragmente und erben das Backend-Theme direkt – die sollten nicht von hier aus überschrieben werden, sondern folgen automatisch demselben `rex-theme-dark`.
+Wichtig: Das gilt nur für den MediaPlace-Overlay selbst (`#mp-overlay`). Die klassischen REDAXO-Metainfo-Feldtypen im normalen Medienpool-Bearbeiten-Formular (Copyright, Auswahllisten, Medienlisten-Widget usw.) rendern über REDAXOs eigene Core-Fragmente und erben das Backend-Theme direkt – die sollten nicht von hier aus überschrieben werden, sondern folgen automatisch demselben `rex-theme-dark`.
 
 ## Credits
 

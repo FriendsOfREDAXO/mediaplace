@@ -15,12 +15,12 @@ import { applyCollectionFilter, collectionTagToName } from './collections.js';
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var qs = MP3Core.helpers.qs;
-var qsa = MP3Core.helpers.qsa;
-var apiCheckUnusedMedia = MP3Core.api.apiCheckUnusedMedia;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var qs = MPCore.helpers.qs;
+var qsa = MPCore.helpers.qsa;
+var apiCheckUnusedMedia = MPCore.api.apiCheckUnusedMedia;
 
 // ---- State ----
 var currentFilter = 'all'; // all | images | videos | audio | documents | other
@@ -49,7 +49,7 @@ var FILTER_MAP = {
  * ctx-Vertrag:
  * - overlay: DOM-Ref
  * - getCanFilterUnused(): noch-legacy-State (MediaPermission::hasUnusedFilterAccess(),
- *   einmal aus #mp3-root data-* gelesen)
+ *   einmal aus #mp-root data-* gelesen)
  * - getAllowedExtensions(): noch-legacy-State (harte Endungs-Beschraenkung, siehe open())
  * - isFileSelectable(filename): noch-legacy-Funktion
  * - getLastLoadedFiles(): noch-legacy-State
@@ -167,10 +167,10 @@ export function updateFilterCounts() {
         }
     }
 
-    var btns = qsa('.mp3-filter-btn', ctx.overlay);
+    var btns = qsa('.mp-filter-btn', ctx.overlay);
     btns.forEach(function (btn) {
         var type = btn.getAttribute('data-filter');
-        var badge = btn.querySelector('.mp3-filter-count');
+        var badge = btn.querySelector('.mp-filter-count');
         if (!badge) return;
         if (useServerCounts && null !== typeCounts[type] && undefined !== typeCounts[type]) {
             badge.textContent = typeCounts[type];
@@ -189,14 +189,14 @@ export function hasActiveFilters() {
 }
 
 /**
- * Der "Filter zurücksetzen"-Button (.mp3-filter-reset-btn, siehe core.js)
+ * Der "Filter zurücksetzen"-Button (.mp-filter-reset-btn, siehe core.js)
  * soll nur auftauchen, wenn es tatsaechlich etwas zurueckzusetzen gibt --
  * sonst ein staendig sichtbarer, meist wirkungsloser Button in der ohnehin
  * schon vollen Filter-Leiste.
  */
 function updateFilterResetVisibility() {
     if (!ctx.overlay) return;
-    var btn = qs('.mp3-filter-reset-btn', ctx.overlay);
+    var btn = qs('.mp-filter-reset-btn', ctx.overlay);
     if (btn) btn.style.display = hasActiveFilters() ? '' : 'none';
 }
 
@@ -212,16 +212,16 @@ export function clearAllFilters() {
     currentFilter = 'all';
     currentTagFilters = {};
     unusedOnlyFilter = false;
-    qsa('.mp3-filter-btn', ctx.overlay).forEach(function (b) {
-        var isUnused = b.classList.contains('mp3-unused-filter-btn');
-        b.classList.toggle('mp3-filter-active', isUnused ? false : 'all' === b.getAttribute('data-filter'));
+    qsa('.mp-filter-btn', ctx.overlay).forEach(function (b) {
+        var isUnused = b.classList.contains('mp-unused-filter-btn');
+        b.classList.toggle('mp-filter-active', isUnused ? false : 'all' === b.getAttribute('data-filter'));
     });
     updateFilterDropdownLabel();
     updateTagFilterOptions();
 }
 
 /**
- * Rendert die Tag-Liste in die Sidebar (#mp3-tag-filter-section, siehe
+ * Rendert die Tag-Liste in die Sidebar (#mp-tag-filter-section, siehe
  * renderCategories() in categories.js -- der Container wird bei JEDER
  * Sidebar-Neuzeichnung frisch angelegt, deshalb ruft renderCategories()
  * ctx.refreshTagFilterSection() selbst am Ende wieder auf). Fruehere Version
@@ -229,7 +229,7 @@ export function clearAllFilters() {
  */
 export function updateTagFilterOptions() {
     if (!ctx.overlay) return;
-    var menu = document.getElementById('mp3-tag-filter-section');
+    var menu = document.getElementById('mp-tag-filter-section');
     if (!menu) return;
 
     var selected = {};
@@ -280,25 +280,25 @@ export function updateTagFilterOptions() {
             color = '#4a90d9';
         }
 
-        listHtml += '<button type="button" class="mp3-tag-filter-option' + (selected[name] ? ' is-selected' : '') + '" data-tag-name="' + escAttr(name) + '">';
-        listHtml += '<span class="mp3-tag-dot" style="background:' + escAttr(color.toLowerCase()) + '"></span>';
-        listHtml += '<span class="mp3-tag-filter-option-label">' + escAttr(name) + '</span>';
+        listHtml += '<button type="button" class="mp-tag-filter-option' + (selected[name] ? ' is-selected' : '') + '" data-tag-name="' + escAttr(name) + '">';
+        listHtml += '<span class="mp-tag-dot" style="background:' + escAttr(color.toLowerCase()) + '"></span>';
+        listHtml += '<span class="mp-tag-filter-option-label">' + escAttr(name) + '</span>';
         listHtml += '<i class="fa-solid ' + (selected[name] ? 'fa-square-check' : 'fa-square') + '"></i>';
         listHtml += '</button>';
     }
     if (!listHtml) {
-        listHtml = '<div class="mp3-tag-filter-empty">' + t('mediaplace_no_tags_found') + '</div>';
+        listHtml = '<div class="mp-tag-filter-empty">' + t('mediaplace_no_tags_found') + '</div>';
     }
 
     var selectedCount = Object.keys(currentTagFilters).length;
-    var headHtml = '<div class="mp3-tag-section-head mp3-sidebar-section-head">' +
-        '<span class="mp3-tag-section-title mp3-sidebar-section-title"><i class="fa-solid fa-tags"></i> ' + t('mediaplace_tags_section_title') +
-        (selectedCount ? ' <span class="mp3-tag-section-count">' + selectedCount + '</span>' : '') +
+    var headHtml = '<div class="mp-tag-section-head mp-sidebar-section-head">' +
+        '<span class="mp-tag-section-title mp-sidebar-section-title"><i class="fa-solid fa-tags"></i> ' + t('mediaplace_tags_section_title') +
+        (selectedCount ? ' <span class="mp-tag-section-count">' + selectedCount + '</span>' : '') +
         '</span>' +
-        (selectedCount ? '<button type="button" class="mp3-tag-filter-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i></button>' : '') +
-        '<button type="button" class="mp3-sidebar-section-toggle" data-section="tags" title="' + escAttr(t('mediaplace_toggle_section')) + '"><i class="fa-solid fa-chevron-down"></i></button>' +
+        (selectedCount ? '<button type="button" class="mp-tag-filter-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i></button>' : '') +
+        '<button type="button" class="mp-sidebar-section-toggle" data-section="tags" title="' + escAttr(t('mediaplace_toggle_section')) + '"><i class="fa-solid fa-chevron-down"></i></button>' +
         '</div>';
-    menu.innerHTML = headHtml + '<div class="mp3-sidebar-section-body"><div class="mp3-tag-filter-list">' + listHtml + '</div></div>';
+    menu.innerHTML = headHtml + '<div class="mp-sidebar-section-body"><div class="mp-tag-filter-list">' + listHtml + '</div></div>';
 
     // Clean up stale selected tags that are not visible anymore
     var dirty = false;
@@ -335,7 +335,7 @@ function filterTypeLabel(type) {
 }
 
 export function updateFilterDropdownLabel() {
-    var label = qs('.mp3-filter-dropdown-label', ctx.overlay);
+    var label = qs('.mp-filter-dropdown-label', ctx.overlay);
     if (!label) return;
     var text = filterTypeLabel(currentFilter);
     if (ctx.getCanFilterUnused() && unusedOnlyFilter) text += ' ' + t('mediaplace_plus_unused');
@@ -348,18 +348,18 @@ function buildFilterDropdownMenuHtml() {
         var opt = FILTER_TYPE_OPTIONS[i];
         var active = currentFilter === opt.value;
         var optLabel = t(opt.labelKey);
-        html += '<button type="button" class="mp3-filter-dropdown-option' + (active ? ' is-selected' : '') + '" data-filter="' + escAttr(opt.value) + '">' +
-            (opt.icon ? '<i class="fa-solid ' + opt.icon + ' mp3-filter-dropdown-option-icon"></i>' : '<span class="mp3-filter-dropdown-option-spacer"></span>') +
-            '<span class="mp3-filter-dropdown-option-label">' + escAttr(optLabel) + '</span>' +
-            (active ? '<i class="fa-solid fa-check mp3-filter-dropdown-option-check"></i>' : '') +
+        html += '<button type="button" class="mp-filter-dropdown-option' + (active ? ' is-selected' : '') + '" data-filter="' + escAttr(opt.value) + '">' +
+            (opt.icon ? '<i class="fa-solid ' + opt.icon + ' mp-filter-dropdown-option-icon"></i>' : '<span class="mp-filter-dropdown-option-spacer"></span>') +
+            '<span class="mp-filter-dropdown-option-label">' + escAttr(optLabel) + '</span>' +
+            (active ? '<i class="fa-solid fa-check mp-filter-dropdown-option-check"></i>' : '') +
             '</button>';
     }
     if (ctx.getCanFilterUnused()) {
-        html += '<div class="mp3-filter-dropdown-separator"></div>';
-        html += '<button type="button" class="mp3-filter-dropdown-unused-option' + (unusedOnlyFilter ? ' is-selected' : '') + '">' +
-            '<i class="fa-solid fa-trash-can mp3-filter-dropdown-option-icon"></i>' +
-            '<span class="mp3-filter-dropdown-option-label">' + t('mediaplace_unused_only') + '</span>' +
-            '<i class="fa-solid ' + (unusedOnlyFilter ? 'fa-square-check' : 'fa-square') + ' mp3-filter-dropdown-option-check"></i>' +
+        html += '<div class="mp-filter-dropdown-separator"></div>';
+        html += '<button type="button" class="mp-filter-dropdown-unused-option' + (unusedOnlyFilter ? ' is-selected' : '') + '">' +
+            '<i class="fa-solid fa-trash-can mp-filter-dropdown-option-icon"></i>' +
+            '<span class="mp-filter-dropdown-option-label">' + t('mediaplace_unused_only') + '</span>' +
+            '<i class="fa-solid ' + (unusedOnlyFilter ? 'fa-square-check' : 'fa-square') + ' mp-filter-dropdown-option-check"></i>' +
             '</button>';
     }
     return html;
@@ -367,21 +367,21 @@ function buildFilterDropdownMenuHtml() {
 
 export function setFilterDropdownMenuOpen(open) {
     if (!ctx.overlay) return;
-    var wrap = qs('.mp3-filter-dropdown-wrap', ctx.overlay);
-    var toggle = qs('.mp3-filter-dropdown-toggle', ctx.overlay);
-    var portal = document.getElementById('mp3-filter-dropdown-menu-portal');
+    var wrap = qs('.mp-filter-dropdown-wrap', ctx.overlay);
+    var toggle = qs('.mp-filter-dropdown-toggle', ctx.overlay);
+    var portal = document.getElementById('mp-filter-dropdown-menu-portal');
     if (!wrap) return;
     wrap.classList.toggle('is-open', !!open);
     if (!portal) return;
 
     if (!open) {
-        portal.classList.remove('mp3-filter-dropdown-menu-portal-open');
+        portal.classList.remove('mp-filter-dropdown-menu-portal-open');
         return;
     }
     if (!toggle) return;
 
     portal.innerHTML = buildFilterDropdownMenuHtml();
-    portal.classList.add('mp3-filter-dropdown-menu-portal-open');
+    portal.classList.add('mp-filter-dropdown-menu-portal-open');
     var rect = toggle.getBoundingClientRect();
     var menuW = Math.max(portal.offsetWidth, 200);
     var left = Math.max(8, Math.min(rect.left, window.innerWidth - menuW - 8));
@@ -400,9 +400,9 @@ export function setFilterDropdownMenuOpen(open) {
 // falsche Auswahl anzeigt.
 export function applyTypeFilter(type) {
     currentFilter = type || 'all';
-    qsa('.mp3-filter-btn', ctx.overlay).forEach(function (b) {
-        if (!b.classList.contains('mp3-unused-filter-btn')) {
-            b.classList.toggle('mp3-filter-active', b.getAttribute('data-filter') === currentFilter);
+    qsa('.mp-filter-btn', ctx.overlay).forEach(function (b) {
+        if (!b.classList.contains('mp-unused-filter-btn')) {
+            b.classList.toggle('mp-filter-active', b.getAttribute('data-filter') === currentFilter);
         }
     });
     updateFilterDropdownLabel();
@@ -419,8 +419,8 @@ export function applyTypeFilter(type) {
 // geladene, aber noch nicht geprueften Dateien (siehe loadFiles()).
 export function toggleUnusedOnlyFilter() {
     unusedOnlyFilter = !unusedOnlyFilter;
-    qsa('.mp3-unused-filter-btn', ctx.overlay).forEach(function (b) {
-        b.classList.toggle('mp3-filter-active', unusedOnlyFilter);
+    qsa('.mp-unused-filter-btn', ctx.overlay).forEach(function (b) {
+        b.classList.toggle('mp-filter-active', unusedOnlyFilter);
     });
     updateFilterDropdownLabel();
 
@@ -475,7 +475,7 @@ export function resetFilterState(options) {
     currentTagCounts = {};
     unusedOnlyFilter = false;
     unusedStatusCache = {};
-    currentSort = localStorage.getItem('mp3_sort') || 'date_desc';
+    currentSort = localStorage.getItem('mp_sort') || 'date_desc';
 }
 
 export function getCurrentFilter() {
@@ -488,7 +488,7 @@ export function getCurrentSort() {
 
 export function setCurrentSort(value) {
     currentSort = value;
-    localStorage.setItem('mp3_sort', currentSort);
+    localStorage.setItem('mp_sort', currentSort);
 }
 
 export function getCurrentTagCatalog() {

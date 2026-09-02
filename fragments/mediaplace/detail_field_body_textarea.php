@@ -26,4 +26,4 @@ if (!empty($field['translatable'])) {
 // is_scalar-Schutz, siehe detail_field_body_text.php.
 $rawValue = is_scalar($value) ? (string) $value : '';
 ?>
-<textarea class="mp3-edit-input" rows="4" data-json-field="<?= rex_escape($key) ?>"><?= rex_escape($rawValue) ?></textarea>
+<textarea class="mp-edit-input" rows="4" data-json-field="<?= rex_escape($key) ?>"><?= rex_escape($rawValue) ?></textarea>

@@ -220,10 +220,10 @@ import {
     // Abfrage-Logik in doUpload() komplett, siehe getUploadTargetCategoryId().
     var uploadTargetCategoryId = null;
     var closeHrefTarget = null; // options.closeHref (open()) -- Navigationsziel fuer close(),
-                                 // nur gesetzt wenn MP3 als echte Seite (nicht als Popup-Ersatz
+                                 // nur gesetzt wenn MP als echte Seite (nicht als Popup-Ersatz
                                  // auf einer bereits geladenen Seite) geoeffnet wurde.
     var onCloseCallback = null; // options.onClose (open()) -- z.B. window.close() fuer den Fall,
-                                 // dass MP3 in einem echten Popup-Fenster laeuft (klassischer
+                                 // dass MP in einem echten Popup-Fenster laeuft (klassischer
                                  // REDAXO-Medienpool-Popup-Vertrag, siehe mediapool_takeover.php).
                                  // Hat Vorrang vor closeHrefTarget, falls beide gesetzt sind.
     var multiMode = false;     // true when opened with multiple: true
@@ -240,23 +240,23 @@ import {
     // dem Anwenden ihres Ergebnisses und brechen sonst ab. Ohne das konnte
     // ein Picker, der nicht sauber ueber close() beendet wurde (z.B. Klick auf
     // den "Medienpool"-Menuepunkt waehrend der Picker noch offen ist -- der
-    // Menuepunkt ruft MP3.open() erneut per JS auf, kein echter Seitenwechsel,
+    // Menuepunkt ruft MP.open() erneut per JS auf, kein echter Seitenwechsel,
     // siehe PAGES_PREPARED in boot.php), zwei parallel laufende Ladevorgaenge
     // erzeugen, die sich gegenseitig ueberschreiben und den Aufbau spuerbar
     // verlangsamen.
     var loadSessionId = 0;
-    var MP3_STALE_SESSION = {};
+    var MP_STALE_SESSION = {};
     var catCache = {};     // id → { name, hasChildren, parent_id, children: [...], loaded: bool }
     var catPath = [];      // breadcrumb path: [{ id, name }, ...]
     var lastLoadedFiles = [];  // raw API result for client-side filter/sort
-    // Harte Endungs-Beschraenkung ueber MP3.open(cb, {allowedExtensions:[...]})
+    // Harte Endungs-Beschraenkung ueber MP.open(cb, {allowedExtensions:[...]})
     // -- anders als der Typ-Filter (modules/filters.js, nur Start-Tab, jederzeit
     // umschaltbar) blendet dies passende Dateien komplett aus dem Grid aus UND
     // blockiert die Auswahl, siehe applyFilterSort()/isFileSelectable(). null =
     // keine Einschraenkung.
     var allowedExtensions = null;
     // "Nur unbenutzte Medien"-Filter (eigenes Recht, siehe MediaPermission::
-    // hasUnusedFilterAccess() + data-can-filter-unused am #mp3-root). Zustand
+    // hasUnusedFilterAccess() + data-can-filter-unused am #mp-root). Zustand
     // selbst lebt in modules/filters.js (unusedOnlyFilter/unusedStatusCache),
     // dieses Flag nur, weil das Recht schon beim Seitenaufbau feststeht.
     var canFilterUnused = false;
@@ -265,26 +265,26 @@ import {
     // der Menuepunkte in openCatMenu(), der eigentliche Schutz ist serverseitig
     // in Api\CategoryBulk.php (MediaPermission::hasBulkOperationsAccess()).
     var canBulkOperations = false;
-    // Upload-Provider (siehe UploadProviderRegistry/MP3.registerUploadProvider()):
+    // Upload-Provider (siehe UploadProviderRegistry/MP.registerUploadProvider()):
     // uploadProviders bleibt UEBER open()/close()-Zyklen hinweg bestehen (ein
     // Drittanbieter-Addon registriert sich einmalig beim Laden seines eigenen
     // Scripts, nicht bei jedem Overlay-Oeffnen neu) -- nur activeUploadProviderId
-    // wird pro build() aus #mp3-root neu gelesen (Einstellungsseite).
+    // wird pro build() aus #mp-root neu gelesen (Einstellungsseite).
     var uploadProviders = {};
     var activeUploadProviderId = '';
-    // Zahnrad-Menue-Erweiterungspunkt (siehe MP3.registerAdminMenuItem()):
+    // Zahnrad-Menue-Erweiterungspunkt (siehe MP.registerAdminMenuItem()):
     // gleiches Bestehen-ueber-open()/close()-Zyklen-Prinzip wie uploadProviders.
     // id -> { label, icon, onClick }.
     var adminMenuItems = {};
     // Kategorie 0 ("kein Ordner"/"Medienpool"-Wurzel) braucht ein eigenes
     // hasCategoryPerm(0), das viele auf einzelne Kategorien eingeschraenkte
     // User nicht haben (siehe MediaPermission::hasCategoryAccess(0) +
-    // data-can-access-root-category am #mp3-root). Steuert, ob der
+    // data-can-access-root-category am #mp-root). Steuert, ob der
     // "Medienpool"-Sidebar-Link anklickbar ist -- ohne dieses Recht landete
     // man sonst zuverlaessig in einem 403, den loadFiles() zwar inzwischen
     // sauber auf "Alle Medien" abfaengt, aber besser gar nicht erst anbieten.
     var canAccessRootCategory = true;
-    // rex_url::media() (PHP, boot.php -> #mp3-root data-media-base-url) --
+    // rex_url::media() (PHP, boot.php -> #mp-root data-media-base-url) --
     // Basis-URL fuer Original-Mediendateien (SVGs im Grid/Detail-Panel,
     // siehe mediaThumbSrc()), installationsunabhaengig berechnet statt per
     // relativem Pfad geraten. Siehe SKILL.md, Punkt zu absoluten "/media/"-Pfaden.
@@ -298,7 +298,7 @@ import {
     var mediaForceCacheTokens = {}; // filename -> token for forced cache bust after replace
     var selectedFile = null; // currently selected filename for detail view
     var viewMode = 'grid'; // grid | list | mediawall
-    // Feature-Toggles (Einstellungsseite), gelesen von #mp3-root in build() --
+    // Feature-Toggles (Einstellungsseite), gelesen von #mp-root in build() --
     // gate Tagging-UI (System-Tags-Feld, Sidebar-Tag-Filter) bzw. Sammlungen-UI
     // (Sidebar-Sektion, Merken-Button, Drag&Drop) unabhaengig voneinander.
     var features = { tagging: true, collections: true, metainfoEditing: false, uploadResize: false, altMissingFilter: false };
@@ -336,7 +336,7 @@ import {
     // initFocuspoint()-Aufruf in build().
     // Zuschneiden-Canvas-State (bis auf canCropper) lebt jetzt in
     // modules/cropper.js -- siehe initCropper()-Aufruf in build(). canCropper
-    // bleibt hier: einmalig aus #mp3-root data-cropper-available gelesen,
+    // bleibt hier: einmalig aus #mp-root data-cropper-available gelesen,
     // dann per ctx an das Modul durchgereicht.
     var canCropper = false;
     // ffmpeg-Integration (siehe FfmpegIntegration.php): videoThumbType ist der
@@ -359,76 +359,76 @@ import {
 
     // ---- Aus mediaplace-api.js / mediaplace-helpers.js eingebundene Funktionen ----
     // (Alias-Pattern: Funktionsreferenzen, kein State-Sharing noetig, siehe dortige Header-Kommentare)
-    var getCategoriesApiUrl = MP3Core.api.getCategoriesApiUrl;
-    var apiCheckUnusedMedia = MP3Core.api.apiCheckUnusedMedia;
-    var apiFetchStorageUsage = MP3Core.api.apiFetchStorageUsage;
-    var apiFetchAllCategoriesFlat = MP3Core.api.apiFetchAllCategoriesFlat;
-    var apiMoveCategory = MP3Core.api.apiMoveCategory;
-    var getTagsApiUrl = MP3Core.api.getTagsApiUrl;
-    var apiCollectionCatalogAction = MP3Core.api.apiCollectionCatalogAction;
-    var apiLoadSystemTagsForFiles = MP3Core.api.apiLoadSystemTagsForFiles;
-    var apiFetch = MP3Core.api.apiFetch;
-    var apiFetchRaw = MP3Core.api.apiFetchRaw;
-    var apiFetchMediaList = MP3Core.api.apiFetchMediaList;
-    var apiFetchOwnMediaList = MP3Core.api.apiFetchOwnMediaList;
-    var apiUploadJsonOrError = MP3Core.api.apiUploadJsonOrError;
-    var apiUploadInit = MP3Core.api.apiUploadInit;
-    var apiUploadChunk = MP3Core.api.apiUploadChunk;
-    var apiUploadFinalize = MP3Core.api.apiUploadFinalize;
-    var apiUploadAbort = MP3Core.api.apiUploadAbort;
-    var apiUploadChunked = MP3Core.api.apiUploadChunked;
-    var apiUpdate = MP3Core.api.apiUpdate;
-    var apiDelete = MP3Core.api.apiDelete;
-    var getJsonApiUrl = MP3Core.api.getJsonApiUrl;
-    var apiLoadJsonMetainfo = MP3Core.api.apiLoadJsonMetainfo;
-    var apiSaveJsonMetainfo = MP3Core.api.apiSaveJsonMetainfo;
-    var apiLoadMetainfoForm = MP3Core.api.apiLoadMetainfoForm;
-    var apiSaveMetainfoForm = MP3Core.api.apiSaveMetainfoForm;
-    var apiLoadCropPanel = MP3Core.api.apiLoadCropPanel;
-    var apiSaveCrop = MP3Core.api.apiSaveCrop;
-    var apiStartOptimizeVideo = MP3Core.api.apiStartOptimizeVideo;
-    var apiPollOptimizeVideo = MP3Core.api.apiPollOptimizeVideo;
-    var apiLoadVideoDetails = MP3Core.api.apiLoadVideoDetails;
-    var apiOptimizeImage = MP3Core.api.apiOptimizeImage;
-    var apiFetchProviderEntries = MP3Core.api.apiFetchProviderEntries;
-    var getProviderThumbnailUrl = MP3Core.api.getProviderThumbnailUrl;
-    var apiImportProviderFile = MP3Core.api.apiImportProviderFile;
-    var apiCreateCategory = MP3Core.api.apiCreateCategory;
-    var apiRenameCategory = MP3Core.api.apiRenameCategory;
-    var apiDeleteCategory = MP3Core.api.apiDeleteCategory;
-    var apiReplaceFile = MP3Core.api.apiReplaceFile;
-    var apiLoadFocuspointInfo = MP3Core.api.apiLoadFocuspointInfo;
-    var apiSaveFocuspoint = MP3Core.api.apiSaveFocuspoint;
-    var t = MP3Core.i18n.t;
-    var qs = MP3Core.helpers.qs;
-    var qsa = MP3Core.helpers.qsa;
-    var formatBytes = MP3Core.helpers.formatBytes;
-    var isImage = MP3Core.helpers.isImage;
-    var isVideo = MP3Core.helpers.isVideo;
-    var fileIcon = MP3Core.helpers.fileIcon;
-    var escAttr = MP3Core.helpers.escAttr;
-    var buildCategoryOptionsHtml = MP3Core.helpers.buildCategoryOptionsHtml;
-    var formatDate = MP3Core.helpers.formatDate;
-    var getFilenameExtension = MP3Core.helpers.getFilenameExtension;
-    var normalizeReplacementExtension = MP3Core.helpers.normalizeReplacementExtension;
-    var normalizeMediaPerPage = MP3Core.helpers.normalizeMediaPerPage;
-    var normalizeTileSize = MP3Core.helpers.normalizeTileSize;
-    var extensionsCompatible = MP3Core.helpers.extensionsCompatible;
-    var getReplacementAcceptForFilename = MP3Core.helpers.getReplacementAcceptForFilename;
-    var getMediaCacheToken = MP3Core.helpers.getMediaCacheToken;
-    var withMediaCacheBuster = MP3Core.helpers.withMediaCacheBuster;
-    var mediaThumbSrc = MP3Core.helpers.mediaThumbSrc;
-    var deepClone = MP3Core.helpers.deepClone;
-    var isObj = MP3Core.helpers.isObj;
-    var normalizeCompare = MP3Core.helpers.normalizeCompare;
-    var hasChanged = MP3Core.helpers.hasChanged;
-    var isImageFile = MP3Core.helpers.isImageFile;
+    var getCategoriesApiUrl = MPCore.api.getCategoriesApiUrl;
+    var apiCheckUnusedMedia = MPCore.api.apiCheckUnusedMedia;
+    var apiFetchStorageUsage = MPCore.api.apiFetchStorageUsage;
+    var apiFetchAllCategoriesFlat = MPCore.api.apiFetchAllCategoriesFlat;
+    var apiMoveCategory = MPCore.api.apiMoveCategory;
+    var getTagsApiUrl = MPCore.api.getTagsApiUrl;
+    var apiCollectionCatalogAction = MPCore.api.apiCollectionCatalogAction;
+    var apiLoadSystemTagsForFiles = MPCore.api.apiLoadSystemTagsForFiles;
+    var apiFetch = MPCore.api.apiFetch;
+    var apiFetchRaw = MPCore.api.apiFetchRaw;
+    var apiFetchMediaList = MPCore.api.apiFetchMediaList;
+    var apiFetchOwnMediaList = MPCore.api.apiFetchOwnMediaList;
+    var apiUploadJsonOrError = MPCore.api.apiUploadJsonOrError;
+    var apiUploadInit = MPCore.api.apiUploadInit;
+    var apiUploadChunk = MPCore.api.apiUploadChunk;
+    var apiUploadFinalize = MPCore.api.apiUploadFinalize;
+    var apiUploadAbort = MPCore.api.apiUploadAbort;
+    var apiUploadChunked = MPCore.api.apiUploadChunked;
+    var apiUpdate = MPCore.api.apiUpdate;
+    var apiDelete = MPCore.api.apiDelete;
+    var getJsonApiUrl = MPCore.api.getJsonApiUrl;
+    var apiLoadJsonMetainfo = MPCore.api.apiLoadJsonMetainfo;
+    var apiSaveJsonMetainfo = MPCore.api.apiSaveJsonMetainfo;
+    var apiLoadMetainfoForm = MPCore.api.apiLoadMetainfoForm;
+    var apiSaveMetainfoForm = MPCore.api.apiSaveMetainfoForm;
+    var apiLoadCropPanel = MPCore.api.apiLoadCropPanel;
+    var apiSaveCrop = MPCore.api.apiSaveCrop;
+    var apiStartOptimizeVideo = MPCore.api.apiStartOptimizeVideo;
+    var apiPollOptimizeVideo = MPCore.api.apiPollOptimizeVideo;
+    var apiLoadVideoDetails = MPCore.api.apiLoadVideoDetails;
+    var apiOptimizeImage = MPCore.api.apiOptimizeImage;
+    var apiFetchProviderEntries = MPCore.api.apiFetchProviderEntries;
+    var getProviderThumbnailUrl = MPCore.api.getProviderThumbnailUrl;
+    var apiImportProviderFile = MPCore.api.apiImportProviderFile;
+    var apiCreateCategory = MPCore.api.apiCreateCategory;
+    var apiRenameCategory = MPCore.api.apiRenameCategory;
+    var apiDeleteCategory = MPCore.api.apiDeleteCategory;
+    var apiReplaceFile = MPCore.api.apiReplaceFile;
+    var apiLoadFocuspointInfo = MPCore.api.apiLoadFocuspointInfo;
+    var apiSaveFocuspoint = MPCore.api.apiSaveFocuspoint;
+    var t = MPCore.i18n.t;
+    var qs = MPCore.helpers.qs;
+    var qsa = MPCore.helpers.qsa;
+    var formatBytes = MPCore.helpers.formatBytes;
+    var isImage = MPCore.helpers.isImage;
+    var isVideo = MPCore.helpers.isVideo;
+    var fileIcon = MPCore.helpers.fileIcon;
+    var escAttr = MPCore.helpers.escAttr;
+    var buildCategoryOptionsHtml = MPCore.helpers.buildCategoryOptionsHtml;
+    var formatDate = MPCore.helpers.formatDate;
+    var getFilenameExtension = MPCore.helpers.getFilenameExtension;
+    var normalizeReplacementExtension = MPCore.helpers.normalizeReplacementExtension;
+    var normalizeMediaPerPage = MPCore.helpers.normalizeMediaPerPage;
+    var normalizeTileSize = MPCore.helpers.normalizeTileSize;
+    var extensionsCompatible = MPCore.helpers.extensionsCompatible;
+    var getReplacementAcceptForFilename = MPCore.helpers.getReplacementAcceptForFilename;
+    var getMediaCacheToken = MPCore.helpers.getMediaCacheToken;
+    var withMediaCacheBuster = MPCore.helpers.withMediaCacheBuster;
+    var mediaThumbSrc = MPCore.helpers.mediaThumbSrc;
+    var deepClone = MPCore.helpers.deepClone;
+    var isObj = MPCore.helpers.isObj;
+    var normalizeCompare = MPCore.helpers.normalizeCompare;
+    var hasChanged = MPCore.helpers.hasChanged;
+    var isImageFile = MPCore.helpers.isImageFile;
 
     // ---- Helpers ----
 
 
     // Media Wall scrollt seit der Masonry-Umstellung vertikal wie alle anderen
-    // Ansichten -- das eigene horizontale Scroll-Pill-Widget (#mp3-scroll-pill)
+    // Ansichten -- das eigene horizontale Scroll-Pill-Widget (#mp-scroll-pill)
     // und die frueher hier verzweigte scrollLeft/scrollWidth-Pagination sind
     // dadurch obsolet. isMediaWallMode() bleibt als zentraler Schalter stehen
     // (statt jede Aufrufstelle einzeln zu aendern) und liefert bewusst immer
@@ -535,15 +535,15 @@ import {
     function setDarkMode(enabled) {
         darkModeEnabled = !!enabled;
         if (overlay) {
-            overlay.classList.toggle('mp3-dark-mode', darkModeEnabled);
+            overlay.classList.toggle('mp-dark-mode', darkModeEnabled);
         }
-        localStorage.setItem('mp3_dark_mode', darkModeEnabled ? '1' : '0');
-        var darkToggleBtn = overlay ? qs('.mp3-admin-menu-darkmode-toggle', overlay) : null;
+        localStorage.setItem('mp_dark_mode', darkModeEnabled ? '1' : '0');
+        var darkToggleBtn = overlay ? qs('.mp-admin-menu-darkmode-toggle', overlay) : null;
         if (darkToggleBtn) {
-            darkToggleBtn.classList.toggle('mp3-dark-mode-active', darkModeEnabled);
+            darkToggleBtn.classList.toggle('mp-dark-mode-active', darkModeEnabled);
             var icon = qs('i', darkToggleBtn);
             if (icon) icon.className = darkModeEnabled ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-            var label = qs('.mp3-admin-menu-darkmode-label', darkToggleBtn);
+            var label = qs('.mp-admin-menu-darkmode-label', darkToggleBtn);
             if (label) label.textContent = t(darkModeEnabled ? 'mediaplace_light_mode' : 'mediaplace_dark_mode');
         }
     }
@@ -552,29 +552,29 @@ import {
 
 
     /**
-     * Kachelgroessen-Slider steuert --mp3-tile-size, genutzt sowohl von
-     * .mp3-view-mediawall (columns:) als auch von der Kachel-Grundansicht
+     * Kachelgroessen-Slider steuert --mp-tile-size, genutzt sowohl von
+     * .mp-view-mediawall (columns:) als auch von der Kachel-Grundansicht
      * (grid-template-columns: minmax(), siehe mediaplace.css) -- in beiden
      * Faellen bestimmt er die Mindest-/Zielbreite einer Kachel. In der
      * Listenansicht hat er keine Wirkung (eigenes, festes Tabellen-Layout)
      * und wird dort ausgeblendet.
      */
     function updateTileSizeVisibility() {
-        var control = qs('#mp3-tile-size-control', overlay);
+        var control = qs('#mp-tile-size-control', overlay);
         if (control) control.style.display = (viewMode !== 'list') ? '' : 'none';
     }
 
-    // Trigger-Icon des Ansicht-Umschalters (.mp3-view-toggle-btn) auf die
+    // Trigger-Icon des Ansicht-Umschalters (.mp-view-toggle-btn) auf die
     // aktuell aktive Ansicht synchron halten -- Modul-Scope, weil sowohl vom
     // Dropdown-Klick-Handler als auch von der State-Wiederherstellung in
     // open() aufgerufen (siehe dort).
     var VIEW_MODE_ICONS = { grid: 'fa-table-cells', list: 'fa-list', mediawall: 'fa-table-cells-large' };
     function updateViewToggleTrigger() {
-        var triggerIcon = qs('.mp3-view-toggle-btn i', overlay);
+        var triggerIcon = qs('.mp-view-toggle-btn i', overlay);
         if (triggerIcon) triggerIcon.className = 'fa-solid ' + (VIEW_MODE_ICONS[viewMode] || VIEW_MODE_ICONS.grid);
     }
 
-    // Gleiches Prinzip fuer den Sortierungs-Popover (.mp3-sort-toggle-btn):
+    // Gleiches Prinzip fuer den Sortierungs-Popover (.mp-sort-toggle-btn):
     // Label-Text im Trigger auf die aktuell aktive Sortierung synchron halten.
     var SORT_LABEL_KEYS = {
         date_desc: 'mediaplace_sort_newest',
@@ -588,10 +588,10 @@ import {
         size_asc: 'mediaplace_sort_size_asc'
     };
     function updateSortToggleTrigger() {
-        var label = qs('.mp3-sort-toggle-label', overlay);
+        var label = qs('.mp-sort-toggle-label', overlay);
         if (label) label.textContent = t(SORT_LABEL_KEYS[getCurrentSort()] || SORT_LABEL_KEYS.date_desc);
-        qsa('.mp3-sort-option', overlay).forEach(function (b) {
-            b.classList.toggle('mp3-sort-option-active', b.getAttribute('data-sort') === getCurrentSort());
+        qsa('.mp-sort-option', overlay).forEach(function (b) {
+            b.classList.toggle('mp-sort-option-active', b.getAttribute('data-sort') === getCurrentSort());
         });
     }
 
@@ -604,21 +604,21 @@ import {
     var DETAIL_MIN_WIDTH = 280;
     var DETAIL_MAX_WIDTH = 640;
     function applyDetailWidth() {
-        if (!detailPanel || !overlay || overlay.classList.contains('mp3-compact')) return;
-        var saved = parseInt(localStorage.getItem('mp3_detail_width'), 10);
+        if (!detailPanel || !overlay || overlay.classList.contains('mp-compact')) return;
+        var saved = parseInt(localStorage.getItem('mp_detail_width'), 10);
         if (!isNaN(saved)) {
             detailPanel.style.width = Math.max(DETAIL_MIN_WIDTH, Math.min(saved, DETAIL_MAX_WIDTH)) + 'px';
         }
     }
 
-    // Mobile/schmal verkleinertes Modal (.mp3-compact, siehe initDragResize()):
+    // Mobile/schmal verkleinertes Modal (.mp-compact, siehe initDragResize()):
     // Detail-Panel UND Metainfo-/Fokuspunkt-Canvas sind dort beide als
     // Bottom-Sheet ueber demselben Bereich implementiert (siehe CSS) -- ohne
     // das Ausblenden des Detail-Panels wuerde der Canvas dahinter verdeckt
     // bleiben. Auf Desktop-Breite liegen sie nebeneinander, dort bleibt das
     // Detail-Panel bewusst sichtbar.
     function isCompactLayout() {
-        return (overlay && overlay.classList.contains('mp3-compact')) || window.innerWidth <= 768;
+        return (overlay && overlay.classList.contains('mp-compact')) || window.innerWidth <= 768;
     }
 
     // qs/qsa/formatBytes/mediaThumbSrc/apiFetch/... jetzt in mediaplace-helpers.js
@@ -696,7 +696,7 @@ import {
     // detailOriginalCollectionSystemTags/detailFieldDefs/detailClangs/
     // detailSystemTagCatalog jetzt in modules/detail.js.
     // widget_type -> function(key, panelEl) fuer Feldtypen, die ein anderes Addon
-    // per MP3.registerFieldCollector() angemeldet hat (siehe collectJsonValuesFromDetail()
+    // per MP.registerFieldCollector() angemeldet hat (siehe collectJsonValuesFromDetail()
     // und MetainfoWidget::getRegisteredTypes() in PHP).
     var fieldCollectors = {};
 
@@ -823,7 +823,7 @@ import {
     // (ein Request), um den haeufigsten Fall (dauerhaft 0 fehlende) zu decken.
     function refreshAltMissingNav() {
         if (!features.altMissingFilter) return;
-        var wrap = qs('.mp3-alt-missing-nav-wrap', sidebar);
+        var wrap = qs('.mp-alt-missing-nav-wrap', sidebar);
         if (!wrap) return;
 
         apiFetchOwnMediaList('media?per_page=1&filter[permitted_only]=1&filter[alt_missing]=1')
@@ -937,10 +937,10 @@ import {
     // gleiche Grenze wie bei applyFilterSort()/lastLoadedFiles generell).
     function updatePaginationUi(visibleFiles) {
         if (!overlay) return;
-        var footer = qs('.mp3-page-footer', overlay);
+        var footer = qs('.mp-page-footer', overlay);
         if (!footer) return;
-        var btn = qs('.mp3-load-more-btn', footer);
-        var info = qs('.mp3-page-info', footer);
+        var btn = qs('.mp-load-more-btn', footer);
+        var info = qs('.mp-page-info', footer);
         if (!btn || !info) return;
 
         var loaded = lastLoadedFiles.length;
@@ -964,7 +964,7 @@ import {
      * Update the header info bar: shows current category and file count.
      */
     function updateHeaderInfo(count) {
-        var el = document.getElementById('mp3-header-info');
+        var el = document.getElementById('mp-header-info');
         if (!el) return;
 
         var catName = '';
@@ -978,17 +978,17 @@ import {
 
         var parts = [];
         if (catName) {
-            parts.push('<i class="fa-solid fa-folder-open mp3-hi-icon"></i> ' + escAttr(catName));
+            parts.push('<i class="fa-solid fa-folder-open mp-hi-icon"></i> ' + escAttr(catName));
         }
         var activeCol = getActiveCollection();
         if (activeCol) {
-            parts.push('<i class="fa-solid fa-compact-disc mp3-hi-icon"></i> ' + escAttr(activeCol.name));
+            parts.push('<i class="fa-solid fa-compact-disc mp-hi-icon"></i> ' + escAttr(activeCol.name));
         }
         // Dateianzahl bewusst NICHT mehr hier -- steht bereits im Footer
-        // (.mp3-page-footer, siehe updateStatus()), war hier redundant
+        // (.mp-page-footer, siehe updateStatus()), war hier redundant
         // (Nutzer-Feedback).
 
-        el.innerHTML = parts.join('<span class="mp3-hi-sep">|</span>');
+        el.innerHTML = parts.join('<span class="mp-hi-sep">|</span>');
     }
 
     // ---- Data Loading ----
@@ -1002,7 +1002,7 @@ import {
             lastLoadedFiles = [];
             setCurrentTagCatalog([]);
             if (grid) {
-                grid.className = 'mp3-grid';
+                grid.className = 'mp-grid';
                 grid.innerHTML = '<div style="padding:40px;text-align:center;">' +
                     '<i class="fa-solid fa-spinner fa-spin" style="font-size:2em;color:#3c4d60;"></i></div>';
             }
@@ -1027,7 +1027,7 @@ import {
 
         mediaListFetcher()(endpoint)
             .then(function (payload) {
-                if (mySession !== loadSessionId) throw MP3_STALE_SESSION;
+                if (mySession !== loadSessionId) throw MP_STALE_SESSION;
                 var files = (payload && Array.isArray(payload.data)) ? payload.data : [];
                 var meta = (payload && payload.meta) ? payload.meta : {};
                 mediaTotal = parseInt(meta.total, 10) || 0;
@@ -1088,7 +1088,7 @@ import {
                     });
             })
             .then(function () {
-                if (mySession !== loadSessionId) throw MP3_STALE_SESSION;
+                if (mySession !== loadSessionId) throw MP_STALE_SESSION;
                 updateTagFilterOptions();
                 // Sammlungen-Abschnitt neu rendern, sobald Katalog-/Tag-Daten da
                 // sind, damit Sammlungen beim ersten Oeffnen sichtbar sind.
@@ -1096,7 +1096,7 @@ import {
                 refreshDisplay();
             })
             .catch(function (err) {
-                if (err === MP3_STALE_SESSION) return;
+                if (err === MP_STALE_SESSION) return;
 
                 // Kein Zugriff auf die aktuell gewaehlte Kategorie (z.B.
                 // Erstaufruf landet per Default auf Kategorie 0 "kein Ordner",
@@ -1122,7 +1122,7 @@ import {
                     // laedt (sah aus wie: gewaehlte Kategorie enthaelt Dateien, die
                     // eigentlich aus "Alle Medien" stammen).
                     currentCat = -1;
-                    localStorage.setItem('mp3_cat', '-1');
+                    localStorage.setItem('mp_cat', '-1');
                     buildBreadcrumb(-1);
                     updateSidebarActiveState();
                     loadFiles(-1, true);
@@ -1142,7 +1142,7 @@ import {
                             '<br><small style="color:#6c757d;">' + t('mediaplace_api_check_hint') + '</small></div>';
                     }
                 }
-                console.error('MP3 loadFiles error:', err);
+                console.error('MP loadFiles error:', err);
             })
             .then(function () {
                 // Stale Session (siehe loadSessionId oben): mediaLoading/Pagination
@@ -1170,10 +1170,10 @@ import {
         if (built) return;
         built = true;
 
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         if (!root) {
             root = document.createElement('div');
-            root.id = 'mp3-root';
+            root.id = 'mp-root';
             document.body.appendChild(root);
         }
 
@@ -1181,9 +1181,9 @@ import {
         // bereits t()-Aufrufe fuer die Overlay-Texte enthalten wird (siehe
         // MediaPlace-i18n-Stufe -- aktuell nur Widget-JS migriert, das Overlay
         // selbst folgt in Folge-Slices).
-        MP3Core.i18n.initLang();
+        MPCore.i18n.initLang();
 
-        // Feature-Toggles (Einstellungsseite -> boot.php -> #mp3-root data-*),
+        // Feature-Toggles (Einstellungsseite -> boot.php -> #mp-root data-*),
         // Default "an" falls das Attribut fehlt (z.B. waehrend der Entwicklung
         // ohne Cache-Neuaufbau).
         features.tagging = !root.dataset.featureTagging || root.dataset.featureTagging === '1';
@@ -1216,7 +1216,7 @@ import {
         // Teil von features -- deshalb separate Bedingung statt im selben
         // Feature-Toggle-Muster wie Tagging/Sammlungen.
         var unusedFilterHtml = canFilterUnused
-            ? '<button type="button" class="mp3-filter-btn mp3-unused-filter-btn" title="' + escAttr(t('mediaplace_unused_only_hint')) + '">' +
+            ? '<button type="button" class="mp-filter-btn mp-unused-filter-btn" title="' + escAttr(t('mediaplace_unused_only_hint')) + '">' +
                 '<i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_unused_only') + '</button>'
             : '';
 
@@ -1225,136 +1225,136 @@ import {
         // kategorieuebergreifende KI-Massengenerierung, nur sichtbar wenn
         // Feature+Recht beides gegeben sind.
         var aiAltBulkMenuHtml = canAiAltBulk
-            ? '<button type="button" class="mp3-admin-menu-ai-alt-bulk-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + escAttr(t('mediaplace_ai_alt_bulk_menu_label')) + '</button>'
+            ? '<button type="button" class="mp-admin-menu-ai-alt-bulk-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + escAttr(t('mediaplace_ai_alt_bulk_menu_label')) + '</button>'
             : '';
 
         root.innerHTML =
-            '<div id="mp3-overlay">' +
-                '<div class="mp3-modal">' +
-                    '<div class="mp3-header">' +
-                        '<span class="mp3-title"><i class="fa-solid fa-photo-film"></i> MediaPlace</span>' +
-                        '<span class="mp3-header-info" id="mp3-header-info"></span>' +
-                        '<div class="mp3-header-tools">' +
-                            '<button class="mp3-mobile-cat-btn" title="' + escAttr(t('mediaplace_categories')) + '"><i class="fa-solid fa-folder-tree"></i></button>' +
-                            '<div class="mp3-search-wrap">' +
+            '<div id="mp-overlay">' +
+                '<div class="mp-modal">' +
+                    '<div class="mp-header">' +
+                        '<span class="mp-title"><i class="fa-solid fa-photo-film"></i> MediaPlace</span>' +
+                        '<span class="mp-header-info" id="mp-header-info"></span>' +
+                        '<div class="mp-header-tools">' +
+                            '<button class="mp-mobile-cat-btn" title="' + escAttr(t('mediaplace_categories')) + '"><i class="fa-solid fa-folder-tree"></i></button>' +
+                            '<div class="mp-search-wrap">' +
                                 '<i class="fa-solid fa-magnifying-glass"></i>' +
-                                '<input type="text" class="mp3-search" placeholder="' + escAttr(t('mediaplace_search_placeholder')) + '">' +
+                                '<input type="text" class="mp-search" placeholder="' + escAttr(t('mediaplace_search_placeholder')) + '">' +
                             '</div>' +
-                            '<div class="mp3-sort-toggle-wrap">' +
-                                '<button type="button" class="mp3-sort-toggle-btn" title="' + escAttr(t('mediaplace_sorting')) + '">' +
-                                    '<i class="fa-solid fa-arrow-down-wide-short"></i> <span class="mp3-sort-toggle-label"></span>' +
+                            '<div class="mp-sort-toggle-wrap">' +
+                                '<button type="button" class="mp-sort-toggle-btn" title="' + escAttr(t('mediaplace_sorting')) + '">' +
+                                    '<i class="fa-solid fa-arrow-down-wide-short"></i> <span class="mp-sort-toggle-label"></span>' +
                                 '</button>' +
-                                '<div class="mp3-sort-toggle-menu">' +
-                                    '<button class="mp3-sort-option" data-sort="date_desc">' + escAttr(t('mediaplace_sort_newest')) + '</button>' +
-                                    '<button class="mp3-sort-option" data-sort="date_asc">' + escAttr(t('mediaplace_sort_oldest')) + '</button>' +
-                                    '<button class="mp3-sort-option" data-sort="updated_desc">' + escAttr(t('mediaplace_sort_updated_desc')) + '</button>' +
-                                    '<button class="mp3-sort-option" data-sort="filename_asc">' + escAttr(t('mediaplace_sort_filename_az')) + '</button>' +
-                                    '<button class="mp3-sort-option" data-sort="filename_desc">' + escAttr(t('mediaplace_sort_filename_za')) + '</button>' +
-                                    '<button class="mp3-sort-option" data-sort="title_asc">' + escAttr(t('mediaplace_sort_title_az')) + '</button>' +
-                                    '<button class="mp3-sort-option" data-sort="title_desc">' + escAttr(t('mediaplace_sort_title_za')) + '</button>' +
-                                    '<button class="mp3-sort-option" data-sort="size_desc">' + escAttr(t('mediaplace_sort_size_desc')) + '</button>' +
-                                    '<button class="mp3-sort-option" data-sort="size_asc">' + escAttr(t('mediaplace_sort_size_asc')) + '</button>' +
+                                '<div class="mp-sort-toggle-menu">' +
+                                    '<button class="mp-sort-option" data-sort="date_desc">' + escAttr(t('mediaplace_sort_newest')) + '</button>' +
+                                    '<button class="mp-sort-option" data-sort="date_asc">' + escAttr(t('mediaplace_sort_oldest')) + '</button>' +
+                                    '<button class="mp-sort-option" data-sort="updated_desc">' + escAttr(t('mediaplace_sort_updated_desc')) + '</button>' +
+                                    '<button class="mp-sort-option" data-sort="filename_asc">' + escAttr(t('mediaplace_sort_filename_az')) + '</button>' +
+                                    '<button class="mp-sort-option" data-sort="filename_desc">' + escAttr(t('mediaplace_sort_filename_za')) + '</button>' +
+                                    '<button class="mp-sort-option" data-sort="title_asc">' + escAttr(t('mediaplace_sort_title_az')) + '</button>' +
+                                    '<button class="mp-sort-option" data-sort="title_desc">' + escAttr(t('mediaplace_sort_title_za')) + '</button>' +
+                                    '<button class="mp-sort-option" data-sort="size_desc">' + escAttr(t('mediaplace_sort_size_desc')) + '</button>' +
+                                    '<button class="mp-sort-option" data-sort="size_asc">' + escAttr(t('mediaplace_sort_size_asc')) + '</button>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="mp3-view-toggle-wrap">' +
-                                '<button type="button" class="mp3-view-toggle-btn" title="' + escAttr(t('mediaplace_view_mode')) + '"><i class="fa-solid fa-table-cells"></i></button>' +
-                                '<div class="mp3-view-toggle-menu" id="mp3-view-toggle-menu">' +
-                                    '<button class="mp3-view-btn mp3-view-active" data-view="grid"><i class="fa-solid fa-table-cells"></i> ' + escAttr(t('mediaplace_tiles')) + '</button>' +
-                                    '<button class="mp3-view-btn" data-view="list"><i class="fa-solid fa-list"></i> ' + escAttr(t('mediaplace_list')) + '</button>' +
-                                    '<button class="mp3-view-btn" data-view="mediawall"><i class="fa-solid fa-table-cells-large"></i> ' + escAttr(t('mediaplace_media_wall')) + '</button>' +
+                            '<div class="mp-view-toggle-wrap">' +
+                                '<button type="button" class="mp-view-toggle-btn" title="' + escAttr(t('mediaplace_view_mode')) + '"><i class="fa-solid fa-table-cells"></i></button>' +
+                                '<div class="mp-view-toggle-menu" id="mp-view-toggle-menu">' +
+                                    '<button class="mp-view-btn mp-view-active" data-view="grid"><i class="fa-solid fa-table-cells"></i> ' + escAttr(t('mediaplace_tiles')) + '</button>' +
+                                    '<button class="mp-view-btn" data-view="list"><i class="fa-solid fa-list"></i> ' + escAttr(t('mediaplace_list')) + '</button>' +
+                                    '<button class="mp-view-btn" data-view="mediawall"><i class="fa-solid fa-table-cells-large"></i> ' + escAttr(t('mediaplace_media_wall')) + '</button>' +
                                 '</div>' +
                             '</div>' +
-                            '<label class="mp3-upload-btn" title="' + escAttr(t('mediaplace_upload_files')) + '">' +
+                            '<label class="mp-upload-btn" title="' + escAttr(t('mediaplace_upload_files')) + '">' +
                                 '<i class="fa-solid fa-cloud-arrow-up"></i>' +
-                                '<span class="mp3-upload-label">' + t('mediaplace_upload') + '</span>' +
+                                '<span class="mp-upload-label">' + t('mediaplace_upload') + '</span>' +
                                 '<input type="file" multiple style="display:none">' +
                             '</label>' +
                         '</div>' +
                         // Gemeinsamer Wrapper statt zwei einzelner Geschwister-Elemente
-                        // von .mp3-header: .mp3-compact/mobile pinnt diese Gruppe per
+                        // von .mp-header: .mp-compact/mobile pinnt diese Gruppe per
                         // margin-left:auto an den rechten Rand (siehe CSS) -- an EINEM
                         // Wrapper haengend bleibt das stabil, egal ob
-                        // .mp3-filter-reset-btn gerade sichtbar ist oder nicht (waere er
+                        // .mp-filter-reset-btn gerade sichtbar ist oder nicht (waere er
                         // selbst der margin-left:auto-Traeger, verschwaende der
                         // rechtsbuendige Pin fuer das Zahnrad jedes Mal mit, wenn kein
                         // Filter aktiv ist). Nicht mehr Teil der Filter-Leiste
-                        // (.mp3-filter-bar/.mp3-filter-pills) -- die wird je nach
+                        // (.mp-filter-bar/.mp-filter-pills) -- die wird je nach
                         // Bildschirmbreite/Filterzustand unterschiedlich umgebrochen bzw.
                         // auf Mobile komplett durch die Dropdown-Zusammenfassung ersetzt
-                        // (.mp3-filter-pills selbst ist dort display:none), der Button
+                        // (.mp-filter-pills selbst ist dort display:none), der Button
                         // waere so mal isoliert umgebrochen, mal unsichtbar. Direkt neben
                         // dem Zahnrad im Header ist er auf JEDER Breite an derselben,
                         // stabilen Stelle sichtbar. Nur sichtbar, sobald tatsaechlich ein
                         // Filter (Typ/Tag/"Nur unbenutzte") aktiv ist, siehe
                         // updateFilterResetVisibility() in filters.js -- setzt bewusst
                         // NICHT die Suche zurueck (eigene, unabhaengige Bedeutung).
-                        '<div class="mp3-header-actions">' +
-                            '<button type="button" class="mp3-filter-reset-btn" style="display:none" title="' + escAttr(t('mediaplace_filter_reset')) + '"><i class="fa-solid fa-filter-circle-xmark"></i></button>' +
-                            '<div class="mp3-admin-menu-wrap">' +
-                                '<button type="button" class="mp3-admin-menu-btn" title="' + escAttr(t('mediaplace_admin_menu_title')) + '"><i class="fa-solid fa-gear"></i></button>' +
-                                '<div class="mp3-admin-menu" id="mp3-admin-menu">' +
-                                    '<button type="button" class="mp3-admin-menu-darkmode-toggle"><i class="fa-solid fa-moon"></i> <span class="mp3-admin-menu-darkmode-label">' + escAttr(t('mediaplace_dark_mode')) + '</span></button>' +
+                        '<div class="mp-header-actions">' +
+                            '<button type="button" class="mp-filter-reset-btn" style="display:none" title="' + escAttr(t('mediaplace_filter_reset')) + '"><i class="fa-solid fa-filter-circle-xmark"></i></button>' +
+                            '<div class="mp-admin-menu-wrap">' +
+                                '<button type="button" class="mp-admin-menu-btn" title="' + escAttr(t('mediaplace_admin_menu_title')) + '"><i class="fa-solid fa-gear"></i></button>' +
+                                '<div class="mp-admin-menu" id="mp-admin-menu">' +
+                                    '<button type="button" class="mp-admin-menu-darkmode-toggle"><i class="fa-solid fa-moon"></i> <span class="mp-admin-menu-darkmode-label">' + escAttr(t('mediaplace_dark_mode')) + '</span></button>' +
                                     aiAltBulkMenuHtml +
-                                    '<div class="mp3-admin-menu-sort-slot" id="mp3-admin-menu-sort-slot"></div>' +
-                                    '<div class="mp3-admin-menu-extensions" id="mp3-admin-menu-extensions"></div>' +
-                                    '<div class="mp3-admin-menu-links" id="mp3-admin-menu-links"></div>' +
+                                    '<div class="mp-admin-menu-sort-slot" id="mp-admin-menu-sort-slot"></div>' +
+                                    '<div class="mp-admin-menu-extensions" id="mp-admin-menu-extensions"></div>' +
+                                    '<div class="mp-admin-menu-links" id="mp-admin-menu-links"></div>' +
                                     // Gesamt-Speicherverbrauch des kompletten Medienpools (nicht nach
                                     // Kategorie-Rechten gefiltert, siehe Api\StorageUsage.php) -- wird
                                     // bei jedem Oeffnen des Menues frisch nachgeladen (siehe
-                                    // refreshStorageUsage(), Aufruf im .mp3-admin-menu-btn-Click-Handler
+                                    // refreshStorageUsage(), Aufruf im .mp-admin-menu-btn-Click-Handler
                                     // unten), damit die Zahl waehrend der Sitzung aktuell bleibt.
-                                    '<div class="mp3-admin-menu-storage" id="mp3-admin-menu-storage"><i class="fa-solid fa-database"></i> <span class="mp3-admin-menu-storage-text"></span></div>' +
+                                    '<div class="mp-admin-menu-storage" id="mp-admin-menu-storage"><i class="fa-solid fa-database"></i> <span class="mp-admin-menu-storage-text"></span></div>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
-                        '<button type="button" class="mp3-fullscreen-toggle" title="' + escAttr(t('mediaplace_fullscreen')) + '"><i class="fa-solid fa-expand"></i></button>' +
-                        '<button type="button" class="mp3-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
+                        '<button type="button" class="mp-fullscreen-toggle" title="' + escAttr(t('mediaplace_fullscreen')) + '"><i class="fa-solid fa-expand"></i></button>' +
+                        '<button type="button" class="mp-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
                     '</div>' +
-                    '<div class="mp3-body">' +
-                        '<div class="mp3-sidebar" id="mp3-sidebar"></div>' +
-                        '<div class="mp3-sidebar-resize-handle" id="mp3-sidebar-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '"></div>' +
-                        '<div class="mp3-sidebar-backdrop" id="mp3-sidebar-backdrop"></div>' +
-                        '<div class="mp3-content">' +
-                            '<div class="mp3-filter-bar">' +
-                                '<div class="mp3-filter-pills">' +
-                                    '<button class="mp3-filter-btn mp3-filter-active" data-filter="all">' +
-                                        t('mediaplace_filter_all') + ' <span class="mp3-filter-count">0</span></button>' +
-                                    '<button class="mp3-filter-btn" data-filter="images">' +
-                                        '<i class="fa-solid fa-image"></i> ' + t('mediaplace_filter_images') + ' <span class="mp3-filter-count">0</span></button>' +
-                                    '<button class="mp3-filter-btn" data-filter="videos">' +
-                                        '<i class="fa-solid fa-film"></i> ' + t('mediaplace_filter_videos') + ' <span class="mp3-filter-count">0</span></button>' +
-                                    '<button class="mp3-filter-btn" data-filter="audio">' +
-                                        '<i class="fa-solid fa-music"></i> ' + t('mediaplace_filter_audio') + ' <span class="mp3-filter-count">0</span></button>' +
-                                    '<button class="mp3-filter-btn" data-filter="documents">' +
-                                        '<i class="fa-solid fa-file-lines"></i> ' + t('mediaplace_filter_documents') + ' <span class="mp3-filter-count">0</span></button>' +
-                                    '<button class="mp3-filter-btn" data-filter="other">' +
-                                        '<i class="fa-solid fa-ellipsis"></i> ' + t('mediaplace_filter_other') + ' <span class="mp3-filter-count">0</span></button>' +
+                    '<div class="mp-body">' +
+                        '<div class="mp-sidebar" id="mp-sidebar"></div>' +
+                        '<div class="mp-sidebar-resize-handle" id="mp-sidebar-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '"></div>' +
+                        '<div class="mp-sidebar-backdrop" id="mp-sidebar-backdrop"></div>' +
+                        '<div class="mp-content">' +
+                            '<div class="mp-filter-bar">' +
+                                '<div class="mp-filter-pills">' +
+                                    '<button class="mp-filter-btn mp-filter-active" data-filter="all">' +
+                                        t('mediaplace_filter_all') + ' <span class="mp-filter-count">0</span></button>' +
+                                    '<button class="mp-filter-btn" data-filter="images">' +
+                                        '<i class="fa-solid fa-image"></i> ' + t('mediaplace_filter_images') + ' <span class="mp-filter-count">0</span></button>' +
+                                    '<button class="mp-filter-btn" data-filter="videos">' +
+                                        '<i class="fa-solid fa-film"></i> ' + t('mediaplace_filter_videos') + ' <span class="mp-filter-count">0</span></button>' +
+                                    '<button class="mp-filter-btn" data-filter="audio">' +
+                                        '<i class="fa-solid fa-music"></i> ' + t('mediaplace_filter_audio') + ' <span class="mp-filter-count">0</span></button>' +
+                                    '<button class="mp-filter-btn" data-filter="documents">' +
+                                        '<i class="fa-solid fa-file-lines"></i> ' + t('mediaplace_filter_documents') + ' <span class="mp-filter-count">0</span></button>' +
+                                    '<button class="mp-filter-btn" data-filter="other">' +
+                                        '<i class="fa-solid fa-ellipsis"></i> ' + t('mediaplace_filter_other') + ' <span class="mp-filter-count">0</span></button>' +
                                     unusedFilterHtml +
                                 '</div>' +
-                                '<div class="mp3-filter-dropdown-wrap">' +
-                                    '<button type="button" class="mp3-filter-dropdown-toggle" title="' + escAttr(t('mediaplace_filter_title')) + '">' +
-                                        '<span class="mp3-filter-dropdown-label">' + t('mediaplace_filter_all') + '</span>' +
+                                '<div class="mp-filter-dropdown-wrap">' +
+                                    '<button type="button" class="mp-filter-dropdown-toggle" title="' + escAttr(t('mediaplace_filter_title')) + '">' +
+                                        '<span class="mp-filter-dropdown-label">' + t('mediaplace_filter_all') + '</span>' +
                                         '<i class="fa-solid fa-chevron-down"></i>' +
                                     '</button>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="mp3-metainfo-pick-banner" id="mp3-metainfo-pick-banner" style="display:none">' +
-                                '<span class="mp3-metainfo-pick-banner-text"></span>' +
-                                '<button type="button" class="mp3-metainfo-pick-cancel"><i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') + '</button>' +
+                            '<div class="mp-metainfo-pick-banner" id="mp-metainfo-pick-banner" style="display:none">' +
+                                '<span class="mp-metainfo-pick-banner-text"></span>' +
+                                '<button type="button" class="mp-metainfo-pick-cancel"><i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') + '</button>' +
                             '</div>' +
-                            '<div class="mp3-breadcrumb" id="mp3-breadcrumb"></div>' +
-                            '<div class="mp3-status" id="mp3-status">' +
-                                '<button type="button" class="mp3-select-mode-toggle" title="' + escAttr(t('mediaplace_select_mode_toggle')) + '"><i class="fa-solid fa-square-check"></i></button>' +
-                                '<span class="mp3-status-text" id="mp3-status-text"></span>' +
+                            '<div class="mp-breadcrumb" id="mp-breadcrumb"></div>' +
+                            '<div class="mp-status" id="mp-status">' +
+                                '<button type="button" class="mp-select-mode-toggle" title="' + escAttr(t('mediaplace_select_mode_toggle')) + '"><i class="fa-solid fa-square-check"></i></button>' +
+                                '<span class="mp-status-text" id="mp-status-text"></span>' +
                             '</div>' +
-                            '<div class="mp3-grid-wrap" id="mp3-grid-wrap">' +
-                                '<div class="mp3-grid" id="mp3-grid"></div>' +
-                                '<div class="mp3-scroll-pill" id="mp3-scroll-pill"><div class="mp3-scroll-pill-thumb" id="mp3-scroll-pill-thumb"></div></div>' +
+                            '<div class="mp-grid-wrap" id="mp-grid-wrap">' +
+                                '<div class="mp-grid" id="mp-grid"></div>' +
+                                '<div class="mp-scroll-pill" id="mp-scroll-pill"><div class="mp-scroll-pill-thumb" id="mp-scroll-pill-thumb"></div></div>' +
                             '</div>' +
-                            '<div class="mp3-page-footer">' +
-                                '<div class="mp3-page-size">' +
-                                    '<label for="mp3-per-page-select">' + t('mediaplace_per_page') + '</label>' +
-                                    '<select id="mp3-per-page-select" class="mp3-per-page-select">' +
+                            '<div class="mp-page-footer">' +
+                                '<div class="mp-page-size">' +
+                                    '<label for="mp-per-page-select">' + t('mediaplace_per_page') + '</label>' +
+                                    '<select id="mp-per-page-select" class="mp-per-page-select">' +
                                         '<option value="30">30</option>' +
                                         '<option value="50">50</option>' +
                                         '<option value="100">100</option>' +
@@ -1362,100 +1362,100 @@ import {
                                         '<option value="1000">' + escAttr(t('mediaplace_per_page_all')) + '</option>' +
                                     '</select>' +
                                 '</div>' +
-                                '<div class="mp3-tile-size-control" id="mp3-tile-size-control">' +
+                                '<div class="mp-tile-size-control" id="mp-tile-size-control">' +
                                     '<i class="fa-solid fa-table-cells" title="' + escAttr(t('mediaplace_smaller_tiles')) + '"></i>' +
-                                    '<input type="range" id="mp3-tile-size-slider" class="mp3-tile-size-slider" min="140" max="360" step="10" title="' + escAttr(t('mediaplace_tile_size')) + '">' +
+                                    '<input type="range" id="mp-tile-size-slider" class="mp-tile-size-slider" min="140" max="360" step="10" title="' + escAttr(t('mediaplace_tile_size')) + '">' +
                                     '<i class="fa-solid fa-table-cells-large" title="' + escAttr(t('mediaplace_larger_tiles')) + '"></i>' +
                                 '</div>' +
-                                '<button type="button" class="mp3-load-more-btn" style="display:none"><i class="fa-solid fa-angles-down"></i> ' + t('mediaplace_load_more') + '</button>' +
-                                '<span class="mp3-page-info"></span>' +
+                                '<button type="button" class="mp-load-more-btn" style="display:none"><i class="fa-solid fa-angles-down"></i> ' + t('mediaplace_load_more') + '</button>' +
+                                '<span class="mp-page-info"></span>' +
                             '</div>' +
-                            '<div class="mp3-focuspoint-canvas" id="mp3-focuspoint-canvas" style="display:none">' +
-                                '<div class="mp3-focuspoint-canvas-header">' +
-                                    '<button type="button" class="mp3-focuspoint-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
+                            '<div class="mp-focuspoint-canvas" id="mp-focuspoint-canvas" style="display:none">' +
+                                '<div class="mp-focuspoint-canvas-header">' +
+                                    '<button type="button" class="mp-focuspoint-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
                                         '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
                                     '</button>' +
-                                    '<div class="mp3-focuspoint-canvas-title"></div>' +
-                                    '<button type="button" class="mp3-focuspoint-canvas-save">' +
+                                    '<div class="mp-focuspoint-canvas-title"></div>' +
+                                    '<button type="button" class="mp-focuspoint-canvas-save">' +
                                         '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save') +
                                     '</button>' +
                                 '</div>' +
-                                '<div class="mp3-focuspoint-toolbar">' +
-                                    '<div class="mp3-focuspoint-field-wrap" style="display:none">' +
+                                '<div class="mp-focuspoint-toolbar">' +
+                                    '<div class="mp-focuspoint-field-wrap" style="display:none">' +
                                         '<label>' + t('mediaplace_field') + '</label>' +
-                                        '<select class="mp3-focuspoint-field-select"></select>' +
+                                        '<select class="mp-focuspoint-field-select"></select>' +
                                     '</div>' +
-                                    '<div class="mp3-focuspoint-type-wrap">' +
+                                    '<div class="mp-focuspoint-type-wrap">' +
                                         '<label>' + t('mediaplace_preview') + '</label>' +
-                                        '<select class="mp3-focuspoint-type-select"></select>' +
+                                        '<select class="mp-focuspoint-type-select"></select>' +
                                     '</div>' +
-                                    '<span class="mp3-focuspoint-coords"></span>' +
-                                    '<button type="button" class="mp3-focuspoint-reset-btn" title="' + escAttr(t('mediaplace_reset_to_loaded_value')) + '"><i class="fa-solid fa-rotate-left"></i> ' + t('mediaplace_reset') + '</button>' +
-                                    '<button type="button" class="mp3-focuspoint-remove-btn" title="' + escAttr(t('mediaplace_remove_focuspoint')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_remove') + '</button>' +
+                                    '<span class="mp-focuspoint-coords"></span>' +
+                                    '<button type="button" class="mp-focuspoint-reset-btn" title="' + escAttr(t('mediaplace_reset_to_loaded_value')) + '"><i class="fa-solid fa-rotate-left"></i> ' + t('mediaplace_reset') + '</button>' +
+                                    '<button type="button" class="mp-focuspoint-remove-btn" title="' + escAttr(t('mediaplace_remove_focuspoint')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_remove') + '</button>' +
                                 '</div>' +
-                                '<div class="mp3-focuspoint-canvas-body">' +
-                                    '<div class="mp3-focuspoint-image-wrap">' +
-                                        '<img class="mp3-focuspoint-image" alt="">' +
-                                        '<div class="mp3-focuspoint-marker"></div>' +
+                                '<div class="mp-focuspoint-canvas-body">' +
+                                    '<div class="mp-focuspoint-image-wrap">' +
+                                        '<img class="mp-focuspoint-image" alt="">' +
+                                        '<div class="mp-focuspoint-marker"></div>' +
                                     '</div>' +
-                                    '<div class="mp3-focuspoint-preview-wrap" style="display:none">' +
-                                        '<img class="mp3-focuspoint-preview-img" alt="">' +
+                                    '<div class="mp-focuspoint-preview-wrap" style="display:none">' +
+                                        '<img class="mp-focuspoint-preview-img" alt="">' +
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="mp3-editor-canvas" id="mp3-metainfo-canvas" style="display:none">' +
-                                '<div class="mp3-editor-canvas-header">' +
-                                    '<button type="button" class="mp3-metainfo-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
+                            '<div class="mp-editor-canvas" id="mp-metainfo-canvas" style="display:none">' +
+                                '<div class="mp-editor-canvas-header">' +
+                                    '<button type="button" class="mp-metainfo-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
                                         '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
                                     '</button>' +
-                                    '<div class="mp3-metainfo-canvas-title"></div>' +
-                                    '<button type="button" class="mp3-metainfo-canvas-save">' +
+                                    '<div class="mp-metainfo-canvas-title"></div>' +
+                                    '<button type="button" class="mp-metainfo-canvas-save">' +
                                         '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save') +
                                     '</button>' +
                                 '</div>' +
-                                '<div class="mp3-editor-canvas-body">' +
-                                    '<form id="mp3-metainfo-form" class="mp3-metainfo-canvas-form"></form>' +
+                                '<div class="mp-editor-canvas-body">' +
+                                    '<form id="mp-metainfo-form" class="mp-metainfo-canvas-form"></form>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="mp3-editor-canvas" id="mp3-crop-canvas" style="display:none">' +
-                                '<div class="mp3-editor-canvas-header">' +
-                                    '<button type="button" class="mp3-crop-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
+                            '<div class="mp-editor-canvas" id="mp-crop-canvas" style="display:none">' +
+                                '<div class="mp-editor-canvas-header">' +
+                                    '<button type="button" class="mp-crop-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
                                         '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
                                     '</button>' +
-                                    '<div class="mp3-crop-canvas-title"></div>' +
+                                    '<div class="mp-crop-canvas-title"></div>' +
                                     // id="cropper_sidebar_toggle" ist bewusst cropper's eigene ID --
                                     // rex_cropper.js sucht danach im ganzen Dokument (nicht nur im
                                     // gefetchten Panel) und steuert Ein-/Ausblenden + Merken der
                                     // Info-Sidebar (Vorschau/Zuschnittdaten) komplett selbst, siehe
                                     // initSidebarToggle() dort -- kein eigener Handler noetig.
-                                    '<button type="button" id="cropper_sidebar_toggle" class="mp3-crop-sidebar-toggle" aria-expanded="true" aria-controls="cropper-sidebar" data-expanded-label="' + escAttr(t('mediaplace_crop_sidebar_collapse')) + '" data-collapsed-label="' + escAttr(t('mediaplace_crop_sidebar_expand')) + '" title="' + escAttr(t('mediaplace_crop_sidebar_collapse')) + '">' +
+                                    '<button type="button" id="cropper_sidebar_toggle" class="mp-crop-sidebar-toggle" aria-expanded="true" aria-controls="cropper-sidebar" data-expanded-label="' + escAttr(t('mediaplace_crop_sidebar_collapse')) + '" data-collapsed-label="' + escAttr(t('mediaplace_crop_sidebar_expand')) + '" title="' + escAttr(t('mediaplace_crop_sidebar_collapse')) + '">' +
                                         '<i class="fa fa-info-circle"></i>' +
                                     '</button>' +
                                 '</div>' +
-                                '<div class="mp3-editor-canvas-body" id="mp3-crop-canvas-body"></div>' +
+                                '<div class="mp-editor-canvas-body" id="mp-crop-canvas-body"></div>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="mp3-detail-resize-handle" id="mp3-detail-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '" style="display:none"></div>' +
-                        '<div class="mp3-detail" id="mp3-detail"></div>' +
+                        '<div class="mp-detail-resize-handle" id="mp-detail-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '" style="display:none"></div>' +
+                        '<div class="mp-detail" id="mp-detail"></div>' +
                     '</div>' +
-                    '<div class="mp3-cat-menu-portal" id="mp3-cat-menu-portal"></div>' +
-                    '<div class="mp3-filter-dropdown-menu-portal" id="mp3-filter-dropdown-menu-portal"></div>' +
-                    '<div class="mp3-resize-handle" id="mp3-resize-handle"></div>' +
-                    '<div class="mp3-multi-footer" id="mp3-multi-footer" style="display:none">' +
-                        '<div class="mp3-multi-left">' +
-                            '<button class="mp3-multi-select-all" title="' + escAttr(t('mediaplace_select_all')) + '"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
-                            '<span class="mp3-multi-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
+                    '<div class="mp-cat-menu-portal" id="mp-cat-menu-portal"></div>' +
+                    '<div class="mp-filter-dropdown-menu-portal" id="mp-filter-dropdown-menu-portal"></div>' +
+                    '<div class="mp-resize-handle" id="mp-resize-handle"></div>' +
+                    '<div class="mp-multi-footer" id="mp-multi-footer" style="display:none">' +
+                        '<div class="mp-multi-left">' +
+                            '<button class="mp-multi-select-all" title="' + escAttr(t('mediaplace_select_all')) + '"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
+                            '<span class="mp-multi-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
                         '</div>' +
-                        '<button class="mp3-multi-confirm" title="' + escAttr(t('mediaplace_apply_selection')) + '"><i class="fa-solid fa-check"></i> ' + t('mediaplace_apply_selection') + '</button>' +
+                        '<button class="mp-multi-confirm" title="' + escAttr(t('mediaplace_apply_selection')) + '"><i class="fa-solid fa-check"></i> ' + t('mediaplace_apply_selection') + '</button>' +
                     '</div>' +
-                    '<div class="mp3-batch-footer" id="mp3-batch-footer" style="display:none">' +
-                        '<div class="mp3-batch-left">' +
-                            '<button type="button" class="mp3-batch-select-all" title="' + escAttr(t('mediaplace_select_all')) + '"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
-                            '<span class="mp3-batch-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
+                    '<div class="mp-batch-footer" id="mp-batch-footer" style="display:none">' +
+                        '<div class="mp-batch-left">' +
+                            '<button type="button" class="mp-batch-select-all" title="' + escAttr(t('mediaplace_select_all')) + '"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
+                            '<span class="mp-batch-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
                         '</div>' +
-                        '<div class="mp3-batch-actions">' +
-                            '<button type="button" class="mp3-batch-move-btn" title="' + escAttr(t('mediaplace_move_selection')) + '"><i class="fa-solid fa-folder-open"></i> ' + t('mediaplace_move_selection') + '</button>' +
-                            '<button type="button" class="mp3-batch-delete-btn" title="' + escAttr(t('mediaplace_delete_selection')) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete_selection') + '</button>' +
+                        '<div class="mp-batch-actions">' +
+                            '<button type="button" class="mp-batch-move-btn" title="' + escAttr(t('mediaplace_move_selection')) + '"><i class="fa-solid fa-folder-open"></i> ' + t('mediaplace_move_selection') + '</button>' +
+                            '<button type="button" class="mp-batch-delete-btn" title="' + escAttr(t('mediaplace_delete_selection')) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete_selection') + '</button>' +
                             // Nur sichtbar innerhalb einer aktiven Sammlung
                             // (Verschieben/Loeschen dort ausgeblendet, siehe
                             // updateCollectionDragSelectionUI() in
@@ -1465,64 +1465,64 @@ import {
                             // faelschlich "Auswahl loeschen" klicken und damit
                             // die Dateien komplett aus dem Medienpool entfernen,
                             // obwohl "nur aus der Sammlung nehmen" gemeint war.
-                            '<button type="button" class="mp3-batch-remove-from-collection-btn" style="display:none" title="' + escAttr(t('mediaplace_remove_selection_from_collection')) + '"><i class="fa-solid fa-bookmark-slash"></i> ' + t('mediaplace_remove_selection_from_collection') + '</button>' +
-                            '<button type="button" class="mp3-batch-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_deselect_all_action') + '</button>' +
+                            '<button type="button" class="mp-batch-remove-from-collection-btn" style="display:none" title="' + escAttr(t('mediaplace_remove_selection_from_collection')) + '"><i class="fa-solid fa-bookmark-slash"></i> ' + t('mediaplace_remove_selection_from_collection') + '</button>' +
+                            '<button type="button" class="mp-batch-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_deselect_all_action') + '</button>' +
                         '</div>' +
                     '</div>' +
-                    // Eigene, von .mp3-batch-footer unabhaengige Leiste fuer
+                    // Eigene, von .mp-batch-footer unabhaengige Leiste fuer
                     // die Cloud-Provider-Mehrfachauswahl (siehe providers.js) --
                     // andere Aktion (Importieren statt Verschieben/Loeschen),
                     // andere Datengrundlage (Provider-Pfade statt lokaler
-                    // Dateinamen). Wiederverwendet nur die .mp3-batch-left/
+                    // Dateinamen). Wiederverwendet nur die .mp-batch-left/
                     // -actions-CSS-Klassen fuer identische Optik.
-                    '<div class="mp3-batch-footer mp3-provider-batch-footer" id="mp3-provider-batch-footer" style="display:none">' +
-                        '<div class="mp3-batch-left">' +
-                            '<button type="button" class="mp3-provider-batch-select-all" title="' + escAttr(t('mediaplace_select_all')) + '"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
-                            '<span class="mp3-provider-batch-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
+                    '<div class="mp-batch-footer mp-provider-batch-footer" id="mp-provider-batch-footer" style="display:none">' +
+                        '<div class="mp-batch-left">' +
+                            '<button type="button" class="mp-provider-batch-select-all" title="' + escAttr(t('mediaplace_select_all')) + '"><i class="fa-solid fa-square-check"></i> ' + t('mediaplace_select_all') + '</button>' +
+                            '<span class="mp-provider-batch-count">' + t('mediaplace_files_selected', { count: 0 }) + '</span>' +
                         '</div>' +
-                        '<div class="mp3-batch-actions">' +
-                            '<button type="button" class="mp3-provider-batch-import-btn" title="' + escAttr(t('mediaplace_provider_import_selection')) + '"><i class="fa-solid fa-cloud-arrow-down"></i> ' + t('mediaplace_provider_import_selection') + '</button>' +
-                            '<button type="button" class="mp3-provider-batch-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_deselect_all_action') + '</button>' +
+                        '<div class="mp-batch-actions">' +
+                            '<button type="button" class="mp-provider-batch-import-btn" title="' + escAttr(t('mediaplace_provider_import_selection')) + '"><i class="fa-solid fa-cloud-arrow-down"></i> ' + t('mediaplace_provider_import_selection') + '</button>' +
+                            '<button type="button" class="mp-provider-batch-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i> ' + t('mediaplace_deselect_all_action') + '</button>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
-                '<div class="mp3-lightbox" id="mp3-lightbox">' +
-                    '<button type="button" class="mp3-lightbox-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
-                    '<img class="mp3-lightbox-image" alt="">' +
-                    '<div class="mp3-lightbox-caption"></div>' +
+                '<div class="mp-lightbox" id="mp-lightbox">' +
+                    '<button type="button" class="mp-lightbox-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
+                    '<img class="mp-lightbox-image" alt="">' +
+                    '<div class="mp-lightbox-caption"></div>' +
                 '</div>' +
             '</div>';
 
-        overlay   = qs('#mp3-overlay');
+        overlay   = qs('#mp-overlay');
         overlay.setAttribute('tabindex', '-1');
         // Safari (Desktop UND iOS) re-balanciert die Media-Wall-Mehrspalten-
         // Ansicht bei jedem Hover-bedingten Repaint einer Kachel neu (siehe
-        // .mp3-masonry-card:hover in mediaplace.css) -- sichtbar als kurzer
+        // .mp-masonry-card:hover in mediaplace.css) -- sichtbar als kurzer
         // Glow-Rest am Ende der VORHERIGEN Spalte. @supports(-webkit-touch-
         // callout) als CSS-only-Erkennung greift NUR auf iOS (die Property
         // existiert im Desktop-Safari-Parser gar nicht, @supports lieferte
         // dort also faelschlich false) -- deshalb hier stattdessen ein
         // klassischer UA/vendor-Sniff, der beide erfasst und die eigentliche
-        // CSS-Ausnahme in mediaplace.css ueber die Klasse "mp3-safari"
+        // CSS-Ausnahme in mediaplace.css ueber die Klasse "mp-safari"
         // scoped statt ueber @supports.
         var ua = navigator.userAgent || '';
         var isSafariBrowser = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\//.test(ua) && /Apple/.test(navigator.vendor || '');
-        overlay.classList.toggle('mp3-safari', isSafariBrowser);
-        sidebar   = qs('#mp3-sidebar');
-        grid      = qs('#mp3-grid');
-        gridWrap  = qs('#mp3-grid-wrap');
-        scrollPillTrack = qs('#mp3-scroll-pill');
-        scrollPillThumb = qs('#mp3-scroll-pill-thumb');
-        searchInput = qs('.mp3-search', overlay);
-        statusBar = qs('#mp3-status-text');
-        breadcrumb = qs('#mp3-breadcrumb');
-        detailPanel = qs('#mp3-detail');
-        multiFooter = qs('#mp3-multi-footer');
-        batchFooter = qs('#mp3-batch-footer');
-        providerBatchFooter = qs('#mp3-provider-batch-footer');
-        lightboxLayer = qs('#mp3-lightbox');
-        lightboxImage = qs('.mp3-lightbox-image', overlay);
-        lightboxCaption = qs('.mp3-lightbox-caption', overlay);
+        overlay.classList.toggle('mp-safari', isSafariBrowser);
+        sidebar   = qs('#mp-sidebar');
+        grid      = qs('#mp-grid');
+        gridWrap  = qs('#mp-grid-wrap');
+        scrollPillTrack = qs('#mp-scroll-pill');
+        scrollPillThumb = qs('#mp-scroll-pill-thumb');
+        searchInput = qs('.mp-search', overlay);
+        statusBar = qs('#mp-status-text');
+        breadcrumb = qs('#mp-breadcrumb');
+        detailPanel = qs('#mp-detail');
+        multiFooter = qs('#mp-multi-footer');
+        batchFooter = qs('#mp-batch-footer');
+        providerBatchFooter = qs('#mp-provider-batch-footer');
+        lightboxLayer = qs('#mp-lightbox');
+        lightboxImage = qs('.mp-lightbox-image', overlay);
+        lightboxCaption = qs('.mp-lightbox-caption', overlay);
 
         initModals({ overlay: overlay });
         initToast(overlay);
@@ -1742,11 +1742,11 @@ import {
         // ---- Drag-Move & Resize ----
         var interacting = false; // true during drag/resize – suppress backdrop close
         (function initDragResize() {
-            var modal = qs('.mp3-modal', overlay);
-            var header = qs('.mp3-header', overlay);
-            var handle = qs('#mp3-resize-handle');
-            var sidebarHandle = qs('#mp3-sidebar-resize-handle');
-            var detailHandle = qs('#mp3-detail-resize-handle');
+            var modal = qs('.mp-modal', overlay);
+            var header = qs('.mp-header', overlay);
+            var handle = qs('#mp-resize-handle');
+            var sidebarHandle = qs('#mp-sidebar-resize-handle');
+            var detailHandle = qs('#mp-detail-resize-handle');
             var dragging = false, resizing = false;
             var startX, startY, startW, startH, startLeft, startTop;
 
@@ -1754,12 +1754,12 @@ import {
 
             // Gespeicherte Sidebar-Breite anwenden (Desktop only -- im Compact-
             // Modus wird die Sidebar zum Offcanvas mit eigener fester Breite,
-            // siehe CSS .mp3-compact .mp3-sidebar).
+            // siehe CSS .mp-compact .mp-sidebar).
             var SIDEBAR_MIN = 180;
             var SIDEBAR_MAX = 480;
             function applySidebarWidth() {
-                if (!sidebar || isMobile() || overlay.classList.contains('mp3-compact')) return;
-                var saved = parseInt(localStorage.getItem('mp3_sidebar_width'), 10);
+                if (!sidebar || isMobile() || overlay.classList.contains('mp-compact')) return;
+                var saved = parseInt(localStorage.getItem('mp_sidebar_width'), 10);
                 if (!isNaN(saved)) {
                     sidebar.style.width = Math.max(SIDEBAR_MIN, Math.min(saved, SIDEBAR_MAX)) + 'px';
                 }
@@ -1771,14 +1771,14 @@ import {
             // mobilen Kopfzeile) -- derselbe Popover-Wrap wird per appendChild()
             // umgehaengt statt dupliziert, damit sein bestehender Klick-Handler
             // (siehe initFiltersAndSort()) unveraendert weiterfunktioniert.
-            var sortToggleWrapEl = qs('.mp3-sort-toggle-wrap', overlay);
-            var sortSelectSlot = qs('#mp3-admin-menu-sort-slot', overlay);
+            var sortToggleWrapEl = qs('.mp-sort-toggle-wrap', overlay);
+            var sortSelectSlot = qs('#mp-admin-menu-sort-slot', overlay);
             function relocateSortSelect(isCompact) {
                 if (!sortToggleWrapEl || !sortSelectSlot) return;
                 if (isCompact) {
                     sortSelectSlot.appendChild(sortToggleWrapEl);
                 } else {
-                    var viewToggle = qs('.mp3-view-toggle-wrap', overlay);
+                    var viewToggle = qs('.mp-view-toggle-wrap', overlay);
                     if (viewToggle && viewToggle.parentNode) {
                         viewToggle.parentNode.insertBefore(sortToggleWrapEl, viewToggle);
                     }
@@ -1792,16 +1792,16 @@ import {
                     for (var i = 0; i < entries.length; i++) {
                         var w = entries[i].contentRect.width;
                         var isCompact = w < COMPACT_BREAKPOINT;
-                        var wasCompact = overlay.classList.contains('mp3-compact');
+                        var wasCompact = overlay.classList.contains('mp-compact');
                         if (isCompact !== wasCompact) {
-                            overlay.classList.toggle('mp3-compact', isCompact);
+                            overlay.classList.toggle('mp-compact', isCompact);
                             relocateSortSelect(isCompact);
                             // Close sidebar & detail when leaving compact mode
                             if (!isCompact) {
                                 if (sidebar) {
-                                    sidebar.classList.remove('mp3-sidebar-open');
-                                    var bd = qs('#mp3-sidebar-backdrop');
-                                    if (bd) bd.classList.remove('mp3-backdrop-open');
+                                    sidebar.classList.remove('mp-sidebar-open');
+                                    var bd = qs('#mp-sidebar-backdrop');
+                                    if (bd) bd.classList.remove('mp-backdrop-open');
                                 }
                                 applySidebarWidth();
                             } else if (sidebar) {
@@ -1816,8 +1816,8 @@ import {
 
             // ---- Drag move via header ----
             header.addEventListener('mousedown', function (e) {
-                if (isMobile() || overlay.classList.contains('mp3-fullscreen-mode')) return;
-                if (e.target.closest('.mp3-close, .mp3-header-tools, input, select, button, label')) return;
+                if (isMobile() || overlay.classList.contains('mp-fullscreen-mode')) return;
+                if (e.target.closest('.mp-close, .mp-header-tools, input, select, button, label')) return;
                 dragging = true;
                 interacting = true;
                 var rect = modal.getBoundingClientRect();
@@ -1830,7 +1830,7 @@ import {
 
             // ---- Resize via handle ----
             handle.addEventListener('mousedown', function (e) {
-                if (isMobile() || overlay.classList.contains('mp3-fullscreen-mode')) return;
+                if (isMobile() || overlay.classList.contains('mp-fullscreen-mode')) return;
                 resizing = true;
                 interacting = true;
                 var rect = modal.getBoundingClientRect();
@@ -1849,12 +1849,12 @@ import {
                 var sidebarStartX = 0, sidebarStartWidth = 0;
 
                 sidebarHandle.addEventListener('mousedown', function (e) {
-                    if (isMobile() || overlay.classList.contains('mp3-compact')) return;
+                    if (isMobile() || overlay.classList.contains('mp-compact')) return;
                     resizingSidebar = true;
                     interacting = true;
                     sidebarStartX = e.clientX;
                     sidebarStartWidth = sidebar.getBoundingClientRect().width;
-                    sidebarHandle.classList.add('mp3-resizing');
+                    sidebarHandle.classList.add('mp-resizing');
                     e.preventDefault();
                 });
 
@@ -1868,16 +1868,16 @@ import {
                 document.addEventListener('mouseup', function () {
                     if (!resizingSidebar) return;
                     resizingSidebar = false;
-                    sidebarHandle.classList.remove('mp3-resizing');
-                    localStorage.setItem('mp3_sidebar_width', String(Math.round(sidebar.getBoundingClientRect().width)));
+                    sidebarHandle.classList.remove('mp-resizing');
+                    localStorage.setItem('mp_sidebar_width', String(Math.round(sidebar.getBoundingClientRect().width)));
                     setTimeout(function () { interacting = false; }, 0);
                 });
 
                 // Doppelklick auf den Handle setzt die Breite zurueck
                 sidebarHandle.addEventListener('dblclick', function () {
-                    if (isMobile() || overlay.classList.contains('mp3-compact')) return;
+                    if (isMobile() || overlay.classList.contains('mp-compact')) return;
                     sidebar.style.width = '';
-                    localStorage.removeItem('mp3_sidebar_width');
+                    localStorage.removeItem('mp_sidebar_width');
                 });
             }
 
@@ -1890,12 +1890,12 @@ import {
                 var detailStartX = 0, detailStartWidth = 0;
 
                 detailHandle.addEventListener('mousedown', function (e) {
-                    if (isMobile() || overlay.classList.contains('mp3-compact')) return;
+                    if (isMobile() || overlay.classList.contains('mp-compact')) return;
                     resizingDetail = true;
                     interacting = true;
                     detailStartX = e.clientX;
                     detailStartWidth = detailPanel.getBoundingClientRect().width;
-                    detailHandle.classList.add('mp3-resizing');
+                    detailHandle.classList.add('mp-resizing');
                     e.preventDefault();
                 });
 
@@ -1909,16 +1909,16 @@ import {
                 document.addEventListener('mouseup', function () {
                     if (!resizingDetail) return;
                     resizingDetail = false;
-                    detailHandle.classList.remove('mp3-resizing');
-                    localStorage.setItem('mp3_detail_width', String(Math.round(detailPanel.getBoundingClientRect().width)));
+                    detailHandle.classList.remove('mp-resizing');
+                    localStorage.setItem('mp_detail_width', String(Math.round(detailPanel.getBoundingClientRect().width)));
                     setTimeout(function () { interacting = false; }, 0);
                 });
 
                 // Doppelklick auf den Handle setzt die Breite zurueck
                 detailHandle.addEventListener('dblclick', function () {
-                    if (isMobile() || overlay.classList.contains('mp3-compact')) return;
+                    if (isMobile() || overlay.classList.contains('mp-compact')) return;
                     detailPanel.style.width = '';
-                    localStorage.removeItem('mp3_detail_width');
+                    localStorage.removeItem('mp_detail_width');
                 });
             }
 
@@ -1963,7 +1963,7 @@ import {
             // Double-click header to reset size/position
             header.addEventListener('dblclick', function (e) {
                 if (isMobile()) return;
-                if (e.target.closest('.mp3-close')) return;
+                if (e.target.closest('.mp-close')) return;
                 modal.style.position = '';
                 modal.style.left = '';
                 modal.style.top = '';
@@ -1978,7 +1978,7 @@ import {
         // ---- Events ----
 
         // Close button
-        qs('.mp3-close', overlay).addEventListener('click', close);
+        qs('.mp-close', overlay).addEventListener('click', close);
 
         // Dark Mode Toggle
         // setDarkMode is defined globally and called from button click handlers
@@ -1987,11 +1987,11 @@ import {
         // Medienpool-Unterseiten (Synchronisation, ggf. von Drittaddons wie
         // mediatools/ffmpeg eingeklinkte Seiten) + eigene Einstellungsseite ----
         (function initAdminMenu() {
-            var wrap = qs('.mp3-admin-menu-wrap', overlay);
-            var btn = qs('.mp3-admin-menu-btn', overlay);
-            var menu = qs('#mp3-admin-menu', overlay);
-            var linksEl = qs('#mp3-admin-menu-links', overlay);
-            var darkToggleBtn = qs('.mp3-admin-menu-darkmode-toggle', overlay);
+            var wrap = qs('.mp-admin-menu-wrap', overlay);
+            var btn = qs('.mp-admin-menu-btn', overlay);
+            var menu = qs('#mp-admin-menu', overlay);
+            var linksEl = qs('#mp-admin-menu-links', overlay);
+            var darkToggleBtn = qs('.mp-admin-menu-darkmode-toggle', overlay);
             if (!wrap || !btn || !menu) return;
 
             if (darkToggleBtn) {
@@ -2000,7 +2000,7 @@ import {
                 });
             }
 
-            var root = document.getElementById('mp3-root');
+            var root = document.getElementById('mp-root');
             var subpages = [];
             try {
                 subpages = root && root.dataset.subpages ? JSON.parse(root.dataset.subpages) : [];
@@ -2015,9 +2015,9 @@ import {
             }
 
             // Bereits VOR diesem build() registrierte Eintraege (siehe
-            // MP3.registerAdminMenuItem()) nachtragen -- deren eigener
+            // MP.registerAdminMenuItem()) nachtragen -- deren eigener
             // renderAdminMenuExtensions()-Aufruf zur Registrierungszeit lief
-            // ins Leere, da #mp3-admin-menu-extensions damals noch nicht existierte.
+            // ins Leere, da #mp-admin-menu-extensions damals noch nicht existierte.
             renderAdminMenuExtensions();
 
             // Klassische Seiten in einem Popup-Fenster oeffnen (wie der alte Medienpool
@@ -2025,17 +2025,17 @@ import {
             // Der Einstellungen-Eintrag (data-popup="0", echte MediaPlace-Seite statt
             // klassisches Popup-Formular) navigiert stattdessen ganz normal.
             menu.addEventListener('click', function (e) {
-                var extBtn = e.target.closest('.mp3-admin-menu-ext-btn');
+                var extBtn = e.target.closest('.mp-admin-menu-ext-btn');
                 if (extBtn) {
                     var id = extBtn.getAttribute('data-admin-menu-ext');
                     var item = adminMenuItems[id];
-                    wrap.classList.remove('mp3-admin-menu-open');
+                    wrap.classList.remove('mp-admin-menu-open');
                     if (item && typeof item.onClick === 'function') item.onClick();
                     return;
                 }
 
-                if (e.target.closest('.mp3-admin-menu-ai-alt-bulk-btn')) {
-                    wrap.classList.remove('mp3-admin-menu-open');
+                if (e.target.closest('.mp-admin-menu-ai-alt-bulk-btn')) {
+                    wrap.classList.remove('mp-admin-menu-open');
                     openBulkPanel();
                     return;
                 }
@@ -2050,7 +2050,7 @@ import {
                 } else {
                     window.open(link.getAttribute('href'), '_blank');
                 }
-                wrap.classList.remove('mp3-admin-menu-open');
+                wrap.classList.remove('mp-admin-menu-open');
             });
 
             // position:fixed + am Viewport geklemmte left/top statt reinem CSS
@@ -2072,7 +2072,7 @@ import {
             // sollen sich hier zeitnah widerspiegeln, nicht erst nach einem
             // kompletten Overlay-Neuaufbau. Kosten sind gering (eine einzelne
             // SQL-SUM-Aggregation, siehe Api\StorageUsage.php).
-            var storageEl = qs('.mp3-admin-menu-storage-text', overlay);
+            var storageEl = qs('.mp-admin-menu-storage-text', overlay);
             function refreshStorageUsage() {
                 if (!storageEl) return;
                 storageEl.textContent = t('mediaplace_storage_usage_loading');
@@ -2090,8 +2090,8 @@ import {
 
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                var willOpen = !wrap.classList.contains('mp3-admin-menu-open');
-                wrap.classList.toggle('mp3-admin-menu-open', willOpen);
+                var willOpen = !wrap.classList.contains('mp-admin-menu-open');
+                wrap.classList.toggle('mp-admin-menu-open', willOpen);
                 if (willOpen) {
                     positionAdminMenu();
                     refreshStorageUsage();
@@ -2099,16 +2099,16 @@ import {
             });
 
             document.addEventListener('click', function (e) {
-                if (!wrap.classList.contains('mp3-admin-menu-open')) return;
-                if (e.target.closest('.mp3-admin-menu-wrap')) return;
-                wrap.classList.remove('mp3-admin-menu-open');
+                if (!wrap.classList.contains('mp-admin-menu-open')) return;
+                if (e.target.closest('.mp-admin-menu-wrap')) return;
+                wrap.classList.remove('mp-admin-menu-open');
             });
         })();
 
         // Kategorie-Aktionsmenue schliessen bei Klicks ausserhalb des Overlays
         // (Klicks innerhalb erledigt der delegierte overlay-Handler oben bereits).
         document.addEventListener('click', function (e) {
-            if (e.target.closest('#mp3-overlay')) return;
+            if (e.target.closest('#mp-overlay')) return;
             closeCatMenu();
         });
 
@@ -2123,12 +2123,12 @@ import {
         // null/undefined, self.close() wuerde entweder nichts tun oder vom
         // Browser blockiert). Stattdessen die Ziel-URL selbst aus dem href
         // extrahieren, MediaPlace schliessen und im aktuellen Fenster dorthin
-        // navigieren -- gescoped auf .mp3-cat-move-modal-overlay (gemeinsame
+        // navigieren -- gescoped auf .mp-cat-move-modal-overlay (gemeinsame
         // Basisklasse von showAlertModal()/showConfirmModal()/
         // showBulkProgressModal()), nicht global, um kein unabhaengiges
         // openPage()-Vorkommen anderswo auf der Seite zu beeinflussen.
         document.addEventListener('click', function (e) {
-            var link = e.target.closest('.mp3-cat-move-modal-overlay a[href^="javascript:openPage("]');
+            var link = e.target.closest('.mp-cat-move-modal-overlay a[href^="javascript:openPage("]');
             if (!link) return;
             var match = /^javascript:openPage\('([^']*)'\)$/.exec(link.getAttribute('href') || '');
             if (!match) return;
@@ -2145,7 +2145,7 @@ import {
 
         // ESC to close
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && overlay.classList.contains('mp3-open')) {
+            if (e.key === 'Escape' && overlay.classList.contains('mp-open')) {
                 if (isLightboxOpen()) {
                     closeLightbox();
                     return;
@@ -2175,7 +2175,7 @@ import {
                 return;
             }
 
-            if ((e.key === 'f' || e.key === 'F') && overlay.classList.contains('mp3-open')) {
+            if ((e.key === 'f' || e.key === 'F') && overlay.classList.contains('mp-open')) {
                 var active = document.activeElement;
                 var isEditable = active && (
                     active.tagName === 'INPUT' ||
@@ -2189,22 +2189,22 @@ import {
                 }
                 e.preventDefault();
                 setFullscreenMode(!isFullscreenMode());
-                localStorage.setItem('mp3_fullscreen', isFullscreenMode() ? '1' : '0');
+                localStorage.setItem('mp_fullscreen', isFullscreenMode() ? '1' : '0');
             }
 
         });
 
         // Add category button (event delegation). Auf overlay statt sidebar,
-        // weil das Kategorie-Aktionsmenue als Portal (#mp3-cat-menu-portal)
+        // weil das Kategorie-Aktionsmenue als Portal (#mp-cat-menu-portal)
         // ausserhalb der Sidebar haengt (siehe openCatMenu()) und seine
         // Buttons sonst nicht ueber Delegation erreichbar waeren.
         overlay.addEventListener('click', function (e) {
             // Kategorie-Aktionsmenue: schliesst bei jedem Klick zunaechst,
             // toggelt bei Klick auf den Kebab-Button erneut auf.
-            var catMenuBtn = e.target.closest('.mp3-cat-menu-btn');
+            var catMenuBtn = e.target.closest('.mp-cat-menu-btn');
             var wasOpenFor = catMenuBtn ? catMenuBtn.getAttribute('data-cat-menu-toggle') : null;
-            var portal = document.getElementById('mp3-cat-menu-portal');
-            var wasOpen = portal && portal.classList.contains('mp3-cat-menu-portal-open') &&
+            var portal = document.getElementById('mp-cat-menu-portal');
+            var wasOpen = portal && portal.classList.contains('mp-cat-menu-portal-open') &&
                 portal.getAttribute('data-open-for') === wasOpenFor;
             closeCatMenu();
             if (catMenuBtn) {
@@ -2224,22 +2224,22 @@ import {
             // eigenen Collapsed-Zustand direkt beim Rendern (renderCategories()/
             // renderCollectionsSection()/updateTagFilterOptions()), hier wird nur
             // der Klick behandelt.
-            var sectionToggle = e.target.closest('.mp3-sidebar-section-toggle');
+            var sectionToggle = e.target.closest('.mp-sidebar-section-toggle');
             if (sectionToggle) {
                 e.preventDefault();
                 e.stopPropagation();
                 var sectionKey = sectionToggle.getAttribute('data-section') || '';
-                var sectionEl = sectionToggle.closest('.mp3-sidebar-section');
+                var sectionEl = sectionToggle.closest('.mp-sidebar-section');
                 if (!sectionKey || !sectionEl) return;
-                var nowCollapsed = !sectionEl.classList.contains('mp3-sidebar-section-collapsed');
-                sectionEl.classList.toggle('mp3-sidebar-section-collapsed', nowCollapsed);
+                var nowCollapsed = !sectionEl.classList.contains('mp-sidebar-section-collapsed');
+                sectionEl.classList.toggle('mp-sidebar-section-collapsed', nowCollapsed);
                 try {
-                    localStorage.setItem('mp3_sidebar_collapsed_' + sectionKey, nowCollapsed ? '1' : '0');
+                    localStorage.setItem('mp_sidebar_collapsed_' + sectionKey, nowCollapsed ? '1' : '0');
                 } catch (e2) { /* localStorage kann in Private-Mode/Storage-Limits werfen -- Zustand bleibt dann nur fuer diese Session erhalten */ }
                 return;
             }
 
-            var collectionAddBtn = e.target.closest('.mp3-collection-add-btn');
+            var collectionAddBtn = e.target.closest('.mp-collection-add-btn');
             if (collectionAddBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2282,7 +2282,7 @@ import {
                 return;
             }
 
-            var collectionRenameBtn = e.target.closest('.mp3-collection-rename-btn');
+            var collectionRenameBtn = e.target.closest('.mp-collection-rename-btn');
             if (collectionRenameBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2336,7 +2336,7 @@ import {
                 return;
             }
 
-            var collectionDeleteBtn = e.target.closest('.mp3-collection-delete-btn');
+            var collectionDeleteBtn = e.target.closest('.mp-collection-delete-btn');
             if (collectionDeleteBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2372,7 +2372,7 @@ import {
                 return;
             }
 
-            var addBtn = e.target.closest('.mp3-cat-add-btn');
+            var addBtn = e.target.closest('.mp-cat-add-btn');
             if (addBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2381,7 +2381,7 @@ import {
                 return;
             }
 
-            var renameBtn = e.target.closest('.mp3-cat-rename-btn');
+            var renameBtn = e.target.closest('.mp-cat-rename-btn');
             if (renameBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2391,7 +2391,7 @@ import {
                 return;
             }
 
-            var moveBtn = e.target.closest('.mp3-cat-move-btn');
+            var moveBtn = e.target.closest('.mp-cat-move-btn');
             if (moveBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2402,7 +2402,7 @@ import {
                 return;
             }
 
-            var deleteBtn = e.target.closest('.mp3-cat-delete-btn');
+            var deleteBtn = e.target.closest('.mp-cat-delete-btn');
             if (deleteBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2435,7 +2435,7 @@ import {
                 return;
             }
 
-            var bulkMoveBtn = e.target.closest('.mp3-cat-bulk-move-btn');
+            var bulkMoveBtn = e.target.closest('.mp-cat-bulk-move-btn');
             if (bulkMoveBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2446,7 +2446,7 @@ import {
                 return;
             }
 
-            var bulkCollectionBtn = e.target.closest('.mp3-cat-bulk-collection-btn');
+            var bulkCollectionBtn = e.target.closest('.mp-cat-bulk-collection-btn');
             if (bulkCollectionBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2457,7 +2457,7 @@ import {
                 return;
             }
 
-            var bulkTagBtn = e.target.closest('.mp3-cat-bulk-tag-btn');
+            var bulkTagBtn = e.target.closest('.mp-cat-bulk-tag-btn');
             if (bulkTagBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2468,7 +2468,7 @@ import {
                 return;
             }
 
-            var bulkDeleteBtn = e.target.closest('.mp3-cat-bulk-delete-btn');
+            var bulkDeleteBtn = e.target.closest('.mp-cat-bulk-delete-btn');
             if (bulkDeleteBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2479,7 +2479,7 @@ import {
                 return;
             }
 
-            var copyIdBtn = e.target.closest('.mp3-cat-menu-info-copy');
+            var copyIdBtn = e.target.closest('.mp-cat-menu-info-copy');
             if (copyIdBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2495,7 +2495,7 @@ import {
 
         // Category input confirm/cancel (event delegation)
         sidebar.addEventListener('keydown', function (e) {
-            var input = e.target.closest('.mp3-cat-new-input');
+            var input = e.target.closest('.mp-cat-new-input');
             if (!input) return;
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -2503,36 +2503,36 @@ import {
             }
             if (e.key === 'Escape') {
                 e.preventDefault();
-                var wrap = qs('.mp3-cat-new-wrap', sidebar);
+                var wrap = qs('.mp-cat-new-wrap', sidebar);
                 if (wrap) wrap.remove();
             }
         });
 
         sidebar.addEventListener('click', function (e) {
-            var confirmBtn = e.target.closest('.mp3-cat-new-confirm');
+            var confirmBtn = e.target.closest('.mp-cat-new-confirm');
             if (confirmBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                var input = qs('.mp3-cat-new-input', confirmBtn.closest('.mp3-cat-new-wrap'));
+                var input = qs('.mp-cat-new-input', confirmBtn.closest('.mp-cat-new-wrap'));
                 if (input) submitNewCategory(input);
                 return;
             }
-            var cancelBtn = e.target.closest('.mp3-cat-new-cancel');
+            var cancelBtn = e.target.closest('.mp-cat-new-cancel');
             if (cancelBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                var wrap = cancelBtn.closest('.mp3-cat-new-wrap');
+                var wrap = cancelBtn.closest('.mp-cat-new-wrap');
                 if (wrap) wrap.remove();
             }
         });
 
         sidebar.addEventListener('focusout', function (e) {
-            var input = e.target.closest('.mp3-cat-new-input');
+            var input = e.target.closest('.mp-cat-new-input');
             if (!input || input.disabled) return;
             // Small delay to allow Enter to fire first
             setTimeout(function () {
                 if (document.activeElement !== input) {
-                    var wrap = qs('.mp3-cat-new-wrap', sidebar);
+                    var wrap = qs('.mp-cat-new-wrap', sidebar);
                     if (wrap) wrap.remove();
                 }
             }, 150);
@@ -2540,12 +2540,12 @@ import {
 
         // Category search (event delegation)
         sidebar.addEventListener('input', function (e) {
-            if (!e.target.closest('.mp3-cat-search-input')) return;
+            if (!e.target.closest('.mp-cat-search-input')) return;
             applyCategorySearchFilter();
         });
 
         sidebar.addEventListener('keydown', function (e) {
-            var searchInput = e.target.closest('.mp3-cat-search-input');
+            var searchInput = e.target.closest('.mp-cat-search-input');
             if (!searchInput) return;
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -2559,7 +2559,7 @@ import {
         sidebar.addEventListener('click', function (e) {
             e.preventDefault();
 
-            var providerRoot = e.target.closest('.mp3-provider-root');
+            var providerRoot = e.target.closest('.mp-provider-root');
             if (providerRoot) {
                 e.stopPropagation();
                 var clickedProviderId = providerRoot.getAttribute('data-provider-id') || '';
@@ -2569,7 +2569,7 @@ import {
                 return;
             }
 
-            var altMissingNav = e.target.closest('.mp3-alt-missing-nav');
+            var altMissingNav = e.target.closest('.mp-alt-missing-nav');
             if (altMissingNav) {
                 e.stopPropagation();
                 closeProviderMode();
@@ -2588,7 +2588,7 @@ import {
                     setActiveCollection(null);
                 }
                 currentCat = altMissingActive ? -1 : 0;
-                localStorage.setItem('mp3_cat', String(currentCat));
+                localStorage.setItem('mp_cat', String(currentCat));
                 buildBreadcrumb(currentCat);
                 refreshCollectionsSection();
                 updateSidebarActiveState();
@@ -2596,7 +2596,7 @@ import {
                 return;
             }
 
-            var collection = e.target.closest('.mp3-collection');
+            var collection = e.target.closest('.mp-collection');
             if (collection) {
                 e.stopPropagation();
                 closeProviderMode();
@@ -2615,7 +2615,7 @@ import {
                 }
                 // Reset category to -1 (show all) when entering collection mode
                 currentCat = getActiveCollectionId() ? -1 : 0;
-                localStorage.setItem('mp3_cat', String(currentCat));
+                localStorage.setItem('mp_cat', String(currentCat));
                 buildBreadcrumb(currentCat);
                 refreshCollectionsSection();
                 updateSidebarActiveState();
@@ -2624,7 +2624,7 @@ import {
             }
 
             // Toggle arrow click: expand/collapse subcategories
-            var toggleIcon = e.target.closest('.mp3-cat-toggle');
+            var toggleIcon = e.target.closest('.mp-cat-toggle');
             if (toggleIcon) {
                 e.stopPropagation();
                 var toggleId = parseInt(toggleIcon.getAttribute('data-toggle-cat'), 10);
@@ -2633,11 +2633,11 @@ import {
             }
 
             // Category name click: navigate to that category (exit collection mode)
-            var cat = e.target.closest('.mp3-cat');
-            // mp3-cat-disabled (z.B. "Medienpool" ohne hasCategoryPerm(0)) ist
+            var cat = e.target.closest('.mp-cat');
+            // mp-cat-disabled (z.B. "Medienpool" ohne hasCategoryPerm(0)) ist
             // ein <span> ohne data-cat -- ohne diese Pruefung wuerde catId
             // unten zu NaN werden und currentCat kaputt setzen.
-            if (!cat || cat.classList.contains('mp3-cat-disabled') || !cat.hasAttribute('data-cat')) return;
+            if (!cat || cat.classList.contains('mp-cat-disabled') || !cat.hasAttribute('data-cat')) return;
             closeProviderMode();
             if (replaceTargetFilename) { // siehe Kommentar oben (altMissingNav)
                 replaceTargetFilename = null;
@@ -2645,28 +2645,28 @@ import {
             }
             var catId = parseInt(cat.getAttribute('data-cat'), 10);
             currentCat = catId;
-            localStorage.setItem('mp3_cat', catId);
+            localStorage.setItem('mp_cat', catId);
             // Exit collection/alt-missing mode when clicking a category
             setActiveCollection(null);
             altMissingActive = false;
 
             // Mark active in sidebar
-            qsa('.mp3-cat', sidebar).forEach(function (c) {
-                c.classList.remove('mp3-cat-active');
+            qsa('.mp-cat', sidebar).forEach(function (c) {
+                c.classList.remove('mp-cat-active');
             });
-            cat.classList.add('mp3-cat-active');
+            cat.classList.add('mp-cat-active');
 
             // Auto-expand if has children and not yet open. hasChildren/open
             // leben nicht mehr in catCache (der Baum kommt komplett vom
             // Server, siehe loadCategories()) -- stattdessen am DOM ablesen:
             // ein Chevron-Icon bedeutet Kinder vorhanden.
-            var catNode = catId > 0 ? qs('.mp3-cat-node[data-cat-id="' + catId + '"]', sidebar) : null;
-            // ":scope > .mp3-cat-row" statt qs() ueber alle Nachfahren, sonst
+            var catNode = catId > 0 ? qs('.mp-cat-node[data-cat-id="' + catId + '"]', sidebar) : null;
+            // ":scope > .mp-cat-row" statt qs() ueber alle Nachfahren, sonst
             // wuerde ein Chevron eines (versteckten) Enkel-Knotens faelschlich
-            // mitgezaehlt -- .mp3-cat-children liegt als Geschwister neben,
-            // nicht innerhalb von .mp3-cat-row.
-            var hasOwnToggle = catNode && catNode.querySelector(':scope > .mp3-cat-row .mp3-cat-toggle');
-            if (catNode && hasOwnToggle && !catNode.classList.contains('mp3-cat-node-open')) {
+            // mitgezaehlt -- .mp-cat-children liegt als Geschwister neben,
+            // nicht innerhalb von .mp-cat-row.
+            var hasOwnToggle = catNode && catNode.querySelector(':scope > .mp-cat-row .mp-cat-toggle');
+            if (catNode && hasOwnToggle && !catNode.classList.contains('mp-cat-node-open')) {
                 toggleCategory(catId);
             }
 
@@ -2679,51 +2679,51 @@ import {
         function getDraggedFilenames(dt) {
             var filenames = [];
             if (!dt) return filenames;
-            var multi = String(dt.getData('text/mp3-filenames') || '').trim();
+            var multi = String(dt.getData('text/mp-filenames') || '').trim();
             if (multi) {
                 filenames = multi.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
             } else {
-                var single = String(dt.getData('text/mp3-filename') || dt.getData('text/plain') || '').trim();
+                var single = String(dt.getData('text/mp-filename') || dt.getData('text/plain') || '').trim();
                 if (single) filenames = [single];
             }
             return filenames;
         }
 
         sidebar.addEventListener('dragover', function (e) {
-            var collectionRow = e.target.closest('.mp3-collection-row');
+            var collectionRow = e.target.closest('.mp-collection-row');
             if (collectionRow) {
                 e.preventDefault();
-                collectionRow.classList.add('mp3-collection-drop-target');
+                collectionRow.classList.add('mp-collection-drop-target');
                 return;
             }
-            var catRow = e.target.closest('.mp3-cat');
-            if (catRow && !catRow.classList.contains('mp3-cat-disabled')) {
+            var catRow = e.target.closest('.mp-cat');
+            if (catRow && !catRow.classList.contains('mp-cat-disabled')) {
                 e.preventDefault();
-                catRow.classList.add('mp3-cat-drop-target');
+                catRow.classList.add('mp-cat-drop-target');
             }
         });
 
         sidebar.addEventListener('dragleave', function (e) {
-            var collectionRow = e.target.closest('.mp3-collection-row');
+            var collectionRow = e.target.closest('.mp-collection-row');
             if (collectionRow) {
                 if (collectionRow.contains(e.relatedTarget)) return;
-                collectionRow.classList.remove('mp3-collection-drop-target');
+                collectionRow.classList.remove('mp-collection-drop-target');
                 return;
             }
-            var catRow = e.target.closest('.mp3-cat');
+            var catRow = e.target.closest('.mp-cat');
             if (catRow) {
                 if (catRow.contains(e.relatedTarget)) return;
-                catRow.classList.remove('mp3-cat-drop-target');
+                catRow.classList.remove('mp-cat-drop-target');
             }
         });
 
         sidebar.addEventListener('drop', function (e) {
-            var collectionRow = e.target.closest('.mp3-collection-row');
+            var collectionRow = e.target.closest('.mp-collection-row');
             if (collectionRow) {
                 e.preventDefault();
-                collectionRow.classList.remove('mp3-collection-drop-target');
+                collectionRow.classList.remove('mp-collection-drop-target');
 
-                var collection = collectionRow.querySelector('.mp3-collection[data-collection-id]');
+                var collection = collectionRow.querySelector('.mp-collection[data-collection-id]');
                 if (!collection) return;
                 var collectionId = String(collection.getAttribute('data-collection-id') || '');
                 if (!collectionId) return;
@@ -2756,12 +2756,12 @@ import {
             }
 
             // Medien per Drag&Drop einer anderen Kategorie zuordnen
-            var catRow = e.target.closest('.mp3-cat');
-            // mp3-cat-disabled hat kein data-cat -- ohne diese Pruefung wuerde
+            var catRow = e.target.closest('.mp-cat');
+            // mp-cat-disabled hat kein data-cat -- ohne diese Pruefung wuerde
             // "|| 0" unten das Ziel faelschlich auf Kategorie 0 setzen.
-            if (catRow && !catRow.classList.contains('mp3-cat-disabled') && catRow.hasAttribute('data-cat')) {
+            if (catRow && !catRow.classList.contains('mp-cat-disabled') && catRow.hasAttribute('data-cat')) {
                 e.preventDefault();
-                catRow.classList.remove('mp3-cat-drop-target');
+                catRow.classList.remove('mp-cat-drop-target');
 
                 var targetCatId = parseInt(catRow.getAttribute('data-cat'), 10) || 0;
                 var catFilenames = getDraggedFilenames(e.dataTransfer);
@@ -2786,7 +2786,7 @@ import {
 
         // Breadcrumb clicks (event delegation)
         breadcrumb.addEventListener('click', function (e) {
-            var item = e.target.closest('.mp3-bc-item');
+            var item = e.target.closest('.mp-bc-item');
             if (!item) return;
 
             if (item.hasAttribute('data-provider-crumb')) {
@@ -2795,13 +2795,13 @@ import {
                 return;
             }
 
-            // mp3-bc-item-disabled (Medienpool-Wurzel ohne hasCategoryPerm(0))
+            // mp-bc-item-disabled (Medienpool-Wurzel ohne hasCategoryPerm(0))
             // ist ein <span> ohne data-cat -- siehe Kategorie-Klick-Handler oben.
-            if (item.classList.contains('mp3-bc-item-disabled') || !item.hasAttribute('data-cat')) return;
+            if (item.classList.contains('mp-bc-item-disabled') || !item.hasAttribute('data-cat')) return;
             e.preventDefault();
             var catId = parseInt(item.getAttribute('data-cat'), 10);
             currentCat = catId;
-            localStorage.setItem('mp3_cat', catId);
+            localStorage.setItem('mp_cat', catId);
             buildBreadcrumb(catId);
             updateSidebarActiveState();
             loadFiles(catId, true);
@@ -2814,7 +2814,7 @@ import {
             // Metainfo-Medien-Picker, ...) geht von lokalen rex_media-Dateien
             // aus und darf fuer Provider-Kacheln nicht greifen.
             if (isProviderMode()) {
-                var providerCard = e.target.closest('.mp3-provider-card');
+                var providerCard = e.target.closest('.mp-provider-card');
                 if (!providerCard) return;
                 var entryPath = providerCard.getAttribute('data-provider-path') || '';
                 var entryType = providerCard.getAttribute('data-provider-type') || 'file';
@@ -2822,7 +2822,7 @@ import {
                     openProviderFolder(entryPath, providerCard.getAttribute('data-provider-name') || '');
                 } else if (getProviderSelectMode()) {
                     // Massen-Import-Auswahl aktiv (Toolbar-Button, siehe
-                    // .mp3-select-mode-toggle): normaler Klick toggelt die
+                    // .mp-select-mode-toggle): normaler Klick toggelt die
                     // Auswahl, statt das Mini-Detail zu oeffnen -- gleiches
                     // Prinzip wie batchSelectMode fuer lokale Dateien.
                     toggleProviderSelected(entryPath);
@@ -2832,7 +2832,7 @@ import {
                 return;
             }
 
-            var card = e.target.closest('.mp3-card') || e.target.closest('.mp3-list-row') || e.target.closest('.mp3-masonry-card');
+            var card = e.target.closest('.mp-card') || e.target.closest('.mp-list-row') || e.target.closest('.mp-masonry-card');
             if (!card) return;
             var filename = card.getAttribute('data-filename');
             if (!filename) return;
@@ -2846,7 +2846,7 @@ import {
                 var targetInput = detailPanel.querySelector('[data-json-field="' + mediaLinkPickFieldKey + '"]');
                 if (targetInput) {
                     targetInput.value = filename;
-                    repaintMediaLinkWidget(targetInput.closest('.mp3-media-link-widget'));
+                    repaintMediaLinkWidget(targetInput.closest('.mp-media-link-widget'));
                     setMediaLinkPickMode(null);
                     updateDetailSaveState();
                     return;
@@ -2874,7 +2874,7 @@ import {
             }
 
             // Normal mode: Cmd/Ctrl+click toggles batch selection (Sammlungs-
-            // Drag und/oder Mehrfach-Loeschen, siehe mp3-batch-footer) -- bewusst
+            // Drag und/oder Mehrfach-Loeschen, siehe mp-batch-footer) -- bewusst
             // NICHT mehr an features.collections gekoppelt: Mehrfach-Loeschen
             // soll auch funktionieren, wenn Sammlungen deaktiviert sind.
             if (e.metaKey || e.ctrlKey) {
@@ -2886,7 +2886,7 @@ import {
         });
 
         grid.addEventListener('dragstart', function (e) {
-            var item = e.target.closest('.mp3-card') || e.target.closest('.mp3-list-row') || e.target.closest('.mp3-masonry-card');
+            var item = e.target.closest('.mp-card') || e.target.closest('.mp-list-row') || e.target.closest('.mp-masonry-card');
             if (!item) return;
             var filename = String(item.getAttribute('data-filename') || '');
             if (!filename || !e.dataTransfer) return;
@@ -2895,8 +2895,8 @@ import {
             var dragFiles = (Object.keys(selectedMap).length > 0 && selectedMap[filename])
                 ? Object.keys(selectedMap)
                 : [filename];
-            e.dataTransfer.setData('text/mp3-filenames', dragFiles.join(','));
-            e.dataTransfer.setData('text/mp3-filename', filename);
+            e.dataTransfer.setData('text/mp-filenames', dragFiles.join(','));
+            e.dataTransfer.setData('text/mp-filename', filename);
             e.dataTransfer.setData('text/plain', filename);
             e.dataTransfer.effectAllowed = 'copy';
 
@@ -2925,44 +2925,44 @@ import {
             e.dataTransfer.setDragImage(ghost, 32, 32);
             setTimeout(function () { ghost.remove(); }, 0);
 
-            item.classList.add('mp3-card-dragging');
+            item.classList.add('mp-card-dragging');
         });
 
         grid.addEventListener('dragend', function (e) {
-            var item = e.target.closest('.mp3-card') || e.target.closest('.mp3-list-row') || e.target.closest('.mp3-masonry-card');
-            if (item) item.classList.remove('mp3-card-dragging');
+            var item = e.target.closest('.mp-card') || e.target.closest('.mp-list-row') || e.target.closest('.mp-masonry-card');
+            if (item) item.classList.remove('mp-card-dragging');
         });
 
         // Detail panel events (event delegation)
         overlay.addEventListener('click', function (e) {
-            // Ersetzen-Dropdown von aussen schliessen (siehe .mp3-detail-replace-trigger/
+            // Ersetzen-Dropdown von aussen schliessen (siehe .mp-detail-replace-trigger/
             // -cloud-item weiter unten) -- als erstes im Handler, damit jeder
             // andere Klick innerhalb des Overlays ein offenes Menue zuverlaessig
             // schliesst, ohne die restliche Klick-Verarbeitung zu unterbrechen
             // (kein return hier).
-            var openReplaceWrap = qs('.mp3-detail-replace-wrap.mp3-detail-replace-open', overlay);
-            if (openReplaceWrap && !e.target.closest('.mp3-detail-replace-wrap')) {
-                openReplaceWrap.classList.remove('mp3-detail-replace-open');
+            var openReplaceWrap = qs('.mp-detail-replace-wrap.mp-detail-replace-open', overlay);
+            if (openReplaceWrap && !e.target.closest('.mp-detail-replace-wrap')) {
+                openReplaceWrap.classList.remove('mp-detail-replace-open');
             }
 
-            var fsBtn = e.target.closest('.mp3-fullscreen-toggle');
+            var fsBtn = e.target.closest('.mp-fullscreen-toggle');
             if (fsBtn) {
                 setFullscreenMode(!isFullscreenMode());
-                localStorage.setItem('mp3_fullscreen', isFullscreenMode() ? '1' : '0');
+                localStorage.setItem('mp_fullscreen', isFullscreenMode() ? '1' : '0');
                 return;
             }
 
-            // Sitzt im Header neben dem Zahnrad, nicht mehr in .mp3-filter-bar
+            // Sitzt im Header neben dem Zahnrad, nicht mehr in .mp-filter-bar
             // (siehe dortiger Markup-Kommentar) -- deshalb hier statt im
             // filterBar-Click-Handler oben behandelt.
-            var filterResetBtn = e.target.closest('.mp3-filter-reset-btn');
+            var filterResetBtn = e.target.closest('.mp-filter-reset-btn');
             if (filterResetBtn) {
                 clearAllFilters();
                 loadFiles(currentCat, true);
                 return;
             }
 
-            var selModeBtn = e.target.closest('.mp3-select-mode-toggle');
+            var selModeBtn = e.target.closest('.mp-select-mode-toggle');
             if (selModeBtn) {
                 if (isProviderMode()) {
                     toggleProviderSelectMode();
@@ -2972,7 +2972,7 @@ import {
                 return;
             }
 
-            var openLbBtn = e.target.closest('.mp3-lightbox-open-btn');
+            var openLbBtn = e.target.closest('.mp-lightbox-open-btn');
             if (openLbBtn) {
                 openLightbox(
                     openLbBtn.getAttribute('data-lightbox-src') || '',
@@ -2981,30 +2981,30 @@ import {
                 return;
             }
 
-            var openFpBtn = e.target.closest('.mp3-focuspoint-edit-btn');
+            var openFpBtn = e.target.closest('.mp-focuspoint-edit-btn');
             if (openFpBtn) {
                 openFocuspointCanvas(openFpBtn.getAttribute('data-focuspoint-file') || '');
                 return;
             }
 
-            var openCropBtn = e.target.closest('.mp3-cropper-edit-btn');
+            var openCropBtn = e.target.closest('.mp-cropper-edit-btn');
             if (openCropBtn) {
                 openCropCanvas(openCropBtn.getAttribute('data-cropper-file') || '');
                 return;
             }
 
-            var optimizeVideoBtn = e.target.closest('.mp3-video-optimize-btn');
+            var optimizeVideoBtn = e.target.closest('.mp-video-optimize-btn');
             if (optimizeVideoBtn) {
                 var optimizeFile = optimizeVideoBtn.getAttribute('data-optimize-video-file') || '';
                 if (optimizeFile) startOptimizeVideo(optimizeFile, optimizeVideoBtn);
                 return;
             }
 
-            // Vor dem allgemeineren .mp3-image-optimize-btn-Check (geteilte
+            // Vor dem allgemeineren .mp-image-optimize-btn-Check (geteilte
             // Button-Optik, siehe showProviderDetail()) -- eigene, spezifischere
             // Klasse zuerst pruefen, sonst wuerde der Klick vom falschen
             // Handler abgefangen (kein data-optimize-image-file vorhanden).
-            var providerImportBtn = e.target.closest('.mp3-provider-import-btn');
+            var providerImportBtn = e.target.closest('.mp-provider-import-btn');
             if (providerImportBtn) {
                 var importPath = providerImportBtn.getAttribute('data-provider-import-path') || '';
                 var importName = providerImportBtn.getAttribute('data-provider-import-name') || '';
@@ -3012,11 +3012,11 @@ import {
                 return;
             }
 
-            // Ersetzen-Modus-Pendant zu .mp3-provider-import-btn oben (siehe
+            // Ersetzen-Modus-Pendant zu .mp-provider-import-btn oben (siehe
             // showProviderDetail()'s dritter Zweig) -- eigene Klasse, damit
             // dieser Zweig hier VOR dem generischen Check greift, ohne dessen
             // Kategorie-Abfrage auszuloesen.
-            var providerReplaceBtn = e.target.closest('.mp3-provider-replace-btn');
+            var providerReplaceBtn = e.target.closest('.mp-provider-replace-btn');
             if (providerReplaceBtn) {
                 var replacePath = providerReplaceBtn.getAttribute('data-provider-replace-path') || '';
                 var replaceName = providerReplaceBtn.getAttribute('data-provider-replace-name') || '';
@@ -3024,37 +3024,37 @@ import {
                 return;
             }
 
-            var optimizeImageBtn = e.target.closest('.mp3-image-optimize-btn');
+            var optimizeImageBtn = e.target.closest('.mp-image-optimize-btn');
             if (optimizeImageBtn) {
                 var optimizeImageFile = optimizeImageBtn.getAttribute('data-optimize-image-file') || '';
                 if (optimizeImageFile) startOptimizeImage(optimizeImageFile, optimizeImageBtn);
                 return;
             }
 
-            var videoDetailsToggle = e.target.closest('.mp3-video-details-toggle');
+            var videoDetailsToggle = e.target.closest('.mp-video-details-toggle');
             if (videoDetailsToggle) {
                 toggleVideoDetails(videoDetailsToggle);
                 return;
             }
 
-            var closeLbBtn = e.target.closest('.mp3-lightbox-close');
+            var closeLbBtn = e.target.closest('.mp-lightbox-close');
             if (closeLbBtn) {
                 closeLightbox();
                 return;
             }
 
-            if (e.target.classList && e.target.classList.contains('mp3-lightbox')) {
+            if (e.target.classList && e.target.classList.contains('mp-lightbox')) {
                 closeLightbox();
                 return;
             }
 
-            var selAllBtn = e.target.closest('.mp3-multi-select-all');
+            var selAllBtn = e.target.closest('.mp-multi-select-all');
             if (selAllBtn) {
                 toggleSelectAll();
                 return;
             }
 
-            var confirmBtn = e.target.closest('.mp3-multi-confirm');
+            var confirmBtn = e.target.closest('.mp-multi-confirm');
             if (confirmBtn) {
                 if (metainfoPickTarget && 'medialist' === metainfoPickTarget.type) {
                     finishMetainfoMedialistPick(Object.keys(multiSelected));
@@ -3065,37 +3065,37 @@ import {
                 return;
             }
 
-            var batchSelectAllBtn = e.target.closest('.mp3-batch-select-all');
+            var batchSelectAllBtn = e.target.closest('.mp-batch-select-all');
             if (batchSelectAllBtn) {
                 toggleCollectionDragSelectAll();
                 return;
             }
 
-            var batchClearBtn = e.target.closest('.mp3-batch-clear-btn');
+            var batchClearBtn = e.target.closest('.mp-batch-clear-btn');
             if (batchClearBtn) {
                 clearCollectionDragSelection();
                 return;
             }
 
-            var providerBatchSelectAllBtn = e.target.closest('.mp3-provider-batch-select-all');
+            var providerBatchSelectAllBtn = e.target.closest('.mp-provider-batch-select-all');
             if (providerBatchSelectAllBtn) {
                 selectAllProviderFilesInFolder();
                 return;
             }
 
-            var providerBatchClearBtn = e.target.closest('.mp3-provider-batch-clear-btn');
+            var providerBatchClearBtn = e.target.closest('.mp-provider-batch-clear-btn');
             if (providerBatchClearBtn) {
                 clearProviderSelection();
                 return;
             }
 
-            var providerBatchImportBtn = e.target.closest('.mp3-provider-batch-import-btn');
+            var providerBatchImportBtn = e.target.closest('.mp-provider-batch-import-btn');
             if (providerBatchImportBtn) {
                 startProviderBulkImport();
                 return;
             }
 
-            var batchMoveBtn = e.target.closest('.mp3-batch-move-btn');
+            var batchMoveBtn = e.target.closest('.mp-batch-move-btn');
             if (batchMoveBtn) {
                 var moveFilenames = Object.keys(collectionDragSelected);
                 if (!moveFilenames.length) return;
@@ -3113,7 +3113,7 @@ import {
                                 // Verschobene Dateien verlassen die aktuelle Ansicht,
                                 // sobald sie nicht mehr in die gerade betrachtete
                                 // Kategorie gehoeren -- gleiches Prinzip wie beim
-                                // Einzel-Verschieben ueber .mp3-move-file-select.
+                                // Einzel-Verschieben ueber .mp-move-file-select.
                                 if (currentCat >= 0 && catId !== currentCat) {
                                     lastLoadedFiles = lastLoadedFiles.filter(function (f) { return moved.indexOf(f.filename) === -1; });
                                 } else {
@@ -3160,7 +3160,7 @@ import {
                 return;
             }
 
-            var batchDeleteBtn = e.target.closest('.mp3-batch-delete-btn');
+            var batchDeleteBtn = e.target.closest('.mp-batch-delete-btn');
             if (batchDeleteBtn) {
                 var batchFilenames = Object.keys(collectionDragSelected);
                 if (!batchFilenames.length) return;
@@ -3231,7 +3231,7 @@ import {
             // aufheben, wie setFileCollectionMembership() es auch fuer eine
             // einzelne Datei im "Sammlungen verwalten"-Dialog macht), loescht
             // die Dateien NICHT aus dem Medienpool.
-            var batchRemoveFromCollectionBtn = e.target.closest('.mp3-batch-remove-from-collection-btn');
+            var batchRemoveFromCollectionBtn = e.target.closest('.mp-batch-remove-from-collection-btn');
             if (batchRemoveFromCollectionBtn) {
                 var removeFromCollectionFilenames = Object.keys(collectionDragSelected);
                 if (!removeFromCollectionFilenames.length) return;
@@ -3270,7 +3270,7 @@ import {
                 return;
             }
 
-            var selectBtn = e.target.closest('.mp3-detail-select-btn');
+            var selectBtn = e.target.closest('.mp-detail-select-btn');
             if (selectBtn) {
                 var fn = selectBtn.getAttribute('data-filename');
                 if (multiMode) {
@@ -3285,7 +3285,7 @@ import {
                 return;
             }
 
-            var deleteBtn = e.target.closest('.mp3-detail-delete-btn');
+            var deleteBtn = e.target.closest('.mp-detail-delete-btn');
             if (deleteBtn) {
                 var delFilename = deleteBtn.getAttribute('data-filename');
                 var inUse = deleteBtn.getAttribute('data-in-use') === '1';
@@ -3331,7 +3331,7 @@ import {
                 return;
             }
 
-            var collectionBtn = e.target.closest('.mp3-detail-collection-btn');
+            var collectionBtn = e.target.closest('.mp-detail-collection-btn');
             if (collectionBtn) {
                 var collectionFilename = collectionBtn.getAttribute('data-filename');
                 if (!collectionFilename) return;
@@ -3339,61 +3339,61 @@ import {
                 return;
             }
 
-            // Ersetzen-Dropdown (.mp3-detail-replace-wrap, siehe
+            // Ersetzen-Dropdown (.mp-detail-replace-wrap, siehe
             // modules/detail.js renderDetail()) -- nur vorhanden, wenn
             // hasProviders() true ist. Trigger oeffnet/schliesst das Menue,
             // der Cloud-Eintrag darin startet den Ersetzen-Modus; der
             // "Vom Geraet"-Eintrag ist das bestehende, unveraendert
-            // funktionierende .mp3-detail-replace-btn-<label> (eigener Zweig
+            // funktionierende .mp-detail-replace-btn-<label> (eigener Zweig
             // weiter oben in dieser Datei, kein neuer Code noetig).
-            var replaceTriggerBtn = e.target.closest('.mp3-detail-replace-trigger');
+            var replaceTriggerBtn = e.target.closest('.mp-detail-replace-trigger');
             if (replaceTriggerBtn) {
-                var replaceWrapEl = replaceTriggerBtn.closest('.mp3-detail-replace-wrap');
-                if (replaceWrapEl) replaceWrapEl.classList.toggle('mp3-detail-replace-open');
+                var replaceWrapEl = replaceTriggerBtn.closest('.mp-detail-replace-wrap');
+                if (replaceWrapEl) replaceWrapEl.classList.toggle('mp-detail-replace-open');
                 return;
             }
 
-            var replaceCloudItem = e.target.closest('.mp3-detail-replace-cloud-item');
+            var replaceCloudItem = e.target.closest('.mp-detail-replace-cloud-item');
             if (replaceCloudItem) {
                 var replaceCloudFilename = replaceCloudItem.getAttribute('data-filename') || '';
-                var replaceCloudWrapEl = replaceCloudItem.closest('.mp3-detail-replace-wrap');
-                if (replaceCloudWrapEl) replaceCloudWrapEl.classList.remove('mp3-detail-replace-open');
+                var replaceCloudWrapEl = replaceCloudItem.closest('.mp-detail-replace-wrap');
+                if (replaceCloudWrapEl) replaceCloudWrapEl.classList.remove('mp-detail-replace-open');
                 if (replaceCloudFilename) startReplaceFromCloud(replaceCloudFilename);
                 return;
             }
 
-            var loadMoreBtn = e.target.closest('.mp3-load-more-btn');
+            var loadMoreBtn = e.target.closest('.mp-load-more-btn');
             if (loadMoreBtn) {
                 loadFiles(currentCat, false);
                 return;
             }
 
-            var closeBtn = e.target.closest('.mp3-detail-close');
+            var closeBtn = e.target.closest('.mp-detail-close');
             if (closeBtn) {
                 hideDetail();
                 return;
             }
 
-            var inlineToggle = e.target.closest('.mp3-edit-display[data-inline-toggle]');
+            var inlineToggle = e.target.closest('.mp-edit-display[data-inline-toggle]');
             if (inlineToggle) {
-                var inlineField = inlineToggle.closest('.mp3-edit-field');
+                var inlineField = inlineToggle.closest('.mp-edit-field');
                 if (inlineField) toggleInlineEdit(inlineField, true);
                 return;
             }
 
-            var saveBtn = e.target.closest('.mp3-detail-save-btn');
+            var saveBtn = e.target.closest('.mp-detail-save-btn');
             if (saveBtn) {
                 saveDetail();
                 return;
             }
 
-            var fieldSaveBtn = e.target.closest('.mp3-field-save-btn');
+            var fieldSaveBtn = e.target.closest('.mp-field-save-btn');
             if (fieldSaveBtn) {
                 saveDetail();
                 return;
             }
 
-            var mediaPickBtn = e.target.closest('.mp3-media-link-picker');
+            var mediaPickBtn = e.target.closest('.mp-media-link-picker');
             if (mediaPickBtn) {
                 var fieldKey = mediaPickBtn.getAttribute('data-field');
                 if (!fieldKey) return;
@@ -3401,13 +3401,13 @@ import {
                 return;
             }
 
-            var mediaClearBtn = e.target.closest('.mp3-media-link-clear');
+            var mediaClearBtn = e.target.closest('.mp-media-link-clear');
             if (mediaClearBtn) {
                 var clearFieldKey = mediaClearBtn.getAttribute('data-field');
                 var clearInput = clearFieldKey ? detailPanel.querySelector('[data-json-field="' + clearFieldKey + '"]') : null;
                 if (clearInput) {
                     clearInput.value = '';
-                    repaintMediaLinkWidget(mediaClearBtn.closest('.mp3-media-link-widget'));
+                    repaintMediaLinkWidget(mediaClearBtn.closest('.mp-media-link-widget'));
                     if (mediaLinkPickFieldKey === clearFieldKey) {
                         setMediaLinkPickMode(null);
                     }
@@ -3416,24 +3416,24 @@ import {
                 return;
             }
 
-            var addTagBtn = e.target.closest('.mp3-tags-add-btn');
+            var addTagBtn = e.target.closest('.mp-tags-add-btn');
             if (addTagBtn) {
-                var wrap = addTagBtn.closest('.mp3-tags-widget');
-                var tagsInput = wrap ? qs('.mp3-tags-input', wrap) : null;
+                var wrap = addTagBtn.closest('.mp-tags-widget');
+                var tagsInput = wrap ? qs('.mp-tags-input', wrap) : null;
                 if (tagsInput) addTagFromWidget(wrap, tagsInput.value);
                 return;
             }
 
-            var comboOption = e.target.closest('.mp3-tags-combo-option, .mp3-tags-combo-create');
+            var comboOption = e.target.closest('.mp-tags-combo-option, .mp-tags-combo-create');
             if (comboOption) {
                 e.preventDefault();
-                addTagFromWidget(comboOption.closest('.mp3-tags-widget'), comboOption.getAttribute('data-tag-name'));
+                addTagFromWidget(comboOption.closest('.mp-tags-widget'), comboOption.getAttribute('data-tag-name'));
                 return;
             }
 
-            var removeTagBtn = e.target.closest('.mp3-tag-remove');
+            var removeTagBtn = e.target.closest('.mp-tag-remove');
             if (removeTagBtn) {
-                var removeWrap = removeTagBtn.closest('.mp3-tags-widget');
+                var removeWrap = removeTagBtn.closest('.mp-tags-widget');
                 var removeHidden = removeWrap ? qs('[data-widget="tags-value"]', removeWrap) : null;
                 var removeTag = removeTagBtn.getAttribute('data-tag');
                 if (!removeHidden || !removeTag) return;
@@ -3446,23 +3446,23 @@ import {
                 });
                 removeHidden.value = JSON.stringify(values);
                 repaintTagsWidget(removeWrap);
-                if (removeWrap.closest('.mp3-json-field[data-field-key="__system_tags"]')) {
+                if (removeWrap.closest('.mp-json-field[data-field-key="__system_tags"]')) {
                     updateTagsComboList(removeWrap);
                 }
                 updateDetailSaveState();
                 return;
             }
 
-            var langToggleBtn = e.target.closest('.mp3-lang-toggle');
+            var langToggleBtn = e.target.closest('.mp-lang-toggle');
             if (langToggleBtn) {
                 var target = langToggleBtn.getAttribute('data-lang-toggle');
-                var langGroup = target ? detailPanel.querySelector('.mp3-lang-group[data-lang-group="' + target + '"]') : null;
-                var extra = langGroup ? qs('.mp3-lang-extra', langGroup) : null;
+                var langGroup = target ? detailPanel.querySelector('.mp-lang-group[data-lang-group="' + target + '"]') : null;
+                var extra = langGroup ? qs('.mp-lang-extra', langGroup) : null;
                 if (!extra) return;
                 var open = extra.style.display !== 'none';
                 if (open) {
                     extra.style.display = 'none';
-                    var restCount = qsa('.mp3-lang-row', extra).length;
+                    var restCount = qsa('.mp-lang-row', extra).length;
                     langToggleBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i> ' + t(restCount > 1 ? 'mediaplace_lang_more_many' : 'mediaplace_lang_more_one', { 0: restCount });
                 } else {
                     extra.style.display = '';
@@ -3473,65 +3473,65 @@ import {
         });
 
         overlay.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && e.target.closest('.mp3-tags-input')) {
+            if (e.key === 'Enter' && e.target.closest('.mp-tags-input')) {
                 e.preventDefault();
-                var tagWrap = e.target.closest('.mp3-tags-widget');
-                var addBtn = tagWrap ? qs('.mp3-tags-add-btn', tagWrap) : null;
+                var tagWrap = e.target.closest('.mp-tags-widget');
+                var addBtn = tagWrap ? qs('.mp-tags-add-btn', tagWrap) : null;
                 if (addBtn) addBtn.click();
                 return;
             }
 
-            if (e.key === 'Escape' && e.target.closest('.mp3-tags-input')) {
+            if (e.key === 'Escape' && e.target.closest('.mp-tags-input')) {
                 // Nur die Combobox schliessen, nicht das ganze Detail-Panel/
                 // Overlay -- stopPropagation() verhindert, dass ein
                 // aeusserer Escape-Handler dasselbe Tastendruck-Event
                 // zusaetzlich als "Overlay schliessen" interpretiert.
                 e.stopPropagation();
-                closeTagsComboList(e.target.closest('.mp3-tags-widget'));
+                closeTagsComboList(e.target.closest('.mp-tags-widget'));
                 return;
             }
 
-            if (e.key === 'Enter' && e.target.closest('.mp3-inline-edit-wrap')) {
+            if (e.key === 'Enter' && e.target.closest('.mp-inline-edit-wrap')) {
                 e.preventDefault();
                 saveDetail();
                 return;
             }
 
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && e.target.closest('#mp3-detail')) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && e.target.closest('#mp-detail')) {
                 e.preventDefault();
                 saveDetail();
                 return;
             }
 
-            if (e.key === 'Escape' && e.target.closest('#mp3-detail')) {
+            if (e.key === 'Escape' && e.target.closest('#mp-detail')) {
                 updateDetailSaveState();
             }
         });
 
         overlay.addEventListener('input', function (e) {
-            if (!e.target.closest('#mp3-detail')) return;
+            if (!e.target.closest('#mp-detail')) return;
 
-            var tagColorInput = e.target.closest('.mp3-tag-color');
+            var tagColorInput = e.target.closest('.mp-tag-color');
             if (tagColorInput) {
                 applyTagColorChange(tagColorInput);
                 return;
             }
 
-            var tagsComboInput = e.target.closest('.mp3-tags-input');
+            var tagsComboInput = e.target.closest('.mp-tags-input');
             if (tagsComboInput) {
-                openTagsComboList(tagsComboInput.closest('.mp3-tags-widget'));
+                openTagsComboList(tagsComboInput.closest('.mp-tags-widget'));
                 return;
             }
 
-            if (!(e.target.matches('#mp3-detail-title-input') || e.target.hasAttribute('data-json-field'))) return;
+            if (!(e.target.matches('#mp-detail-title-input') || e.target.hasAttribute('data-json-field'))) return;
 
             // ALT text input → update hint live
-            var altWrap = e.target.closest('.mp3-alt-wrap');
+            var altWrap = e.target.closest('.mp-alt-wrap');
             if (altWrap) {
                 updateAltHint(altWrap);
             }
 
-            var maybeField = e.target.closest('.mp3-edit-field');
+            var maybeField = e.target.closest('.mp-edit-field');
             if (maybeField) updateInlineDisplay(maybeField);
             updateDetailSaveState();
         });
@@ -3539,19 +3539,19 @@ import {
         // Tag-Combobox oeffnen/schliessen -- 'focus'/'blur' bubblen nicht,
         // deshalb 'focusin'/'focusout' fuer Event-Delegation auf overlay
         // (gleiches Prinzip wie der bestehende 'focusout'-Listener auf
-        // sidebar fuer .mp3-cat-new-input). Kurze Verzoegerung beim Schliessen,
+        // sidebar fuer .mp-cat-new-input). Kurze Verzoegerung beim Schliessen,
         // damit ein Klick auf eine Vorschlagszeile zuerst verarbeitet wird,
         // bevor die Liste verschwindet.
         overlay.addEventListener('focusin', function (e) {
-            var tagsInput = e.target.closest('.mp3-tags-input');
+            var tagsInput = e.target.closest('.mp-tags-input');
             if (!tagsInput) return;
-            openTagsComboList(tagsInput.closest('.mp3-tags-widget'));
+            openTagsComboList(tagsInput.closest('.mp-tags-widget'));
         });
 
         overlay.addEventListener('focusout', function (e) {
-            var tagsInput = e.target.closest('.mp3-tags-input');
+            var tagsInput = e.target.closest('.mp-tags-input');
             if (!tagsInput) return;
-            var tagsWrap = tagsInput.closest('.mp3-tags-widget');
+            var tagsWrap = tagsInput.closest('.mp-tags-widget');
             setTimeout(function () {
                 if (document.activeElement !== tagsInput) {
                     closeTagsComboList(tagsWrap);
@@ -3569,37 +3569,37 @@ import {
         // die nie durch fetch() laufen. error-Events auf <img> bubblen nicht,
         // deshalb Capture-Phase auf dem Overlay-Root. Cache-Buster-Query-Param
         // beim Retry, nicht einfach dieselbe src erneut zuweisen -- manche
-        // Browser wiederholen sonst keinen echten Request. data-mp3-retried
+        // Browser wiederholen sonst keinen echten Request. data-mp-retried
         // verhindert eine Endlosschleife, falls das Bild wirklich dauerhaft
         // fehlt (z.B. echtes 404).
         overlay.addEventListener('error', function (e) {
             var img = e.target;
             if (!img || 'IMG' !== img.tagName || !img.src) return;
             if (-1 === img.src.indexOf('rex_media_type=')) return;
-            if (img.dataset.mp3Retried) return;
-            img.dataset.mp3Retried = '1';
-            var retrySrc = img.src + (-1 === img.src.indexOf('?') ? '?' : '&') + '_mp3retry=' + Date.now();
+            if (img.dataset.mpRetried) return;
+            img.dataset.mpRetried = '1';
+            var retrySrc = img.src + (-1 === img.src.indexOf('?') ? '?' : '&') + '_mpretry=' + Date.now();
             setTimeout(function () {
                 img.src = retrySrc;
             }, 300);
         }, true);
 
         overlay.addEventListener('change', function (e) {
-            var perPageSelect = e.target.closest('.mp3-per-page-select');
+            var perPageSelect = e.target.closest('.mp-per-page-select');
             if (perPageSelect) {
                 var nextPerPage = normalizeMediaPerPage(perPageSelect.value);
                 perPageSelect.value = String(nextPerPage);
 
                 if (nextPerPage !== mediaPerPage) {
                     mediaPerPage = nextPerPage;
-                    localStorage.setItem('mp3_per_page', String(mediaPerPage));
+                    localStorage.setItem('mp_per_page', String(mediaPerPage));
                     loadFiles(currentCat, true);
                 }
                 return;
             }
 
             // Move file to a different category
-            var moveCatSelect = e.target.closest('.mp3-move-file-select');
+            var moveCatSelect = e.target.closest('.mp-move-file-select');
             if (moveCatSelect && selectedFile) {
                 var newCatId = parseInt(moveCatSelect.value || '0', 10);
                 var prevValue = moveCatSelect.getAttribute('data-current-cat') || '0';
@@ -3635,12 +3635,12 @@ import {
                 return;
             }
 
-            var replaceInput = e.target.closest('.mp3-detail-replace-input');
+            var replaceInput = e.target.closest('.mp-detail-replace-input');
             if (replaceInput) {
-                // Falls das Dropdown-Menue offen war (siehe .mp3-detail-replace-wrap):
+                // Falls das Dropdown-Menue offen war (siehe .mp-detail-replace-wrap):
                 // nach Dateiauswahl schliessen, unabhaengig vom weiteren Ausgang.
-                var replaceInputWrap = replaceInput.closest('.mp3-detail-replace-wrap');
-                if (replaceInputWrap) replaceInputWrap.classList.remove('mp3-detail-replace-open');
+                var replaceInputWrap = replaceInput.closest('.mp-detail-replace-wrap');
+                if (replaceInputWrap) replaceInputWrap.classList.remove('mp-detail-replace-open');
 
                 var file = replaceInput.files && replaceInput.files[0] ? replaceInput.files[0] : null;
                 if (!file || !selectedFile) return;
@@ -3652,7 +3652,7 @@ import {
                     return;
                 }
 
-                var replaceLabel = replaceInput.closest('.mp3-detail-replace-btn');
+                var replaceLabel = replaceInput.closest('.mp-detail-replace-btn');
                 if (replaceLabel) replaceLabel.classList.add('is-loading');
 
                 var reloadCat = currentCat;
@@ -3662,7 +3662,7 @@ import {
                     .then(function () {
                         mediaForceCacheTokens[selectedFile] = Date.now();
                         currentCat = reloadCat;
-                        localStorage.setItem('mp3_cat', String(reloadCat));
+                        localStorage.setItem('mp_cat', String(reloadCat));
                         mediaQuery = reloadQuery;
                         if (searchInput) searchInput.value = reloadQuery;
                         buildBreadcrumb(reloadCat);
@@ -3684,8 +3684,8 @@ import {
                 return;
             }
 
-            if (!e.target.closest('#mp3-detail')) return;
-            var tagColorInput = e.target.closest('.mp3-tag-color');
+            if (!e.target.closest('#mp-detail')) return;
+            var tagColorInput = e.target.closest('.mp-tag-color');
             if (tagColorInput) {
                 applyTagColorChange(tagColorInput);
                 return;
@@ -3693,7 +3693,7 @@ import {
             // Decorative checkbox toggled → update ALT hint
             var decCb = e.target.closest('[data-json-field$="-decorative"]');
             if (decCb) {
-                updateAltHint(decCb.closest('.mp3-alt-wrap'));
+                updateAltHint(decCb.closest('.mp-alt-wrap'));
             }
         });
 
@@ -3783,9 +3783,9 @@ import {
         // Sort-Popover -- gleiches Muster wie der Ansicht-Umschalter unten
         // (Trigger-Button + Dropdown statt eines nativen <select>, dessen
         // Options-Liste sich nicht durchgaengig stylen laesst).
-        var sortToggleWrap = qs('.mp3-sort-toggle-wrap', overlay);
-        var sortToggleBtn = qs('.mp3-sort-toggle-btn', overlay);
-        var sortToggleMenu = qs('.mp3-sort-toggle-menu', overlay);
+        var sortToggleWrap = qs('.mp-sort-toggle-wrap', overlay);
+        var sortToggleBtn = qs('.mp-sort-toggle-btn', overlay);
+        var sortToggleMenu = qs('.mp-sort-toggle-menu', overlay);
         if (sortToggleWrap && sortToggleBtn && sortToggleMenu) {
             function positionSortToggleMenu() {
                 var rect = sortToggleBtn.getBoundingClientRect();
@@ -3797,20 +3797,20 @@ import {
             }
             sortToggleBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                var willOpen = !sortToggleWrap.classList.contains('mp3-sort-toggle-open');
-                sortToggleWrap.classList.toggle('mp3-sort-toggle-open', willOpen);
+                var willOpen = !sortToggleWrap.classList.contains('mp-sort-toggle-open');
+                sortToggleWrap.classList.toggle('mp-sort-toggle-open', willOpen);
                 if (willOpen) positionSortToggleMenu();
             });
             document.addEventListener('click', function (e) {
-                if (!sortToggleWrap.classList.contains('mp3-sort-toggle-open')) return;
-                if (e.target.closest('.mp3-sort-toggle-wrap')) return;
-                sortToggleWrap.classList.remove('mp3-sort-toggle-open');
+                if (!sortToggleWrap.classList.contains('mp-sort-toggle-open')) return;
+                if (e.target.closest('.mp-sort-toggle-wrap')) return;
+                sortToggleWrap.classList.remove('mp-sort-toggle-open');
             });
             sortToggleMenu.addEventListener('click', function (e) {
-                var btn = e.target.closest('.mp3-sort-option');
+                var btn = e.target.closest('.mp-sort-option');
                 if (!btn) return;
                 var sort = btn.getAttribute('data-sort');
-                sortToggleWrap.classList.remove('mp3-sort-toggle-open');
+                sortToggleWrap.classList.remove('mp-sort-toggle-open');
                 if (sort === getCurrentSort()) return;
                 setCurrentSort(sort);
                 updateSortToggleTrigger();
@@ -3823,9 +3823,9 @@ import {
         // mobil, siehe Bugreport): oeffnet ein kleines Dropdown-Menue
         // (gleiches Muster wie initAdminMenu() unten), der Trigger zeigt dabei
         // immer das Icon der aktuell aktiven Ansicht.
-        var viewToggleWrap = qs('.mp3-view-toggle-wrap', overlay);
-        var viewToggleBtn = qs('.mp3-view-toggle-btn', overlay);
-        var viewToggleMenu = qs('.mp3-view-toggle-menu', overlay);
+        var viewToggleWrap = qs('.mp-view-toggle-wrap', overlay);
+        var viewToggleBtn = qs('.mp-view-toggle-btn', overlay);
+        var viewToggleMenu = qs('.mp-view-toggle-menu', overlay);
         if (viewToggleWrap && viewToggleBtn && viewToggleMenu) {
             function positionViewToggleMenu() {
                 var rect = viewToggleBtn.getBoundingClientRect();
@@ -3837,25 +3837,25 @@ import {
             }
             viewToggleBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                var willOpen = !viewToggleWrap.classList.contains('mp3-view-toggle-open');
-                viewToggleWrap.classList.toggle('mp3-view-toggle-open', willOpen);
+                var willOpen = !viewToggleWrap.classList.contains('mp-view-toggle-open');
+                viewToggleWrap.classList.toggle('mp-view-toggle-open', willOpen);
                 if (willOpen) positionViewToggleMenu();
             });
             document.addEventListener('click', function (e) {
-                if (!viewToggleWrap.classList.contains('mp3-view-toggle-open')) return;
-                if (e.target.closest('.mp3-view-toggle-wrap')) return;
-                viewToggleWrap.classList.remove('mp3-view-toggle-open');
+                if (!viewToggleWrap.classList.contains('mp-view-toggle-open')) return;
+                if (e.target.closest('.mp-view-toggle-wrap')) return;
+                viewToggleWrap.classList.remove('mp-view-toggle-open');
             });
             viewToggleMenu.addEventListener('click', function (e) {
-                var btn = e.target.closest('.mp3-view-btn');
+                var btn = e.target.closest('.mp-view-btn');
                 if (!btn) return;
                 var mode = btn.getAttribute('data-view');
-                viewToggleWrap.classList.remove('mp3-view-toggle-open');
+                viewToggleWrap.classList.remove('mp-view-toggle-open');
                 if (mode === viewMode) return;
                 viewMode = mode;
-                localStorage.setItem('mp3_view', viewMode);
-                qsa('.mp3-view-btn', viewToggleMenu).forEach(function (b) {
-                    b.classList.toggle('mp3-view-active', b.getAttribute('data-view') === mode);
+                localStorage.setItem('mp_view', viewMode);
+                qsa('.mp-view-btn', viewToggleMenu).forEach(function (b) {
+                    b.classList.toggle('mp-view-active', b.getAttribute('data-view') === mode);
                 });
                 updateViewToggleTrigger();
                 updateTileSizeVisibility();
@@ -3864,33 +3864,33 @@ import {
         }
 
         // Tile size slider (Kachel- und Media-Wall-Ansicht)
-        var tileSizeSliderEl = qs('.mp3-tile-size-slider', overlay);
+        var tileSizeSliderEl = qs('.mp-tile-size-slider', overlay);
         if (tileSizeSliderEl) {
             tileSizeSliderEl.addEventListener('input', function () {
                 var size = normalizeTileSize(tileSizeSliderEl.value);
-                overlay.style.setProperty('--mp3-tile-size', size + 'px');
-                localStorage.setItem('mp3_tile_size', String(size));
+                overlay.style.setProperty('--mp-tile-size', size + 'px');
+                localStorage.setItem('mp_tile_size', String(size));
             });
         }
 
 
 
         // Mobile category offcanvas
-        var mobileCatBtn = qs('.mp3-mobile-cat-btn', overlay);
-        var sidebarBackdrop = qs('#mp3-sidebar-backdrop');
+        var mobileCatBtn = qs('.mp-mobile-cat-btn', overlay);
+        var sidebarBackdrop = qs('#mp-sidebar-backdrop');
 
         function openSidebar() {
-            sidebar.classList.add('mp3-sidebar-open');
-            if (sidebarBackdrop) sidebarBackdrop.classList.add('mp3-backdrop-open');
+            sidebar.classList.add('mp-sidebar-open');
+            if (sidebarBackdrop) sidebarBackdrop.classList.add('mp-backdrop-open');
         }
 
         function closeSidebar() {
-            sidebar.classList.remove('mp3-sidebar-open');
-            if (sidebarBackdrop) sidebarBackdrop.classList.remove('mp3-backdrop-open');
+            sidebar.classList.remove('mp-sidebar-open');
+            if (sidebarBackdrop) sidebarBackdrop.classList.remove('mp-backdrop-open');
         }
 
         mobileCatBtn.addEventListener('click', function () {
-            if (sidebar.classList.contains('mp3-sidebar-open')) {
+            if (sidebar.classList.contains('mp-sidebar-open')) {
                 closeSidebar();
             } else {
                 openSidebar();
@@ -3899,11 +3899,11 @@ import {
 
         // Close sidebar on category select (mobile)
         sidebar.addEventListener('click', function (e) {
-            if (e.target.closest('.mp3-sidebar-mobile-close')) {
+            if (e.target.closest('.mp-sidebar-mobile-close')) {
                 closeSidebar();
                 return;
             }
-            if (e.target.closest('.mp3-cat') && window.innerWidth <= 768) {
+            if (e.target.closest('.mp-cat') && window.innerWidth <= 768) {
                 closeSidebar();
             }
         });
@@ -3916,32 +3916,32 @@ import {
         }
 
         // Filter buttons (event delegation on filter bar)
-        var filterBar = qs('.mp3-filter-bar', overlay);
+        var filterBar = qs('.mp-filter-bar', overlay);
         filterBar.addEventListener('click', function (e) {
             // Unabhaengiger Toggle, kein data-filter -- deshalb vor dem
             // generischen Typ-Filter-Handler unten geprueft, sonst wuerde
             // currentFilter faelschlich auf 'all' zurueckgesetzt.
-            var unusedBtn = e.target.closest('.mp3-unused-filter-btn');
+            var unusedBtn = e.target.closest('.mp-unused-filter-btn');
             if (unusedBtn) {
                 toggleUnusedOnlyFilter();
                 return;
             }
 
-            var btn = e.target.closest('.mp3-filter-btn');
+            var btn = e.target.closest('.mp-filter-btn');
             if (!btn) return;
             applyTypeFilter(btn.getAttribute('data-filter') || 'all');
         });
         updateFilterDropdownLabel();
 
-        // Tag-Liste lebt jetzt fest in der Sidebar (#mp3-tag-filter-section,
+        // Tag-Liste lebt jetzt fest in der Sidebar (#mp-tag-filter-section,
         // siehe updateTagFilterOptions()), kein eigenes Portal/Toggle mehr
-        // noetig. Das mobile Filter-Dropdown (#mp3-filter-dropdown-menu-portal)
+        // noetig. Das mobile Filter-Dropdown (#mp-filter-dropdown-menu-portal)
         // fuer Typ-Filter/"Nur unbenutzte" bleibt unveraendert ein eigenes
         // Portal -- die Auswahl-Logik selbst laeuft ueber dieselben
         // applyTypeFilter()/toggleUnusedOnlyFilter()-Funktionen wie die
         // Desktop-Pills, damit beide UIs immer synchron bleiben.
         overlay.addEventListener('click', function (e) {
-            var option = e.target.closest('.mp3-tag-filter-option');
+            var option = e.target.closest('.mp-tag-filter-option');
             if (option) {
                 e.stopPropagation();
                 var name = String(option.getAttribute('data-tag-name') || '').trim();
@@ -3958,7 +3958,7 @@ import {
                 return;
             }
 
-            var tagClearBtn = e.target.closest('.mp3-tag-filter-clear-btn');
+            var tagClearBtn = e.target.closest('.mp-tag-filter-clear-btn');
             if (tagClearBtn) {
                 e.stopPropagation();
                 clearTagFilters();
@@ -3967,16 +3967,16 @@ import {
                 return;
             }
 
-            var filterToggle = e.target.closest('.mp3-filter-dropdown-toggle');
+            var filterToggle = e.target.closest('.mp-filter-dropdown-toggle');
             if (filterToggle) {
                 e.stopPropagation();
-                var fWrap = qs('.mp3-filter-dropdown-wrap', overlay);
+                var fWrap = qs('.mp-filter-dropdown-wrap', overlay);
                 var fIsOpen = !!fWrap && fWrap.classList.contains('is-open');
                 setFilterDropdownMenuOpen(!fIsOpen);
                 return;
             }
 
-            var typeOption = e.target.closest('.mp3-filter-dropdown-option');
+            var typeOption = e.target.closest('.mp-filter-dropdown-option');
             if (typeOption) {
                 e.stopPropagation();
                 applyTypeFilter(typeOption.getAttribute('data-filter') || 'all');
@@ -3984,7 +3984,7 @@ import {
                 return;
             }
 
-            var unusedOption = e.target.closest('.mp3-filter-dropdown-unused-option');
+            var unusedOption = e.target.closest('.mp-filter-dropdown-unused-option');
             if (unusedOption) {
                 e.stopPropagation();
                 toggleUnusedOnlyFilter();
@@ -3992,7 +3992,7 @@ import {
                 return;
             }
 
-            if (!e.target.closest('.mp3-filter-dropdown-wrap') && !e.target.closest('#mp3-filter-dropdown-menu-portal')) {
+            if (!e.target.closest('.mp-filter-dropdown-wrap') && !e.target.closest('#mp-filter-dropdown-menu-portal')) {
                 setFilterDropdownMenuOpen(false);
             }
         });
@@ -4030,16 +4030,16 @@ import {
         updateTagFilterOptions();
 
         // Metainfo-Canvas events
-        var metainfoCanvas = qs('#mp3-metainfo-canvas', overlay);
+        var metainfoCanvas = qs('#mp-metainfo-canvas', overlay);
         if (metainfoCanvas) {
             metainfoCanvas.addEventListener('click', function (e) {
-                if (e.target.closest('.mp3-metainfo-canvas-back')) {
+                if (e.target.closest('.mp-metainfo-canvas-back')) {
                     closeMetainfoCanvas();
-                } else if (e.target.closest('.mp3-metainfo-canvas-save')) {
+                } else if (e.target.closest('.mp-metainfo-canvas-save')) {
                     commitMetainfoCanvas();
                 }
             });
-            var metainfoForm = qs('#mp3-metainfo-form', metainfoCanvas);
+            var metainfoForm = qs('#mp-metainfo-form', metainfoCanvas);
             if (metainfoForm) {
                 metainfoForm.addEventListener('submit', function (e) {
                     e.preventDefault();
@@ -4053,7 +4053,7 @@ import {
 
         // "Nativ bearbeiten"-Button (echte Metainfo-Felder im eigenen Canvas)
         overlay.addEventListener('click', function (e) {
-            var metaBtn = e.target.closest('.mp3-metainfo-canvas-open');
+            var metaBtn = e.target.closest('.mp-metainfo-canvas-open');
             if (!metaBtn) return;
             var mf = String(metaBtn.getAttribute('data-canvas-file') || '').trim();
             var mLbl = String(metaBtn.getAttribute('data-canvas-label') || mf);
@@ -4062,13 +4062,13 @@ import {
 
         // Zurueck-Button des Grid-Auswahl-Banners (startMetainfoPick())
         overlay.addEventListener('click', function (e) {
-            if (e.target.closest('.mp3-metainfo-pick-cancel') && metainfoPickTarget) {
+            if (e.target.closest('.mp-metainfo-pick-cancel') && metainfoPickTarget) {
                 endMetainfoPick();
             }
         });
 
         // Upload via button
-        var uploadInput = qs('.mp3-upload-btn input[type="file"]', overlay);
+        var uploadInput = qs('.mp-upload-btn input[type="file"]', overlay);
         uploadInput.addEventListener('change', function (e) {
             if (e.target.files && e.target.files.length) {
                 if (!delegateToUploadProvider(e.target.files)) {
@@ -4094,17 +4094,17 @@ import {
             if (!hasExternalFiles(e.dataTransfer)) return;
             e.preventDefault();
             e.stopPropagation();
-            gridWrap.classList.add('mp3-dragover');
+            gridWrap.classList.add('mp-dragover');
         });
 
         gridWrap.addEventListener('dragleave', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            gridWrap.classList.remove('mp3-dragover');
+            gridWrap.classList.remove('mp-dragover');
         });
 
         gridWrap.addEventListener('drop', function (e) {
-            gridWrap.classList.remove('mp3-dragover');
+            gridWrap.classList.remove('mp-dragover');
             if (!hasExternalFiles(e.dataTransfer)) return;
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -4129,7 +4129,7 @@ import {
             try {
                 entriesPromise = dtItems ? readDroppedItems(dtItems) : null;
             } catch (err) {
-                console.error('MP3 readDroppedItems failed, falling back to flat file list:', err);
+                console.error('MP readDroppedItems failed, falling back to flat file list:', err);
                 entriesPromise = null;
             }
 
@@ -4141,7 +4141,7 @@ import {
                         doUpload(fallbackFiles);
                     }
                 }).catch(function (err) {
-                    console.error('MP3 folder read failed, falling back to flat file list:', err);
+                    console.error('MP folder read failed, falling back to flat file list:', err);
                     if (fallbackFiles && fallbackFiles.length) {
                         doUpload(fallbackFiles);
                     }
@@ -4156,7 +4156,7 @@ import {
 
         // Paste from Clipboard via Cmd+V (paste event fires when modal has focus)
         document.addEventListener('paste', function (e) {
-            if (!overlay || !overlay.classList.contains('mp3-open')) return;
+            if (!overlay || !overlay.classList.contains('mp-open')) return;
             // Skip when actively typing in a text field
             var active = document.activeElement;
             if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
@@ -4175,8 +4175,8 @@ import {
             if (!files.length) return;
             e.preventDefault();
             if (gridWrap) {
-                gridWrap.classList.add('mp3-pasteover');
-                setTimeout(function () { gridWrap.classList.remove('mp3-pasteover'); }, 300);
+                gridWrap.classList.add('mp-pasteover');
+                setTimeout(function () { gridWrap.classList.remove('mp-pasteover'); }, 300);
             }
             if (!delegateToUploadProvider(files)) {
                 doUpload(files);
@@ -4185,7 +4185,7 @@ import {
     }
 
     // ---- Ersetzen aus Cloud-Quelle ----
-    // Aufgerufen aus dem Detail-Panel-Klick-Handler unten (".mp3-detail-replace-cloud-item"
+    // Aufgerufen aus dem Detail-Panel-Klick-Handler unten (".mp-detail-replace-cloud-item"
     // im Ersetzen-Dropdown, per JS ergaenzt, siehe modules/detail.js renderDetail()) --
     // der Overlay ist zu diesem Zeitpunkt bereits offen (Detail-Panel einer
     // lokalen Datei sichtbar), deshalb KEIN erneuter open()-Aufruf noetig/
@@ -4210,7 +4210,7 @@ import {
     }
 
     // Gegenstueck zum lokalen Ersetzen-Erfolgspfad (siehe
-    // ".mp3-detail-replace-input"-Handler unten) -- gleiches Reload-Muster
+    // ".mp-detail-replace-input"-Handler unten) -- gleiches Reload-Muster
     // wie die closeProviderMode()-Aufrufe im Sidebar-Klick-Handler (Kategorie/
     // Sammlung wechseln): Provider-Modus verlassen, lokale Ansicht fuer die
     // aktuelle (beim Betreten des Cloud-Browsings auf -1 gesetzte) Kategorie
@@ -4219,7 +4219,7 @@ import {
         closeProviderMode();
         // ctx.clearReplaceTarget() (providers.js) lief bereits VOR diesem
         // Aufruf -- die Sidebar-Sektion traegt aber noch die alte, per JS
-        // eingefuegte Hinweis-Zeile (".mp3-providers-replace-hint") und wird
+        // eingefuegte Hinweis-Zeile (".mp-providers-replace-hint") und wird
         // sonst an keiner Stelle in diesem Erfolgspfad neu gerendert (Bug-
         // Report: Hinweis blieb nach erfolgreichem Ersetzen sichtbar stehen).
         refreshProvidersSection();
@@ -4228,7 +4228,7 @@ import {
         loadFiles(currentCat, true);
         showDetail(filename);
         // Eigene Erfolgsmeldung noetig, weil der kurze Status-Text im
-        // Cloud-Detail-Panel (".mp3-provider-replace-status") durch den
+        // Cloud-Detail-Panel (".mp-provider-replace-status") durch den
         // showDetail()-Panel-Wechsel hier sofort wieder ueberschrieben wird,
         // bevor er wahrnehmbar war (Bug-Report: kein sichtbares Feedback).
         showToast(t('mediaplace_replace_success', { name: filename }), 'success');
@@ -4250,9 +4250,9 @@ import {
 
         build();
 
-        // Support both: MP3.open(cb) and MP3.open(cb, { multiple: true })
-        // and MP3.open({ multiple: true, onSelect: cb })
-        // und MP3.open(null, { closeHref: ... }) (z.B. ueber openFile(filename,
+        // Support both: MP.open(cb) and MP.open(cb, { multiple: true })
+        // and MP.open({ multiple: true, onSelect: cb })
+        // und MP.open(null, { closeHref: ... }) (z.B. ueber openFile(filename,
         // null, opts) fuer reines Durchsuchen/Deep-Link ohne Auswahl-Callback --
         // opts muss auch dann ausgewertet werden, nicht nur bei echtem callback).
         var callback, options;
@@ -4274,14 +4274,14 @@ import {
         mediaLinkPickFieldKey = null;
         closeLightbox();
         // options.fullscreen: startet direkt im Vollbild-Modus statt im normalen
-        // verschiebbaren/skalierbaren Fenster-Modal -- fuer Aufrufe, die MP3 als
+        // verschiebbaren/skalierbaren Fenster-Modal -- fuer Aufrufe, die MP als
         // vollwertigen Seitenersatz oeffnen (z.B. mediapool_takeover.php), nicht
         // als kleineren Auswahl-Dialog innerhalb einer anderen Seite. Kein
         // Aufrufer setzt das je explizit auf false, daher: truthy = erzwungen,
         // sonst den zuletzt vom Nutzer per Toggle-Button/F-Taste gewaehlten
         // Zustand aus localStorage uebernehmen statt immer bei "normal" zu
         // starten.
-        setFullscreenMode(options.fullscreen ? true : localStorage.getItem('mp3_fullscreen') === '1');
+        setFullscreenMode(options.fullscreen ? true : localStorage.getItem('mp_fullscreen') === '1');
         onSelect = (!multiMode && typeof callback === 'function') ? callback : null;
         // Ersetzen-Modus wird ausschliesslich ueber startReplaceFromCloud()
         // AUS einem bereits offenen Overlay heraus gestartet (Klick im
@@ -4297,7 +4297,7 @@ import {
         onCloseCallback = (typeof options.onClose === 'function') ? options.onClose : null;
 
         // Reset modal position/size on open
-        var modal = qs('.mp3-modal', overlay);
+        var modal = qs('.mp-modal', overlay);
         if (modal) {
             modal.style.position = '';
             modal.style.left = '';
@@ -4309,8 +4309,8 @@ import {
             modal.style.height = '';
         }
 
-        overlay.classList.add('mp3-open');
-        overlay.classList.toggle('mp3-multi-mode', multiMode);
+        overlay.classList.add('mp-open');
+        overlay.classList.toggle('mp-multi-mode', multiMode);
         // KEIN overflow:hidden auf html/body (frueher versucht, siehe Git-Historie):
         // beide haben im REDAXO-Backend eine feste height:100% (html {
         // overflow-y: scroll; height: 100% }, body/.rex-page ebenso, siehe
@@ -4327,7 +4327,7 @@ import {
         // aeussere Dokument-Scrollbar wird dadurch inert (kein zweiter,
         // tatsaechlich scrollbarer Balken mehr neben dem internen Grid-Scroll).
         // Kein Effekt auf scrollTop bei Restore, siehe close().
-        document.body.classList.add('mp3-scroll-lock');
+        document.body.classList.add('mp-scroll-lock');
         document.body.style.top = (-pageScrollTopBeforeOpen) + 'px';
         // Overlay liegt ohnehin als position:fixed vollflaechig ueber allem und
         // faengt alle Klick-/Wheel-Events ab. Scrollposition trotzdem fuer
@@ -4340,7 +4340,7 @@ import {
         // Hintergrundseite nie wieder scrollen und hat deshalb keinen Anlass,
         // die Leiste zu verkleinern. Ein minimaler, unsichtbarer 1px-Scroll
         // auf <html> (dessen scrollTop bewusst unangetastet bleibt, siehe
-        // Kommentar oben bei body.mp3-scroll-lock) gibt Safari dieses Signal
+        // Kommentar oben bei body.mp-scroll-lock) gibt Safari dieses Signal
         // -- nach Ablauf von pinScrollPosition()'s eigenem 500ms-Fenster,
         // sonst wuerde dessen aktive requestAnimationFrame-Schleife den Nudge
         // im selben Tick wieder zuruecksetzen. Beeinflusst nicht die
@@ -4361,7 +4361,7 @@ import {
         // (Kategorie 0, "kein Ordner") braucht ein eigenes Recht, das viele
         // auf einzelne Kategorien eingeschraenkte User gar nicht haben (siehe
         // loadFiles()-Fallback weiter unten).
-        currentCat = parseInt(localStorage.getItem('mp3_cat') || '-1', 10);
+        currentCat = parseInt(localStorage.getItem('mp_cat') || '-1', 10);
         catCache = {};
         catPath = [];
         lastLoadedFiles = [];
@@ -4370,7 +4370,7 @@ import {
         mediaHasMore = false;
         mediaLoading = false;
         mediaQuery = '';
-        mediaPerPage = normalizeMediaPerPage(localStorage.getItem('mp3_per_page'));
+        mediaPerPage = normalizeMediaPerPage(localStorage.getItem('mp_per_page'));
         // options.filter: Typ-Tab vorauswaehlen (z.B. 'images' fuers Bild-Einfuegen
         // in TinyMCE), rein als Startwert -- Nutzer kann jederzeit auf einen
         // anderen Tab wechseln, keine harte Beschraenkung der Auswahl. Setzt
@@ -4385,7 +4385,7 @@ import {
                 .filter(Boolean)
             : null;
         if (allowedExtensions && !allowedExtensions.length) allowedExtensions = null;
-        viewMode = localStorage.getItem('mp3_view') || 'grid';
+        viewMode = localStorage.getItem('mp_view') || 'grid';
         // Backward-compat: old value "masonry" now maps to "mediawall"
         if (viewMode === 'masonry') {
             viewMode = 'mediawall';
@@ -4393,9 +4393,9 @@ import {
         if (viewMode !== 'grid' && viewMode !== 'list' && viewMode !== 'mediawall') {
             viewMode = 'grid';
         }
-        setActiveCollection(features.collections ? (localStorage.getItem('mp3_active_collection') || null) : null);
+        setActiveCollection(features.collections ? (localStorage.getItem('mp_active_collection') || null) : null);
         // Bewusst NICHT ueber localStorage persistiert (anders als
-        // mp3_active_collection/mp3_cat oben) -- "Medien ohne ALT-Text" ist
+        // mp_active_collection/mp_cat oben) -- "Medien ohne ALT-Text" ist
         // eine Wartungs-/Diagnoseansicht, kein Arbeitsbereich, in den man
         // automatisch zurueckkehren will. Mit Persistenz blieb der Nutzer
         // nach dem einmaligen Beheben aller fehlenden ALT-Texte bei jedem
@@ -4405,41 +4405,41 @@ import {
         // dadurch faelschlich wie "es gibt doch noch fehlende ALT-Texte"
         // aussah, obwohl der Server-Count laengst 0 war (Nutzer-Feedback).
         altMissingActive = false;
-        setDarkMode(localStorage.getItem('mp3_dark_mode') === '1');
+        setDarkMode(localStorage.getItem('mp_dark_mode') === '1');
         closeFocuspointCanvas();
 
         // Show/hide multi footer
         if (multiFooter) {
             multiFooter.style.display = multiMode ? '' : 'none';
-            var countEl = qs('.mp3-multi-count', multiFooter);
+            var countEl = qs('.mp-multi-count', multiFooter);
             if (countEl) countEl.textContent = t('mediaplace_files_selected', { count: 0 });
         }
         if (batchFooter) batchFooter.style.display = 'none';
 
         // Reset filter UI
-        qsa('.mp3-filter-btn', overlay).forEach(function (b) {
-            b.classList.toggle('mp3-filter-active', b.getAttribute('data-filter') === 'all');
+        qsa('.mp-filter-btn', overlay).forEach(function (b) {
+            b.classList.toggle('mp-filter-active', b.getAttribute('data-filter') === 'all');
         });
         updateTagFilterOptions();
         setFilterDropdownMenuOpen(false);
         updateFilterDropdownLabel();
-        qsa('.mp3-view-btn', overlay).forEach(function (b) {
-            b.classList.toggle('mp3-view-active', b.getAttribute('data-view') === viewMode);
+        qsa('.mp-view-btn', overlay).forEach(function (b) {
+            b.classList.toggle('mp-view-active', b.getAttribute('data-view') === viewMode);
         });
         updateViewToggleTrigger();
         updateSortToggleTrigger();
-        var perPageSel = qs('.mp3-per-page-select', overlay);
+        var perPageSel = qs('.mp-per-page-select', overlay);
         if (perPageSel) perPageSel.value = String(mediaPerPage);
-        localStorage.setItem('mp3_per_page', String(mediaPerPage));
-        var tileSize = normalizeTileSize(localStorage.getItem('mp3_tile_size'));
-        overlay.style.setProperty('--mp3-tile-size', tileSize + 'px');
-        var tileSizeSlider = qs('.mp3-tile-size-slider', overlay);
+        localStorage.setItem('mp_per_page', String(mediaPerPage));
+        var tileSize = normalizeTileSize(localStorage.getItem('mp_tile_size'));
+        overlay.style.setProperty('--mp-tile-size', tileSize + 'px');
+        var tileSizeSlider = qs('.mp-tile-size-slider', overlay);
         if (tileSizeSlider) tileSizeSlider.value = String(tileSize);
         updateTileSizeVisibility();
         // Reset mobile states
-        if (sidebar) sidebar.classList.remove('mp3-sidebar-open');
-        var bd = qs('#mp3-sidebar-backdrop');
-        if (bd) bd.classList.remove('mp3-backdrop-open');
+        if (sidebar) sidebar.classList.remove('mp-sidebar-open');
+        var bd = qs('#mp-sidebar-backdrop');
+        if (bd) bd.classList.remove('mp-backdrop-open');
         renderBreadcrumb();
         loadCategories();
         loadFiles(currentCat, true);
@@ -4469,7 +4469,7 @@ import {
         uploadPickerMode = true;
         var resolvedOpts = (typeof callbackOrOpts === 'object' && callbackOrOpts) ? callbackOrOpts : (opts || {});
         uploadTargetCategoryId = (typeof resolvedOpts.categoryId === 'number' && resolvedOpts.categoryId >= 0) ? resolvedOpts.categoryId : null;
-        var input = qs('.mp3-upload-btn input[type="file"]', overlay);
+        var input = qs('.mp-upload-btn input[type="file"]', overlay);
         if (input) input.click();
     }
 
@@ -4484,15 +4484,15 @@ import {
         // (waehrend body noch fixed ist, hat ein Scroll-Aufruf auf html keine
         // sichtbare Wirkung, html wurde aber ohnehin nie tatsaechlich verstellt --
         // das Zuruecksetzen hier ist nur ein zusaetzliches Sicherheitsnetz).
-        document.body.classList.remove('mp3-scroll-lock');
+        document.body.classList.remove('mp-scroll-lock');
         document.body.style.top = '';
         var scrollDocOnClose = document.scrollingElement || document.documentElement;
         if (scrollDocOnClose) scrollDocOnClose.scrollTop = pageScrollTopBeforeOpen;
         if (overlay) {
-            overlay.classList.remove('mp3-open');
-            overlay.classList.remove('mp3-multi-mode');
-            overlay.classList.remove('mp3-media-link-pick-mode');
-            overlay.classList.remove('mp3-metainfo-pick-mode');
+            overlay.classList.remove('mp-open');
+            overlay.classList.remove('mp-multi-mode');
+            overlay.classList.remove('mp-media-link-pick-mode');
+            overlay.classList.remove('mp-metainfo-pick-mode');
         }
         multiMode = false;
         multiSelected = {};
@@ -4519,7 +4519,7 @@ import {
 
     /**
      * Uebergibt Dateien an den aktiven, registrierten Upload-Provider (siehe
-     * MP3.registerUploadProvider() unten) statt an mediaplace's eigenen
+     * MP.registerUploadProvider() unten) statt an mediaplace's eigenen
      * Upload-Flow -- gilt fuer Button-Auswahl, Drag&Drop und Paste
      * gleichermassen (siehe die drei Aufrufstellen weiter unten in build()).
      * Bewusst OHNE Ordner-Kategorie-Zuordnung (siehe doFolderUpload()) --
@@ -4544,15 +4544,15 @@ import {
                 onDone: function () { loadFiles(currentCat, true); }
             });
         } catch (err) {
-            console.error('MP3 upload provider "' + activeUploadProviderId + '" failed:', err);
+            console.error('MP upload provider "' + activeUploadProviderId + '" failed:', err);
             return false;
         }
         return true;
     }
 
     /**
-     * Rendert die per MP3.registerAdminMenuItem() registrierten Eintraege in
-     * #mp3-admin-menu-extensions (Zahnrad-Menue) -- no-op, falls das Overlay
+     * Rendert die per MP.registerAdminMenuItem() registrierten Eintraege in
+     * #mp-admin-menu-extensions (Zahnrad-Menue) -- no-op, falls das Overlay
      * noch nicht gebaut wurde (registerAdminMenuItem() wird typischerweise
      * beim Laden des registrierenden Scripts aufgerufen, lange bevor der User
      * das Overlay ueberhaupt oeffnet; initAdminMenu() ruft diese Funktion
@@ -4560,18 +4560,18 @@ import {
      */
     function renderAdminMenuExtensions() {
         if (!overlay) return;
-        var container = qs('#mp3-admin-menu-extensions', overlay);
+        var container = qs('#mp-admin-menu-extensions', overlay);
         if (!container) return;
         var ids = Object.keys(adminMenuItems);
         container.innerHTML = ids.map(function (id) {
             var item = adminMenuItems[id];
             var icon = item.icon || 'fa-solid fa-wand-magic-sparkles';
-            return '<button type="button" class="mp3-admin-menu-ext-btn" data-admin-menu-ext="' + escAttr(id) + '"><i class="' + escAttr(icon) + '"></i> ' + escAttr(item.label || id) + '</button>';
+            return '<button type="button" class="mp-admin-menu-ext-btn" data-admin-menu-ext="' + escAttr(id) + '"><i class="' + escAttr(icon) + '"></i> ' + escAttr(item.label || id) + '</button>';
         }).join('');
     }
 
     // ---- Public API ----
-    window.MP3 = {
+    window.MP = {
         open: open,
         close: close,
         openUpload: openUpload,
@@ -4621,7 +4621,7 @@ import {
         // Liste im selben Menue oeffnet immer eine echte Seite/ein Popup).
         // opts: { label, icon (fa-solid-Klasse, optional), onClick() }.
         // onClick bekommt keine Argumente -- der Aufrufer kennt seinen
-        // eigenen Zustand selbst (z.B. ueber sein eigenes #mp3-root-Pendant).
+        // eigenen Zustand selbst (z.B. ueber sein eigenes #mp-root-Pendant).
         registerAdminMenuItem: function (id, opts) {
             if (!id || !opts || typeof opts.onClick !== 'function') return;
             adminMenuItems[id] = opts;

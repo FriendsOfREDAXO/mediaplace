@@ -19,7 +19,7 @@
 import { showCategoryPickerModal } from './modals.js';
 
 var ctx = null;
-var providers = []; // [{id,label,icon}], aus #mp3-root data-providers
+var providers = []; // [{id,label,icon}], aus #mp-root data-providers
 var gridMode = 'local'; // 'local' | 'provider'
 var activeProvider = null; // provider-id
 var activeProviderPath = '/';
@@ -41,18 +41,18 @@ var providerSelected = {}; // path -> true
 // gekuerzt wird.
 var IMPORT_BATCH_MAX = 25;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var fileIcon = MP3Core.helpers.fileIcon;
-var formatBytes = MP3Core.helpers.formatBytes;
-var qs = MP3Core.helpers.qs;
-var qsa = MP3Core.helpers.qsa;
-var apiFetchProviderEntries = MP3Core.api.apiFetchProviderEntries;
-var getProviderThumbnailUrl = MP3Core.api.getProviderThumbnailUrl;
-var apiImportProviderFile = MP3Core.api.apiImportProviderFile;
-var apiImportProviderFilesBatch = MP3Core.api.apiImportProviderFilesBatch;
-var apiReplaceFileFromProvider = MP3Core.api.apiReplaceFileFromProvider;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var fileIcon = MPCore.helpers.fileIcon;
+var formatBytes = MPCore.helpers.formatBytes;
+var qs = MPCore.helpers.qs;
+var qsa = MPCore.helpers.qsa;
+var apiFetchProviderEntries = MPCore.api.apiFetchProviderEntries;
+var getProviderThumbnailUrl = MPCore.api.getProviderThumbnailUrl;
+var apiImportProviderFile = MPCore.api.apiImportProviderFile;
+var apiImportProviderFilesBatch = MPCore.api.apiImportProviderFilesBatch;
+var apiReplaceFileFromProvider = MPCore.api.apiReplaceFileFromProvider;
 
 /**
  * Von core.js einmalig am Ende von build() aufgerufen, sobald DOM-Refs
@@ -61,7 +61,7 @@ var apiReplaceFileFromProvider = MP3Core.api.apiReplaceFileFromProvider;
  *
  * ctx-Vertrag:
  * - overlay, grid, sidebar, breadcrumb, detailPanel: DOM-Refs (overlay nur
- *   fuer die mp3-provider-mode-Klasse, siehe openProvider()/closeProviderMode())
+ *   fuer die mp-provider-mode-Klasse, siehe openProvider()/closeProviderMode())
  * - gridTileRatio: string (GRID_TILE_RATIO aus core.js, geteilte Konstante
  *   fuer lokale + Provider-Kacheln)
  * - mediaForceCacheTokens: Objekt-Referenz (wird in-place mutiert)
@@ -97,8 +97,8 @@ export function initProviders(theCtx, providerList) {
 export function renderProvidersSection() {
     if (!providers.length || ctx.getOnMultiSelect()) return '';
 
-    var html = '<div class="mp3-providers-wrap">';
-    html += '<div class="mp3-providers-head"><span class="mp3-providers-title">' + t('mediaplace_cloud_providers') + '</span></div>';
+    var html = '<div class="mp-providers-wrap">';
+    html += '<div class="mp-providers-head"><span class="mp-providers-title">' + t('mediaplace_cloud_providers') + '</span></div>';
     // Ersetzen-Modus (siehe core.js startReplaceFromCloud()): bei mehr als
     // einem konfigurierten Provider springt der Aufrufer NICHT automatisch in
     // eine bestimmte Quelle (welche waere die richtige?) -- ohne diesen
@@ -106,7 +106,7 @@ export function renderProvidersSection() {
     // erkennbaren Grund wieder in der normalen lokalen Ansicht landen.
     var replaceTargetHint = ctx.getReplaceTarget ? ctx.getReplaceTarget() : null;
     if (replaceTargetHint) {
-        html += '<div class="mp3-providers-replace-hint"><i class="fa-solid fa-arrows-rotate"></i> ' +
+        html += '<div class="mp-providers-replace-hint"><i class="fa-solid fa-arrows-rotate"></i> ' +
             escAttr(t('mediaplace_replace_pick_hint', { name: replaceTargetHint })) + '</div>';
     }
     for (var i = 0; i < providers.length; i++) {
@@ -115,10 +115,10 @@ export function renderProvidersSection() {
         // setColor()) -- rein zur Unterscheidung mehrerer gleichzeitig aktiver
         // Verbindungen desselben Typs (z.B. zwei Nextcloud-Accounts), unabhaengig
         // vom aktiv/inaktiv-Zustand (border-left uebernimmt weiterhin NUR die
-        // "gerade durchsucht"-Markierung, siehe CSS .mp3-provider-root-active).
+        // "gerade durchsucht"-Markierung, siehe CSS .mp-provider-root-active).
         // Faerbt direkt das Icon ein statt eines separaten Punkts (Nutzer-Feedback).
         var iconStyle = p.color ? ' style="color:' + escAttr(p.color) + '"' : '';
-        html += '<a class="mp3-provider-root' + (activeProvider === p.id ? ' mp3-provider-root-active' : '') + '" data-provider-id="' + escAttr(p.id) + '" data-provider-label="' + escAttr(p.label) + '">' +
+        html += '<a class="mp-provider-root' + (activeProvider === p.id ? ' mp-provider-root-active' : '') + '" data-provider-id="' + escAttr(p.id) + '" data-provider-label="' + escAttr(p.label) + '">' +
             '<i class="' + escAttr(p.icon || 'fa-solid fa-cloud') + '"' + iconStyle + '></i> ' + escAttr(p.label) + '</a>';
     }
     html += '</div>';
@@ -152,25 +152,25 @@ export function closeProviderMode() {
     lastLoadedProviderEntries = [];
     providerSelectMode = false;
     providerSelected = {};
-    var selModeBtn = qs('.mp3-select-mode-toggle', ctx.overlay);
-    if (selModeBtn) selModeBtn.classList.remove('mp3-select-mode-active');
+    var selModeBtn = qs('.mp-select-mode-toggle', ctx.overlay);
+    if (selModeBtn) selModeBtn.classList.remove('mp-select-mode-active');
     updateProviderSelectFooter();
-    qsa('.mp3-provider-root', ctx.sidebar).forEach(function (el) {
-        el.classList.remove('mp3-provider-root-active');
+    qsa('.mp-provider-root', ctx.sidebar).forEach(function (el) {
+        el.classList.remove('mp-provider-root-active');
     });
-    if (ctx.overlay) ctx.overlay.classList.remove('mp3-provider-mode');
+    if (ctx.overlay) ctx.overlay.classList.remove('mp-provider-mode');
 }
 
 export function getProviderSelectMode() {
     return providerSelectMode;
 }
 
-/** Klick auf .mp3-select-mode-toggle in der Toolbar, siehe core.js. */
+/** Klick auf .mp-select-mode-toggle in der Toolbar, siehe core.js. */
 export function toggleProviderSelectMode() {
     providerSelectMode = !providerSelectMode;
     if (!providerSelectMode) providerSelected = {};
-    var btn = qs('.mp3-select-mode-toggle', ctx.overlay);
-    if (btn) btn.classList.toggle('mp3-select-mode-active', providerSelectMode);
+    var btn = qs('.mp-select-mode-toggle', ctx.overlay);
+    if (btn) btn.classList.toggle('mp-select-mode-active', providerSelectMode);
     renderCurrentProviderEntries();
     updateProviderSelectFooter();
 }
@@ -187,26 +187,26 @@ export function toggleProviderSelected(path) {
 }
 
 function updateProviderSelectionUI() {
-    qsa('.mp3-card.mp3-provider-card', ctx.grid).forEach(function (c) {
+    qsa('.mp-card.mp-provider-card', ctx.grid).forEach(function (c) {
         var path = c.getAttribute('data-provider-path');
         var isFolder = 'folder' === c.getAttribute('data-provider-type');
         var isSel = !isFolder && !!providerSelected[path];
-        c.classList.toggle('mp3-card-multi-selected', isSel);
-        var chk = qs('.mp3-card-check i', c);
+        c.classList.toggle('mp-card-multi-selected', isSel);
+        var chk = qs('.mp-card-check i', c);
         if (chk) chk.className = 'fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square');
     });
-    qsa('.mp3-list-row.mp3-provider-card', ctx.grid).forEach(function (r) {
+    qsa('.mp-list-row.mp-provider-card', ctx.grid).forEach(function (r) {
         var path = r.getAttribute('data-provider-path');
         var isFolder = 'folder' === r.getAttribute('data-provider-type');
         var isSel = !isFolder && !!providerSelected[path];
-        r.classList.toggle('mp3-list-row-multi-selected', isSel);
-        var chk = qs('.mp3-list-cell-check i', r);
+        r.classList.toggle('mp-list-row-multi-selected', isSel);
+        var chk = qs('.mp-list-cell-check i', r);
         if (chk) chk.className = 'fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square');
     });
     updateProviderSelectFooter();
 }
 
-/** Klick auf ".mp3-provider-batch-select-all" -- nur Dateien, keine Ordner,
+/** Klick auf ".mp-provider-batch-select-all" -- nur Dateien, keine Ordner,
  *  und nur die des AKTUELL geladenen Ordners (nicht rekursiv), siehe
  *  Docblock oben ("alle im aktuellen Ordner"). */
 export function selectAllProviderFilesInFolder() {
@@ -231,19 +231,19 @@ function updateProviderSelectFooter() {
     var count = Object.keys(providerSelected).length;
     footer.style.display = (providerSelectMode || count > 0) ? '' : 'none';
 
-    var countEl = qs('.mp3-provider-batch-count', footer);
+    var countEl = qs('.mp-provider-batch-count', footer);
     if (countEl) countEl.textContent = t('mediaplace_files_selected_dynamic', { count: count, unit: (1 === count ? t('mediaplace_file_singular') : t('mediaplace_file_plural')) });
 
     var fileEntries = lastLoadedProviderEntries.filter(function (e) { return 'folder' !== e.type; });
     var allSelected = fileEntries.length > 0 && fileEntries.every(function (e) { return !!providerSelected[e.path]; });
-    var selAllBtn = qs('.mp3-provider-batch-select-all', footer);
+    var selAllBtn = qs('.mp-provider-batch-select-all', footer);
     if (selAllBtn) {
         var label = allSelected ? t('mediaplace_deselect_all') : t('mediaplace_select_all');
         selAllBtn.innerHTML = '<i class="fa-solid ' + (allSelected ? 'fa-square' : 'fa-square-check') + '"></i> ' + label;
         selAllBtn.title = label;
     }
 
-    var importBtn = qs('.mp3-provider-batch-import-btn', footer);
+    var importBtn = qs('.mp-provider-batch-import-btn', footer);
     if (importBtn) importBtn.disabled = 0 === count;
 }
 
@@ -257,12 +257,12 @@ export function openProvider(providerId, label) {
     activeProvider = providerId;
     activeProviderPath = '/';
     activeProviderPathSegments = [];
-    if (ctx.overlay) ctx.overlay.classList.add('mp3-provider-mode');
+    if (ctx.overlay) ctx.overlay.classList.add('mp-provider-mode');
     ctx.setActiveCollection(null);
     ctx.setCurrentCat(-1); // rein visuell: kein lokaler Kategorie-Eintrag mehr aktiv
     ctx.updateSidebarActiveState();
-    qsa('.mp3-provider-root', ctx.sidebar).forEach(function (el) {
-        el.classList.toggle('mp3-provider-root-active', el.getAttribute('data-provider-id') === providerId);
+    qsa('.mp-provider-root', ctx.sidebar).forEach(function (el) {
+        el.classList.toggle('mp-provider-root-active', el.getAttribute('data-provider-id') === providerId);
     });
     renderProviderBreadcrumb(label);
     loadProviderEntries();
@@ -299,10 +299,10 @@ function renderProviderBreadcrumb(rootLabel) {
     }
     var label = rootLabel || (providerMeta ? providerMeta.label : activeProvider);
     var icon = providerMeta ? providerMeta.icon : 'fa-solid fa-cloud';
-    var html = '<a class="mp3-bc-item" data-provider-crumb="-1"><i class="' + escAttr(icon) + '"></i> ' + escAttr(label) + '</a>';
+    var html = '<a class="mp-bc-item" data-provider-crumb="-1"><i class="' + escAttr(icon) + '"></i> ' + escAttr(label) + '</a>';
     for (var j = 0; j < activeProviderPathSegments.length; j++) {
-        html += ' <i class="fa-solid fa-chevron-right mp3-bc-sep"></i> ';
-        html += '<a class="mp3-bc-item" data-provider-crumb="' + j + '">' + escAttr(activeProviderPathSegments[j].name) + '</a>';
+        html += ' <i class="fa-solid fa-chevron-right mp-bc-sep"></i> ';
+        html += '<a class="mp-bc-item" data-provider-crumb="' + j + '">' + escAttr(activeProviderPathSegments[j].name) + '</a>';
     }
     ctx.breadcrumb.innerHTML = html;
 }
@@ -314,7 +314,7 @@ export function hasSearch() {
 
 export function loadProviderEntries(search) {
     if (!activeProvider) return;
-    ctx.grid.className = 'mp3-grid';
+    ctx.grid.className = 'mp-grid';
     ctx.grid.innerHTML = '<div style="padding:40px;text-align:center;color:#6c757d;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2em;"></i></div>';
 
     apiFetchProviderEntries(activeProvider, activeProviderPath, search)
@@ -376,24 +376,24 @@ function renderProviderGrid(entries) {
         // eine einzelne Datei, ein Ordner ist keine importierbare Einheit.
         var isSel = !isFolder && !!providerSelected[entry.path];
         var showCheck = providerSelectMode && !isFolder;
-        html += '<div class="mp3-card mp3-provider-card' + (isSel ? ' mp3-card-multi-selected' : '') + '" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">' +
-            (showCheck ? '<div class="mp3-card-check"><i class="fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square') + '"></i></div>' : '') +
+        html += '<div class="mp-card mp-provider-card' + (isSel ? ' mp-card-multi-selected' : '') + '" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">' +
+            (showCheck ? '<div class="mp-card-check"><i class="fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square') + '"></i></div>' : '') +
             providerPreviewHtml(entry) +
-            '<div class="mp3-info">' +
-                '<span class="mp3-card-name" title="' + escAttr(entry.name) + '">' + escAttr(entry.name) + '</span>' +
-                '<span class="mp3-fmeta">' + (isFolder ? '' : formatBytes(entry.filesize || 0)) + '</span>' +
+            '<div class="mp-info">' +
+                '<span class="mp-card-name" title="' + escAttr(entry.name) + '">' + escAttr(entry.name) + '</span>' +
+                '<span class="mp-fmeta">' + (isFolder ? '' : formatBytes(entry.filesize || 0)) + '</span>' +
             '</div>' +
         '</div>';
     }
-    ctx.grid.className = 'mp3-grid';
+    ctx.grid.className = 'mp-grid';
     ctx.grid.innerHTML = html;
 }
 
 function renderProviderList(entries) {
     var showCheck = providerSelectMode;
-    var html = '<table class="mp3-list-table"><thead><tr>' +
-        (showCheck ? '<th class="mp3-list-th-check"></th>' : '') +
-        '<th class="mp3-list-th-preview"></th>' +
+    var html = '<table class="mp-list-table"><thead><tr>' +
+        (showCheck ? '<th class="mp-list-th-check"></th>' : '') +
+        '<th class="mp-list-th-preview"></th>' +
         '<th>' + t('mediaplace_name') + '</th>' +
         '<th>' + t('mediaplace_field_type') + '</th>' +
         '<th>' + t('mediaplace_field_size') + '</th>' +
@@ -403,32 +403,32 @@ function renderProviderList(entries) {
         var entry = entries[i];
         var isFolder = 'folder' === entry.type;
         var isSel = !isFolder && !!providerSelected[entry.path];
-        html += '<tr class="mp3-list-row mp3-provider-card' + (isSel ? ' mp3-list-row-multi-selected' : '') + '" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">';
+        html += '<tr class="mp-list-row mp-provider-card' + (isSel ? ' mp-list-row-multi-selected' : '') + '" data-provider-path="' + escAttr(entry.path) + '" data-provider-type="' + escAttr(entry.type) + '" data-provider-name="' + escAttr(entry.name) + '">';
         if (showCheck) {
-            html += '<td class="mp3-list-cell-check">' + (isFolder ? '' : '<i class="fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square') + '"></i>') + '</td>';
+            html += '<td class="mp-list-cell-check">' + (isFolder ? '' : '<i class="fa-solid ' + (isSel ? 'fa-square-check' : 'fa-square') + '"></i>') + '</td>';
         }
-        html += '<td class="mp3-list-cell-preview">' + (isFolder
+        html += '<td class="mp-list-cell-preview">' + (isFolder
             ? '<i class="fa-solid fa-folder"></i>'
             : (entry.hasThumbnail
                 ? '<img data-fallback-icon="' + escAttr(fileIcon(entry.name)) + '" src="' + escAttr(getProviderThumbnailUrl(activeProvider, entry.path)) + '" alt="" loading="lazy">'
                 : '<i class="' + escAttr(fileIcon(entry.name)) + '"></i>')) + '</td>';
-        html += '<td class="mp3-list-cell-name"><div class="mp3-list-name-wrap"><span>' + escAttr(entry.name) + '</span></div></td>';
-        html += '<td class="mp3-list-cell-type">' + escAttr(entry.filetype || '') + '</td>';
-        html += '<td class="mp3-list-cell-size">' + (isFolder ? '' : formatBytes(entry.filesize || 0)) + '</td>';
-        html += '<td class="mp3-list-cell-date">' + escAttr(entry.modified || '') + '</td>';
+        html += '<td class="mp-list-cell-name"><div class="mp-list-name-wrap"><span>' + escAttr(entry.name) + '</span></div></td>';
+        html += '<td class="mp-list-cell-type">' + escAttr(entry.filetype || '') + '</td>';
+        html += '<td class="mp-list-cell-size">' + (isFolder ? '' : formatBytes(entry.filesize || 0)) + '</td>';
+        html += '<td class="mp-list-cell-date">' + escAttr(entry.modified || '') + '</td>';
         html += '</tr>';
     }
     html += '</tbody></table>';
-    ctx.grid.className = 'mp3-grid mp3-view-list';
+    ctx.grid.className = 'mp-grid mp-view-list';
     ctx.grid.innerHTML = html;
 }
 
 function providerPreviewHtml(entry) {
     if ('folder' === entry.type) {
-        return '<div class="mp3-icon"><i class="fa-solid fa-folder"></i></div>';
+        return '<div class="mp-icon"><i class="fa-solid fa-folder"></i></div>';
     }
     if (!entry.hasThumbnail) {
-        return '<div class="mp3-icon"><i class="' + escAttr(fileIcon(entry.name)) + '"></i></div>';
+        return '<div class="mp-icon"><i class="' + escAttr(fileIcon(entry.name)) + '"></i></div>';
     }
     var src = getProviderThumbnailUrl(activeProvider, entry.path);
     // Gleicher garantierter Icon-Fallback wie bei lokalen Video-/Bild-
@@ -458,47 +458,47 @@ export function showProviderDetail(path, name) {
     var replaceTarget = ctx.getReplaceTarget ? ctx.getReplaceTarget() : null;
     var previewHtmlStr = entry.hasThumbnail
         ? '<img src="' + escAttr(getProviderThumbnailUrl(activeProvider, path)) + '" alt="' + escAttr(name) + '">'
-        : '<div class="mp3-icon"><i class="' + escAttr(fileIcon(name)) + '"></i></div>';
+        : '<div class="mp-icon"><i class="' + escAttr(fileIcon(name)) + '"></i></div>';
 
-    var html = '<div class="mp3-detail-inner">';
-    html += '<div class="mp3-detail-header"><span class="mp3-detail-header-name" title="' + escAttr(name) + '">' + escAttr(name) + '</span>' +
-        '<button class="mp3-detail-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button></div>';
-    html += '<div class="mp3-detail-preview">' + previewHtmlStr + '</div>';
-    html += '<table class="mp3-detail-table">';
+    var html = '<div class="mp-detail-inner">';
+    html += '<div class="mp-detail-header"><span class="mp-detail-header-name" title="' + escAttr(name) + '">' + escAttr(name) + '</span>' +
+        '<button class="mp-detail-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button></div>';
+    html += '<div class="mp-detail-preview">' + previewHtmlStr + '</div>';
+    html += '<table class="mp-detail-table">';
     html += '<tr><td>' + escAttr(t('mediaplace_field_filename')) + '</td><td>' + escAttr(name) + '</td></tr>';
     html += '<tr><td>' + escAttr(t('mediaplace_field_size')) + '</td><td>' + (entry.filesize ? formatBytes(entry.filesize) : '–') + '</td></tr>';
     if (entry.modified) {
         html += '<tr><td>' + escAttr(t('mediaplace_date')) + '</td><td>' + escAttr(entry.modified) + '</td></tr>';
     }
     html += '</table>';
-    html += '<div class="mp3-detail-actions">';
+    html += '<div class="mp-detail-actions">';
     if (replaceTarget) {
         // Ersetzen-Modus (siehe core.js startReplaceFromCloud()): eigener
         // Button/Klick-Handler statt promptProviderImport() -- keine
         // Kategorie-Abfrage, ueberschreibt die bestehende Datei statt eine
         // neue anzulegen (siehe replaceFromProviderFile()).
-        html += '<button type="button" class="mp3-image-optimize-btn mp3-provider-replace-btn" data-provider-replace-path="' + escAttr(path) + '" data-provider-replace-name="' + escAttr(name) + '">' +
+        html += '<button type="button" class="mp-image-optimize-btn mp-provider-replace-btn" data-provider-replace-path="' + escAttr(path) + '" data-provider-replace-name="' + escAttr(name) + '">' +
             '<i class="fa-solid fa-arrows-rotate"></i> ' + escAttr(t('mediaplace_provider_replace_confirm')) +
             '</button>';
-        html += '<div class="mp3-image-optimize-status mp3-provider-replace-status" style="display:none"></div>';
+        html += '<div class="mp-image-optimize-status mp-provider-replace-status" style="display:none"></div>';
     } else {
-        html += '<button type="button" class="mp3-image-optimize-btn mp3-provider-import-btn" data-provider-import-path="' + escAttr(path) + '" data-provider-import-name="' + escAttr(name) + '">' +
+        html += '<button type="button" class="mp-image-optimize-btn mp-provider-import-btn" data-provider-import-path="' + escAttr(path) + '" data-provider-import-name="' + escAttr(name) + '">' +
             '<i class="fa-solid fa-cloud-arrow-down"></i> ' + escAttr(isPicker ? t('mediaplace_provider_import_and_select') : t('mediaplace_provider_import')) +
             '</button>';
-        html += '<div class="mp3-image-optimize-status mp3-provider-import-status" style="display:none"></div>';
+        html += '<div class="mp-image-optimize-status mp-provider-import-status" style="display:none"></div>';
     }
     html += '</div>';
     html += '</div>';
 
     ctx.detailPanel.innerHTML = html;
-    // Unbedingt setzen, nicht nur im Compact-Layout: .mp3-detail hat
+    // Unbedingt setzen, nicht nur im Compact-Layout: .mp-detail hat
     // width:0/overflow:hidden per Default (siehe mediaplace.css), diese
     // Klasse ist es, die das Panel ueberhaupt sichtbar macht -- auf dem
     // Desktop genauso wie im Compact-Modus. Gleiches Muster wie
     // showDetail() fuer lokale Dateien (detailPanel.classList.add(...)
     // dort ebenfalls unbedingt, nur der separate Resize-Handle ist
     // Compact-abhaengig).
-    ctx.detailPanel.classList.add('mp3-detail-open');
+    ctx.detailPanel.classList.add('mp-detail-open');
 }
 
 /**
@@ -520,7 +520,7 @@ export function promptProviderImport(path, name, btn) {
 }
 
 function importProviderFile(path, name, btn, categoryId) {
-    var statusEl = btn ? btn.parentNode.querySelector('.mp3-provider-import-status') : null;
+    var statusEl = btn ? btn.parentNode.querySelector('.mp-provider-import-status') : null;
     var setStatus = function (html) {
         if (!statusEl) return;
         statusEl.style.display = '';
@@ -552,7 +552,7 @@ function importProviderFile(path, name, btn, categoryId) {
 }
 
 /**
- * Klick auf ".mp3-provider-replace-btn" (Ersetzen-Modus, siehe
+ * Klick auf ".mp-provider-replace-btn" (Ersetzen-Modus, siehe
  * showProviderDetail()): ersetzt den Inhalt der ueber core.js'
  * startReplaceFromCloud() gemerkten BESTEHENDEN Datei -- anders als
  * importProviderFile() keine Kategorie-Abfrage (die Zielkategorie ist die
@@ -563,7 +563,7 @@ export function replaceFromProviderFile(path, name, btn) {
     var targetFilename = ctx.getReplaceTarget ? ctx.getReplaceTarget() : null;
     if (!targetFilename) return;
 
-    var statusEl = btn ? btn.parentNode.querySelector('.mp3-provider-replace-status') : null;
+    var statusEl = btn ? btn.parentNode.querySelector('.mp-provider-replace-status') : null;
     var setStatus = function (html) {
         if (!statusEl) return;
         statusEl.style.display = '';
@@ -586,7 +586,7 @@ export function replaceFromProviderFile(path, name, btn) {
         });
 }
 
-/** Klick auf ".mp3-provider-batch-import-btn" -- Zielkategorie abfragen,
+/** Klick auf ".mp-provider-batch-import-btn" -- Zielkategorie abfragen,
  *  dann runProviderBulkImport(). */
 export function startProviderBulkImport() {
     var paths = Object.keys(providerSelected);
@@ -615,24 +615,24 @@ export function startProviderBulkImport() {
  */
 function showProviderBulkProgressModal(title) {
     var overlay = document.createElement('div');
-    overlay.className = 'mp3-cat-move-modal-overlay';
+    overlay.className = 'mp-cat-move-modal-overlay';
     overlay.innerHTML =
-        '<div class="mp3-cat-move-modal mp3-bulk-progress-modal mp3-provider-bulk-modal">' +
-        '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid fa-spinner fa-spin"></i> ' + escAttr(title) + '</h5>' +
-        '<p class="mp3-cat-move-modal-info mp3-bulk-progress-text"></p>' +
-        '<div class="mp3-bulk-progress-track"><div class="mp3-bulk-progress-fill" style="width:0%"></div></div>' +
-        '<div class="mp3-bulk-progress-errors" style="display:none"></div>' +
-        '<div class="mp3-cat-move-modal-actions">' +
-        '<button type="button" class="mp3-cat-move-modal-cancel mp3-bulk-progress-close">' + escAttr(t('mediaplace_cancel')) + '</button>' +
+        '<div class="mp-cat-move-modal mp-bulk-progress-modal mp-provider-bulk-modal">' +
+        '<h5 class="mp-cat-move-modal-title"><i class="fa-solid fa-spinner fa-spin"></i> ' + escAttr(title) + '</h5>' +
+        '<p class="mp-cat-move-modal-info mp-bulk-progress-text"></p>' +
+        '<div class="mp-bulk-progress-track"><div class="mp-bulk-progress-fill" style="width:0%"></div></div>' +
+        '<div class="mp-bulk-progress-errors" style="display:none"></div>' +
+        '<div class="mp-cat-move-modal-actions">' +
+        '<button type="button" class="mp-cat-move-modal-cancel mp-bulk-progress-close">' + escAttr(t('mediaplace_cancel')) + '</button>' +
         '</div>' +
         '</div>';
     document.body.appendChild(overlay);
 
-    var textEl = qs('.mp3-bulk-progress-text', overlay);
-    var fillEl = qs('.mp3-bulk-progress-fill', overlay);
-    var errorsEl = qs('.mp3-bulk-progress-errors', overlay);
-    var titleIcon = qs('.mp3-cat-move-modal-title i', overlay);
-    var closeBtn = qs('.mp3-bulk-progress-close', overlay);
+    var textEl = qs('.mp-bulk-progress-text', overlay);
+    var fillEl = qs('.mp-bulk-progress-fill', overlay);
+    var errorsEl = qs('.mp-bulk-progress-errors', overlay);
+    var titleIcon = qs('.mp-cat-move-modal-title i', overlay);
+    var closeBtn = qs('.mp-bulk-progress-close', overlay);
 
     var cancelled = false;
     var finished = false;
@@ -663,9 +663,9 @@ function showProviderBulkProgressModal(title) {
             errorsEl.style.display = '';
             errList.forEach(function (err) {
                 var block = document.createElement('div');
-                block.className = 'mp3-bulk-progress-error-item';
+                block.className = 'mp-bulk-progress-error-item';
                 var messageHtml = (err && err.message) ? err.message : String(err);
-                block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp3-bulk-progress-error-text">' + messageHtml + '</div>';
+                block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp-bulk-progress-error-text">' + messageHtml + '</div>';
                 errorsEl.appendChild(block);
             });
         },

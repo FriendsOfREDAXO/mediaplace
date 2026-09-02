@@ -26,22 +26,22 @@ import { renderFileTagDots } from './grid.js';
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var qs = MP3Core.helpers.qs;
-var qsa = MP3Core.helpers.qsa;
-var deepClone = MP3Core.helpers.deepClone;
-var isObj = MP3Core.helpers.isObj;
-var hasChanged = MP3Core.helpers.hasChanged;
-var mediaThumbSrc = MP3Core.helpers.mediaThumbSrc;
-var isImageFile = MP3Core.helpers.isImageFile;
-var apiLoadJsonMetainfo = MP3Core.api.apiLoadJsonMetainfo;
-var apiSaveJsonMetainfo = MP3Core.api.apiSaveJsonMetainfo;
-var apiUpdate = MP3Core.api.apiUpdate;
-var apiLoadSystemTagsForFiles = MP3Core.api.apiLoadSystemTagsForFiles;
-var apiLoadMetainfoForm = MP3Core.api.apiLoadMetainfoForm;
-var apiSaveMetainfoForm = MP3Core.api.apiSaveMetainfoForm;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var qs = MPCore.helpers.qs;
+var qsa = MPCore.helpers.qsa;
+var deepClone = MPCore.helpers.deepClone;
+var isObj = MPCore.helpers.isObj;
+var hasChanged = MPCore.helpers.hasChanged;
+var mediaThumbSrc = MPCore.helpers.mediaThumbSrc;
+var isImageFile = MPCore.helpers.isImageFile;
+var apiLoadJsonMetainfo = MPCore.api.apiLoadJsonMetainfo;
+var apiSaveJsonMetainfo = MPCore.api.apiSaveJsonMetainfo;
+var apiUpdate = MPCore.api.apiUpdate;
+var apiLoadSystemTagsForFiles = MPCore.api.apiLoadSystemTagsForFiles;
+var apiLoadMetainfoForm = MPCore.api.apiLoadMetainfoForm;
+var apiSaveMetainfoForm = MPCore.api.apiSaveMetainfoForm;
 
 // ---- State (vollstaendig vom Detail-Panel besessen, keine Leser/Schreiber
 // ausserhalb dieses Moduls -- Ausnahme: detailOriginalSystemTags, siehe
@@ -72,7 +72,7 @@ export function setDetailOriginalSystemTags(v) {
  * - overlay/detailPanel/grid/multiFooter: DOM-Refs
  * - mediaForceCacheTokens: noch-legacy-State, Objekt-Referenz (nur mutiert,
  *   nie neu zugewiesen -- direkt durchgereicht statt Getter)
- * - fieldCollectors: noch-legacy-State, Objekt-Referenz (MP3.registerFieldCollector()-
+ * - fieldCollectors: noch-legacy-State, Objekt-Referenz (MP.registerFieldCollector()-
  *   Registry, ebenfalls nur mutiert)
  * - getSelectedFile()/setSelectedFile(v): noch-legacy-State
  * - getMultiMode()/setMultiMode(v), getMultiSelected()/setMultiSelected(v): noch-legacy-State
@@ -97,14 +97,14 @@ export function initDetail(theCtx) {
 
 export function toggleInlineEdit(fieldEl, editing) {
     if (!fieldEl) return;
-    var display = qs('.mp3-edit-display', fieldEl);
-    var editWrap = qs('.mp3-inline-edit-wrap', fieldEl);
-    var input = qs('.mp3-edit-input[data-json-field], #mp3-detail-title-input', fieldEl);
+    var display = qs('.mp-edit-display', fieldEl);
+    var editWrap = qs('.mp-inline-edit-wrap', fieldEl);
+    var input = qs('.mp-edit-input[data-json-field], #mp-detail-title-input', fieldEl);
     if (!display || !editWrap || !input) return;
 
     display.style.display = editing ? 'none' : '';
     editWrap.style.display = editing ? '' : 'none';
-    fieldEl.classList.toggle('mp3-inline-edit-open', editing);
+    fieldEl.classList.toggle('mp-inline-edit-open', editing);
 
     if (editing) {
         setTimeout(function () {
@@ -116,16 +116,16 @@ export function toggleInlineEdit(fieldEl, editing) {
 
 export function updateInlineDisplay(fieldEl) {
     if (!fieldEl) return;
-    var displayTextEl = qs('.mp3-edit-display .mp3-edit-text', fieldEl);
-    var input = qs('.mp3-edit-input[data-json-field], #mp3-detail-title-input', fieldEl);
+    var displayTextEl = qs('.mp-edit-display .mp-edit-text', fieldEl);
+    var input = qs('.mp-edit-input[data-json-field], #mp-detail-title-input', fieldEl);
     if (!displayTextEl || !input) return;
     var text = String(input.value || '').trim();
     if (text) {
         displayTextEl.textContent = text;
-        displayTextEl.classList.remove('mp3-edit-placeholder');
+        displayTextEl.classList.remove('mp-edit-placeholder');
     } else {
         displayTextEl.textContent = t('mediaplace_click_to_edit');
-        displayTextEl.classList.add('mp3-edit-placeholder');
+        displayTextEl.classList.add('mp-edit-placeholder');
     }
 }
 
@@ -136,15 +136,15 @@ export function updateInlineDisplay(fieldEl) {
  * Speichern-Buttons also irrefuehrend (alle tun exakt dasselbe). Deshalb
  * erst alle Dirty-Zustaende sammeln, dann nur bei genau einem geaenderten
  * Feld dessen Button zeigen; bei mehreren nur der globale Button im
- * fixierten Footer (.mp3-detail-save-btn, siehe updateDetailSaveState()).
+ * fixierten Footer (.mp-detail-save-btn, siehe updateDetailSaveState()).
  */
 function updateFieldSaveButtons(currentTitle, currentJson) {
     var detailPanel = ctx.detailPanel;
     if (!detailPanel) return;
 
-    var titleField = detailPanel.querySelector('.mp3-edit-field[data-field-key="__title"]');
+    var titleField = detailPanel.querySelector('.mp-edit-field[data-field-key="__title"]');
     var titleDirty = titleField ? hasChanged(currentTitle, detailOriginalTitle) : false;
-    if (titleField) titleField.classList.toggle('mp3-field-dirty', titleDirty);
+    if (titleField) titleField.classList.toggle('mp-field-dirty', titleDirty);
 
     var dirtyFieldEls = [];
     if (titleDirty && titleField) dirtyFieldEls.push(titleField);
@@ -153,41 +153,41 @@ function updateFieldSaveButtons(currentTitle, currentJson) {
     detailFieldDefs.forEach(function (field) {
         var key = String(field.key || '');
         if (!key) return;
-        var fieldEl = detailPanel.querySelector('.mp3-json-field[data-field-key="' + key + '"]');
+        var fieldEl = detailPanel.querySelector('.mp-json-field[data-field-key="' + key + '"]');
         if (!fieldEl) return;
         var cur = Object.prototype.hasOwnProperty.call(currentJson, key) ? currentJson[key] : null;
         var orig = Object.prototype.hasOwnProperty.call(detailOriginalJson, key) ? detailOriginalJson[key] : null;
         var dirty = hasChanged(cur, orig);
         fieldDirtyMap[key] = dirty;
-        fieldEl.classList.toggle('mp3-field-dirty', dirty);
+        fieldEl.classList.toggle('mp-field-dirty', dirty);
         if (dirty) dirtyFieldEls.push(fieldEl);
     });
 
-    var systemField = detailPanel.querySelector('.mp3-json-field[data-field-key="__system_tags"]');
+    var systemField = detailPanel.querySelector('.mp-json-field[data-field-key="__system_tags"]');
     var systemDirty = systemField ? hasChanged(collectSystemTagsFromDetail(), detailOriginalSystemTags) : false;
     if (systemField) {
-        systemField.classList.toggle('mp3-field-dirty', systemDirty);
+        systemField.classList.toggle('mp-field-dirty', systemDirty);
         if (systemDirty) dirtyFieldEls.push(systemField);
     }
 
     var showPerFieldButtons = dirtyFieldEls.length === 1;
 
     if (titleField) {
-        var titleSaveBtn = qs('.mp3-field-save-btn', titleField);
+        var titleSaveBtn = qs('.mp-field-save-btn', titleField);
         if (titleSaveBtn) titleSaveBtn.style.display = (titleDirty && showPerFieldButtons) ? '' : 'none';
     }
 
     detailFieldDefs.forEach(function (field) {
         var key = String(field.key || '');
         if (!key) return;
-        var fieldEl = detailPanel.querySelector('.mp3-json-field[data-field-key="' + key + '"]');
+        var fieldEl = detailPanel.querySelector('.mp-json-field[data-field-key="' + key + '"]');
         if (!fieldEl) return;
-        var saveBtn = qs('.mp3-field-save-btn', fieldEl);
+        var saveBtn = qs('.mp-field-save-btn', fieldEl);
         if (saveBtn) saveBtn.style.display = (fieldDirtyMap[key] && showPerFieldButtons) ? '' : 'none';
     });
 
     if (systemField) {
-        var systemSaveBtn = qs('.mp3-field-save-btn', systemField);
+        var systemSaveBtn = qs('.mp-field-save-btn', systemField);
         if (systemSaveBtn) systemSaveBtn.style.display = (systemDirty && showPerFieldButtons) ? '' : 'none';
     }
 }
@@ -203,34 +203,34 @@ export function openMetainfoCanvas(filename, label) {
     ctx.setMetainfoCanvasFilename(filename);
     // REDAXOs Metainfo-Formular kann eigene TinyMCE-Feldtypen rendern
     // (klassisches Metainfo-Addon, nicht unser JSON-Feldsystem), deren
-    // Dialoge ebenfalls ueber #mp3-overlay liegen muessen.
-    document.body.classList.add('mp3-embedded-editor-active');
+    // Dialoge ebenfalls ueber #mp-overlay liegen muessen.
+    document.body.classList.add('mp-embedded-editor-active');
 
-    var content = qs('.mp3-content', overlay);
-    if (content) content.classList.add('mp3-editor-mode');
+    var content = qs('.mp-content', overlay);
+    if (content) content.classList.add('mp-editor-mode');
 
-    var canvas = qs('#mp3-metainfo-canvas', overlay);
+    var canvas = qs('#mp-metainfo-canvas', overlay);
     if (canvas) canvas.style.display = '';
 
-    if (ctx.isCompactLayout() && detailPanel) detailPanel.classList.remove('mp3-detail-open');
+    if (ctx.isCompactLayout() && detailPanel) detailPanel.classList.remove('mp-detail-open');
 
-    var saveBtn = qs('.mp3-metainfo-canvas-save', canvas);
+    var saveBtn = qs('.mp-metainfo-canvas-save', canvas);
     if (saveBtn) {
         saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
         saveBtn.title = '';
-        saveBtn.classList.remove('mp3-detail-save-success', 'mp3-detail-save-error');
+        saveBtn.classList.remove('mp-detail-save-success', 'mp-detail-save-error');
     }
 
-    var titleEl = qs('.mp3-metainfo-canvas-title', canvas);
+    var titleEl = qs('.mp-metainfo-canvas-title', canvas);
     if (titleEl) titleEl.textContent = label || filename;
 
-    var formEl = document.getElementById('mp3-metainfo-form');
-    if (formEl) formEl.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_loading_more') + '</div>';
+    var formEl = document.getElementById('mp-metainfo-form');
+    if (formEl) formEl.innerHTML = '<div class="mp-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> ' + t('mediaplace_loading_more') + '</div>';
 
     apiLoadMetainfoForm(filename)
         .then(function (html) {
             if (!formEl || ctx.getMetainfoCanvasFilename() !== filename) return;
-            formEl.innerHTML = html || '<p class="mp3-metainfo-canvas-empty text-muted">' + t('mediaplace_metainfo_readonly_empty') + '</p>';
+            formEl.innerHTML = html || '<p class="mp-metainfo-canvas-empty text-muted">' + t('mediaplace_metainfo_readonly_empty') + '</p>';
             // Bootstrap-select initialisiert dynamisch eingefuegte Selects nicht automatisch.
             if (window.jQuery && window.jQuery.fn && window.jQuery.fn.selectpicker) {
                 window.jQuery('.selectpicker', formEl).selectpicker();
@@ -250,7 +250,7 @@ export function openMetainfoCanvas(filename, label) {
         })
         .catch(function (err) {
             if (!formEl) return;
-            formEl.innerHTML = '<div class="mp3-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
+            formEl.innerHTML = '<div class="mp-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
         });
 
     if (canvas) canvas.scrollTop = 0;
@@ -259,10 +259,10 @@ export function openMetainfoCanvas(filename, label) {
 export function commitMetainfoCanvas() {
     var overlay = ctx.overlay;
     if (!ctx.getMetainfoCanvasOpen() || !ctx.getMetainfoCanvasFilename()) return;
-    var formEl = document.getElementById('mp3-metainfo-form');
+    var formEl = document.getElementById('mp-metainfo-form');
     if (!formEl) return;
 
-    var saveBtn = qs('.mp3-metainfo-canvas-save', overlay);
+    var saveBtn = qs('.mp-metainfo-canvas-save', overlay);
     if (saveBtn) saveBtn.disabled = true;
 
     apiSaveMetainfoForm(ctx.getMetainfoCanvasFilename(), new FormData(formEl))
@@ -270,7 +270,7 @@ export function commitMetainfoCanvas() {
             if (saveBtn) {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' + t('mediaplace_saved');
-                saveBtn.classList.add('mp3-detail-save-success');
+                saveBtn.classList.add('mp-detail-save-success');
             }
             // Kurze Erfolgs-Rueckmeldung, bevor der Canvas schliesst -- ohne die
             // wechselt die Ansicht sofort zurueck ins Grid, was wie ein Fehlschlag
@@ -284,14 +284,14 @@ export function commitMetainfoCanvas() {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error');
                 saveBtn.title = t('mediaplace_error_saving', { msg: err.message });
-                saveBtn.classList.add('mp3-detail-save-error');
+                saveBtn.classList.add('mp-detail-save-error');
                 setTimeout(function () {
                     saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
                     saveBtn.title = '';
-                    saveBtn.classList.remove('mp3-detail-save-error');
+                    saveBtn.classList.remove('mp-detail-save-error');
                 }, 1800);
             }
-            console.error('MP3 metainfo save failed:', err);
+            console.error('MP metainfo save failed:', err);
         });
 }
 
@@ -300,14 +300,14 @@ export function closeMetainfoCanvas() {
     var detailPanel = ctx.detailPanel;
     ctx.setMetainfoCanvasOpen(false);
     ctx.setMetainfoCanvasFilename(null);
-    document.body.classList.remove('mp3-embedded-editor-active');
+    document.body.classList.remove('mp-embedded-editor-active');
 
-    var content = qs('.mp3-content', overlay);
-    if (content) content.classList.remove('mp3-editor-mode');
-    var canvas = qs('#mp3-metainfo-canvas', overlay);
+    var content = qs('.mp-content', overlay);
+    if (content) content.classList.remove('mp-editor-mode');
+    var canvas = qs('#mp-metainfo-canvas', overlay);
     if (canvas) canvas.style.display = 'none';
 
-    if (ctx.isCompactLayout() && detailPanel && ctx.getSelectedFile()) detailPanel.classList.add('mp3-detail-open');
+    if (ctx.isCompactLayout() && detailPanel && ctx.getSelectedFile()) detailPanel.classList.add('mp-detail-open');
 
     // Der native Metainfo-Canvas kann Felder speichern, die die eigenen
     // Widgets im JSON-Panel mitbetreffen (z.B. das klassische med_alt neben
@@ -316,7 +316,7 @@ export function closeMetainfoCanvas() {
     // Button-Zustand des Panels auf dem Stand vor dem Aufruf des Canvas
     // stehen, bis das Panel geschlossen und neu geoeffnet wird.
     if (detailPanel && ctx.getSelectedFile()) {
-        qsa('.mp3-alt-wrap', detailPanel).forEach(updateAltHint);
+        qsa('.mp-alt-wrap', detailPanel).forEach(updateAltHint);
         updateDetailSaveState();
         refreshAltMissingHint(ctx.getSelectedFile());
     }
@@ -337,12 +337,12 @@ function refreshAltMissingHint(filename) {
     apiLoadJsonMetainfo(filename).then(function (payload) {
         // User kann in der Zwischenzeit eine andere Datei geoeffnet haben.
         if (!detailPanel || ctx.getSelectedFile() !== filename) return;
-        var editBtn = detailPanel.querySelector('.mp3-metainfo-canvas-open');
-        var currentHint = detailPanel.querySelector('.mp3-alt-missing-hint');
+        var editBtn = detailPanel.querySelector('.mp-metainfo-canvas-open');
+        var currentHint = detailPanel.querySelector('.mp-alt-missing-hint');
         var shouldShow = !!(payload && payload.alt_text_missing);
         if (shouldShow && !currentHint && editBtn) {
             var hint = document.createElement('p');
-            hint.className = 'mp3-alt-missing-hint';
+            hint.className = 'mp-alt-missing-hint';
             hint.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(t('mediaplace_alt_text_missing'));
             editBtn.insertAdjacentElement('afterend', hint);
         } else if (!shouldShow && currentHint) {
@@ -353,7 +353,7 @@ function refreshAltMissingHint(filename) {
 
 // Klick auf "Oeffnen"/"Hinzufuegen" eines klassischen REX_MEDIA[n]/
 // REX_MEDIALIST[n]-Widgets innerhalb des Metainfo-Canvas: statt REDAXOs
-// natives Popup blendet MP3 den Canvas kurz aus, zeigt das eigene Grid
+// natives Popup blendet MP den Canvas kurz aus, zeigt das eigene Grid
 // zum Auswaehlen, und kehrt danach zum (unveraendert im DOM verbliebenen,
 // nicht neu geladenen) Formular zurueck.
 export function startMetainfoPick(wrapper, isList) {
@@ -367,7 +367,7 @@ export function startMetainfoPick(wrapper, isList) {
         ctx.setMetainfoPickTarget({ type: 'medialist', select: select, listId: select.id.slice('REX_MEDIALIST_SELECT_'.length) });
         ctx.setMultiMode(true);
         ctx.setMultiSelected({});
-        overlay.classList.add('mp3-multi-mode');
+        overlay.classList.add('mp-multi-mode');
         if (multiFooter) multiFooter.style.display = '';
         ctx.updateMultiUI();
     } else {
@@ -376,15 +376,15 @@ export function startMetainfoPick(wrapper, isList) {
         ctx.setMetainfoPickTarget({ type: 'media', input: input });
     }
 
-    var canvas = qs('#mp3-metainfo-canvas', overlay);
+    var canvas = qs('#mp-metainfo-canvas', overlay);
     if (canvas) canvas.style.display = 'none';
-    var content = qs('.mp3-content', overlay);
-    if (content) content.classList.remove('mp3-editor-mode');
-    overlay.classList.add('mp3-metainfo-pick-mode');
+    var content = qs('.mp-content', overlay);
+    if (content) content.classList.remove('mp-editor-mode');
+    overlay.classList.add('mp-metainfo-pick-mode');
 
-    var banner = qs('#mp3-metainfo-pick-banner', overlay);
+    var banner = qs('#mp-metainfo-pick-banner', overlay);
     if (banner) {
-        var text = qs('.mp3-metainfo-pick-banner-text', banner);
+        var text = qs('.mp-metainfo-pick-banner-text', banner);
         if (text) text.textContent = t(isList ? 'mediaplace_metainfo_pick_hint_multi' : 'mediaplace_metainfo_pick_hint');
         banner.style.display = '';
     }
@@ -398,17 +398,17 @@ export function endMetainfoPick() {
     ctx.setMetainfoPickTarget(null);
     ctx.setMultiMode(false);
     ctx.setMultiSelected({});
-    overlay.classList.remove('mp3-multi-mode');
-    overlay.classList.remove('mp3-metainfo-pick-mode');
+    overlay.classList.remove('mp-multi-mode');
+    overlay.classList.remove('mp-metainfo-pick-mode');
     if (multiFooter) multiFooter.style.display = 'none';
     if (wasMedialist) ctx.updateMultiUI();
-    var banner = qs('#mp3-metainfo-pick-banner', overlay);
+    var banner = qs('#mp-metainfo-pick-banner', overlay);
     if (banner) banner.style.display = 'none';
 
-    var canvas = qs('#mp3-metainfo-canvas', overlay);
+    var canvas = qs('#mp-metainfo-canvas', overlay);
     if (canvas) canvas.style.display = '';
-    var content = qs('.mp3-content', overlay);
-    if (content) content.classList.add('mp3-editor-mode');
+    var content = qs('.mp-content', overlay);
+    if (content) content.classList.add('mp-editor-mode');
 }
 
 export function finishMetainfoMediaPick(filename) {
@@ -452,18 +452,18 @@ export function updateAltHint(wrap) {
     inputs.forEach(function (inp) {
         if (String(inp.value || '').trim()) hasText = true;
     });
-    var hint = wrap.querySelector('.mp3-alt-hint');
+    var hint = wrap.querySelector('.mp-alt-hint');
     var needsHint = !isDecorative && !hasText;
     if (needsHint && !hint) {
         hint = document.createElement('div');
-        hint.className = 'mp3-alt-hint';
+        hint.className = 'mp-alt-hint';
         hint.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_alt_missing_hint');
         wrap.insertBefore(hint, wrap.firstChild);
     } else if (!needsHint && hint) {
         hint.remove();
     }
     // Show/hide lang inputs depending on decorative state
-    var langWrap = wrap.querySelector('.mp3-lang-inputs');
+    var langWrap = wrap.querySelector('.mp-lang-inputs');
     if (langWrap) langWrap.style.display = isDecorative ? 'none' : '';
 }
 
@@ -471,7 +471,7 @@ export function updateAltHint(wrap) {
 export function repaintTagsWidget(widgetWrap) {
     if (!widgetWrap) return;
     var hidden = qs('[data-widget="tags-value"]', widgetWrap);
-    var listWrap = qs('.mp3-tags-list', widgetWrap);
+    var listWrap = qs('.mp-tags-list', widgetWrap);
     if (!hidden || !listWrap) return;
     var tags = [];
     try { tags = JSON.parse(hidden.value || '[]'); } catch (e) { tags = []; }
@@ -482,7 +482,7 @@ export function repaintTagsWidget(widgetWrap) {
     // gerade erst neu angelegt wurden (siehe addTagFromWidget()). Andere
     // Tags-Felder (falls ein Drittanbieter je widget_type "tags" registriert)
     // kennen keinen zentralen Katalog und behalten das alte Verhalten.
-    var isSystemTagsField = !!widgetWrap.closest('.mp3-json-field[data-field-key="__system_tags"]');
+    var isSystemTagsField = !!widgetWrap.closest('.mp-json-field[data-field-key="__system_tags"]');
     var html = '';
     for (var i = 0; i < tags.length; i++) {
         var item = tags[i];
@@ -490,12 +490,12 @@ export function repaintTagsWidget(widgetWrap) {
         var tagColor = typeof item === 'object' && item && /^#[0-9a-fA-F]{6}$/.test(String(item.color || '')) ? String(item.color).toLowerCase() : '#4a90d9';
         if (!tagName) continue;
         var showColorInput = !isSystemTagsField || !!newlyCreatedTagNames[tagName];
-        html += '<span class="mp3-tag-item">';
-        html += '<span class="mp3-tag-dot" style="background:' + escAttr(tagColor) + '"></span> ' + escAttr(tagName);
+        html += '<span class="mp-tag-item">';
+        html += '<span class="mp-tag-dot" style="background:' + escAttr(tagColor) + '"></span> ' + escAttr(tagName);
         if (showColorInput) {
-            html += ' <input type="color" class="mp3-tag-color" data-tag="' + escAttr(tagName) + '" value="' + escAttr(tagColor) + '">';
+            html += ' <input type="color" class="mp-tag-color" data-tag="' + escAttr(tagName) + '" value="' + escAttr(tagColor) + '">';
         }
-        html += ' <button type="button" class="mp3-tag-remove" data-tag="' + escAttr(tagName) + '"><i class="fa-solid fa-xmark"></i></button>';
+        html += ' <button type="button" class="mp-tag-remove" data-tag="' + escAttr(tagName) + '"><i class="fa-solid fa-xmark"></i></button>';
         html += '</span>';
     }
     listWrap.innerHTML = html;
@@ -523,8 +523,8 @@ function collectTagNames(values) {
 // an. detailSystemTagCatalog kommt aus renderDetail() (JSON-Metadaten-
 // Payload), ist also schon beim ersten Rendern der Datei aktuell.
 export function updateTagsComboList(wrap) {
-    var list = wrap ? qs('.mp3-tags-combo-list', wrap) : null;
-    var input = wrap ? qs('.mp3-tags-input', wrap) : null;
+    var list = wrap ? qs('.mp-tags-combo-list', wrap) : null;
+    var input = wrap ? qs('.mp-tags-input', wrap) : null;
     var hidden = wrap ? qs('[data-widget="tags-value"]', wrap) : null;
     if (!list || !input || !hidden) return;
 
@@ -552,31 +552,31 @@ export function updateTagsComboList(wrap) {
         if (term && name.toLowerCase().indexOf(termLower) === -1) continue;
         if (name.toLowerCase() === termLower) exactMatch = true;
         var color = /^#[0-9a-fA-F]{6}$/.test(String(item.color || '')) ? String(item.color).toLowerCase() : '#4a90d9';
-        html += '<button type="button" class="mp3-tags-combo-option" data-tag-name="' + escAttr(name) + '">' +
-            '<span class="mp3-tag-dot" style="background:' + escAttr(color) + '"></span>' +
-            '<span class="mp3-tags-combo-option-label">' + escAttr(name) + '</span>' +
+        html += '<button type="button" class="mp-tags-combo-option" data-tag-name="' + escAttr(name) + '">' +
+            '<span class="mp-tag-dot" style="background:' + escAttr(color) + '"></span>' +
+            '<span class="mp-tags-combo-option-label">' + escAttr(name) + '</span>' +
             '</button>';
     }
     if (term && !exactMatch) {
-        html += '<button type="button" class="mp3-tags-combo-create" data-tag-name="' + escAttr(term) + '">' +
+        html += '<button type="button" class="mp-tags-combo-create" data-tag-name="' + escAttr(term) + '">' +
             '<i class="fa-solid fa-plus"></i> ' + escAttr(t('mediaplace_create_tag', { name: term })) +
             '</button>';
     }
     if (!html) {
-        html = '<div class="mp3-tags-combo-empty">' + t('mediaplace_no_tags_found') + '</div>';
+        html = '<div class="mp-tags-combo-empty">' + t('mediaplace_no_tags_found') + '</div>';
     }
     list.innerHTML = html;
 }
 
 export function openTagsComboList(wrap) {
-    var list = wrap ? qs('.mp3-tags-combo-list', wrap) : null;
+    var list = wrap ? qs('.mp-tags-combo-list', wrap) : null;
     if (!list) return;
     updateTagsComboList(wrap);
     list.style.display = '';
 }
 
 export function closeTagsComboList(wrap) {
-    var list = wrap ? qs('.mp3-tags-combo-list', wrap) : null;
+    var list = wrap ? qs('.mp-tags-combo-list', wrap) : null;
     if (list) list.style.display = 'none';
 }
 
@@ -592,7 +592,7 @@ export function closeTagsComboList(wrap) {
 // nur wie ein unerwuenschter Nebeneffekt (siehe Bugreport).
 export function addTagFromWidget(wrap, rawTagName, reopenCombo) {
     if (undefined === reopenCombo) reopenCombo = true;
-    var tagsInput = wrap ? qs('.mp3-tags-input', wrap) : null;
+    var tagsInput = wrap ? qs('.mp-tags-input', wrap) : null;
     var hiddenInput = wrap ? qs('[data-widget="tags-value"]', wrap) : null;
     if (!wrap || !hiddenInput) return;
     var newTag = String(rawTagName || '').trim();
@@ -608,7 +608,7 @@ export function addTagFromWidget(wrap, rawTagName, reopenCombo) {
             break;
         }
     }
-    var isSystemTagsField = !!wrap.closest('.mp3-json-field[data-field-key="__system_tags"]');
+    var isSystemTagsField = !!wrap.closest('.mp-json-field[data-field-key="__system_tags"]');
     if (!exists) {
         if (isSystemTagsField && isCollectionTagName(newTag)) {
             showAlertModal({
@@ -651,7 +651,7 @@ export function addTagFromWidget(wrap, rawTagName, reopenCombo) {
 
 export function applyTagColorChange(colorInput) {
     if (!colorInput) return;
-    var colorWrap = colorInput.closest('.mp3-tags-widget');
+    var colorWrap = colorInput.closest('.mp-tags-widget');
     var colorHidden = colorWrap ? qs('[data-widget="tags-value"]', colorWrap) : null;
     var colorTag = colorInput.getAttribute('data-tag');
     if (!colorHidden || !colorTag) return;
@@ -680,16 +680,16 @@ export function setMediaLinkPickMode(fieldKey) {
     if (!overlay || !detailPanel) return;
 
     var mediaLinkPickFieldKey = ctx.getMediaLinkPickFieldKey();
-    overlay.classList.toggle('mp3-media-link-pick-mode', !!mediaLinkPickFieldKey);
+    overlay.classList.toggle('mp-media-link-pick-mode', !!mediaLinkPickFieldKey);
 
-    qsa('.mp3-media-link-widget', detailPanel).forEach(function (widget) {
+    qsa('.mp-media-link-widget', detailPanel).forEach(function (widget) {
         var input = qs('[data-json-field]', widget);
         var key = input ? input.getAttribute('data-json-field') : null;
         var active = !!mediaLinkPickFieldKey && key === mediaLinkPickFieldKey;
 
-        widget.classList.toggle('mp3-media-link-widget-pick-active', active);
+        widget.classList.toggle('mp-media-link-widget-pick-active', active);
 
-        var hint = qs('.mp3-media-link-pick-hint', widget);
+        var hint = qs('.mp-media-link-pick-hint', widget);
         if (hint) {
             hint.style.display = active ? '' : 'none';
         }
@@ -701,7 +701,7 @@ export function repaintMediaLinkWidget(widgetWrap) {
     var input = qs('[data-json-field]', widgetWrap);
     if (!input) return;
     var filename = String(input.value || '').trim();
-    var preview = qs('.mp3-media-link-preview', widgetWrap);
+    var preview = qs('.mp-media-link-preview', widgetWrap);
     if (!filename || !isImageFile(filename)) {
         if (preview) preview.remove();
         return;
@@ -712,7 +712,7 @@ export function repaintMediaLinkWidget(widgetWrap) {
         preview.innerHTML = previewHtml;
     } else {
         var div = document.createElement('div');
-        div.className = 'mp3-media-link-preview';
+        div.className = 'mp-media-link-preview';
         div.innerHTML = previewHtml;
         widgetWrap.appendChild(div);
     }
@@ -726,7 +726,7 @@ function collectJsonValuesFromDetail() {
         var key = field.key;
         var widget = String(field.widget_type || 'text');
 
-        // Von einem anderen Addon per MP3.registerFieldCollector() registrierter
+        // Von einem anderen Addon per MP.registerFieldCollector() registrierter
         // Feldtyp (siehe MetainfoWidget::getRegisteredTypes() in PHP) -- hat
         // Vorrang vor den eingebauten Zweigen, falls ein widget_type kollidiert.
         if (fieldCollectors[widget]) {
@@ -855,10 +855,10 @@ function collectSystemTagsFromDetail() {
 export function updateDetailSaveState() {
     var detailPanel = ctx.detailPanel;
     if (!detailPanel) return;
-    var saveBtn = detailPanel.querySelector('.mp3-detail-save-btn');
+    var saveBtn = detailPanel.querySelector('.mp-detail-save-btn');
     if (!saveBtn) return;
 
-    var titleEl = detailPanel.querySelector('#mp3-detail-title-input');
+    var titleEl = detailPanel.querySelector('#mp-detail-title-input');
     var currentTitle = titleEl ? String(titleEl.value || '').trim() : '';
     var currentJson = collectJsonValuesFromDetail();
     var currentSystemTags = collectSystemTagsFromDetail();
@@ -870,13 +870,13 @@ export function updateDetailSaveState() {
     saveBtn.classList.toggle('is-dirty', changed);
 
     updateFieldSaveButtons(currentTitle, currentJson);
-    qsa('.mp3-edit-field-inline, .mp3-json-field', detailPanel).forEach(updateInlineDisplay);
+    qsa('.mp-edit-field-inline, .mp-json-field', detailPanel).forEach(updateInlineDisplay);
 }
 
 /**
  * Tag-Dots einer Kachel/Zeile nach dem Speichern direkt patchen (statt einen
  * kompletten Reload zu erzwingen) -- gleiches Prinzip wie der bestehende
- * Titel-Patch weiter unten, nur fuer .mp3-file-tag-dots. Deckt alle drei
+ * Titel-Patch weiter unten, nur fuer .mp-file-tag-dots. Deckt alle drei
  * Ansichten ab (Grid-Kachel/Listen-Zeile/Media-Wall), da renderFileTagDots()
  * fuer alle drei genutzt wird (siehe grid.js).
  */
@@ -884,14 +884,14 @@ function updateCardTagDots(filename, systemTags) {
     var grid = ctx.grid;
     var dotsHtml = renderFileTagDots({ system_tags: systemTags });
     var containers = [
-        grid.querySelector('.mp3-card[data-filename="' + filename + '"] .mp3-info'),
-        grid.querySelector('.mp3-list-row[data-filename="' + filename + '"] .mp3-list-name-wrap'),
-        grid.querySelector('.mp3-masonry-card[data-filename="' + filename + '"] .mp3-info'),
+        grid.querySelector('.mp-card[data-filename="' + filename + '"] .mp-info'),
+        grid.querySelector('.mp-list-row[data-filename="' + filename + '"] .mp-list-name-wrap'),
+        grid.querySelector('.mp-masonry-card[data-filename="' + filename + '"] .mp-info'),
     ];
     for (var i = 0; i < containers.length; i++) {
         var container = containers[i];
         if (!container) continue;
-        var existing = container.querySelector('.mp3-file-tag-dots');
+        var existing = container.querySelector('.mp-file-tag-dots');
         if (existing) existing.remove();
         if (dotsHtml) container.insertAdjacentHTML('beforeend', dotsHtml);
     }
@@ -902,8 +902,8 @@ export function saveDetail() {
     var grid = ctx.grid;
     var selectedFile = ctx.getSelectedFile();
     if (!selectedFile || !detailPanel) return;
-    var saveBtn = detailPanel.querySelector('.mp3-detail-save-btn');
-    var titleEl = detailPanel.querySelector('#mp3-detail-title-input');
+    var saveBtn = detailPanel.querySelector('.mp-detail-save-btn');
+    var titleEl = detailPanel.querySelector('#mp-detail-title-input');
     var currentTitle = titleEl ? String(titleEl.value || '').trim() : '';
     var currentJson = collectJsonValuesFromDetail();
     var currentSystemTags = collectSystemTagsFromDetail();
@@ -938,35 +938,35 @@ export function saveDetail() {
             detailOriginalSystemTags = deepClone(currentSystemTags);
 
             if (titleChanged) {
-                var card = grid.querySelector('.mp3-card[data-filename="' + selectedFile + '"]');
+                var card = grid.querySelector('.mp-card[data-filename="' + selectedFile + '"]');
                 if (card) {
-                    var nameEl = card.querySelector('.mp3-card-name');
+                    var nameEl = card.querySelector('.mp-card-name');
                     if (nameEl) nameEl.textContent = currentTitle || selectedFile;
-                    var fnameEl = card.querySelector('.mp3-fname');
+                    var fnameEl = card.querySelector('.mp-fname');
                     if (currentTitle) {
                         if (!fnameEl) {
                             fnameEl = document.createElement('span');
-                            fnameEl.className = 'mp3-fname';
+                            fnameEl.className = 'mp-fname';
                             fnameEl.title = selectedFile;
                             fnameEl.textContent = selectedFile;
-                            var infoEl = card.querySelector('.mp3-info');
-                            if (infoEl) infoEl.insertBefore(fnameEl, infoEl.querySelector('.mp3-fmeta'));
+                            var infoEl = card.querySelector('.mp-info');
+                            if (infoEl) infoEl.insertBefore(fnameEl, infoEl.querySelector('.mp-fmeta'));
                         }
                     } else if (fnameEl) {
                         fnameEl.remove();
                     }
                 }
-                var row = grid.querySelector('.mp3-list-row[data-filename="' + selectedFile + '"]');
+                var row = grid.querySelector('.mp-list-row[data-filename="' + selectedFile + '"]');
                 if (row) {
-                    var nameCell = row.querySelector('.mp3-list-cell-name');
+                    var nameCell = row.querySelector('.mp-list-cell-name');
                     if (nameCell) {
                         nameCell.textContent = currentTitle || selectedFile;
                         nameCell.title = currentTitle ? selectedFile : '';
                     }
                 }
-                var masonryCard = grid.querySelector('.mp3-masonry-card[data-filename="' + selectedFile + '"]');
+                var masonryCard = grid.querySelector('.mp-masonry-card[data-filename="' + selectedFile + '"]');
                 if (masonryCard) {
-                    var masonryName = masonryCard.querySelector('.mp3-masonry-name');
+                    var masonryName = masonryCard.querySelector('.mp-masonry-name');
                     if (masonryName) {
                         masonryName.textContent = currentTitle || selectedFile;
                         masonryName.title = selectedFile;
@@ -983,11 +983,11 @@ export function saveDetail() {
 
             if (saveBtn) {
                 saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' + t('mediaplace_saved');
-                saveBtn.classList.add('mp3-detail-save-success');
+                saveBtn.classList.add('mp-detail-save-success');
                 setTimeout(function () {
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
-                    saveBtn.classList.remove('mp3-detail-save-success');
+                    saveBtn.classList.remove('mp-detail-save-success');
                     updateDetailSaveState();
                 }, 1200);
             }
@@ -1034,15 +1034,15 @@ export function saveDetail() {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error');
                 saveBtn.title = t('mediaplace_error_saving', { msg: err.message });
-                saveBtn.classList.add('mp3-detail-save-error');
+                saveBtn.classList.add('mp-detail-save-error');
                 setTimeout(function () {
                     saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
                     saveBtn.title = t('mediaplace_save_changes');
-                    saveBtn.classList.remove('mp3-detail-save-error');
+                    saveBtn.classList.remove('mp-detail-save-error');
                     updateDetailSaveState();
                 }, 1800);
             }
-            console.error('MP3 save detail failed:', err);
+            console.error('MP save detail failed:', err);
         });
 }
 
@@ -1053,21 +1053,21 @@ export function showDetail(filename) {
     ctx.setSelectedFile(filename);
     if (!detailPanel) return;
 
-    qsa('.mp3-card', grid).forEach(function (c) {
-        c.classList.toggle('mp3-card-selected', c.getAttribute('data-filename') === filename);
+    qsa('.mp-card', grid).forEach(function (c) {
+        c.classList.toggle('mp-card-selected', c.getAttribute('data-filename') === filename);
     });
-    qsa('.mp3-list-row', grid).forEach(function (r) {
-        r.classList.toggle('mp3-list-row-selected', r.getAttribute('data-filename') === filename);
+    qsa('.mp-list-row', grid).forEach(function (r) {
+        r.classList.toggle('mp-list-row-selected', r.getAttribute('data-filename') === filename);
     });
-    qsa('.mp3-masonry-card', grid).forEach(function (r) {
-        r.classList.toggle('mp3-masonry-card-selected', r.getAttribute('data-filename') === filename);
+    qsa('.mp-masonry-card', grid).forEach(function (r) {
+        r.classList.toggle('mp-masonry-card-selected', r.getAttribute('data-filename') === filename);
     });
 
-    detailPanel.classList.add('mp3-detail-open');
-    detailPanel.innerHTML = '<div class="mp3-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> Lade Details…</div>';
+    detailPanel.classList.add('mp-detail-open');
+    detailPanel.innerHTML = '<div class="mp-detail-loading"><i class="fa-solid fa-spinner fa-spin"></i> Lade Details…</div>';
     ctx.applyDetailWidth();
-    var detailResizeHandle = qs('#mp3-detail-resize-handle', overlay);
-    if (detailResizeHandle) detailResizeHandle.style.display = overlay.classList.contains('mp3-compact') ? 'none' : '';
+    var detailResizeHandle = qs('#mp-detail-resize-handle', overlay);
+    if (detailResizeHandle) detailResizeHandle.style.display = overlay.classList.contains('mp-compact') ? 'none' : '';
 
     // Alle Info-Felder (inkl. is_in_use) berechnet der eigene Endpunkt jetzt
     // selbst (siehe buildFastInfoFields() in
@@ -1078,7 +1078,7 @@ export function showDetail(filename) {
             renderDetail(payload);
         })
         .catch(function (err) {
-            detailPanel.innerHTML = '<div class="mp3-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
+            detailPanel.innerHTML = '<div class="mp-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
         });
 }
 
@@ -1089,20 +1089,20 @@ export function hideDetail() {
     ctx.setSelectedFile(null);
     setMediaLinkPickMode(null);
     if (detailPanel) {
-        detailPanel.classList.remove('mp3-detail-open');
+        detailPanel.classList.remove('mp-detail-open');
         detailPanel.innerHTML = '';
         detailPanel.style.width = '';
     }
-    var detailResizeHandle = qs('#mp3-detail-resize-handle', overlay);
+    var detailResizeHandle = qs('#mp-detail-resize-handle', overlay);
     if (detailResizeHandle) detailResizeHandle.style.display = 'none';
-    qsa('.mp3-card', grid).forEach(function (c) {
-        c.classList.remove('mp3-card-selected');
+    qsa('.mp-card', grid).forEach(function (c) {
+        c.classList.remove('mp-card-selected');
     });
-    qsa('.mp3-list-row', grid).forEach(function (r) {
-        r.classList.remove('mp3-list-row-selected');
+    qsa('.mp-list-row', grid).forEach(function (r) {
+        r.classList.remove('mp-list-row-selected');
     });
-    qsa('.mp3-masonry-card', grid).forEach(function (r) {
-        r.classList.remove('mp3-masonry-card-selected');
+    qsa('.mp-masonry-card', grid).forEach(function (r) {
+        r.classList.remove('mp-masonry-card-selected');
     });
 }
 
@@ -1153,26 +1153,26 @@ function renderDetail(jsonPayload) {
     // gebrueckt). Gleiches synchrones Timing wie attachOwnFieldButton()
     // unten. Bewusst EIN Trigger-Button statt zwei separaten Icon-Buttons
     // nebeneinander (frueherer Versuch) -- die Aktionen-Zeile hat nur Platz
-    // fuer eine feste Anzahl 36px-Icons (siehe .mp3-detail-actions-row),
+    // fuer eine feste Anzahl 36px-Icons (siehe .mp-detail-actions-row),
     // ein zusaetzliches Icon liess "Loeschen" ganz rechts abgeschnitten
     // wirken (Nutzer-Feedback/Screenshot). Kein Dropdown, wenn keine
     // Provider konfiguriert sind: das bestehende <label> bleibt unveraendert
     // klickbar, oeffnet weiterhin direkt den nativen Datei-Dialog.
-    var replaceBtnLabel = qs('.mp3-detail-replace-btn', detailPanel);
+    var replaceBtnLabel = qs('.mp-detail-replace-btn', detailPanel);
     if (replaceBtnLabel && ctx.hasProviders && ctx.hasProviders() && selectedFile) {
         var replaceWrap = document.createElement('div');
-        replaceWrap.className = 'mp3-detail-replace-wrap';
+        replaceWrap.className = 'mp-detail-replace-wrap';
         replaceBtnLabel.parentNode.insertBefore(replaceWrap, replaceBtnLabel);
 
         var replaceTrigger = document.createElement('button');
         replaceTrigger.type = 'button';
-        replaceTrigger.className = 'mp3-detail-replace-trigger';
+        replaceTrigger.className = 'mp-detail-replace-trigger';
         replaceTrigger.title = replaceBtnLabel.getAttribute('title') || '';
         replaceTrigger.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
         replaceWrap.appendChild(replaceTrigger);
 
         var replaceMenu = document.createElement('div');
-        replaceMenu.className = 'mp3-detail-replace-menu';
+        replaceMenu.className = 'mp-detail-replace-menu';
 
         // Bestehendes Icon im Label umlabeln (Geraet-Icon statt allgemeinem
         // Ersetzen-Icon) + Textlabel ergaenzen, das versteckte <input> bleibt
@@ -1186,13 +1186,13 @@ function renderDetail(jsonPayload) {
         } else {
             replaceBtnLabel.insertBefore(replaceLabelText, replaceBtnLabel.firstChild);
         }
-        replaceBtnLabel.classList.add('mp3-detail-replace-device-item');
+        replaceBtnLabel.classList.add('mp-detail-replace-device-item');
         replaceBtnLabel.removeAttribute('title');
         replaceMenu.appendChild(replaceBtnLabel);
 
         var replaceCloudItem = document.createElement('button');
         replaceCloudItem.type = 'button';
-        replaceCloudItem.className = 'mp3-detail-replace-cloud-item';
+        replaceCloudItem.className = 'mp-detail-replace-cloud-item';
         replaceCloudItem.setAttribute('data-filename', selectedFile);
         replaceCloudItem.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><span>' + escAttr(t('mediaplace_replace_from_cloud')) + '</span>';
         replaceMenu.appendChild(replaceCloudItem);
@@ -1205,7 +1205,7 @@ function renderDetail(jsonPayload) {
     // garantiert korrektes Timing (kein separates Observer-Script noetig).
     // No-Op, falls das Feature aus ist oder kein eigenes Alt-Feld existiert
     // (attachOwnFieldButton() prueft beides selbst).
-    qsa('.mp3-alt-wrap[data-alt-key]', detailPanel).forEach(function (wrap) {
+    qsa('.mp-alt-wrap[data-alt-key]', detailPanel).forEach(function (wrap) {
         attachOwnFieldButton(wrap, selectedFile);
     });
 
@@ -1214,7 +1214,7 @@ function renderDetail(jsonPayload) {
     // addTagFromWidget() dieses Moduls auf, damit Vorschlaege exakt denselben
     // Hinzufuegen-Pfad wie eine manuelle Tag-Auswahl durchlaufen (Dedup,
     // Katalog-Farbe, Sammlungs-Namen-Sperre, Dirty-State).
-    var systemTagsWidget = qs('.mp3-json-field[data-field-key="__system_tags"] .mp3-tags-widget', detailPanel);
+    var systemTagsWidget = qs('.mp-json-field[data-field-key="__system_tags"] .mp-tags-widget', detailPanel);
     if (systemTagsWidget) {
         attachTagSuggestButton(systemTagsWidget, selectedFile, function (tagName) {
             // reopenCombo=false: siehe addTagFromWidget()-Docblock.
@@ -1227,13 +1227,13 @@ function renderDetail(jsonPayload) {
     var mediaForceCacheTokens = ctx.mediaForceCacheTokens;
     if (selectedFile && mediaForceCacheTokens[selectedFile]) {
         var forceToken = String(mediaForceCacheTokens[selectedFile]);
-        qsa('.mp3-detail-preview img, .mp3-detail-preview source, .mp3-lightbox-open-btn', detailPanel).forEach(function (el) {
+        qsa('.mp-detail-preview img, .mp-detail-preview source, .mp-lightbox-open-btn', detailPanel).forEach(function (el) {
             ['src', 'data-lightbox-src'].forEach(function (attr) {
                 var val = el.getAttribute(attr);
                 if (!val) return;
-                var next = val.replace(/([?&])mp3v=[^&]*/, '$1mp3v=' + encodeURIComponent(forceToken));
+                var next = val.replace(/([?&])mpv=[^&]*/, '$1mpv=' + encodeURIComponent(forceToken));
                 if (next === val) {
-                    next = val + (val.indexOf('?') === -1 ? '?' : '&') + 'mp3v=' + encodeURIComponent(forceToken);
+                    next = val + (val.indexOf('?') === -1 ? '?' : '&') + 'mpv=' + encodeURIComponent(forceToken);
                 }
                 el.setAttribute(attr, next);
             });
@@ -1242,7 +1242,7 @@ function renderDetail(jsonPayload) {
 
     // "Auswaehlen"-Button: PHP kennt den Aufrufmodus (Picker vs. reines
     // Durchsuchen) nicht, daher immer gerendert und hier ein-/ausgeblendet.
-    var selectBtn = qs('.mp3-detail-select-btn', detailPanel);
+    var selectBtn = qs('.mp-detail-select-btn', detailPanel);
     if (selectBtn) selectBtn.style.display = (ctx.getOnSelect() || ctx.getOnMultiSelect()) ? '' : 'none';
 
     // Laeuft GERADE eine Videooptimierung fuer diese Datei (server-seitig
@@ -1251,7 +1251,7 @@ function renderDetail(jsonPayload) {
     // statt erst nach einem erneuten Klick auf "optimieren" (der Job kann
     // auch in einer anderen Session/ueber ffmpeg's eigene Seite gestartet
     // worden sein).
-    var optimizeBtn = qs('.mp3-video-optimize-btn', detailPanel);
+    var optimizeBtn = qs('.mp-video-optimize-btn', detailPanel);
     if (optimizeBtn) {
         var activeJobRaw = optimizeBtn.getAttribute('data-optimize-video-job');
         if (activeJobRaw) {
@@ -1261,7 +1261,7 @@ function renderDetail(jsonPayload) {
                     var optimizeFile = optimizeBtn.getAttribute('data-optimize-video-file') || '';
                     optimizeBtn.disabled = true;
                     optimizeBtn.classList.add('is-loading');
-                    pollOptimizeVideo(optimizeFile, activeJob.id, optimizeBtn, optimizeBtn.parentNode.querySelector('.mp3-video-optimize-status'));
+                    pollOptimizeVideo(optimizeFile, activeJob.id, optimizeBtn, optimizeBtn.parentNode.querySelector('.mp-video-optimize-status'));
                 }
             } catch (e) { /* malformed/missing -- kein aktiver Job */ }
         }

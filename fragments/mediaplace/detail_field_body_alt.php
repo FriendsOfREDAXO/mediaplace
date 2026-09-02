@@ -30,11 +30,11 @@ foreach ($altText as $t) {
 }
 $altMissing = !$decorative && !$hasAltText;
 ?>
-<div class="mp3-alt-wrap" data-alt-key="<?= rex_escape($key) ?>">
+<div class="mp-alt-wrap" data-alt-key="<?= rex_escape($key) ?>">
     <?php if ($altMissing): ?>
-        <div class="mp3-alt-hint"><i class="fa-solid fa-triangle-exclamation"></i> <?= rex_escape($this->i18n('mediaplace_alt_missing_hint')) ?></div>
+        <div class="mp-alt-hint"><i class="fa-solid fa-triangle-exclamation"></i> <?= rex_escape($this->i18n('mediaplace_alt_missing_hint')) ?></div>
     <?php endif; ?>
-    <div class="mp3-lang-inputs"<?= $decorative ? ' style="display:none"' : '' ?>>
+    <div class="mp-lang-inputs"<?= $decorative ? ' style="display:none"' : '' ?>>
         <?php $this->subfragment('mediaplace/detail_lang_group.php', [
             'field_key' => $key,
             'values' => $altText,
@@ -42,5 +42,5 @@ $altMissing = !$decorative && !$hasAltText;
             'clangs' => $clangs,
         ]); ?>
     </div>
-    <label class="mp3-edit-checkbox-label"><input type="checkbox" data-json-field="<?= rex_escape($key) ?>-decorative"<?= $decorative ? ' checked' : '' ?>> <?= rex_escape($this->i18n('mediaplace_alt_decorative_short')) ?></label>
+    <label class="mp-edit-checkbox-label"><input type="checkbox" data-json-field="<?= rex_escape($key) ?>-decorative"<?= $decorative ? ' checked' : '' ?>> <?= rex_escape($this->i18n('mediaplace_alt_decorative_short')) ?></label>
 </div>

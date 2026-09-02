@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Wrapper um eine Liste von Kategorien auf einer Ebene (".mp3-cat-children").
+ * Wrapper um eine Liste von Kategorien auf einer Ebene (".mp-cat-children").
  * Sichtbarkeit (auf-/zugeklappt) wird rein per CSS ueber die
- * ".mp3-cat-node-open"-Klasse auf dem Eltern-Node gesteuert (siehe
+ * ".mp-cat-node-open"-Klasse auf dem Eltern-Node gesteuert (siehe
  * mediaplace.css), nicht durch Weglassen des Markups -- der komplette Baum
  * wird immer auf einmal gerendert, toggleCategory() in mediaplace.js schaltet
  * nur noch lokal eine Klasse um, ohne Nachladen.
@@ -21,7 +21,7 @@ $categories = $this->getVar('categories');
 $depth = (int) $this->getVar('depth');
 $currentCat = (int) $this->getVar('current_cat');
 ?>
-<div class="mp3-cat-children" data-depth="<?= $depth ?>">
+<div class="mp-cat-children" data-depth="<?= $depth ?>">
 <?php foreach ($categories as $category): ?>
     <?php $this->subfragment('mediaplace/category_node.php', [
         'category' => $category,

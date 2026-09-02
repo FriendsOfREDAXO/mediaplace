@@ -24,7 +24,7 @@ $selectedValues = $multiple
     ? array_map('strval', is_array($value) ? $value : [])
     : [is_scalar($value) ? (string) $value : ''];
 ?>
-<select class="mp3-edit-input" data-json-field="<?= rex_escape($key) ?>"<?= $multiple ? ' multiple' : '' ?>>
+<select class="mp-edit-input" data-json-field="<?= rex_escape($key) ?>"<?= $multiple ? ' multiple' : '' ?>>
     <?php if (!$multiple): ?>
         <option value=""><?= rex_escape($this->i18n('mediaplace_choose_ellipsis')) ?></option>
     <?php endif; ?>

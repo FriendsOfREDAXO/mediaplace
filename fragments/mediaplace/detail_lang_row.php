@@ -20,11 +20,11 @@ $value = (string) $this->getVar('value');
 $multiline = (bool) $this->getVar('multiline');
 $inputClass = (string) $this->getVar('input_class', '');
 
-$classes = 'mp3-edit-input' . ('' !== $inputClass ? ' ' . $inputClass : '');
+$classes = 'mp-edit-input' . ('' !== $inputClass ? ' ' . $inputClass : '');
 $badge = $clang['code'] ?: ($clang['name'] ?: ('L' . $clang['id']));
 ?>
-<div class="mp3-lang-row">
-    <span class="mp3-lang-badge"><?= rex_escape($badge) ?></span>
+<div class="mp-lang-row">
+    <span class="mp-lang-badge"><?= rex_escape($badge) ?></span>
     <?php if ($multiline): ?>
         <textarea class="<?= rex_escape($classes) ?>" rows="3" data-json-field="<?= rex_escape($fieldKey) ?>" data-clang="<?= rex_escape((string) $clang['id']) ?>"><?= rex_escape($value) ?></textarea>
     <?php else: ?>

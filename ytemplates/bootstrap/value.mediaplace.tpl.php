@@ -28,15 +28,15 @@ $notice = count($notice) > 0 ? '<p class="help-block small">' . implode('<br />'
 <div class="<?= $class_group ?>" id="<?= $this->getHTMLId() ?>">
     <label class="control-label" for="<?= $this->getFieldId() ?>"><?= $this->getLabel() ?></label>
     <input
-        class="mp3-widget form-control"
+        class="mp-widget form-control"
         id="<?= $this->getFieldId() ?>"
         name="<?= rex_escape($name) ?>"
         value="<?= $value ?>"
-        <?= $multiple ? ' data-mp3-multiple="true"' : '' ?>
-        <?= $upload ? ' data-mp3-upload="true"' : '' ?>
-        <?= '' !== $types ? ' data-mp3-types="' . rex_escape($types) . '"' : '' ?>
-        <?= '' !== $max ? ' data-mp3-max="' . rex_escape($max) . '"' : '' ?>
-        <?= '' !== $view ? ' data-mp3-view="' . rex_escape($view) . '"' : '' ?>
+        <?= $multiple ? ' data-mp-multiple="true"' : '' ?>
+        <?= $upload ? ' data-mp-upload="true"' : '' ?>
+        <?= '' !== $types ? ' data-mp-types="' . rex_escape($types) . '"' : '' ?>
+        <?= '' !== $max ? ' data-mp-max="' . rex_escape($max) . '"' : '' ?>
+        <?= '' !== $view ? ' data-mp-view="' . rex_escape($view) . '"' : '' ?>
     >
     <?= $notice ?>
 </div>

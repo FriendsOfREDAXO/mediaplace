@@ -4,7 +4,7 @@
  *
  * Bewusst NICHT mit hierher gewandert: die Low-Level-Helfer (formatBytes/
  * isImage/isVideo/fileIcon/formatDate/mediaThumbSrc) leben bereits in
- * MP3Core.helpers (geteilt, nicht gebuendelt) -- hier werden sie nur benutzt.
+ * MPCore.helpers (geteilt, nicht gebuendelt) -- hier werden sie nur benutzt.
  * updateStatus() bleibt in core.js (Data-Loading-Domaene, kennt
  * mediaTotal/statusBar), wird per ctx aufgerufen.
  */
@@ -13,15 +13,15 @@ import { splitSystemTags } from './collections.js';
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var formatBytes = MP3Core.helpers.formatBytes;
-var formatDate = MP3Core.helpers.formatDate;
-var isImage = MP3Core.helpers.isImage;
-var isVideo = MP3Core.helpers.isVideo;
-var fileIcon = MP3Core.helpers.fileIcon;
-var mediaThumbSrc = MP3Core.helpers.mediaThumbSrc;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var formatBytes = MPCore.helpers.formatBytes;
+var formatDate = MPCore.helpers.formatDate;
+var isImage = MPCore.helpers.isImage;
+var isVideo = MPCore.helpers.isVideo;
+var fileIcon = MPCore.helpers.fileIcon;
+var mediaThumbSrc = MPCore.helpers.mediaThumbSrc;
 
 // Festes Grid-Querformat (previewHtml()); die Media-Wall nutzt stattdessen
 // das natuerliche Seitenverhaeltnis der Datei (siehe cardAspectRatio()).
@@ -32,7 +32,7 @@ export var GRID_TILE_RATIO = '4 / 3';
 // Einziger, wiederverwendeter IntersectionObserver fuer alle Video-Thumbs
 // (siehe previewHtml()) -- lazy erzeugt, danach bei jedem Grid-/Media-Wall-
 // Rendering (renderFilesGrid()/renderFilesMediaWall()) neu an die dann
-// aktuellen .mp3-video-thumb-img-Elemente gebunden (disconnect() +
+// aktuellen .mp-video-thumb-img-Elemente gebunden (disconnect() +
 // erneutes observe() ist billig und robust, statt einzeln nachzuverfolgen,
 // welche Kacheln zwischen Renders neu/entfernt wurden).
 var videoThumbObserver = null;
@@ -47,7 +47,7 @@ var videoThumbObserver = null;
  * - getViewMode(): noch-legacy-State (grid | list | mediawall)
  * - getFeatures(): noch-legacy-State (features.tagging fuer renderFileTagDots())
  * - getMediaForceCacheTokens()/getLastLoadedFiles()/getMediaBaseUrl(): noch-legacy-State,
- *   durchgereicht an MP3Core.helpers.mediaThumbSrc()
+ *   durchgereicht an MPCore.helpers.mediaThumbSrc()
  * - getVideoThumbType()/getVideoThumbStatic(): noch-legacy-State (FfmpegIntegration-Konfiguration)
  * - updateStatus(count): noch-legacy-Funktion (Treffer-/Ladezaehler-Text)
  */
@@ -72,7 +72,7 @@ export function initGrid(theCtx) {
         }
         var icon = img.getAttribute('data-fallback-icon') || 'fa-solid fa-file';
         var div = document.createElement('div');
-        div.className = 'mp3-icon';
+        div.className = 'mp-icon';
         div.innerHTML = '<i class="' + icon + '"></i>';
         if (videoThumbObserver) {
             videoThumbObserver.unobserve(img);
@@ -86,7 +86,7 @@ export function initGrid(theCtx) {
 /**
  * Build preview HTML for a single media file. Genutzt von Grid- und Media-
  * Wall-Ansicht (renderFilesGrid()/renderFilesMediaWall()), beide per Slider
- * auf bis zu 360px CSS-Breite skalierbar (--mp3-tile-size) -- deshalb der
+ * auf bis zu 360px CSS-Breite skalierbar (--mp-tile-size) -- deshalb der
  * eigene, groessere Media-Manager-Typ statt rex_media_small (200x200),
  * siehe install.php.
  *
@@ -143,16 +143,16 @@ export function previewHtml(file, ratioOverride) {
         // Standbild-Modus: kein animiertes Bewegtbild mehr erkennbar, ein
         // kleines Video-Icon oben rechts als Overlay macht das trotzdem
         // klar (gleiches Muster wie z.B. YouTube/Instagram-Grids).
-        var videoBadge = ctx.getVideoThumbStatic() ? '<span class="mp3-video-badge"><i class="fa-solid fa-video"></i></span>' : '';
-        return '<img class="mp3-video-thumb-img" data-fallback-icon="' + escAttr(fileIcon(file.filename))
+        var videoBadge = ctx.getVideoThumbStatic() ? '<span class="mp-video-badge"><i class="fa-solid fa-video"></i></span>' : '';
+        return '<img class="mp-video-thumb-img" data-fallback-icon="' + escAttr(fileIcon(file.filename))
             + '" data-video-thumb-src="' + escAttr(videoSrc) + '" alt="' + escAttr(file.title || file.filename) + '"' + videoStyle + '>'
             + videoBadge;
     }
-    return '<div class="mp3-icon"><i class="' + fileIcon(file.filename) + '"></i></div>';
+    return '<div class="mp-icon"><i class="' + fileIcon(file.filename) + '"></i></div>';
 }
 
 function initVideoThumbObserver(container) {
-    var imgs = container.querySelectorAll('.mp3-video-thumb-img[data-video-thumb-src]');
+    var imgs = container.querySelectorAll('.mp-video-thumb-img[data-video-thumb-src]');
     if (!imgs.length) {
         return;
     }
@@ -230,19 +230,19 @@ export function renderFileTagDots(file) {
             stops.push(colors[s] + ' ' + from + '% ' + to + '%');
         }
         var mixedBg = 'conic-gradient(' + stops.join(', ') + ')';
-        return '<div class="mp3-file-tag-dots">' +
-            '<span class="mp3-file-tag-dot mp3-file-tag-dot-mixed" style="background:' + escAttr(mixedBg) + '" title="' + escAttr(t('mediaplace_multiple_tags_count', { count: tags.length })) + '"></span>' +
-            '<span class="mp3-file-tag-more" title="' + escAttr(t('mediaplace_multiple_tags')) + '">' + t('mediaplace_multiple_tags') + '</span>' +
+        return '<div class="mp-file-tag-dots">' +
+            '<span class="mp-file-tag-dot mp-file-tag-dot-mixed" style="background:' + escAttr(mixedBg) + '" title="' + escAttr(t('mediaplace_multiple_tags_count', { count: tags.length })) + '"></span>' +
+            '<span class="mp-file-tag-more" title="' + escAttr(t('mediaplace_multiple_tags')) + '">' + t('mediaplace_multiple_tags') + '</span>' +
             '</div>';
     }
 
-    var html = '<div class="mp3-file-tag-dots">';
+    var html = '<div class="mp-file-tag-dots">';
     for (var i = 0; i < tags.length; i++) {
         var tag = tags[i] || {};
         var tagName = String(tag.name || '').trim();
         if (!tagName) continue;
         var color = /^#[0-9a-fA-F]{6}$/.test(String(tag.color || '')) ? String(tag.color).toLowerCase() : '#4a90d9';
-        html += '<span class="mp3-file-tag-dot" style="background:' + escAttr(color) + '" title="' + escAttr(tagName) + '"></span>';
+        html += '<span class="mp-file-tag-dot" style="background:' + escAttr(color) + '" title="' + escAttr(tagName) + '"></span>';
     }
     html += '</div>';
     return html;
@@ -252,10 +252,10 @@ export function renderFiles(files) {
     var grid = ctx.grid;
     if (!files || !files.length) {
         // className explizit zuruecksetzen: bleibt sonst z. B. auf
-        // "mp3-grid mp3-view-mediawall" (CSS-Mehrspalten) vom letzten
+        // "mp-grid mp-view-mediawall" (CSS-Mehrspalten) vom letzten
         // Render stehen und die Meldung wird von der Spalten-Engine
         // mitten im Inhalt in Fragmente zerrissen.
-        grid.className = 'mp3-grid';
+        grid.className = 'mp-grid';
         grid.innerHTML = '<div style="padding:40px;text-align:center;color:#6c757d;">' +
             '<i class="fa-solid fa-box-open" style="font-size:2em;display:block;margin-bottom:10px;"></i>' +
             t('mediaplace_no_files') + '</div>';
@@ -286,18 +286,18 @@ export function renderFilesGrid(files) {
         var f = files[i];
         var isMultiSel = multiMode ? multiSelected[f.filename] : (batchSelectMode && collectionDragSelected[f.filename]);
         var displayName = f.title || f.filename;
-        html += '<div class="mp3-card' + (isMultiSel ? ' mp3-card-multi-selected' : '') + '" draggable="true" data-filename="' + escAttr(f.filename) + '">' +
-            (showCheck ? '<div class="mp3-card-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></div>' : '') +
+        html += '<div class="mp-card' + (isMultiSel ? ' mp-card-multi-selected' : '') + '" draggable="true" data-filename="' + escAttr(f.filename) + '">' +
+            (showCheck ? '<div class="mp-card-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></div>' : '') +
             previewHtml(f) +
-            '<div class="mp3-info">' +
-                '<span class="mp3-card-name" title="' + escAttr(f.filename) + '">' + escAttr(displayName) + '</span>' +
-                (f.title ? '<span class="mp3-fname" title="' + escAttr(f.filename) + '">' + escAttr(f.filename) + '</span>' : '') +
-                '<span class="mp3-fmeta">' + formatBytes(f.filesize) + '</span>' +
+            '<div class="mp-info">' +
+                '<span class="mp-card-name" title="' + escAttr(f.filename) + '">' + escAttr(displayName) + '</span>' +
+                (f.title ? '<span class="mp-fname" title="' + escAttr(f.filename) + '">' + escAttr(f.filename) + '</span>' : '') +
+                '<span class="mp-fmeta">' + formatBytes(f.filesize) + '</span>' +
                 renderFileTagDots(f) +
             '</div>' +
         '</div>';
     }
-    grid.className = 'mp3-grid';
+    grid.className = 'mp-grid';
     grid.innerHTML = html;
     initVideoThumbObserver(grid);
 }
@@ -313,10 +313,10 @@ export function renderFilesList(files) {
     var lastLoadedFiles = ctx.getLastLoadedFiles();
     var mediaBaseUrl = ctx.getMediaBaseUrl();
     var showCheck = multiMode || batchSelectMode;
-    var html = '<table class="mp3-list-table">';
+    var html = '<table class="mp-list-table">';
     html += '<thead><tr>' +
-        (showCheck ? '<th class="mp3-list-th-check"></th>' : '') +
-        '<th class="mp3-list-th-preview"></th>' +
+        (showCheck ? '<th class="mp-list-th-check"></th>' : '') +
+        '<th class="mp-list-th-preview"></th>' +
         '<th>' + t('mediaplace_name') + '</th>' +
         '<th>' + t('mediaplace_field_type') + '</th>' +
         '<th>' + t('mediaplace_field_size') + '</th>' +
@@ -324,14 +324,14 @@ export function renderFilesList(files) {
     '</tr></thead><tbody>';
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
-        var sel = (selectedFile === f.filename) ? ' mp3-list-row-selected' : '';
+        var sel = (selectedFile === f.filename) ? ' mp-list-row-selected' : '';
         var isMultiSel = multiMode ? multiSelected[f.filename] : (batchSelectMode && collectionDragSelected[f.filename]);
-        if (isMultiSel) sel += ' mp3-list-row-multi-selected';
-        html += '<tr class="mp3-list-row' + sel + '" data-filename="' + escAttr(f.filename) + '" draggable="true">';
+        if (isMultiSel) sel += ' mp-list-row-multi-selected';
+        html += '<tr class="mp-list-row' + sel + '" data-filename="' + escAttr(f.filename) + '" draggable="true">';
         if (showCheck) {
-            html += '<td class="mp3-list-cell-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></td>';
+            html += '<td class="mp-list-cell-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></td>';
         }
-        html += '<td class="mp3-list-cell-preview">';
+        html += '<td class="mp-list-cell-preview">';
         if (isImage(f.filename)) {
             var src = mediaThumbSrc(f.filename, 'rex_media_small', f, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
             html += '<img data-fallback-icon="' + escAttr(fileIcon(f.filename)) + '" src="' + escAttr(src) + '" alt="" loading="lazy">';
@@ -341,14 +341,14 @@ export function renderFilesList(files) {
         html += '</td>';
         var listLabel = f.title ? escAttr(f.title) : escAttr(f.filename);
         var listTooltip = f.title ? escAttr(f.filename) : '';
-        html += '<td class="mp3-list-cell-name"' + (listTooltip ? ' title="' + listTooltip + '"' : '') + '><div class="mp3-list-name-wrap"><span>' + listLabel + '</span>' + renderFileTagDots(f) + '</div></td>';
-        html += '<td class="mp3-list-cell-type">' + escAttr(f.filetype || '') + '</td>';
-        html += '<td class="mp3-list-cell-size">' + formatBytes(f.filesize) + '</td>';
-        html += '<td class="mp3-list-cell-date">' + formatDate(f.createdate) + '</td>';
+        html += '<td class="mp-list-cell-name"' + (listTooltip ? ' title="' + listTooltip + '"' : '') + '><div class="mp-list-name-wrap"><span>' + listLabel + '</span>' + renderFileTagDots(f) + '</div></td>';
+        html += '<td class="mp-list-cell-type">' + escAttr(f.filetype || '') + '</td>';
+        html += '<td class="mp-list-cell-size">' + formatBytes(f.filesize) + '</td>';
+        html += '<td class="mp-list-cell-date">' + formatDate(f.createdate) + '</td>';
         html += '</tr>';
     }
     html += '</tbody></table>';
-    grid.className = 'mp3-grid mp3-view-list';
+    grid.className = 'mp-grid mp-view-list';
     grid.innerHTML = html;
 }
 
@@ -367,15 +367,15 @@ export function renderFilesMediaWall(files) {
         var isMultiSel = multiMode ? multiSelected[f.filename] : (batchSelectMode && collectionDragSelected[f.filename]);
         var displayName = f.title || f.filename;
 
-        html += '<div class="mp3-masonry-card' +
-            (isSel ? ' mp3-masonry-card-selected' : '') +
-            (isMultiSel ? ' mp3-masonry-card-multi' : '') +
+        html += '<div class="mp-masonry-card' +
+            (isSel ? ' mp-masonry-card-selected' : '') +
+            (isMultiSel ? ' mp-masonry-card-multi' : '') +
             '" data-filename="' + escAttr(f.filename) + '" draggable="true">';
 
         // Overlay toolbar
-        html += '<div class="mp3-masonry-toolbar">';
+        html += '<div class="mp-masonry-toolbar">';
         if (showCheck) {
-            html += '<span class="mp3-masonry-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></span>';
+            html += '<span class="mp-masonry-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></span>';
         }
         html += '</div>';
 
@@ -383,18 +383,18 @@ export function renderFilesMediaWall(files) {
         // fester Quadrat-/Breit-/Hoch-Buckets, fuer echten Masonry-Effekt.
         var wallRatio = cardAspectRatio(f);
         var wallMediaStyle = wallRatio ? ' style="aspect-ratio:' + wallRatio + '"' : '';
-        html += '<div class="mp3-masonry-media"' + wallMediaStyle + '>' + previewHtml(f, wallRatio) + '</div>';
+        html += '<div class="mp-masonry-media"' + wallMediaStyle + '>' + previewHtml(f, wallRatio) + '</div>';
 
         // Footer
-        html += '<div class="mp3-masonry-footer">' +
-            '<span class="mp3-masonry-name" title="' + escAttr(f.filename) + '">' + escAttr(displayName) + '</span>' +
+        html += '<div class="mp-masonry-footer">' +
+            '<span class="mp-masonry-name" title="' + escAttr(f.filename) + '">' + escAttr(displayName) + '</span>' +
             renderFileTagDots(f) +
-            '<span class="mp3-masonry-meta">' + formatBytes(f.filesize) + '</span>' +
+            '<span class="mp-masonry-meta">' + formatBytes(f.filesize) + '</span>' +
             '</div>';
 
         html += '</div>';
     }
-    grid.className = 'mp3-grid mp3-view-mediawall';
+    grid.className = 'mp-grid mp-view-mediawall';
     grid.innerHTML = html;
     initVideoThumbObserver(grid);
 }

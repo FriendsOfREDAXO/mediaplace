@@ -173,8 +173,8 @@ class Crop extends rex_api_function
         foreach (Categories::getFlatCategoryList() as $cat) {
             $catOptions .= '<option value="' . $cat['id'] . '"' . ($cat['id'] === $currentCategoryId ? ' selected' : '') . '>' . rex_escape($cat['label']) . '</option>';
         }
-        $panel .= '<dl class="rex-form-group form-group"><dt><label for="mp3-crop-category">' . \rex_i18n::msg('pool_file_category') . '</label></dt><dd>'
-            . '<select class="form-control selectpicker" id="mp3-crop-category" name="rex_file_category">' . $catOptions . '</select>'
+        $panel .= '<dl class="rex-form-group form-group"><dt><label for="mp-crop-category">' . \rex_i18n::msg('pool_file_category') . '</label></dt><dd>'
+            . '<select class="form-control selectpicker" id="mp-crop-category" name="rex_file_category">' . $catOptions . '</select>'
             . '</dd></dl></div>';
 
         if ($showCompressionSettings) {
@@ -214,7 +214,7 @@ class Crop extends rex_api_function
 
         $buttons = '<div class="rex-form-panel-footer"><button class="btn btn-apply" type="submit" value="1" name="btn_save">' . \rex_i18n::msg('form_save') . '</button></div>';
 
-        $html = '<form class="mp3-crop-form" data-filename="' . rex_escape($mediaName) . '">'
+        $html = '<form class="mp-crop-form" data-filename="' . rex_escape($mediaName) . '">'
             . '<input type="hidden" name="file_id" value="' . $media->getId() . '" />'
             . '<input type="hidden" name="media_name" value="' . rex_escape($mediaName) . '" />'
             . $metaHiddenFields

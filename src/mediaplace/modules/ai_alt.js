@@ -2,7 +2,7 @@
  * Optionale KI-Alt-Text-Generierung (siehe AiAltTextService::isAvailable()
  * -- rein soft-optional, ohne installiertes+konfiguriertes ai_platform-Addon
  * und aktivierte Einstellung "AI Alt-Text aktivieren" bleiben alle URLs am
- * #mp3-root leer und diese Funktionen sind No-Ops). Zwei Teile:
+ * #mp-root leer und diese Funktionen sind No-Ops). Zwei Teile:
  *
  * 1) Einzeldatei-Button (attachOwnFieldButton()/attachClassicFieldButton()) --
  *    wird direkt aus modules/detail.js aufgerufen, JEWEILS unmittelbar nach
@@ -17,7 +17,7 @@
  *    RUN_LIMIT Dateien begrenzt (siehe dortiger Kommentar) -- bei mehr
  *    fehlenden ALT-Texten "Weitere generieren" fuer den naechsten Abschnitt.
  *
- * Markup fuer das Bulk-Modal (.mp3-cat-move-modal-overlay/.mp3-bulk-progress-*)
+ * Markup fuer das Bulk-Modal (.mp-cat-move-modal-overlay/.mp-bulk-progress-*)
  * ist bewusst dasselbe wie mediaplace's eigene Kategorie-Massenaktionen
  * (modules/categories.js, showBulkProgressModal()) -- gleiche Optik, gleicher
  * bereits bewaehrter Chunking-Vertrag fuer die Generierungs-Schleife
@@ -28,14 +28,14 @@
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var qs = MP3Core.helpers.qs;
-var qsa = MP3Core.helpers.qsa;
-var mediaThumbSrc = MP3Core.helpers.mediaThumbSrc;
-var apiGenerateAiAltText = MP3Core.api.apiGenerateAiAltText;
-var apiAiAltBulkAction = MP3Core.api.apiAiAltBulkAction;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var qs = MPCore.helpers.qs;
+var qsa = MPCore.helpers.qsa;
+var mediaThumbSrc = MPCore.helpers.mediaThumbSrc;
+var apiGenerateAiAltText = MPCore.api.apiGenerateAiAltText;
+var apiAiAltBulkAction = MPCore.api.apiAiAltBulkAction;
 
 export function isSvgFilename(filename) {
     return /\.svg$/i.test(filename || '');
@@ -109,7 +109,7 @@ function generateAiAltFor(filename) {
 /**
  * ctx-Vertrag:
  * - getAiAltAvailable(): noch-legacy-State (read-only, true nur wenn Feature
- *   aktiv UND ai_platform verfuegbar, siehe data-ai-alt-url am #mp3-root)
+ *   aktiv UND ai_platform verfuegbar, siehe data-ai-alt-url am #mp-root)
  * - getMediaBaseUrl(): siehe core.js/mediaThumbSrc()-Docblock in
  *   mediaplace-helpers.js -- fuer den SVG-Rasterisierungs-Fetch (nicht nur
  *   fuer Thumbnails) noetig, sonst schlaegt der Fetch in Unterordner-
@@ -133,31 +133,31 @@ function dispatchNativeInput(el) {
 export function buildIconButton(titleKey) {
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'mp3-ai-icon-btn';
+    btn.className = 'mp-ai-icon-btn';
     btn.title = t(titleKey);
     btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i>';
     return btn;
 }
 
-// Haengt btn in das .mp3-edit-label vor "container" (dessen direkter
+// Haengt btn in das .mp-edit-label vor "container" (dessen direkter
 // Vorgaenger im JSON-Widget-Markup, siehe fragments/mediaplace/detail_field.php)
 // -- macht daraus per Modifier-Klasse eine Flex-Zeile (Label-Text links,
-// Icon rechtsbuendig), ohne die geteilte .mp3-edit-label-Regel selbst
+// Icon rechtsbuendig), ohne die geteilte .mp-edit-label-Regel selbst
 // anzufassen (die gilt auch fuer alle anderen Feldtypen unveraendert).
 // Liefert true bei Erfolg, damit der Aufrufer bei Misserfolg (kein
 // passendes Label gefunden, z.B. im klassischen Canvas) selbst einen
 // Fallback-Ort waehlen kann.
 export function attachToLabel(container, btn) {
     var labelEl = container.previousElementSibling;
-    if (!labelEl || !labelEl.classList.contains('mp3-edit-label')) return false;
-    labelEl.classList.add('mp3-edit-label-with-ai');
+    if (!labelEl || !labelEl.classList.contains('mp-edit-label')) return false;
+    labelEl.classList.add('mp-edit-label-with-ai');
     labelEl.appendChild(btn);
     return true;
 }
 
 function setBusy(btn, busy) {
     btn.disabled = busy;
-    btn.classList.toggle('mp3-ai-alt-busy', busy);
+    btn.classList.toggle('mp-ai-alt-busy', busy);
 }
 
 // Statuszeile fuer Fehlermeldungen -- eigenes Element statt Browser-title,
@@ -165,7 +165,7 @@ function setBusy(btn, busy) {
 // zu erscheinen. Wird nur bei tatsaechlicher Meldung eingeblendet.
 function buildStatusEl() {
     var el = document.createElement('div');
-    el.className = 'mp3-ai-alt-status';
+    el.className = 'mp-ai-alt-status';
     el.style.display = 'none';
     return el;
 }
@@ -174,17 +174,17 @@ function setStatus(statusEl, message, isError) {
     if (!statusEl) return;
     statusEl.textContent = message || '';
     statusEl.style.display = message ? '' : 'none';
-    statusEl.classList.toggle('mp3-ai-alt-status-error', !!isError);
+    statusEl.classList.toggle('mp-ai-alt-status-error', !!isError);
 }
 
-// ---- Einzeldatei: eigenes JSON-Alt-Feld (.mp3-alt-wrap) ----
+// ---- Einzeldatei: eigenes JSON-Alt-Feld (.mp-alt-wrap) ----
 
 export function attachOwnFieldButton(wrap, filename) {
     if (!ctx.getAiAltAvailable() || !filename) return;
     if (wrap.hasAttribute('data-ai-alt-attached')) return;
     wrap.setAttribute('data-ai-alt-attached', '1');
 
-    var langInputs = qs('.mp3-lang-inputs', wrap);
+    var langInputs = qs('.mp-lang-inputs', wrap);
     if (!langInputs) return;
 
     var btn = buildIconButton('mediaplace_ai_alt_generate');
@@ -206,7 +206,7 @@ export function attachOwnFieldButton(wrap, filename) {
             var texts = res.texts || {};
             var wrote = false;
             Object.keys(texts).forEach(function (clangId) {
-                var input = qs('.mp3-lang-inputs [data-json-field][data-clang="' + clangId + '"]', wrap);
+                var input = qs('.mp-lang-inputs [data-json-field][data-clang="' + clangId + '"]', wrap);
                 if (input) {
                     input.value = texts[clangId];
                     dispatchNativeInput(input);
@@ -253,7 +253,7 @@ export function attachClassicFieldButton(canvas, filename) {
     // Eingabefelds statt im Label. Einfache Nachfahren-Suche behebt das.
     var classicLabel = qs('label', formGroup);
     if (classicLabel) {
-        classicLabel.classList.add('mp3-edit-label-with-ai', 'mp3-edit-label-with-ai-classic');
+        classicLabel.classList.add('mp-edit-label-with-ai', 'mp-edit-label-with-ai-classic');
         classicLabel.appendChild(btn);
     } else {
         input.parentNode.insertBefore(btn, input.nextSibling);
@@ -286,34 +286,34 @@ export function attachClassicFieldButton(canvas, filename) {
 
 export function openBulkPanel() {
     var overlayEl = document.createElement('div');
-    overlayEl.className = 'mp3-cat-move-modal-overlay';
+    overlayEl.className = 'mp-cat-move-modal-overlay';
     overlayEl.innerHTML =
-        '<div class="mp3-cat-move-modal mp3-bulk-progress-modal mp3-ai-alt-bulk-modal">' +
-        '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + escAttr(t('mediaplace_ai_alt_bulk_title')) + '</h5>' +
-        '<p class="mp3-cat-move-modal-info mp3-bulk-progress-text"></p>' +
-        '<p class="mp3-cat-move-modal-info mp3-ai-alt-bulk-svg-note" style="display:none"></p>' +
-        '<div class="mp3-bulk-progress-track"><div class="mp3-bulk-progress-fill" style="width:0%"></div></div>' +
-        '<div class="mp3-ai-alt-review-list" style="display:none"></div>' +
-        '<div class="mp3-bulk-progress-errors" style="display:none"></div>' +
-        '<div class="mp3-cat-move-modal-actions">' +
-        '<button type="button" class="mp3-cat-move-modal-ok mp3-ai-alt-bulk-start btn btn-primary btn-sm">' + escAttr(t('mediaplace_ai_alt_bulk_start')) + '</button>' +
-        '<button type="button" class="mp3-cat-move-modal-ok mp3-ai-alt-bulk-continue btn btn-primary btn-sm" style="display:none">' + escAttr(t('mediaplace_ai_alt_bulk_continue')) + '</button>' +
-        '<button type="button" class="mp3-cat-move-modal-ok mp3-ai-alt-bulk-apply btn btn-primary btn-sm" style="display:none">' + escAttr(t('mediaplace_ai_alt_bulk_apply')) + '</button>' +
-        '<button type="button" class="mp3-cat-move-modal-cancel mp3-ai-alt-bulk-close">' + escAttr(t('mediaplace_close')) + '</button>' +
+        '<div class="mp-cat-move-modal mp-bulk-progress-modal mp-ai-alt-bulk-modal">' +
+        '<h5 class="mp-cat-move-modal-title"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + escAttr(t('mediaplace_ai_alt_bulk_title')) + '</h5>' +
+        '<p class="mp-cat-move-modal-info mp-bulk-progress-text"></p>' +
+        '<p class="mp-cat-move-modal-info mp-ai-alt-bulk-svg-note" style="display:none"></p>' +
+        '<div class="mp-bulk-progress-track"><div class="mp-bulk-progress-fill" style="width:0%"></div></div>' +
+        '<div class="mp-ai-alt-review-list" style="display:none"></div>' +
+        '<div class="mp-bulk-progress-errors" style="display:none"></div>' +
+        '<div class="mp-cat-move-modal-actions">' +
+        '<button type="button" class="mp-cat-move-modal-ok mp-ai-alt-bulk-start btn btn-primary btn-sm">' + escAttr(t('mediaplace_ai_alt_bulk_start')) + '</button>' +
+        '<button type="button" class="mp-cat-move-modal-ok mp-ai-alt-bulk-continue btn btn-primary btn-sm" style="display:none">' + escAttr(t('mediaplace_ai_alt_bulk_continue')) + '</button>' +
+        '<button type="button" class="mp-cat-move-modal-ok mp-ai-alt-bulk-apply btn btn-primary btn-sm" style="display:none">' + escAttr(t('mediaplace_ai_alt_bulk_apply')) + '</button>' +
+        '<button type="button" class="mp-cat-move-modal-cancel mp-ai-alt-bulk-close">' + escAttr(t('mediaplace_close')) + '</button>' +
         '</div>' +
         '</div>';
     document.body.appendChild(overlayEl);
 
-    var textEl = qs('.mp3-bulk-progress-text', overlayEl);
-    var svgNoteEl = qs('.mp3-ai-alt-bulk-svg-note', overlayEl);
-    var trackEl = qs('.mp3-bulk-progress-track', overlayEl);
-    var fillEl = qs('.mp3-bulk-progress-fill', overlayEl);
-    var listEl = qs('.mp3-ai-alt-review-list', overlayEl);
-    var errorsEl = qs('.mp3-bulk-progress-errors', overlayEl);
-    var startBtn = qs('.mp3-ai-alt-bulk-start', overlayEl);
-    var continueBtn = qs('.mp3-ai-alt-bulk-continue', overlayEl);
-    var applyBtn = qs('.mp3-ai-alt-bulk-apply', overlayEl);
-    var closeBtn = qs('.mp3-ai-alt-bulk-close', overlayEl);
+    var textEl = qs('.mp-bulk-progress-text', overlayEl);
+    var svgNoteEl = qs('.mp-ai-alt-bulk-svg-note', overlayEl);
+    var trackEl = qs('.mp-bulk-progress-track', overlayEl);
+    var fillEl = qs('.mp-bulk-progress-fill', overlayEl);
+    var listEl = qs('.mp-ai-alt-review-list', overlayEl);
+    var errorsEl = qs('.mp-bulk-progress-errors', overlayEl);
+    var startBtn = qs('.mp-ai-alt-bulk-start', overlayEl);
+    var continueBtn = qs('.mp-ai-alt-bulk-continue', overlayEl);
+    var applyBtn = qs('.mp-ai-alt-bulk-apply', overlayEl);
+    var closeBtn = qs('.mp-ai-alt-bulk-close', overlayEl);
 
     // Obergrenze pro Generierungs-Lauf (nicht pro einzelnem Server-Request,
     // siehe BATCH_LIMIT_DEFAULT/-MAX in Api\AiAltBulk.php fuer den) --
@@ -346,9 +346,9 @@ export function openBulkPanel() {
         errorsEl.style.display = '';
         list.forEach(function (err) {
             var block = document.createElement('div');
-            block.className = 'mp3-bulk-progress-error-item';
-            block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp3-bulk-progress-error-text"></div>';
-            qs('.mp3-bulk-progress-error-text', block).textContent = err.message || String(err);
+            block.className = 'mp-bulk-progress-error-item';
+            block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp-bulk-progress-error-text"></div>';
+            qs('.mp-bulk-progress-error-text', block).textContent = err.message || String(err);
             errorsEl.appendChild(block);
         });
     }
@@ -363,7 +363,7 @@ export function openBulkPanel() {
 
     function addReviewRow(item) {
         var row = document.createElement('div');
-        row.className = 'mp3-ai-alt-review-row';
+        row.className = 'mp-ai-alt-review-row';
 
         var thumbUrl = mediaThumbSrc(item.filename, 'rex_media_small', null, {}, [], ctx.getMediaBaseUrl());
         var largeUrl = mediaThumbSrc(item.filename, 'rex_media_medium', null, {}, [], ctx.getMediaBaseUrl());
@@ -371,46 +371,46 @@ export function openBulkPanel() {
         var fieldsHtml = '';
         clangIds.forEach(function (clangId) {
             var clang = clangById[clangId];
-            var label = clangIds.length > 1 ? '<span class="mp3-ai-alt-review-clang">' + escAttr(clang ? clang.code : clangId) + '</span>' : '';
-            fieldsHtml += '<div class="mp3-ai-alt-review-field">' + label +
-                '<textarea class="mp3-ai-alt-review-input" data-clang="' + escAttr(clangId) + '" rows="2"></textarea>' +
+            var label = clangIds.length > 1 ? '<span class="mp-ai-alt-review-clang">' + escAttr(clang ? clang.code : clangId) + '</span>' : '';
+            fieldsHtml += '<div class="mp-ai-alt-review-field">' + label +
+                '<textarea class="mp-ai-alt-review-input" data-clang="' + escAttr(clangId) + '" rows="2"></textarea>' +
                 '</div>';
         });
 
         row.innerHTML =
-            '<div class="mp3-ai-alt-review-main">' +
-            '<button type="button" class="mp3-ai-alt-review-thumb-btn" title="' + escAttr(t('mediaplace_ai_alt_bulk_preview_toggle')) + '">' +
-            '<img class="mp3-ai-alt-review-thumb" src="' + escAttr(thumbUrl) + '" alt="" loading="lazy">' +
-            '<i class="fa-solid fa-chevron-right mp3-ai-alt-review-chevron"></i>' +
+            '<div class="mp-ai-alt-review-main">' +
+            '<button type="button" class="mp-ai-alt-review-thumb-btn" title="' + escAttr(t('mediaplace_ai_alt_bulk_preview_toggle')) + '">' +
+            '<img class="mp-ai-alt-review-thumb" src="' + escAttr(thumbUrl) + '" alt="" loading="lazy">' +
+            '<i class="fa-solid fa-chevron-right mp-ai-alt-review-chevron"></i>' +
             '</button>' +
-            '<div class="mp3-ai-alt-review-body">' +
-            '<strong class="mp3-ai-alt-review-filename" title="' + escAttr(item.filename) + '">' + escAttr(item.filename) + '</strong>' +
+            '<div class="mp-ai-alt-review-body">' +
+            '<strong class="mp-ai-alt-review-filename" title="' + escAttr(item.filename) + '">' + escAttr(item.filename) + '</strong>' +
             fieldsHtml +
             '</div>' +
-            '<button type="button" class="mp3-ai-alt-review-remove" title="' + escAttr(t('mediaplace_ai_alt_bulk_row_remove')) + '">' +
+            '<button type="button" class="mp-ai-alt-review-remove" title="' + escAttr(t('mediaplace_ai_alt_bulk_row_remove')) + '">' +
             '<i class="fa-solid fa-xmark"></i></button>' +
             '</div>' +
-            '<div class="mp3-ai-alt-review-preview" style="display:none">' +
-            '<img class="mp3-ai-alt-review-preview-img" alt="" loading="lazy">' +
+            '<div class="mp-ai-alt-review-preview" style="display:none">' +
+            '<img class="mp-ai-alt-review-preview-img" alt="" loading="lazy">' +
             '</div>';
 
         // Werte per .value setzen statt in escAttr()-textarea-Inhalt, damit
         // Zeichen wie "</textarea>" im generierten Text nicht das Markup
         // aufbrechen koennen.
         clangIds.forEach(function (clangId) {
-            var input = qs('.mp3-ai-alt-review-input[data-clang="' + clangId + '"]', row);
+            var input = qs('.mp-ai-alt-review-input[data-clang="' + clangId + '"]', row);
             if (input) input.value = item.texts[clangId];
         });
 
-        qs('.mp3-ai-alt-review-remove', row).addEventListener('click', function () {
+        qs('.mp-ai-alt-review-remove', row).addEventListener('click', function () {
             removeRow(item.filename);
         });
 
         // Akkordeon: groessere Vorschau erst beim ersten Aufklappen laden
         // (nicht alle N Zeilen sofort in rex_media_medium nachladen).
-        var previewEl = qs('.mp3-ai-alt-review-preview', row);
-        var thumbBtn = qs('.mp3-ai-alt-review-thumb-btn', row);
-        var previewImg = qs('.mp3-ai-alt-review-preview-img', row);
+        var previewEl = qs('.mp-ai-alt-review-preview', row);
+        var thumbBtn = qs('.mp-ai-alt-review-thumb-btn', row);
+        var previewImg = qs('.mp-ai-alt-review-preview-img', row);
         var previewLoaded = false;
         thumbBtn.addEventListener('click', function () {
             var open = 'none' === previewEl.style.display;
@@ -420,10 +420,10 @@ export function openBulkPanel() {
                     previewLoaded = true;
                 }
                 previewEl.style.display = '';
-                thumbBtn.classList.add('mp3-ai-alt-review-thumb-btn-open');
+                thumbBtn.classList.add('mp-ai-alt-review-thumb-btn-open');
             } else {
                 previewEl.style.display = 'none';
-                thumbBtn.classList.remove('mp3-ai-alt-review-thumb-btn-open');
+                thumbBtn.classList.remove('mp-ai-alt-review-thumb-btn-open');
             }
         });
 
@@ -543,7 +543,7 @@ export function openBulkPanel() {
         var items = order.map(function (filename) {
             var row = rows[filename].el;
             var texts = {};
-            qsa('.mp3-ai-alt-review-input', row).forEach(function (input) {
+            qsa('.mp-ai-alt-review-input', row).forEach(function (input) {
                 var value = input.value.trim();
                 if (value) texts[input.getAttribute('data-clang')] = value;
             });
@@ -555,7 +555,7 @@ export function openBulkPanel() {
             var failed = (res.errors || []).length;
             (res.errors || []).forEach(function (err) {
                 if (err && err.filename && rows[err.filename]) {
-                    rows[err.filename].el.classList.add('mp3-ai-alt-review-row-failed');
+                    rows[err.filename].el.classList.add('mp-ai-alt-review-row-failed');
                 }
             });
             order.slice().forEach(function (filename) {

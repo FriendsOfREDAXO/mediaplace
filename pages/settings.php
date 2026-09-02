@@ -89,7 +89,7 @@ $field->setLabel(rex_i18n::msg('mediaplace_settings_upload_resize_height'));
 // Flow bleibt aktiv. Liste zeigt ALLE registrierten Provider (nicht nach
 // Recht des aktuell eingeloggten Admins gefiltert), da hier konfiguriert
 // wird, nicht genutzt -- die Rechtepruefung fuer den TATSAECHLICH
-// nutzenden User passiert separat in boot.php beim Ausliefern an #mp3-root.
+// nutzenden User passiert separat in boot.php beim Ausliefern an #mp-root.
 $uploadProviders = \FriendsOfRedaxo\Mediaplace\UploadProviderRegistry::getAllProviders();
 $field = $form->addSelectField('upload_provider', null, [
     'class' => 'form-control selectpicker',
@@ -192,21 +192,47 @@ $formHtml = $form->get();
 // explizit nachtragen, als echten Bool-Wert statt des sonst ueblichen
 // Pipe-Strings (beides wird ueberall nur truthy/falsy ausgewertet, siehe
 // boot.php/lib/*).
-$checkboxFields = [
-    'replace_classic_mediapool',
-    'enable_own_metadata',
-    'enable_metainfo_editing',
-    'enable_alt_missing_filter',
-    'disable_tagging',
-    'disable_collections',
-    'enable_upload_resize',
-    'enable_ai_alt_text',
-    'enable_ai_auto_tag',
-];
-$submittedFieldset = rex_post('mediaplace', 'array', null);
-if (null !== $submittedFieldset) {
+//
+// WICHTIG (frueherer Fix hier war selbst kaputt): rex_form_base gruppiert
+// $_POST NICHT unter dem rex_config-Namespace ("mediaplace"), sondern unter
+// der NORMALISIERTEN FIELDSET-LEGENDE (uebersetzter Text!) jedes einzelnen
+// addFieldset()-Aufrufs -- siehe rex_form_base::fieldsetPostValues()/
+// elementPostValue(). Diese Seite hat mehrere Fieldsets (Klassischer
+// Medienpool/Features/Upload/KI), die Checkboxen landen also unter
+// UNTERSCHIEDLICHEN Top-Level-Schluesseln wie "klassischer_medienpool"
+// oder "features", nie unter "mediaplace" -- rex_post('mediaplace', ...)
+// fand deshalb NIE etwas, der ganze Block war ein stiller No-Op (live
+// verifiziert: gespeicherter Wert blieb dauerhaft NULL, rex_config::get()
+// fiel damit ueber den ??-Operator immer auf den Default true zurueck,
+// unabhaengig vom tatsaechlichen Haken-Zustand). Deshalb hier bewusst
+// generisch ueber ALLE Top-Level-Gruppen in $_POST suchen, statt die
+// (uebersetzungsabhaengige) Fieldset-Normalisierung nachzubauen.
+$addonName = $this->getName();
+// Zuverlaessiger, nicht uebersetzungsabhaengiger "wurde abgeschickt"-Check:
+// rex_config_form haengt an den Save-Button-Namen genau dieses Muster an
+// (siehe rex_config_form::__construct(), $id = md5($namespace . $fieldset)).
+$formWasSubmitted = null !== rex_post(md5($addonName) . '_save', 'string', null);
+if ($formWasSubmitted) {
+    $checkboxFields = [
+        'replace_classic_mediapool',
+        'enable_own_metadata',
+        'enable_metainfo_editing',
+        'enable_alt_missing_filter',
+        'disable_tagging',
+        'disable_collections',
+        'enable_upload_resize',
+        'enable_ai_alt_text',
+        'enable_ai_auto_tag',
+    ];
     foreach ($checkboxFields as $checkboxField) {
-        rex_config::set('mediaplace', $checkboxField, isset($submittedFieldset[$checkboxField]['1']));
+        $isChecked = false;
+        foreach ($_POST as $groupValue) {
+            if (is_array($groupValue) && array_key_exists($checkboxField, $groupValue)) {
+                $isChecked = isset($groupValue[$checkboxField]['1']);
+                break;
+            }
+        }
+        rex_config::set($addonName, $checkboxField, $isChecked);
     }
 }
 

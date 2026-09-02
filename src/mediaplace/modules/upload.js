@@ -17,17 +17,17 @@ import { showToast } from './toast.js';
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var qs = MP3Core.helpers.qs;
-var isImage = MP3Core.helpers.isImage;
-var fileIcon = MP3Core.helpers.fileIcon;
-var formatBytes = MP3Core.helpers.formatBytes;
-var isResizableImageType = MP3Core.helpers.isResizableImageType;
-var resizeImageFile = MP3Core.helpers.resizeImageFile;
-var apiUpload = MP3Core.api.apiUpload;
-var resolveFolderCategories = MP3Core.api.resolveFolderCategories;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var qs = MPCore.helpers.qs;
+var isImage = MPCore.helpers.isImage;
+var fileIcon = MPCore.helpers.fileIcon;
+var formatBytes = MPCore.helpers.formatBytes;
+var isResizableImageType = MPCore.helpers.isResizableImageType;
+var resizeImageFile = MPCore.helpers.resizeImageFile;
+var apiUpload = MPCore.api.apiUpload;
+var resolveFolderCategories = MPCore.api.resolveFolderCategories;
 
 /**
  * ctx-Vertrag:
@@ -39,7 +39,7 @@ var resolveFolderCategories = MP3Core.api.resolveFolderCategories;
  * - getUploadResizeWidth()/getUploadResizeHeight(): noch-legacy-State
  * - loadFiles(catId, reset): noch-legacy-Funktion
  * - getUploadPickerMode()/getUploadTargetCategoryId()/getOnSelect()/
- *   getOnMultiSelect()/clearOnSelect()/close(): fuer MP3.openUpload() (siehe
+ *   getOnMultiSelect()/clearOnSelect()/close(): fuer MP.openUpload() (siehe
  *   core.js) -- explizite Ziel-Kategorie ueberspringt die normale
  *   currentCat/Abfrage-Logik unten in doUpload(), und nach erfolgreichem
  *   Upload wird der Picker-Callback direkt mit der/den hochgeladenen
@@ -131,7 +131,7 @@ export function doUpload(fileList) {
 
     var files = Array.prototype.slice.call(fileList);
 
-    // MP3.openUpload()-Aufrufer mit einer expliziten Ziel-Kategorie (z.B. ein
+    // MP.openUpload()-Aufrufer mit einer expliziten Ziel-Kategorie (z.B. ein
     // klassisches Widget mit fest konfiguriertem "category"-Arg, siehe
     // mediaplace_classic.js) ueberspringen die currentCat/Abfrage-Logik
     // komplett -- die Kategorie ist bereits eindeutig bekannt.
@@ -143,7 +143,7 @@ export function doUpload(fileList) {
 
     // Im Upload-Picker-Kurzweg (siehe openUpload() in core.js) OHNE explizite
     // Kategorie IMMER fragen, statt stillschweigend die zuletzt in MediaPlace
-    // durchsuchte Kategorie (localStorage mp3_cat, ueber currentCat) wieder-
+    // durchsuchte Kategorie (localStorage mp_cat, ueber currentCat) wieder-
     // zuverwenden -- der Aufrufer (z.B. ein klassisches Widget auf einer
     // beliebigen Seite) hat keinen echten Browsing-Kontext, aus dem "aktuelle
     // Kategorie" sinnvoll abgeleitet werden koennte, und currentCat kann
@@ -204,7 +204,7 @@ export function doFolderUpload(entries) {
         .then(function (pathToCatId) {
             var files = entries.map(function (e) {
                 var file = e.file;
-                file.__mp3CategoryId = e.folderPath ? pathToCatId[e.folderPath] : currentCat;
+                file.__mpCategoryId = e.folderPath ? pathToCatId[e.folderPath] : currentCat;
                 return file;
             });
             startUpload(files, currentCat, null);
@@ -213,7 +213,7 @@ export function doFolderUpload(entries) {
             loadCategories();
         })
         .catch(function (err) {
-            console.error('MP3 folder upload category resolution failed:', err);
+            console.error('MP folder upload category resolution failed:', err);
             showGridError(t('mediaplace_error_creating_folder_categories', { msg: ((err && err.message) ? err.message : String(err)) }));
         });
 }
@@ -226,15 +226,15 @@ export function doFolderUpload(entries) {
 function showGridError(message) {
     var gridWrap = ctx.gridWrap;
     if (!gridWrap) return;
-    var existing = qs('.mp3-grid-error', gridWrap.parentNode);
+    var existing = qs('.mp-grid-error', gridWrap.parentNode);
     if (existing) existing.remove();
 
     var banner = document.createElement('div');
-    banner.className = 'mp3-grid-error';
-    banner.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span class="mp3-grid-error-text"></span>' +
-        '<button type="button" class="mp3-grid-error-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>';
-    banner.querySelector('.mp3-grid-error-text').textContent = message;
-    banner.querySelector('.mp3-grid-error-close').addEventListener('click', function () {
+    banner.className = 'mp-grid-error';
+    banner.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span class="mp-grid-error-text"></span>' +
+        '<button type="button" class="mp-grid-error-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>';
+    banner.querySelector('.mp-grid-error-text').textContent = message;
+    banner.querySelector('.mp-grid-error-close').addEventListener('click', function () {
         banner.remove();
     });
     gridWrap.parentNode.insertBefore(banner, gridWrap);
@@ -286,7 +286,7 @@ function showUploadPickerCategoryPicker(files) {
     });
 }
 
-// isResizableImageType()/resizeImageFile() leben in MP3Core.helpers (geteilt
+// isResizableImageType()/resizeImageFile() leben in MPCore.helpers (geteilt
 // mit mediaplace_widget.js fuer dessen eigenen Direkt-Upload).
 function maybeResizeUploadFile(file) {
     var features = ctx.getFeatures();
@@ -302,27 +302,27 @@ function startUpload(files, catId, assignToCollectionName) {
     var total = files.length;
 
     // Build upload tracker UI
-    var html = '<div class="mp3-upload-tracker">';
-    html += '<div class="mp3-upload-header">' +
+    var html = '<div class="mp-upload-tracker">';
+    html += '<div class="mp-upload-header">' +
         '<i class="fa-solid fa-cloud-arrow-up"></i> ' +
-        '<span class="mp3-upload-title">' + t('mediaplace_upload_title', { count: total, unit: t(total === 1 ? 'mediaplace_file_singular' : 'mediaplace_file_plural') }) + '</span>' +
+        '<span class="mp-upload-title">' + t('mediaplace_upload_title', { count: total, unit: t(total === 1 ? 'mediaplace_file_singular' : 'mediaplace_file_plural') }) + '</span>' +
         '</div>';
-    html += '<div class="mp3-upload-progress-bar"><div class="mp3-upload-progress-fill" id="mp3-progress-fill"></div></div>';
-    html += '<div class="mp3-upload-list" id="mp3-upload-list">';
+    html += '<div class="mp-upload-progress-bar"><div class="mp-upload-progress-fill" id="mp-progress-fill"></div></div>';
+    html += '<div class="mp-upload-list" id="mp-upload-list">';
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         var icon = isImage(f.name) ? 'fa-image' : fileIcon(f.name).replace('fa-solid ', '');
-        html += '<div class="mp3-upload-item" id="mp3-upl-' + i + '">' +
-            '<i class="fa-solid ' + icon + ' mp3-upload-item-icon"></i>' +
-            '<span class="mp3-upload-item-name">' + escAttr(f.name) + '</span>' +
-            '<span class="mp3-upload-item-size">' + formatBytes(f.size) + '</span>' +
-            '<span class="mp3-upload-item-status"><i class="fa-solid fa-clock mp3-upload-pending"></i></span>' +
+        html += '<div class="mp-upload-item" id="mp-upl-' + i + '">' +
+            '<i class="fa-solid ' + icon + ' mp-upload-item-icon"></i>' +
+            '<span class="mp-upload-item-name">' + escAttr(f.name) + '</span>' +
+            '<span class="mp-upload-item-size">' + formatBytes(f.size) + '</span>' +
+            '<span class="mp-upload-item-status"><i class="fa-solid fa-clock mp-upload-pending"></i></span>' +
         '</div>';
     }
     html += '</div>';
-    html += '<div class="mp3-upload-summary" id="mp3-upload-summary"></div>';
+    html += '<div class="mp-upload-summary" id="mp-upload-summary"></div>';
     html += '</div>';
-    grid.className = 'mp3-grid';
+    grid.className = 'mp-grid';
     grid.innerHTML = html;
 
     var done = 0;
@@ -334,7 +334,7 @@ function startUpload(files, catId, assignToCollectionName) {
         if (idx >= files.length) {
             // All done — optionally assign to collection
             var finalize = function () {
-                // MP3.openUpload()-Kurzweg (siehe core.js): Picker-Callback
+                // MP.openUpload()-Kurzweg (siehe core.js): Picker-Callback
                 // direkt mit der/den hochgeladenen Datei(en) aufrufen und
                 // schliessen -- keine Zusammenfassung/Toast noetig, der
                 // Overlay verschwindet ohnehin sofort wieder (ein Toast im
@@ -355,7 +355,7 @@ function startUpload(files, catId, assignToCollectionName) {
 
                 var toastMsg = t('mediaplace_upload_summary', { done: done, total: total });
                 if (failed > 0) toastMsg += t('mediaplace_upload_failed_suffix', { count: failed });
-                var summaryEl = document.getElementById('mp3-upload-summary');
+                var summaryEl = document.getElementById('mp-upload-summary');
                 if (summaryEl) {
                     var msg = toastMsg;
                     if (assignToCollectionName && uploadedFilenames.length) {
@@ -382,20 +382,20 @@ function startUpload(files, catId, assignToCollectionName) {
             return;
         }
 
-        var itemEl = document.getElementById('mp3-upl-' + idx);
+        var itemEl = document.getElementById('mp-upl-' + idx);
         if (itemEl) {
-            var statusEl = itemEl.querySelector('.mp3-upload-item-status');
-            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mp3-upload-spinning"></i>';
-            itemEl.classList.add('mp3-upload-active');
+            var statusEl = itemEl.querySelector('.mp-upload-item-status');
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mp-upload-spinning"></i>';
+            itemEl.classList.add('mp-upload-active');
         }
 
         var uploadFile = files[idx];
         // Ordner-Upload weist einzelnen Dateien ihre eigene (aus dem Ordnerpfad
         // aufgeloeste) Kategorie zu; ohne das faellt jede Datei auf catId zurueck.
-        var uploadCatId = (uploadFile.__mp3CategoryId != null) ? uploadFile.__mp3CategoryId : catId;
+        var uploadCatId = (uploadFile.__mpCategoryId != null) ? uploadFile.__mpCategoryId : catId;
         var onFileProgress = function (sent, total) {
             if (!itemEl) return;
-            var st = itemEl.querySelector('.mp3-upload-item-status');
+            var st = itemEl.querySelector('.mp-upload-item-status');
             if (st) st.textContent = Math.round((sent / total) * 100) + '%';
         };
         maybeResizeUploadFile(uploadFile)
@@ -408,31 +408,31 @@ function startUpload(files, catId, assignToCollectionName) {
                 var resultName = (resp && resp.filename) ? resp.filename : uploadFile.name;
                 uploadedFilenames.push(resultName);
                 if (itemEl) {
-                    var st = itemEl.querySelector('.mp3-upload-item-status');
-                    st.innerHTML = '<i class="fa-solid fa-circle-check mp3-upload-ok"></i>';
-                    itemEl.classList.remove('mp3-upload-active');
-                    itemEl.classList.add('mp3-upload-done');
+                    var st = itemEl.querySelector('.mp-upload-item-status');
+                    st.innerHTML = '<i class="fa-solid fa-circle-check mp-upload-ok"></i>';
+                    itemEl.classList.remove('mp-upload-active');
+                    itemEl.classList.add('mp-upload-done');
                 }
             })
             .catch(function (err) {
                 failed++;
-                console.error('MP3 upload failed:', uploadFile.name, err);
+                console.error('MP upload failed:', uploadFile.name, err);
                 if (itemEl) {
-                    var st = itemEl.querySelector('.mp3-upload-item-status');
-                    st.innerHTML = '<i class="fa-solid fa-circle-xmark mp3-upload-fail"></i>';
+                    var st = itemEl.querySelector('.mp-upload-item-status');
+                    st.innerHTML = '<i class="fa-solid fa-circle-xmark mp-upload-fail"></i>';
                     // Titel statt sichtbarem Text -- die Zeile ist fuer den
                     // Icon-only-Status ausgelegt, ein 403 in einer
                     // Unterkategorie (siehe mediaErrorMessage()) soll aber
                     // beim Hover erklaerbar sein statt nur "fehlgeschlagen".
                     st.title = mediaErrorMessage(err, 'mediaplace_error_uploading');
-                    itemEl.classList.remove('mp3-upload-active');
-                    itemEl.classList.add('mp3-upload-failed');
+                    itemEl.classList.remove('mp-upload-active');
+                    itemEl.classList.add('mp-upload-failed');
                 }
             })
             .then(function () {
                 // Update progress bar
                 var pct = Math.round(((done + failed) / total) * 100);
-                var fillEl = document.getElementById('mp3-progress-fill');
+                var fillEl = document.getElementById('mp-progress-fill');
                 if (fillEl) fillEl.style.width = pct + '%';
                 uploadNext(idx + 1);
             });
@@ -465,8 +465,8 @@ function readClipboardAndUpload() {
         Promise.all(promises).then(function () {
             if (!files.length) return;
             if (gridWrap) {
-                gridWrap.classList.add('mp3-pasteover');
-                setTimeout(function () { gridWrap.classList.remove('mp3-pasteover'); }, 300);
+                gridWrap.classList.add('mp-pasteover');
+                setTimeout(function () { gridWrap.classList.remove('mp-pasteover'); }, 300);
             }
             doUpload(files);
         });

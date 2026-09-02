@@ -1,19 +1,19 @@
 /**
  * MediaPlace – Widget
  *
- * Ersetzt <input class="mp3-widget"> automatisch durch eine
- * visuelle Medienauswahl mit Vorschau, die den MP3-Overlay nutzt.
+ * Ersetzt <input class="mp-widget"> automatisch durch eine
+ * visuelle Medienauswahl mit Vorschau, die den MP-Overlay nutzt.
  *
  * Attribute:
- *   data-mp3-multiple="true"    → Mehrfachauswahl (kommaseparierte Dateinamen)
- *   data-mp3-types="image/*"    → Erlaubte Dateitypen fuer Direkt-Upload (wie
+ *   data-mp-multiple="true"    → Mehrfachauswahl (kommaseparierte Dateinamen)
+ *   data-mp-types="image/*"    → Erlaubte Dateitypen fuer Direkt-Upload (wie
  *                                 natives <input accept>: ".ext", "typ/*" oder
  *                                 "typ/subtyp", kommasepariert). Gilt nicht
- *                                 fuer den Picker (MP3.open()).
- *   data-mp3-preview="true"     → Vorschau anzeigen (Standard: true)
- *   data-mp3-upload="true"      → Direkt-Upload per Drag&Drop/Klick, mit
+ *                                 fuer den Picker (MP.open()).
+ *   data-mp-preview="true"     → Vorschau anzeigen (Standard: true)
+ *   data-mp-upload="true"      → Direkt-Upload per Drag&Drop/Klick, mit
  *                                 Kategorie-Auswahl-Dialog vor dem Hochladen
- *   data-mp3-max="5"            → Maximale Dateianzahl bei Mehrfachauswahl
+ *   data-mp-max="5"            → Maximale Dateianzahl bei Mehrfachauswahl
  *                                 (Add/Upload-Buttons werden deaktiviert, wenn
  *                                 erreicht). Cmd/Ctrl-Klick auf Galerie-Items
  *                                 markiert sie zum gemeinsamen Entfernen ueber
@@ -22,25 +22,25 @@
  * Wert im Input: Dateiname(n), kommasepariert bei Multi.
  *
  * Beispiel:
- *   <input class="mp3-widget" name="image" value="foto.jpg">
- *   <input class="mp3-widget" name="gallery" data-mp3-multiple="true" value="a.jpg,b.png">
+ *   <input class="mp-widget" name="image" value="foto.jpg">
+ *   <input class="mp-widget" name="gallery" data-mp-multiple="true" value="a.jpg,b.png">
  */
 (function () {
     'use strict';
 
-    var t = (window.MP3Core && window.MP3Core.i18n && window.MP3Core.i18n.t) || function (key) { return key; };
-    var Core = window.MP3Core || {};
+    var t = (window.MPCore && window.MPCore.i18n && window.MPCore.i18n.t) || function (key) { return key; };
+    var Core = window.MPCore || {};
     var apiUpload = Core.api && Core.api.apiUpload;
     var apiFetchAllCategoriesFlat = Core.api && Core.api.apiFetchAllCategoriesFlat;
     var isResizableImageType = Core.helpers && Core.helpers.isResizableImageType;
     var resizeImageFile = Core.helpers && Core.helpers.resizeImageFile;
     var buildCategoryOptionsHtml = Core.helpers && Core.helpers.buildCategoryOptionsHtml;
 
-    // Upload-Resize-Einstellungen kommen aus derselben #mp3-root-Config wie der
+    // Upload-Resize-Einstellungen kommen aus derselben #mp-root-Config wie der
     // Overlay-Upload (boot.php) -- unabhaengig davon gelesen, da dieses Skript
     // ohne den Overlay-Kern laufen koennen muss.
     function uploadResizeConfig() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         return {
             enabled: !!root && root.dataset.featureUploadResize === '1',
             width: (root && parseInt(root.dataset.uploadResizeWidth, 10)) || 2000,
@@ -48,7 +48,7 @@
         };
     }
 
-    // rex_url::media() (PHP, boot.php -> #mp3-root data-media-base-url) --
+    // rex_url::media() (PHP, boot.php -> #mp-root data-media-base-url) --
     // installationsunabhaengig berechnete Basis-URL fuer Original-Mediendateien,
     // statt sie clientseitig zu raten (z.B. per relativem "../media/"-Pfad oder
     // Split auf "/redaxo/" im aktuellen URL-Pfad, siehe filepond_uploader) --
@@ -56,7 +56,7 @@
     // bestimmten Verzeichnistiefe liegt. Gleiches unabhaengiges Lesen wie
     // uploadResizeConfig() oben, aus demselben Grund.
     function mediaBaseUrl() {
-        var root = document.getElementById('mp3-root');
+        var root = document.getElementById('mp-root');
         return (root && root.dataset.mediaBaseUrl) || '../media/';
     }
 
@@ -68,7 +68,7 @@
         return resizeImageFile(file, cfg.width, cfg.height);
     }
 
-    // ---- Erlaubte Dateitypen (data-mp3-types) ----
+    // ---- Erlaubte Dateitypen (data-mp-types) ----
     // Gleiche Syntax wie das native <input accept>: kommaseparierte Liste aus
     // ".ext", "typ/*" (Wildcard-Subtyp) oder "typ/subtyp" (exakt). accept
     // steuert nur den nativen Dateidialog -- bei Drag&Drop muss zusaetzlich
@@ -98,13 +98,13 @@
     // ---- Ansicht (Kacheln/Liste), geteilte Praeferenz ueber alle Widgets ----
     function getWidgetViewMode() {
         try {
-            return localStorage.getItem('mp3w_view') === 'list' ? 'list' : 'grid';
+            return localStorage.getItem('mpw_view') === 'list' ? 'list' : 'grid';
         } catch (e) {
             return 'grid';
         }
     }
     function setWidgetViewMode(mode) {
-        try { localStorage.setItem('mp3w_view', mode); } catch (e) { /* Storage evtl. nicht verfuegbar (Privatmodus) */ }
+        try { localStorage.setItem('mpw_view', mode); } catch (e) { /* Storage evtl. nicht verfuegbar (Privatmodus) */ }
     }
 
     // ---- Helpers ----
@@ -144,26 +144,26 @@
     }
 
     // ---- Kategorie-Auswahl fuer Direkt-Upload ----
-    // Eigene, vom Overlay unabhaengige Modal-Klassen (.mp3w-catpick-*, siehe
-    // mediaplace_widget.css) statt der Overlay-Klassen .mp3-catpick-* -- letztere
-    // sind unter "#mp3-overlay ..." gescoped, das Overlay-Root existiert aber
-    // erst, nachdem MP3.open() einmal gebaut hat, und dieses Skript muss ohne
+    // Eigene, vom Overlay unabhaengige Modal-Klassen (.mpw-catpick-*, siehe
+    // mediaplace_widget.css) statt der Overlay-Klassen .mp-catpick-* -- letztere
+    // sind unter "#mp-overlay ..." gescoped, das Overlay-Root existiert aber
+    // erst, nachdem MP.open() einmal gebaut hat, und dieses Skript muss ohne
     // den Overlay-Kern funktionieren.
     function showUploadCategoryPicker(fileCount, onConfirm) {
         var modal = document.createElement('div');
-        modal.className = 'mp3w-catpick-modal';
+        modal.className = 'mpw-catpick-modal';
         modal.innerHTML =
-            '<div class="mp3w-catpick-box">' +
-            '<div class="mp3w-catpick-title"><i class="fa-solid fa-folder-open"></i> ' + escAttr(t('mediaplace_pick_upload_category')) + '</div>' +
-            '<p class="mp3w-catpick-info">' + escAttr(t('mediaplace_widget_upload_category_hint', { count: fileCount })) + '</p>' +
-            '<select class="mp3w-catpick-select"><option value="0">' + escAttr(t('mediaplace_root_no_category')) + '</option></select>' +
-            '<div class="mp3w-catpick-actions">' +
-            '<button type="button" class="mp3w-catpick-cancel">' + escAttr(t('mediaplace_cancel')) + '</button>' +
-            '<button type="button" class="mp3w-catpick-confirm">' + escAttr(t('mediaplace_upload')) + '</button>' +
+            '<div class="mpw-catpick-box">' +
+            '<div class="mpw-catpick-title"><i class="fa-solid fa-folder-open"></i> ' + escAttr(t('mediaplace_pick_upload_category')) + '</div>' +
+            '<p class="mpw-catpick-info">' + escAttr(t('mediaplace_widget_upload_category_hint', { count: fileCount })) + '</p>' +
+            '<select class="mpw-catpick-select"><option value="0">' + escAttr(t('mediaplace_root_no_category')) + '</option></select>' +
+            '<div class="mpw-catpick-actions">' +
+            '<button type="button" class="mpw-catpick-cancel">' + escAttr(t('mediaplace_cancel')) + '</button>' +
+            '<button type="button" class="mpw-catpick-confirm">' + escAttr(t('mediaplace_upload')) + '</button>' +
             '</div></div>';
         document.body.appendChild(modal);
 
-        var select = modal.querySelector('.mp3w-catpick-select');
+        var select = modal.querySelector('.mpw-catpick-select');
         function initSelectpicker() {
             if (window.jQuery && window.jQuery.fn && window.jQuery.fn.selectpicker) {
                 window.jQuery(select).selectpicker({ liveSearch: true, width: '100%' });
@@ -181,10 +181,10 @@
             initSelectpicker();
         }
 
-        modal.querySelector('.mp3w-catpick-cancel').addEventListener('click', function () {
+        modal.querySelector('.mpw-catpick-cancel').addEventListener('click', function () {
             modal.remove();
         });
-        modal.querySelector('.mp3w-catpick-confirm').addEventListener('click', function () {
+        modal.querySelector('.mpw-catpick-confirm').addEventListener('click', function () {
             var catId = parseInt(select.value || '0', 10);
             modal.remove();
             onConfirm(catId);
@@ -192,17 +192,17 @@
     }
 
     // ---- Widget Class ----
-    function MP3Widget(input) {
+    function MPWidget(input) {
         this.input = input;
-        this.multiple = input.getAttribute('data-mp3-multiple') === 'true';
-        this.uploadEnabled = input.getAttribute('data-mp3-upload') === 'true';
-        this.allowedTypes = input.getAttribute('data-mp3-types') || '';
-        this.maxFiles = parseInt(input.getAttribute('data-mp3-max'), 10) || 0;
-        // data-mp3-view legt die Startansicht dieses einen Widgets fest
+        this.multiple = input.getAttribute('data-mp-multiple') === 'true';
+        this.uploadEnabled = input.getAttribute('data-mp-upload') === 'true';
+        this.allowedTypes = input.getAttribute('data-mp-types') || '';
+        this.maxFiles = parseInt(input.getAttribute('data-mp-max'), 10) || 0;
+        // data-mp-view legt die Startansicht dieses einen Widgets fest
         // (Kacheln/Liste) -- ohne explizite Angabe gilt die geteilte
         // Nutzer-Praeferenz (localStorage). Ein spaeterer Klick auf den
         // Umschalter aendert weiterhin global alle Widgets der Seite.
-        var explicitView = input.getAttribute('data-mp3-view');
+        var explicitView = input.getAttribute('data-mp-view');
         this.viewMode = ('list' === explicitView || 'grid' === explicitView) ? explicitView : getWidgetViewMode();
         this.container = null;
         this.previewWrap = null;
@@ -217,13 +217,13 @@
         this._render();
     }
 
-    MP3Widget.prototype._getFiles = function () {
+    MPWidget.prototype._getFiles = function () {
         var val = this.input.value.trim();
         if (!val) return [];
         return val.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
     };
 
-    MP3Widget.prototype._setFiles = function (files) {
+    MPWidget.prototype._setFiles = function (files) {
         this.input.value = files.join(',');
         // Trigger change event for REDAXO and other listeners
         var evt;
@@ -233,21 +233,21 @@
         this._render();
     };
 
-    // data-mp3-max begrenzt nur Mehrfachauswahl-Widgets -- Einzelauswahl ist
+    // data-mp-max begrenzt nur Mehrfachauswahl-Widgets -- Einzelauswahl ist
     // durch die eigene Natur schon auf 1 Datei begrenzt.
-    MP3Widget.prototype._remainingSlots = function () {
+    MPWidget.prototype._remainingSlots = function () {
         if (!this.multiple || !this.maxFiles) return Infinity;
         return Math.max(0, this.maxFiles - this._getFiles().length);
     };
 
-    MP3Widget.prototype._build = function () {
+    MPWidget.prototype._build = function () {
         // Hide original input
         this.input.style.display = 'none';
-        this.input.setAttribute('data-mp3-initialized', 'true');
+        this.input.setAttribute('data-mp-initialized', 'true');
 
         // Create container
         this.container = document.createElement('div');
-        this.container.className = 'mp3w-container';
+        this.container.className = 'mpw-container';
 
         // Direkt-Upload: kein separates Dropzone-Element -- der gesamte
         // Container ist die Drop-Zone (Galerie, Toolbar, alles), dauerhaft
@@ -258,22 +258,22 @@
 
         // Preview area
         this.previewWrap = document.createElement('div');
-        this.previewWrap.className = 'mp3w-previews';
+        this.previewWrap.className = 'mpw-previews';
         if ('list' === this.viewMode) {
-            this.previewWrap.classList.add('mp3w-view-list');
+            this.previewWrap.classList.add('mpw-view-list');
         }
         this.container.appendChild(this.previewWrap);
 
         // Toolbar
         var toolbar = document.createElement('div');
-        toolbar.className = 'mp3w-toolbar';
+        toolbar.className = 'mpw-toolbar';
 
         var self = this;
 
         // Add button
         var addBtn = document.createElement('button');
         addBtn.type = 'button';
-        addBtn.className = 'btn btn-xs btn-default mp3w-btn mp3w-btn-add';
+        addBtn.className = 'btn btn-xs btn-default mpw-btn mpw-btn-add';
         addBtn.title = this.multiple ? t('mediaplace_widget_add_multiple') : t('mediaplace_widget_add_single');
         addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         addBtn.addEventListener('click', function () {
@@ -289,7 +289,7 @@
         if (this.uploadEnabled) {
             var uploadBtn = document.createElement('button');
             uploadBtn.type = 'button';
-            uploadBtn.className = 'btn btn-xs btn-default mp3w-btn mp3w-btn-upload';
+            uploadBtn.className = 'btn btn-xs btn-default mpw-btn mpw-btn-upload';
             uploadBtn.title = t('mediaplace_widget_upload_from_computer');
             uploadBtn.innerHTML = '<i class="fa-solid fa-upload"></i>';
             uploadBtn.addEventListener('click', function () {
@@ -302,11 +302,11 @@
         // View-Umschalter Kacheln/Liste -- auch bei Einzelauswahl verfuegbar
         // (kompakte Zeile statt Kachel). Start-Icon richtet sich nach der
         // fuer DIESES Widget ermittelten Ansicht (this.viewMode, siehe
-        // Konstruktor: data-mp3-view-Override oder geteilte Praeferenz),
+        // Konstruktor: data-mp-view-Override oder geteilte Praeferenz),
         // ein Klick schaltet danach global fuer alle Widgets der Seite um.
         var viewBtn = document.createElement('button');
         viewBtn.type = 'button';
-        viewBtn.className = 'btn btn-xs btn-default mp3w-btn mp3w-btn-view';
+        viewBtn.className = 'btn btn-xs btn-default mpw-btn mpw-btn-view';
         viewBtn.title = t('mediaplace_widget_toggle_view');
         viewBtn.innerHTML = '<i class="fa-solid ' + ('list' === this.viewMode ? 'fa-table-cells' : 'fa-list') + '"></i>';
         viewBtn.addEventListener('click', function () {
@@ -321,7 +321,7 @@
         // Angeklickte betrifft).
         var clearBtn = document.createElement('button');
         clearBtn.type = 'button';
-        clearBtn.className = 'btn btn-xs btn-default mp3w-btn mp3w-btn-clear';
+        clearBtn.className = 'btn btn-xs btn-default mpw-btn mpw-btn-clear';
         clearBtn.title = t('mediaplace_widget_clear_marked_disabled');
         clearBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
         clearBtn.disabled = true;
@@ -341,7 +341,7 @@
         // werden koennen.
         var clearAllBtn = document.createElement('button');
         clearAllBtn.type = 'button';
-        clearAllBtn.className = 'btn btn-xs btn-delete mp3w-btn mp3w-btn-clear-all';
+        clearAllBtn.className = 'btn btn-xs btn-delete mpw-btn mpw-btn-clear-all';
         clearAllBtn.title = t('mediaplace_widget_clear_all');
         clearAllBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + escAttr(t('mediaplace_widget_clear_all'));
         clearAllBtn.addEventListener('click', function () {
@@ -365,11 +365,11 @@
         }
     };
 
-    MP3Widget.prototype._openPicker = function () {
+    MPWidget.prototype._openPicker = function () {
         var self = this;
         if (self.multiple) {
             // Multi: open in multi-select mode, receive array of filenames
-            MP3.open(function (filenames) {
+            MP.open(function (filenames) {
                 var current = self._getFiles();
                 var skipped = 0;
                 for (var i = 0; i < filenames.length; i++) {
@@ -388,7 +388,7 @@
             }, { multiple: true });
         } else {
             // Single: open in single-select mode
-            MP3.open(function (filename) {
+            MP.open(function (filename) {
                 self._setFiles([filename]);
             });
         }
@@ -397,13 +397,13 @@
     // Wechselt Kacheln/Liste global fuer alle Widgets auf der Seite (nicht nur
     // dieses), damit mehrere Galerie-Felder (z.B. MBlock-Wiederholung)
     // konsistent bleiben -- Icon zeigt jeweils den Zielzustand des naechsten Klicks.
-    MP3Widget.prototype._toggleView = function () {
+    MPWidget.prototype._toggleView = function () {
         var next = 'list' === getWidgetViewMode() ? 'grid' : 'list';
         setWidgetViewMode(next);
-        qsa('.mp3w-previews').forEach(function (el) {
-            el.classList.toggle('mp3w-view-list', 'list' === next);
+        qsa('.mpw-previews').forEach(function (el) {
+            el.classList.toggle('mpw-view-list', 'list' === next);
         });
-        qsa('.mp3w-btn-view i').forEach(function (icon) {
+        qsa('.mpw-btn-view i').forEach(function (icon) {
             icon.className = 'fa-solid ' + ('list' === next ? 'fa-table-cells' : 'fa-list');
         });
     };
@@ -415,7 +415,7 @@
     // Ueberqueren von Kind-Elementen (Galerie-Items, Buttons) feuert -- ohne
     // Zaehler wuerde die Hervorhebung waehrend des Ziehens ueber den Container
     // flackern.
-    MP3Widget.prototype._setupUpload = function () {
+    MPWidget.prototype._setupUpload = function () {
         var self = this;
         var dragCounter = 0;
 
@@ -433,14 +433,14 @@
         // Schmale, nur waehrend eines laufenden Uploads sichtbare Statuszeile --
         // kein dauerhaftes Dropzone-Element, nur ein Fortschrittshinweis.
         this.progressEl = document.createElement('div');
-        this.progressEl.className = 'mp3w-upload-progress';
+        this.progressEl.className = 'mpw-upload-progress';
         this.progressEl.style.display = 'none';
         this.container.appendChild(this.progressEl);
 
         this.container.addEventListener('dragenter', function (e) {
             e.preventDefault();
             dragCounter++;
-            self.container.classList.add('mp3w-container-dragover');
+            self.container.classList.add('mpw-container-dragover');
         });
         this.container.addEventListener('dragover', function (e) {
             e.preventDefault();
@@ -449,20 +449,20 @@
         this.container.addEventListener('dragleave', function () {
             dragCounter = Math.max(0, dragCounter - 1);
             if (dragCounter === 0) {
-                self.container.classList.remove('mp3w-container-dragover');
+                self.container.classList.remove('mpw-container-dragover');
             }
         });
         this.container.addEventListener('drop', function (e) {
             e.preventDefault();
             dragCounter = 0;
-            self.container.classList.remove('mp3w-container-dragover');
+            self.container.classList.remove('mpw-container-dragover');
             if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
                 self._handleIncomingFiles(e.dataTransfer.files);
             }
         });
     };
 
-    MP3Widget.prototype._handleIncomingFiles = function (fileList) {
+    MPWidget.prototype._handleIncomingFiles = function (fileList) {
         var self = this;
         var files = Array.prototype.slice.call(fileList || []);
         if (!files.length) return;
@@ -499,7 +499,7 @@
         });
     };
 
-    MP3Widget.prototype._uploadFiles = function (files, catId) {
+    MPWidget.prototype._uploadFiles = function (files, catId) {
         var self = this;
         if (!apiUpload) return;
 
@@ -516,11 +516,11 @@
         // kleine Widget-Format). onProgress wird jetzt tatsaechlich an
         // apiUpload() durchgereicht (vorher ungenutzt mit null uebergeben).
         progressEl.innerHTML =
-            '<div class="mp3w-upload-progress-text"></div>' +
-            '<div class="mp3w-upload-progress-bar"><div class="mp3w-upload-progress-fill"></div></div>';
-        var textEl = progressEl.querySelector('.mp3w-upload-progress-text');
-        var fillEl = progressEl.querySelector('.mp3w-upload-progress-fill');
-        progressEl.classList.remove('mp3w-upload-progress-done');
+            '<div class="mpw-upload-progress-text"></div>' +
+            '<div class="mpw-upload-progress-bar"><div class="mpw-upload-progress-fill"></div></div>';
+        var textEl = progressEl.querySelector('.mpw-upload-progress-text');
+        var fillEl = progressEl.querySelector('.mpw-upload-progress-fill');
+        progressEl.classList.remove('mpw-upload-progress-done');
         progressEl.style.display = '';
 
         function setProgress(fileFraction) {
@@ -547,14 +547,14 @@
                 }
                 var summary = t('mediaplace_upload_summary', { done: done, total: total });
                 if (failed > 0) summary += t('mediaplace_upload_failed_suffix', { count: failed });
-                progressEl.classList.add('mp3w-upload-progress-done');
+                progressEl.classList.add('mpw-upload-progress-done');
                 textEl.innerHTML = '<i class="fa-solid ' + (failed > 0 ? 'fa-triangle-exclamation' : 'fa-circle-check') + '"></i> ' + escAttr(summary);
                 // Kurz sichtbar stehen bleiben statt sofort zu verschwinden
                 // (gleiches Timing wie die Erfolgsmeldung im Overlay), sonst
                 // wirkt ein erfolgreicher Upload wie "nichts ist passiert".
                 setTimeout(function () {
                     progressEl.style.display = 'none';
-                    progressEl.classList.remove('mp3w-upload-progress-done');
+                    progressEl.classList.remove('mpw-upload-progress-done');
                 }, 1500);
                 return;
             }
@@ -571,7 +571,7 @@
                 })
                 .catch(function (err) {
                     failed++;
-                    console.error('MP3Widget upload failed:', files[idx].name, err);
+                    console.error('MPWidget upload failed:', files[idx].name, err);
                 })
                 .then(function () {
                     setProgress(0);
@@ -582,19 +582,19 @@
         uploadNext(0);
     };
 
-    MP3Widget.prototype._render = function () {
+    MPWidget.prototype._render = function () {
         var files = this._getFiles();
         var self = this;
         var html = '';
 
         if (files.length === 0) {
             if (this.uploadEnabled) {
-                html = '<div class="mp3w-empty mp3w-empty-upload">' +
+                html = '<div class="mpw-empty mpw-empty-upload">' +
                     '<i class="fa-solid fa-cloud-arrow-up"></i><br>' +
                     escAttr(t('mediaplace_widget_dropzone_text')) +
                     '</div>';
             } else {
-                html = '<div class="mp3w-empty">' +
+                html = '<div class="mpw-empty">' +
                     '<i class="fa-solid fa-photo-film"></i> ' +
                     (this.multiple ? t('mediaplace_widget_empty_multiple') : t('mediaplace_widget_empty_single')) +
                     '</div>';
@@ -610,7 +610,7 @@
         // Leerzustand mit aktivem Upload ist selbst klickbar (oeffnet den
         // Dateidialog wie der Upload-Button im Toolbar) -- der Hinweistext
         // "...oder klicken zum Hochladen" muss auch wirklich klickbar sein.
-        var emptyUpload = qs('.mp3w-empty-upload', this.previewWrap);
+        var emptyUpload = qs('.mpw-empty-upload', this.previewWrap);
         if (emptyUpload) {
             emptyUpload.addEventListener('click', function () {
                 self.fileInput.click();
@@ -618,7 +618,7 @@
         }
 
         // Bind remove buttons
-        qsa('.mp3w-item-remove', this.previewWrap).forEach(function (btn) {
+        qsa('.mpw-item-remove', this.previewWrap).forEach(function (btn) {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -630,20 +630,20 @@
         });
 
         // Details ansehen: oeffnet den Overlay direkt im Detail-Panel des
-        // Mediums (Browse-only, kein Callback -- siehe MP3.openFile()),
+        // Mediums (Browse-only, kein Callback -- siehe MP.openFile()),
         // ohne die Widget-Auswahl selbst zu veraendern. stopPropagation()
         // noetig, sonst wuerde der Item-Klick-Handler unten (Single-Modus)
         // zusaetzlich den Picker zum Ersetzen oeffnen. Zwei Buttons fuehren
         // dieselbe Aktion aus (Lupe oben links, Auge zentriert auf dem
         // Vorschaubild) -- die Lupe wird laut Nutzer-Feedback leicht
         // uebersehen, bleibt aber als zusaetzlicher Trigger bestehen.
-        qsa('.mp3w-item-view, .mp3w-item-eye', this.previewWrap).forEach(function (btn) {
+        qsa('.mpw-item-view, .mpw-item-eye', this.previewWrap).forEach(function (btn) {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 var fn = this.getAttribute('data-filename');
-                if (fn && typeof MP3 !== 'undefined' && MP3.openFile) {
-                    MP3.openFile(fn);
+                if (fn && typeof MP !== 'undefined' && MP.openFile) {
+                    MP.openFile(fn);
                 }
             });
         });
@@ -659,10 +659,10 @@
         // bestehenden Mehrfachmarkierung hinzu/entfernt es daraus, ohne die
         // uebrigen Markierungen zu loeschen -- uebliche Datei-Browser-Konvention.
         // Im Single-Modus gibt es keine Markierung (Ersetzen via _openPicker()).
-        qsa('.mp3w-item', this.previewWrap).forEach(function (item) {
+        qsa('.mpw-item', this.previewWrap).forEach(function (item) {
             var fn = item.getAttribute('data-filename');
             if (self.multiple && self.markedForDelete[fn]) {
-                item.classList.add('mp3w-item-marked');
+                item.classList.add('mpw-item-marked');
             }
             item.addEventListener('click', function (e) {
                 if (!self.multiple) {
@@ -673,20 +673,20 @@
                 if (e.metaKey || e.ctrlKey) {
                     if (self.markedForDelete[fn]) {
                         delete self.markedForDelete[fn];
-                        item.classList.remove('mp3w-item-marked');
+                        item.classList.remove('mpw-item-marked');
                     } else {
                         self.markedForDelete[fn] = true;
-                        item.classList.add('mp3w-item-marked');
+                        item.classList.add('mpw-item-marked');
                     }
                 } else {
                     var alreadyOnlyThis = self.markedForDelete[fn] && Object.keys(self.markedForDelete).length === 1;
                     self.markedForDelete = {};
-                    qsa('.mp3w-item-marked', self.previewWrap).forEach(function (el) {
-                        el.classList.remove('mp3w-item-marked');
+                    qsa('.mpw-item-marked', self.previewWrap).forEach(function (el) {
+                        el.classList.remove('mpw-item-marked');
                     });
                     if (!alreadyOnlyThis) {
                         self.markedForDelete[fn] = true;
-                        item.classList.add('mp3w-item-marked');
+                        item.classList.add('mpw-item-marked');
                     }
                 }
                 self._updateToolbarState();
@@ -697,8 +697,8 @@
     };
 
     // Sichtbarkeit/Beschriftung des Clear-Buttons (alle vs. nur Markierte) und
-    // Sperren von Add/Upload bei erreichtem data-mp3-max.
-    MP3Widget.prototype._updateToolbarState = function () {
+    // Sperren von Add/Upload bei erreichtem data-mp-max.
+    MPWidget.prototype._updateToolbarState = function () {
         var files = this._getFiles();
         var markedCount = Object.keys(this.markedForDelete).length;
 
@@ -708,7 +708,7 @@
             this.clearBtn.title = markedCount
                 ? t('mediaplace_widget_clear_marked', { count: markedCount })
                 : t('mediaplace_widget_clear_marked_disabled');
-            this.clearBtn.classList.toggle('mp3w-btn-clear-marked', markedCount > 0);
+            this.clearBtn.classList.toggle('mpw-btn-clear-marked', markedCount > 0);
         }
         if (this.clearAllBtn) {
             this.clearAllBtn.style.display = files.length ? '' : 'none';
@@ -725,40 +725,40 @@
         }
     };
 
-    MP3Widget.prototype._renderItem = function (filename, index) {
+    MPWidget.prototype._renderItem = function (filename, index) {
         var preview;
         if (isImage(filename)) {
             preview = '<img src="' + escAttr(thumbUrl(filename)) + '" alt="' + escAttr(filename) + '" draggable="false">';
         } else {
-            preview = '<div class="mp3w-item-icon"><i class="' + fileIcon(filename) + '"></i></div>';
+            preview = '<div class="mpw-item-icon"><i class="' + fileIcon(filename) + '"></i></div>';
         }
 
-        var html = '<div class="mp3w-item" data-filename="' + escAttr(filename) + '" data-index="' + index + '"' +
+        var html = '<div class="mpw-item" data-filename="' + escAttr(filename) + '" data-index="' + index + '"' +
             (this.multiple ? ' draggable="true"' : '') + '>';
-        html += '<div class="mp3w-item-preview">' + preview + '</div>';
-        html += '<div class="mp3w-item-bottom">' +
-            '<button type="button" class="mp3w-item-eye" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('mediaplace_widget_view_details')) + '">' +
+        html += '<div class="mpw-item-preview">' + preview + '</div>';
+        html += '<div class="mpw-item-bottom">' +
+            '<button type="button" class="mpw-item-eye" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('mediaplace_widget_view_details')) + '">' +
             '<i class="fa-solid fa-eye"></i></button>' +
-            '<div class="mp3w-item-name">' + escAttr(filename) + '</div>' +
+            '<div class="mpw-item-name">' + escAttr(filename) + '</div>' +
             '</div>';
-        html += '<button type="button" class="mp3w-item-view" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('mediaplace_widget_view_details')) + '">' +
+        html += '<button type="button" class="mpw-item-view" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('mediaplace_widget_view_details')) + '">' +
             '<i class="fa-solid fa-magnifying-glass"></i></button>';
-        html += '<button type="button" class="mp3w-item-remove" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('mediaplace_widget_remove')) + '">' +
+        html += '<button type="button" class="mpw-item-remove" data-filename="' + escAttr(filename) + '" title="' + escAttr(t('mediaplace_widget_remove')) + '">' +
             '<i class="fa-solid fa-xmark"></i></button>';
         html += '</div>';
         return html;
     };
 
     // ---- Drag & Drop Sort (Multi only) ----
-    MP3Widget.prototype._initDragSort = function () {
+    MPWidget.prototype._initDragSort = function () {
         var self = this;
         var dragItem = null;
 
         this.previewWrap.addEventListener('dragstart', function (e) {
-            var item = e.target.closest('.mp3w-item');
+            var item = e.target.closest('.mpw-item');
             if (!item) return;
             dragItem = item;
-            item.classList.add('mp3w-item-dragging');
+            item.classList.add('mpw-item-dragging');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', item.getAttribute('data-index'));
         });
@@ -766,35 +766,35 @@
         this.previewWrap.addEventListener('dragover', function (e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
-            var target = e.target.closest('.mp3w-item');
+            var target = e.target.closest('.mpw-item');
             if (target && target !== dragItem) {
                 var rect = target.getBoundingClientRect();
                 var mid = rect.left + rect.width / 2;
                 if (e.clientX < mid) {
-                    target.classList.add('mp3w-drop-before');
-                    target.classList.remove('mp3w-drop-after');
+                    target.classList.add('mpw-drop-before');
+                    target.classList.remove('mpw-drop-after');
                 } else {
-                    target.classList.remove('mp3w-drop-before');
-                    target.classList.add('mp3w-drop-after');
+                    target.classList.remove('mpw-drop-before');
+                    target.classList.add('mpw-drop-after');
                 }
             }
         });
 
         this.previewWrap.addEventListener('dragleave', function (e) {
-            var item = e.target.closest('.mp3w-item');
+            var item = e.target.closest('.mpw-item');
             if (item) {
-                item.classList.remove('mp3w-drop-before', 'mp3w-drop-after');
+                item.classList.remove('mpw-drop-before', 'mpw-drop-after');
             }
         });
 
         this.previewWrap.addEventListener('drop', function (e) {
             e.preventDefault();
-            qsa('.mp3w-item', self.previewWrap).forEach(function (el) {
-                el.classList.remove('mp3w-drop-before', 'mp3w-drop-after');
+            qsa('.mpw-item', self.previewWrap).forEach(function (el) {
+                el.classList.remove('mpw-drop-before', 'mpw-drop-after');
             });
 
             if (!dragItem) return;
-            var target = e.target.closest('.mp3w-item');
+            var target = e.target.closest('.mpw-item');
             if (!target || target === dragItem) return;
 
             var files = self._getFiles();
@@ -814,11 +814,11 @@
 
         this.previewWrap.addEventListener('dragend', function () {
             if (dragItem) {
-                dragItem.classList.remove('mp3w-item-dragging');
+                dragItem.classList.remove('mpw-item-dragging');
                 dragItem = null;
             }
-            qsa('.mp3w-item', self.previewWrap).forEach(function (el) {
-                el.classList.remove('mp3w-drop-before', 'mp3w-drop-after');
+            qsa('.mpw-item', self.previewWrap).forEach(function (el) {
+                el.classList.remove('mpw-drop-before', 'mpw-drop-after');
             });
         });
     };
@@ -828,10 +828,10 @@
     /**
      * Initialize widgets – optionally scoped to a container (for MBlock support).
      * When MBlock clones a block, the cloned DOM already contains the old
-     * .mp3w-container and the hidden input has data-mp3-initialized.
+     * .mpw-container and the hidden input has data-mp-initialized.
      * We must:
-     *   1. Remove any cloned .mp3w-container inside the scope
-     *   2. Clear data-mp3-initialized so the input gets re-initialized
+     *   1. Remove any cloned .mpw-container inside the scope
+     *   2. Clear data-mp-initialized so the input gets re-initialized
      *   3. Build fresh widget instances
      */
     function initWidgets(scope) {
@@ -839,27 +839,27 @@
         // Overlay-Kern (mediaplace.js, dessen build() erst beim Oeffnen des
         // Overlays laeuft) auf Widgets auf der Seite reagiert -- idempotent,
         // mehrfacher Aufruf (z.B. auch spaeter durch build()) ist unproblematisch.
-        if (window.MP3Core && window.MP3Core.i18n) {
-            window.MP3Core.i18n.initLang();
+        if (window.MPCore && window.MPCore.i18n) {
+            window.MPCore.i18n.initLang();
         }
 
         var root = scope || document;
 
         // MBlock cleanup: remove cloned widget containers & reset flag
-        qsa('input.mp3-widget[data-mp3-initialized]', root).forEach(function (input) {
+        qsa('input.mp-widget[data-mp-initialized]', root).forEach(function (input) {
             // The container sits right after the hidden input
             var next = input.nextElementSibling;
-            if (next && next.classList.contains('mp3w-container')) {
+            if (next && next.classList.contains('mpw-container')) {
                 next.parentNode.removeChild(next);
             }
-            input.removeAttribute('data-mp3-initialized');
+            input.removeAttribute('data-mp-initialized');
             input.style.display = '';
         });
 
         // Init all un-initialized widgets in scope
-        qsa('input.mp3-widget', root).forEach(function (input) {
-            if (input.getAttribute('data-mp3-initialized')) return;
-            new MP3Widget(input);
+        qsa('input.mp-widget', root).forEach(function (input) {
+            if (input.getAttribute('data-mp-initialized')) return;
+            new MPWidget(input);
         });
     }
 
@@ -882,7 +882,7 @@
     }
 
     // Public API for manual init
-    window.MP3Widget = {
+    window.MPWidget = {
         init: function (scope) {
             initWidgets(scope || null);
         }

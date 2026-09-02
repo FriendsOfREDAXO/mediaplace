@@ -438,7 +438,7 @@ mediaplace_images_only_badge = Bilder nur
 mediaplace_options = Optionen
 mediaplace_functions = Funktionen
 mediaplace_confirm_delete_generic = Wirklich löschen?
-mediaplace_demo_page_intro = Diese Seite zeigt die verschiedenen Wege, MediaPlace außerhalb des klassischen Medienpools zu nutzen – vom direkten Öffnen des Overlays per JavaScript bis zum fertigen Eingabefeld für Module und YForm. Die drei Widget-Varianten bauen aufeinander auf: <strong>Einzelmedium</strong> → <strong>Mehrfachauswahl</strong> (<code>data-mp3-multiple</code>) → <strong>Direkt-Upload</strong> (zusätzlich <code>data-mp3-upload</code>) – jede fügt der vorherigen eine Fähigkeit hinzu, ohne etwas wegzunehmen.
+mediaplace_demo_page_intro = Diese Seite zeigt die verschiedenen Wege, MediaPlace außerhalb des klassischen Medienpools zu nutzen – vom direkten Öffnen des Overlays per JavaScript bis zum fertigen Eingabefeld für Module und YForm. Die drei Widget-Varianten bauen aufeinander auf: <strong>Einzelmedium</strong> → <strong>Mehrfachauswahl</strong> (<code>data-mp-multiple</code>) → <strong>Direkt-Upload</strong> (zusätzlich <code>data-mp-upload</code>) – jede fügt der vorherigen eine Fähigkeit hinzu, ohne etwas wegzunehmen.
 mediaplace_demo_section_overlay_title = 1. Overlay direkt öffnen
 mediaplace_demo_overlay_intro = Klicken Sie auf den Button, um den MediaPlace Overlay direkt zu öffnen.
 mediaplace_demo_overlay_hint = Im Detail-Panel lassen sich jetzt nicht nur der Titel, sondern auch vorhandene med_*-Metadaten direkt speichern.
@@ -447,21 +447,21 @@ mediaplace_demo_chosen = Gewählt
 mediaplace_demo_single_select = Einzelauswahl
 mediaplace_demo_multi_select = Mehrfachauswahl
 mediaplace_demo_section_widget_single_title = 2. Widget: Einzelmedium
-mediaplace_demo_widget_intro = Ein <input class="mp3-widget"> wird automatisch zu einem Media-Picker mit Vorschau – für Felder, die genau eine Datei brauchen (z. B. ein Titelbild).
+mediaplace_demo_widget_intro = Ein <input class="mp-widget"> wird automatisch zu einem Media-Picker mit Vorschau – für Felder, die genau eine Datei brauchen (z. B. ein Titelbild).
 mediaplace_demo_widget_label_empty = Titelbild (Einzelmedium, leer)
 mediaplace_demo_widget_label_prefilled = Einzelmedium (mit erstem vorhandenen Medium vorbelegt)
 mediaplace_demo_usage = Verwendung
 mediaplace_demo_widget_hint = Klick auf das Plus-Symbol öffnet den Medienpool, Klick auf das Bild ersetzt die Auswahl. Der Dateiname wird im versteckten Input gespeichert.
 mediaplace_demo_section_widget_multi_title = 3. Widget: Mehrfachauswahl
-mediaplace_demo_multi_widget_intro = Mit data-mp3-multiple="true" wird aus demselben Widget eine sortierbare Galerie – für Felder mit mehreren Dateien (z. B. eine Bildergalerie oder Download-Liste).
+mediaplace_demo_multi_widget_intro = Mit data-mp-multiple="true" wird aus demselben Widget eine sortierbare Galerie – für Felder mit mehreren Dateien (z. B. eine Bildergalerie oder Download-Liste).
 mediaplace_demo_gallery_label_empty = Bildergalerie (Mehrfachauswahl)
 mediaplace_demo_gallery_label_prefilled = Mehrfachauswahl (mit ersten vorhandenen Medien vorbelegt)
 mediaplace_demo_gallery_hint = Mehrere Medien werden als kommaseparierte Dateinamen gespeichert. Per Drag&Drop können die Einträge sortiert werden.
 mediaplace_demo_gallery_hint_remove = entfernt einzelne Medien.
 mediaplace_demo_section_widget_upload_title = 4. Widget: Mehrfachauswahl mit Direkt-Upload
-mediaplace_demo_upload_widget_intro = Mit zusätzlich data-mp3-upload="true" können Redakteur:innen ganz neue Dateien direkt von ihrem Rechner hochladen, statt nur bereits vorhandene Medien auszuwählen – ohne das Formular zu verlassen. Dateien per Drag&Drop auf die gestrichelte Fläche ziehen oder anklicken, um den Dateidialog zu öffnen.
+mediaplace_demo_upload_widget_intro = Mit zusätzlich data-mp-upload="true" können Redakteur:innen ganz neue Dateien direkt von ihrem Rechner hochladen, statt nur bereits vorhandene Medien auszuwählen – ohne das Formular zu verlassen. Dateien per Drag&Drop auf die gestrichelte Fläche ziehen oder anklicken, um den Dateidialog zu öffnen.
 mediaplace_demo_gallery_label_upload = Galerie mit Direkt-Upload
-mediaplace_demo_upload_widget_hint = Vor dem eigentlichen Upload fragt ein Dialog nach der Ziel-Kategorie im Medienpool. data-mp3-types (wie das native accept-Attribut, z. B. "image/*" oder ".jpg,.png") schränkt die erlaubten Dateitypen ein – hier auf Bilder begrenzt. Ist unter MediaPlace → Einstellungen → Upload die Bildverkleinerung aktiviert, gilt sie auch hier: zu große Bilder werden vor dem Hochladen verkleinert, GIFs und SVGs bleiben davon unberührt, das Dateiformat ändert sich nie.
+mediaplace_demo_upload_widget_hint = Vor dem eigentlichen Upload fragt ein Dialog nach der Ziel-Kategorie im Medienpool. data-mp-types (wie das native accept-Attribut, z. B. "image/*" oder ".jpg,.png") schränkt die erlaubten Dateitypen ein – hier auf Bilder begrenzt. Ist unter MediaPlace → Einstellungen → Upload die Bildverkleinerung aktiviert, gilt sie auch hier: zu große Bilder werden vor dem Hochladen verkleinert, GIFs und SVGs bleiben davon unberührt, das Dateiformat ändert sich nie.
 mediaplace_demo_section_api_title = 5. API- & Modul-Referenz
 mediaplace_demo_th_attribute = Attribut / Klasse
 mediaplace_demo_th_description = Beschreibung
@@ -472,7 +472,7 @@ mediaplace_demo_attr_multiple = Mehrfachauswahl. Wert wird kommasepariert gespei
 mediaplace_demo_attr_value = Vorauswahl. Bei Multi kommasepariert.
 mediaplace_demo_attr_upload = Erlaubt Direkt-Upload per Drag&Drop/Klick zusätzlich zur Auswahl vorhandener Medien, mit Kategorie-Auswahl-Dialog vor dem Hochladen.
 mediaplace_demo_attr_types = Erlaubte Dateitypen für den Direkt-Upload, wie das native accept-Attribut (".ext", "typ/*" oder "typ/subtyp", kommasepariert). Gilt nicht für die Auswahl vorhandener Medien.
-mediaplace_demo_attr_max = Obergrenze der Dateianzahl bei Mehrfachauswahl (data-mp3-multiple="true"). Bei Einzelauswahl ohne Wirkung.
+mediaplace_demo_attr_max = Obergrenze der Dateianzahl bei Mehrfachauswahl (data-mp-multiple="true"). Bei Einzelauswahl ohne Wirkung.
 mediaplace_demo_attr_view = Start-Ansicht dieses einen Widgets (Kacheln oder Liste), auch bei Einzelauswahl. Ohne Angabe gilt die geteilte Nutzer-Präferenz; ein späterer Umschalter-Klick wirkt weiterhin global für alle Widgets der Seite.
 mediaplace_demo_or = oder
 mediaplace_demo_api_open = Öffnet den Medienpool-Overlay im Nur-Ansehen-Modus (Browse-only). Kein Auswählen-Button im Detail-Panel.

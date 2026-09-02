@@ -22,48 +22,48 @@ ob_start();
 ?>
 <p><?php echo rex_i18n::msg('mediaplace_thumb_warmup_intro'); ?></p>
 
-<div id="mp3-warmup-app">
-    <button type="button" id="mp3-warmup-start-bg" class="btn btn-save"><i class="fa-solid fa-server"></i> <?php echo rex_i18n::msg('mediaplace_thumb_warmup_start_background'); ?></button>
-    <button type="button" id="mp3-warmup-start-browser" class="btn btn-default"><i class="fa-solid fa-globe"></i> <?php echo rex_i18n::msg('mediaplace_thumb_warmup_start_browser'); ?></button>
-    <button type="button" id="mp3-warmup-stop" class="btn btn-abort" style="display:none"><?php echo rex_i18n::msg('mediaplace_thumb_warmup_cancel'); ?></button>
+<div id="mp-warmup-app">
+    <button type="button" id="mp-warmup-start-bg" class="btn btn-save"><i class="fa-solid fa-server"></i> <?php echo rex_i18n::msg('mediaplace_thumb_warmup_start_background'); ?></button>
+    <button type="button" id="mp-warmup-start-browser" class="btn btn-default"><i class="fa-solid fa-globe"></i> <?php echo rex_i18n::msg('mediaplace_thumb_warmup_start_browser'); ?></button>
+    <button type="button" id="mp-warmup-stop" class="btn btn-abort" style="display:none"><?php echo rex_i18n::msg('mediaplace_thumb_warmup_cancel'); ?></button>
     <p class="text-muted" style="margin-top:6px;"><?php echo rex_i18n::msg('mediaplace_thumb_warmup_background_hint'); ?></p>
 
-    <div id="mp3-warmup-preview-wrap" style="display:none; margin-top:16px;">
-        <img id="mp3-warmup-preview-img" src="" alt="" style="max-width:160px; max-height:120px; border:1px solid #dfe3e9; display:block; margin-bottom:4px;">
-        <span id="mp3-warmup-preview-name" style="font-size:12px; color:#777; word-break:break-all;"></span>
+    <div id="mp-warmup-preview-wrap" style="display:none; margin-top:16px;">
+        <img id="mp-warmup-preview-img" src="" alt="" style="max-width:160px; max-height:120px; border:1px solid #dfe3e9; display:block; margin-bottom:4px;">
+        <span id="mp-warmup-preview-name" style="font-size:12px; color:#777; word-break:break-all;"></span>
     </div>
 
-    <div id="mp3-warmup-bg-progress-wrap" style="display:none; margin-top:16px;">
+    <div id="mp-warmup-bg-progress-wrap" style="display:none; margin-top:16px;">
         <div style="margin-bottom:6px;">
             <strong><?php echo rex_i18n::msg('mediaplace_thumb_warmup_progress'); ?></strong>
-            <span id="mp3-warmup-bg-text"></span>
+            <span id="mp-warmup-bg-text"></span>
         </div>
         <div class="progress">
-            <div id="mp3-warmup-bg-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+            <div id="mp-warmup-bg-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
         </div>
     </div>
 
-    <div id="mp3-warmup-progress-wrap" style="display:none; margin-top:16px;">
+    <div id="mp-warmup-progress-wrap" style="display:none; margin-top:16px;">
         <div style="margin-bottom:6px;">
             <strong><?php echo rex_i18n::msg('mediaplace_thumb_warmup_images'); ?></strong>
-            <span id="mp3-warmup-image-text"></span>
+            <span id="mp-warmup-image-text"></span>
         </div>
         <div class="progress" style="margin-bottom:20px;">
-            <div id="mp3-warmup-image-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+            <div id="mp-warmup-image-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
         </div>
 
-        <div id="mp3-warmup-video-wrap" style="display:none;">
+        <div id="mp-warmup-video-wrap" style="display:none;">
             <div style="margin-bottom:6px;">
                 <strong><?php echo rex_i18n::msg('mediaplace_thumb_warmup_videos'); ?></strong>
-                <span id="mp3-warmup-video-text"></span>
+                <span id="mp-warmup-video-text"></span>
             </div>
             <div class="progress">
-                <div id="mp3-warmup-video-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+                <div id="mp-warmup-video-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
             </div>
         </div>
     </div>
 
-    <div id="mp3-warmup-done" class="alert alert-success" style="display:none; margin-top:20px;">
+    <div id="mp-warmup-done" class="alert alert-success" style="display:none; margin-top:20px;">
         <?php echo rex_i18n::msg('mediaplace_thumb_warmup_done'); ?>
     </div>
 </div>
@@ -81,22 +81,22 @@ echo $fragment->parse('core/page/section.php');
     var TXT_OF = <?php echo json_encode(rex_i18n::msg('mediaplace_thumb_warmup_of')); ?>;
     var POLL_MS = 1500;
 
-    var startBgBtn = document.getElementById('mp3-warmup-start-bg');
-    var startBrowserBtn = document.getElementById('mp3-warmup-start-browser');
-    var stopBtn = document.getElementById('mp3-warmup-stop');
-    var bgProgressWrap = document.getElementById('mp3-warmup-bg-progress-wrap');
-    var bgBar = document.getElementById('mp3-warmup-bg-bar');
-    var bgText = document.getElementById('mp3-warmup-bg-text');
-    var progressWrap = document.getElementById('mp3-warmup-progress-wrap');
-    var videoWrap = document.getElementById('mp3-warmup-video-wrap');
-    var doneBox = document.getElementById('mp3-warmup-done');
-    var imageBar = document.getElementById('mp3-warmup-image-bar');
-    var imageText = document.getElementById('mp3-warmup-image-text');
-    var videoBar = document.getElementById('mp3-warmup-video-bar');
-    var videoText = document.getElementById('mp3-warmup-video-text');
-    var previewWrap = document.getElementById('mp3-warmup-preview-wrap');
-    var previewImg = document.getElementById('mp3-warmup-preview-img');
-    var previewName = document.getElementById('mp3-warmup-preview-name');
+    var startBgBtn = document.getElementById('mp-warmup-start-bg');
+    var startBrowserBtn = document.getElementById('mp-warmup-start-browser');
+    var stopBtn = document.getElementById('mp-warmup-stop');
+    var bgProgressWrap = document.getElementById('mp-warmup-bg-progress-wrap');
+    var bgBar = document.getElementById('mp-warmup-bg-bar');
+    var bgText = document.getElementById('mp-warmup-bg-text');
+    var progressWrap = document.getElementById('mp-warmup-progress-wrap');
+    var videoWrap = document.getElementById('mp-warmup-video-wrap');
+    var doneBox = document.getElementById('mp-warmup-done');
+    var imageBar = document.getElementById('mp-warmup-image-bar');
+    var imageText = document.getElementById('mp-warmup-image-text');
+    var videoBar = document.getElementById('mp-warmup-video-bar');
+    var videoText = document.getElementById('mp-warmup-video-text');
+    var previewWrap = document.getElementById('mp-warmup-preview-wrap');
+    var previewImg = document.getElementById('mp-warmup-preview-img');
+    var previewName = document.getElementById('mp-warmup-preview-name');
 
     if (!startBgBtn) return;
 

@@ -3,7 +3,7 @@
    ============================================ */
 
 /* ---- Container ---- */
-.mp3w-container {
+.mpw-container {
     border: 1px solid #dfe3e9;
     border-radius: 0;
     background: #fff;
@@ -12,7 +12,7 @@
 }
 
 /* ---- Previews Grid ---- */
-.mp3w-previews {
+.mpw-previews {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -20,7 +20,7 @@
 }
 
 /* ---- Empty state ---- */
-.mp3w-empty {
+.mpw-empty {
     width: 100%;
     padding: 16px;
     text-align: center;
@@ -30,7 +30,7 @@
     border-radius: 0;
     cursor: default;
 }
-.mp3w-empty i {
+.mpw-empty i {
     margin-right: 4px;
     font-size: 16px;
 }
@@ -38,24 +38,24 @@
 /* Leerzustand mit aktivem Direkt-Upload: groesser, klickbar, wie die frueher
    separate Dropzone -- ist jetzt der Leerzustand selbst statt eines eigenen
    Elements. */
-.mp3w-empty-upload {
+.mpw-empty-upload {
     padding: 12px 16px;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
 }
-.mp3w-empty-upload i {
+.mpw-empty-upload i {
     margin-right: 6px;
     font-size: 16px;
     color: #4b9ad9;
     vertical-align: -1px;
 }
-.mp3w-empty-upload:hover {
+.mpw-empty-upload:hover {
     border-color: #4b9ad9;
     background: #f3f6fb;
 }
 
 /* ---- Single Item ---- */
-.mp3w-item {
+.mpw-item {
     position: relative;
     width: 100px;
     border: 1px solid #dfe3e9;
@@ -65,13 +65,13 @@
     cursor: pointer;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
-.mp3w-item:hover {
+.mpw-item:hover {
     border-color: #4b9ad9;
     box-shadow: 0 0 0 2px rgba(75,154,217,0.15);
 }
 
 /* Preview area */
-.mp3w-item-preview {
+.mpw-item-preview {
     width: 100px;
     height: 80px;
     display: flex;
@@ -80,27 +80,27 @@
     overflow: hidden;
     background: #f3f6fb;
 }
-.mp3w-item-preview img {
+.mpw-item-preview img {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
     display: block !important;
     max-width: none !important;
 }
-.mp3w-item-icon {
+.mpw-item-icon {
     font-size: 28px;
     color: #9ca5b2;
 }
 
 /* Untere Leiste (Auge-Button + Dateiname) */
-.mp3w-item-bottom {
+.mpw-item-bottom {
     display: flex;
     align-items: center;
     gap: 2px;
     padding: 0 2px;
     border-top: 1px solid #dfe3e9;
 }
-.mp3w-item-name {
+.mpw-item-name {
     flex: 1;
     min-width: 0;
     padding: 4px 4px;
@@ -113,7 +113,7 @@
 }
 
 /* Remove button */
-.mp3w-item-remove {
+.mpw-item-remove {
     position: absolute;
     top: 2px;
     right: 2px;
@@ -134,16 +134,16 @@
     align-items: center;
     justify-content: center;
 }
-.mp3w-item:hover .mp3w-item-remove {
+.mpw-item:hover .mpw-item-remove {
     opacity: 1;
 }
-.mp3w-item-remove:hover {
+.mpw-item-remove:hover {
     background: #d9534f;
 }
 
 /* Details-ansehen-Button -- gleiches Muster wie der Remove-Button,
    spiegelverkehrt oben links positioniert. */
-.mp3w-item-view {
+.mpw-item-view {
     position: absolute;
     top: 2px;
     left: 2px;
@@ -164,17 +164,17 @@
     align-items: center;
     justify-content: center;
 }
-.mp3w-item:hover .mp3w-item-view {
+.mpw-item:hover .mpw-item-view {
     opacity: 1;
 }
-.mp3w-item-view:hover {
+.mpw-item-view:hover {
     background: #4b9ad9;
 }
 
 /* Auge-Button -- staendig sichtbar in der unteren Leiste (nicht nur bei
    Hover wie die kleine Lupe oben links, die leicht uebersehen wird),
    gleiche Aktion. */
-.mp3w-item-eye {
+.mpw-item-eye {
     flex-shrink: 0;
     width: 18px;
     height: 18px;
@@ -189,24 +189,24 @@
     align-items: center;
     justify-content: center;
 }
-.mp3w-item-eye:hover {
+.mpw-item-eye:hover {
     color: #fff;
     background: #4b9ad9;
 }
-.mp3w-view-list .mp3w-item-bottom {
+.mpw-view-list .mpw-item-bottom {
     display: contents;
 }
-.mp3w-view-list .mp3w-item-eye {
+.mpw-view-list .mpw-item-eye {
     display: none;
 }
 
 /* ---- Direkt-Upload: ganzer Container ist die Drop-Zone ---- */
-.mp3w-container-dragover {
+.mpw-container-dragover {
     border-color: #4b9ad9;
     background: #f3f6fb;
     box-shadow: 0 0 0 2px rgba(75, 154, 217, 0.25);
 }
-.mp3w-upload-progress {
+.mpw-upload-progress {
     width: 100%;
     padding: 4px 8px;
     margin-bottom: 8px;
@@ -215,50 +215,50 @@
     background: #f3f6fb;
     border: 1px solid #dfe3e9;
 }
-.mp3w-upload-progress-text {
+.mpw-upload-progress-text {
     margin-bottom: 3px;
 }
-.mp3w-upload-progress-bar {
+.mpw-upload-progress-bar {
     height: 4px;
     background: #dfe3e9;
     overflow: hidden;
 }
-.mp3w-upload-progress-fill {
+.mpw-upload-progress-fill {
     height: 100%;
     width: 0;
     background: #4b9ad9;
     transition: width 0.15s ease;
 }
-.mp3w-upload-progress.mp3w-upload-progress-done {
+.mpw-upload-progress.mpw-upload-progress-done {
     color: #28a745;
 }
-.mp3w-upload-progress.mp3w-upload-progress-done .mp3w-upload-progress-bar {
+.mpw-upload-progress.mpw-upload-progress-done .mpw-upload-progress-bar {
     display: none;
 }
 
 /* ---- Listenansicht (Umschalter im Toolbar) ---- */
-.mp3w-previews.mp3w-view-list {
+.mpw-previews.mpw-view-list {
     flex-direction: column;
 }
-.mp3w-view-list .mp3w-item {
+.mpw-view-list .mpw-item {
     width: 100%;
     display: flex;
     flex-direction: row;
     align-items: center;
 }
-.mp3w-view-list .mp3w-item-preview {
+.mpw-view-list .mpw-item-preview {
     width: 40px;
     height: 40px;
     flex-shrink: 0;
 }
-.mp3w-view-list .mp3w-item-name {
+.mpw-view-list .mpw-item-name {
     flex: 1;
     min-width: 0;
     border-top: none;
     padding: 0 8px;
 }
-.mp3w-view-list .mp3w-item-view,
-.mp3w-view-list .mp3w-item-remove {
+.mpw-view-list .mpw-item-view,
+.mpw-view-list .mpw-item-remove {
     position: static;
     opacity: 1;
     flex-shrink: 0;
@@ -266,15 +266,15 @@
     background: transparent;
     color: #9ca5b2;
 }
-.mp3w-view-list .mp3w-item-view:hover,
-.mp3w-view-list .mp3w-item-remove:hover {
+.mpw-view-list .mpw-item-view:hover,
+.mpw-view-list .mpw-item-remove:hover {
     color: #fff;
 }
 
 /* ---- Kategorie-Auswahl-Dialog (Direkt-Upload) ----
-   An document.body angehaengt statt #mp3-overlay -- dieses Skript laeuft
+   An document.body angehaengt statt #mp-overlay -- dieses Skript laeuft
    unabhaengig vom Overlay-Kern, dessen Root existiert ggf. noch gar nicht. */
-.mp3w-catpick-modal {
+.mpw-catpick-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -286,7 +286,7 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.4);
 }
-.mp3w-catpick-box {
+.mpw-catpick-box {
     width: 90%;
     max-width: 420px;
     padding: 20px;
@@ -294,18 +294,18 @@
     border-radius: 0;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
-.mp3w-catpick-title {
+.mpw-catpick-title {
     margin-bottom: 10px;
     font-size: 15px;
     font-weight: 600;
     color: #324050;
 }
-.mp3w-catpick-info {
+.mpw-catpick-info {
     margin-bottom: 10px;
     font-size: 13px;
     color: #777;
 }
-.mp3w-catpick-select {
+.mpw-catpick-select {
     width: 100%;
     padding: 6px 8px;
     margin-bottom: 16px;
@@ -314,12 +314,12 @@
     background: #fff;
     color: #324050;
 }
-.mp3w-catpick-actions {
+.mpw-catpick-actions {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
 }
-.mp3w-catpick-cancel {
+.mpw-catpick-cancel {
     padding: 7px 16px;
     border: 1px solid #dfe3e9;
     border-radius: 0;
@@ -328,222 +328,222 @@
     cursor: pointer;
     font-size: 13px;
 }
-.mp3w-catpick-confirm {
+.mpw-catpick-confirm {
     padding: 7px 16px;
     border: none;
     border-radius: 0;
-    background: var(--mp3-confirm-btn-bg, #5bb585);
+    background: var(--mp-confirm-btn-bg, #5bb585);
     color: #fff;
     cursor: pointer;
     font-size: 13px;
     font-weight: 600;
 }
-.mp3w-catpick-confirm:hover {
+.mpw-catpick-confirm:hover {
     opacity: 0.88;
 }
 
 /* ---- Toolbar ---- */
-.mp3w-toolbar {
+.mpw-toolbar {
     display: flex;
     gap: 4px;
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid #dfe3e9;
 }
-.mp3w-btn {
+.mpw-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
-.mp3w-btn-clear-all {
+.mpw-btn-clear-all {
     gap: 5px;
     margin-left: auto;
 }
-.mp3w-btn:disabled {
+.mpw-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
-.mp3w-btn-clear-marked {
+.mpw-btn-clear-marked {
     color: #d9534f;
     border-color: #d9534f;
 }
 
 /* ---- Mehrfachauswahl zum gemeinsamen Loeschen (Cmd/Ctrl-Klick) ---- */
-.mp3w-item-marked {
+.mpw-item-marked {
     border-color: #d9534f !important;
     box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.25);
 }
 
 /* ---- Drag & Drop Sort (Multi) ---- */
-.mp3w-item[draggable="true"] {
+.mpw-item[draggable="true"] {
     cursor: grab;
 }
-.mp3w-item[draggable="true"]:active {
+.mpw-item[draggable="true"]:active {
     cursor: grabbing;
 }
-.mp3w-item-dragging {
+.mpw-item-dragging {
     opacity: 0.4;
 }
-.mp3w-drop-before {
+.mpw-drop-before {
     box-shadow: -3px 0 0 0 #4b9ad9 !important;
 }
-.mp3w-drop-after {
+.mpw-drop-after {
     box-shadow: 3px 0 0 0 #4b9ad9 !important;
 }
 
 /* ---- Dark Mode ---- */
 
 /* Explicit dark mode */
-body.rex-theme-dark .mp3w-container {
+body.rex-theme-dark .mpw-container {
     background: #1e2a3a;
     border-color: #2d3e50;
 }
-body.rex-theme-dark .mp3w-empty {
+body.rex-theme-dark .mpw-empty {
     color: #6c8ea8;
     border-color: #2d3e50;
 }
-body.rex-theme-dark .mp3w-item {
+body.rex-theme-dark .mpw-item {
     background: #253344;
     border-color: #2d3e50;
 }
-body.rex-theme-dark .mp3w-item:hover {
+body.rex-theme-dark .mpw-item:hover {
     border-color: #3c8dbc;
 }
-body.rex-theme-dark .mp3w-item-preview {
+body.rex-theme-dark .mpw-item-preview {
     background: #1a2636;
 }
-body.rex-theme-dark .mp3w-item-bottom {
+body.rex-theme-dark .mpw-item-bottom {
     border-top-color: #2d3e50;
 }
-body.rex-theme-dark .mp3w-item-name {
+body.rex-theme-dark .mpw-item-name {
     color: #8fa8c0;
 }
-body.rex-theme-dark .mp3w-item-icon {
+body.rex-theme-dark .mpw-item-icon {
     color: #6c8ea8;
 }
-body.rex-theme-dark .mp3w-item-eye {
+body.rex-theme-dark .mpw-item-eye {
     color: #6c8ea8;
 }
-body.rex-theme-dark .mp3w-item-eye:hover {
+body.rex-theme-dark .mpw-item-eye:hover {
     color: #fff;
     background: #3c8dbc;
 }
-body.rex-theme-dark .mp3w-toolbar {
+body.rex-theme-dark .mpw-toolbar {
     border-top-color: #2d3e50;
 }
-body.rex-theme-dark .mp3w-container-dragover {
+body.rex-theme-dark .mpw-container-dragover {
     border-color: #3c8dbc;
     background: #253344;
 }
-body.rex-theme-dark .mp3w-empty-upload:hover {
+body.rex-theme-dark .mpw-empty-upload:hover {
     border-color: #3c8dbc;
     background: #253344;
 }
-body.rex-theme-dark .mp3w-upload-progress {
+body.rex-theme-dark .mpw-upload-progress {
     background: #253344;
     border-color: #2d3e50;
     color: #8ab8e8;
 }
-body.rex-theme-dark .mp3w-upload-progress-bar {
+body.rex-theme-dark .mpw-upload-progress-bar {
     background: #2d3e50;
 }
-body.rex-theme-dark .mp3w-upload-progress.mp3w-upload-progress-done {
+body.rex-theme-dark .mpw-upload-progress.mpw-upload-progress-done {
     color: #4caf50;
 }
-body.rex-theme-dark .mp3w-catpick-box {
+body.rex-theme-dark .mpw-catpick-box {
     background: #1e2a3a;
     color: #cfe0ee;
 }
-body.rex-theme-dark .mp3w-catpick-title {
+body.rex-theme-dark .mpw-catpick-title {
     color: #cfe0ee;
 }
-body.rex-theme-dark .mp3w-catpick-info {
+body.rex-theme-dark .mpw-catpick-info {
     color: #8fa8c0;
 }
-body.rex-theme-dark .mp3w-catpick-select {
+body.rex-theme-dark .mpw-catpick-select {
     background: #253344;
     border-color: #2d3e50;
     color: #cfe0ee;
 }
-body.rex-theme-dark .mp3w-catpick-cancel {
+body.rex-theme-dark .mpw-catpick-cancel {
     border-color: #2d3e50;
     color: #cfe0ee;
 }
 
 /* Auto dark mode */
 @media (prefers-color-scheme: dark) {
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-container {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-container {
         background: #1e2a3a;
         border-color: #2d3e50;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-empty {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-empty {
         color: #6c8ea8;
         border-color: #2d3e50;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-item {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-item {
         background: #253344;
         border-color: #2d3e50;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-item:hover {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-item:hover {
         border-color: #3c8dbc;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-preview {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-item-preview {
         background: #1a2636;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-bottom {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-item-bottom {
         border-top-color: #2d3e50;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-name {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-item-name {
         color: #8fa8c0;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-icon {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-item-icon {
         color: #6c8ea8;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-eye {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-item-eye {
         color: #6c8ea8;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-item-eye:hover {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-item-eye:hover {
         color: #fff;
         background: #3c8dbc;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-toolbar {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-toolbar {
         border-top-color: #2d3e50;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-container-dragover {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-container-dragover {
         border-color: #3c8dbc;
         background: #253344;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-empty-upload:hover {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-empty-upload:hover {
         border-color: #3c8dbc;
         background: #253344;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-upload-progress {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-upload-progress {
         background: #253344;
         border-color: #2d3e50;
         color: #8ab8e8;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-upload-progress-bar {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-upload-progress-bar {
         background: #2d3e50;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-upload-progress.mp3w-upload-progress-done {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-upload-progress.mpw-upload-progress-done {
         color: #4caf50;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-box {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-catpick-box {
         background: #1e2a3a;
         color: #cfe0ee;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-title {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-catpick-title {
         color: #cfe0ee;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-info {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-catpick-info {
         color: #8fa8c0;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-select {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-catpick-select {
         background: #253344;
         border-color: #2d3e50;
         color: #cfe0ee;
     }
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-catpick-cancel {
+    body.rex-has-theme:not(.rex-theme-light) .mpw-catpick-cancel {
         border-color: #2d3e50;
         color: #cfe0ee;
     }

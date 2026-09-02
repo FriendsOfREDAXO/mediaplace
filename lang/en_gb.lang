@@ -438,7 +438,7 @@ mediaplace_images_only_badge = Images only
 mediaplace_options = Options
 mediaplace_functions = Functions
 mediaplace_confirm_delete_generic = Really delete?
-mediaplace_demo_page_intro = This page shows the different ways to use MediaPlace outside the classic mediapool – from opening the overlay directly via JavaScript to a ready-made input field for modules and YForm. The three widget variants build on each other: <strong>single media</strong> → <strong>multiple selection</strong> (<code>data-mp3-multiple</code>) → <strong>direct upload</strong> (additionally <code>data-mp3-upload</code>) – each adds one capability to the previous one without taking anything away.
+mediaplace_demo_page_intro = This page shows the different ways to use MediaPlace outside the classic mediapool – from opening the overlay directly via JavaScript to a ready-made input field for modules and YForm. The three widget variants build on each other: <strong>single media</strong> → <strong>multiple selection</strong> (<code>data-mp-multiple</code>) → <strong>direct upload</strong> (additionally <code>data-mp-upload</code>) – each adds one capability to the previous one without taking anything away.
 mediaplace_demo_section_overlay_title = 1. Open the overlay directly
 mediaplace_demo_overlay_intro = Click the button to open the MediaPlace overlay directly.
 mediaplace_demo_overlay_hint = The detail panel now lets you save not just the title, but also any existing med_* metadata directly.
@@ -447,21 +447,21 @@ mediaplace_demo_chosen = Chosen
 mediaplace_demo_single_select = Single selection
 mediaplace_demo_multi_select = Multiple selection
 mediaplace_demo_section_widget_single_title = 2. Widget: single media
-mediaplace_demo_widget_intro = An <input class="mp3-widget"> automatically becomes a media picker with preview – for fields that need exactly one file (e.g. a title image).
+mediaplace_demo_widget_intro = An <input class="mp-widget"> automatically becomes a media picker with preview – for fields that need exactly one file (e.g. a title image).
 mediaplace_demo_widget_label_empty = Title image (single media, empty)
 mediaplace_demo_widget_label_prefilled = Single media (prefilled with the first available media)
 mediaplace_demo_usage = Usage
 mediaplace_demo_widget_hint = Clicking the plus icon opens the mediapool, clicking the image replaces the selection. The filename is stored in the hidden input.
 mediaplace_demo_section_widget_multi_title = 3. Widget: multiple selection
-mediaplace_demo_multi_widget_intro = With data-mp3-multiple="true" the same widget becomes a sortable gallery – for fields with multiple files (e.g. an image gallery or download list).
+mediaplace_demo_multi_widget_intro = With data-mp-multiple="true" the same widget becomes a sortable gallery – for fields with multiple files (e.g. an image gallery or download list).
 mediaplace_demo_gallery_label_empty = Image gallery (multiple selection)
 mediaplace_demo_gallery_label_prefilled = Multiple selection (prefilled with the first available media)
 mediaplace_demo_gallery_hint = Multiple media are stored as comma-separated filenames. Entries can be sorted via drag & drop.
 mediaplace_demo_gallery_hint_remove = removes individual media.
 mediaplace_demo_section_widget_upload_title = 4. Widget: multiple selection with direct upload
-mediaplace_demo_upload_widget_intro = With data-mp3-upload="true" added, editors can upload brand-new files straight from their computer, not just pick already-existing media – without leaving the form. Drag files onto the dashed area or click it to open the file dialog.
+mediaplace_demo_upload_widget_intro = With data-mp-upload="true" added, editors can upload brand-new files straight from their computer, not just pick already-existing media – without leaving the form. Drag files onto the dashed area or click it to open the file dialog.
 mediaplace_demo_gallery_label_upload = Gallery with direct upload
-mediaplace_demo_upload_widget_hint = Before the actual upload, a dialog asks for the target mediapool category. data-mp3-types (like the native accept attribute, e.g. "image/*" or ".jpg,.png") restricts the allowed file types – limited to images here. If image resizing is enabled under MediaPlace → Settings → Upload, it applies here too: oversized images are scaled down before upload, GIFs and SVGs are never touched, and the file format never changes.
+mediaplace_demo_upload_widget_hint = Before the actual upload, a dialog asks for the target mediapool category. data-mp-types (like the native accept attribute, e.g. "image/*" or ".jpg,.png") restricts the allowed file types – limited to images here. If image resizing is enabled under MediaPlace → Settings → Upload, it applies here too: oversized images are scaled down before upload, GIFs and SVGs are never touched, and the file format never changes.
 mediaplace_demo_section_api_title = 5. API & module reference
 mediaplace_demo_th_attribute = Attribute / class
 mediaplace_demo_th_description = Description
@@ -472,7 +472,7 @@ mediaplace_demo_attr_multiple = Multiple selection. Value is stored comma-separa
 mediaplace_demo_attr_value = Preselection. Comma-separated for multiple.
 mediaplace_demo_attr_upload = Allows direct upload via drag & drop/click in addition to picking existing media, with a category-selection dialog before uploading.
 mediaplace_demo_attr_types = Allowed file types for direct upload, like the native accept attribute (".ext", "type/*" or "type/subtype", comma-separated). Does not apply to picking existing media.
-mediaplace_demo_attr_max = Upper limit on file count for multiple selection (data-mp3-multiple="true"). Has no effect on single selection.
+mediaplace_demo_attr_max = Upper limit on file count for multiple selection (data-mp-multiple="true"). Has no effect on single selection.
 mediaplace_demo_attr_view = Initial view for this one widget (grid or list), also for single selection. Without it, the shared user preference applies; a later toggle click still switches globally for all widgets on the page.
 mediaplace_demo_or = or
 mediaplace_demo_api_open = Opens the mediapool overlay in browse-only mode. No select button in the detail panel.

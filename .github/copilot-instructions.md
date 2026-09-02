@@ -12,7 +12,7 @@
 Dieses REDAXO-AddOn implementiert einen modernen Medienpool-Overlay-Picker als Ersatz für das Standard-REDAXO-Medienpool-Widget. Fünf Teile, unabhängig voneinander (de)aktivierbar (Einstellungsseite / `default_config` in `package.yml`):
 
 1. **Overlay-Picker** (`mediaplace.js` / `mediaplace.css`) – Vollbild-Overlay mit Kategoriebaum, Grid/Listen-/Media-Wall-Ansicht, Suche, Tag-/Typ-Filter, Sammlungen, Multi-Select, Detail-Panel mit eigenen JSON-Metadaten-Feldern.
-2. **Widget** (`mediaplace_widget.js` / `mediaplace_widget.css`) – wandelt `<input class="mp3-widget">` in visuellen Picker um; optional Direkt-Upload (`data-mp3-upload`), Typ-Beschränkung (`data-mp3-types`), Maximal-Anzahl (`data-mp3-max`), Start-Ansicht Kacheln/Liste (`data-mp3-view`).
+2. **Widget** (`mediaplace_widget.js` / `mediaplace_widget.css`) – wandelt `<input class="mp-widget">` in visuellen Picker um; optional Direkt-Upload (`data-mp-upload`), Typ-Beschränkung (`data-mp-types`), Maximal-Anzahl (`data-mp-max`), Start-Ansicht Kacheln/Liste (`data-mp-view`).
 3. **Klassische Integration** (`mediaplace_classic.js`) – klassische `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets und der Medienpool-Menüpunkt öffnen wahlweise den Overlay.
 4. **Metainfo-Canvas** (`openMetainfoCanvas()` in `mediaplace.js`, `lib/rex_api_mediaplace_metainfo_form.php`) – natives Bearbeiten echter `med_*`-Metainfo-Felder im Overlay über REDAXOs eigene Extension Points, kein eigenes Feldtyp-System dafür.
 5. **YForm-Integration** (`lib/yform/value/yform_value_mediaplace.php`) – eigener YForm-Werttyp `mediaplace`.
@@ -23,14 +23,14 @@ Dieses REDAXO-AddOn implementiert einen modernen Medienpool-Overlay-Picker als E
 
 ```
 assets/
-  mediaplace-i18n.js      – geteilte i18n-Basis (window.MP3Core.i18n)
-  mediaplace-helpers.js   – geteilte Utility-Funktionen (window.MP3Core.helpers), inkl. Bild-Resize
-  mediaplace-api.js       – geteilte API-Fetch-Wrapper (window.MP3Core.api)
-  mediaplace.js           – Overlay IIFE, exponiert window.MP3
+  mediaplace-i18n.js      – geteilte i18n-Basis (window.MPCore.i18n)
+  mediaplace-helpers.js   – geteilte Utility-Funktionen (window.MPCore.helpers), inkl. Bild-Resize
+  mediaplace-api.js       – geteilte API-Fetch-Wrapper (window.MPCore.api)
+  mediaplace.js           – Overlay IIFE, exponiert window.MP
   mediaplace.css          – Overlay Styles, CSS Custom Properties
-  mediaplace_widget.js    – Widget IIFE, exponiert window.MP3Widget
+  mediaplace_widget.js    – Widget IIFE, exponiert window.MPWidget
   mediaplace_widget.css   – Widget Styles
-  mediaplace_classic.js   – fängt klassische Widget-Klicks ab, leitet auf MP3.open() um
+  mediaplace_classic.js   – fängt klassische Widget-Klicks ab, leitet auf MP.open() um
 boot.php                  – Lädt Assets, PAGES_PREPARED/METAINFO_CUSTOM_FIELD/OUTPUT_FILTER-Hooks,
                              YForm-Templatepfad + MEDIA_IS_IN_USE-Registrierung
 lib/
@@ -51,45 +51,45 @@ pages/
 - **Vanilla JS, kein Framework** – kein React. jQuery nur dort genutzt, wo REDAXO/Bootstrap-Komponenten es verlangen (`selectpicker`, `rex:ready`-Events).
 - **ES5-kompatibel** – kein `let`/`const`, keine Arrow Functions, keine Template Literals, kein Destructuring, keine `class`-Syntax. `var`, `function`, String-Concatenation.
 - **IIFE-Pattern**: jede Datei in `(function() { 'use strict'; ... })();` gekapselt.
-- **Geteilte Basis über `window.MP3Core`**: `mediaplace-i18n.js`/`-helpers.js`/`-api.js` laden zuerst, `mediaplace.js` UND `mediaplace_widget.js` aliasen daraus (`var apiUpload = MP3Core.api.apiUpload;` usw.), statt Code zu duplizieren. Neue geteilte Logik (z.B. Bild-Resize) gehört dorthin, nicht in eine der beiden Verbraucher-Dateien.
-- **Public API** über `window.MP3` und `window.MP3Widget`.
+- **Geteilte Basis über `window.MPCore`**: `mediaplace-i18n.js`/`-helpers.js`/`-api.js` laden zuerst, `mediaplace.js` UND `mediaplace_widget.js` aliasen daraus (`var apiUpload = MPCore.api.apiUpload;` usw.), statt Code zu duplizieren. Neue geteilte Logik (z.B. Bild-Resize) gehört dorthin, nicht in eine der beiden Verbraucher-Dateien.
+- **Public API** über `window.MP` und `window.MPWidget`.
 - **Helper**: `qs(sel, ctx)`/`qsa(sel, ctx)` als `querySelector`/`querySelectorAll`-Wrapper.
 
 ### CSS-Architektur
 
 #### Spezifitäts-Strategie
 
-Overlay-Selektoren unter `#mp3-overlay` (ID) geschachtelt, um Bootstrap 3/REDAXO-Backend-Styles sicher zu überschreiben:
+Overlay-Selektoren unter `#mp-overlay` (ID) geschachtelt, um Bootstrap 3/REDAXO-Backend-Styles sicher zu überschreiben:
 
 ```css
 /* Richtig */
-#mp3-overlay .mp3-card { ... }
+#mp-overlay .mp-card { ... }
 /* Falsch – wird von Bootstrap überschrieben */
-.mp3-card { ... }
+.mp-card { ... }
 ```
 
-Widget-Styles (`mp3w-`-Prefix) leben im normalen Seiten-DOM, daher **kein** `#mp3-overlay`-Scoping.
+Widget-Styles (`mpw-`-Prefix) leben im normalen Seiten-DOM, daher **kein** `#mp-overlay`-Scoping.
 
-#### CSS Custom Properties (`--mp3-` Prefix, nur Overlay)
+#### CSS Custom Properties (`--mp-` Prefix, nur Overlay)
 
 #### Dark Mode – Overlay: vierstufiges Pattern
 
 **IMMER alle vier Blöcke pflegen**, sonst fällt eine neue Variable in einem Dark-Mode-Pfad auf den Light-Fallback zurück:
 
 ```css
-:root { --mp3-modal-bg: #fff; }                                    /* 1. Light-Default */
-body.rex-theme-dark { --mp3-modal-bg: #1a2636; }                   /* 2. Explizites Dark-Theme */
+:root { --mp-modal-bg: #fff; }                                    /* 1. Light-Default */
+body.rex-theme-dark { --mp-modal-bg: #1a2636; }                   /* 2. Explizites Dark-Theme */
 @media (prefers-color-scheme: dark) {
-    body.rex-has-theme:not(.rex-theme-light) { --mp3-modal-bg: #1a2636; }  /* 3. System-Präferenz */
+    body.rex-has-theme:not(.rex-theme-light) { --mp-modal-bg: #1a2636; }  /* 3. System-Präferenz */
 }
-#mp3-overlay.mp3-dark-mode { --mp3-modal-bg: #1a2636; }             /* 4. Eigener In-Overlay-Toggle */
+#mp-overlay.mp-dark-mode { --mp-modal-bg: #1a2636; }             /* 4. Eigener In-Overlay-Toggle */
 ```
 
 Block 2, 3 und 4 MÜSSEN identische Werte haben. Vor jeder CSS-Änderung:
 
 ```bash
-grep -oE -- '--mp3-[a-z0-9-]+\s*:' assets/mediaplace.css | sed 's/\s*:$//' | sort -u > /tmp/defined.txt
-grep -oE -- 'var\(--mp3-[a-z0-9-]+' assets/mediaplace.css | sed 's/^var(//' | sort -u > /tmp/used.txt
+grep -oE -- '--mp-[a-z0-9-]+\s*:' assets/mediaplace.css | sed 's/\s*:$//' | sort -u > /tmp/defined.txt
+grep -oE -- 'var\(--mp-[a-z0-9-]+' assets/mediaplace.css | sed 's/^var(//' | sort -u > /tmp/used.txt
 comm -23 /tmp/used.txt /tmp/defined.txt   # muss leer sein
 python3 -c "c=open('assets/mediaplace.css').read(); print(c.count('{'), c.count('}'))"
 ```
@@ -97,13 +97,13 @@ python3 -c "c=open('assets/mediaplace.css').read(); print(c.count('{'), c.count(
 #### Widget CSS – nur zwei Dark-Mode-Blöcke, direkte Werte
 
 ```css
-body.rex-theme-dark .mp3w-container { ... }
+body.rex-theme-dark .mpw-container { ... }
 @media (prefers-color-scheme: dark) {
-    body.rex-has-theme:not(.rex-theme-light) .mp3w-container { ... }
+    body.rex-has-theme:not(.rex-theme-light) .mpw-container { ... }
 }
 ```
 
-Keine `--mp3w-*`-Variablen, direkte Hex-Werte, beide Blöcke synchron halten.
+Keine `--mpw-*`-Variablen, direkte Hex-Werte, beide Blöcke synchron halten.
 
 #### Weitere Theming-Fallen
 
@@ -124,7 +124,7 @@ PATCH /api/backend/media/{filename}/update    – Metadaten aktualisieren
 DELETE /api/backend/media/{filename}/delete   – Datei löschen
 ```
 
-Immer über die Alias-Funktionen in `MP3Core.api` aufrufen, nicht direkt `fetch()`. Chunk-Upload-Entscheidung (`apiUpload()` vs. `apiUploadChunked()`) läuft anhand `file.size` automatisch – eigene Vorverarbeitung (z.B. Bild-Resize) muss **vor** diesem Aufruf passieren, damit die Größenprüfung die tatsächlich zu sendende Datei sieht.
+Immer über die Alias-Funktionen in `MPCore.api` aufrufen, nicht direkt `fetch()`. Chunk-Upload-Entscheidung (`apiUpload()` vs. `apiUploadChunked()`) läuft anhand `file.size` automatisch – eigene Vorverarbeitung (z.B. Bild-Resize) muss **vor** diesem Aufruf passieren, damit die Größenprüfung die tatsächlich zu sendende Datei sieht.
 
 Eigene `rex_api_function`-Endpunkte (`mediaplace_categories`, `_tags`, `_json_metainfo`, `_schema`, `_unused`, `_focuspoint`, `_metainfo_form`) brauchen **immer** eine explizite Rechteprüfung über `MediaPermission` – `rex::getUser()` prüft nur "eingeloggt", nicht REDAXOs Medien-Berechtigungen.
 
@@ -136,7 +136,7 @@ Thumbnails über den Media Manager: `index.php?rex_media_type=rex_media_small&re
 
 ## Upload-Resize: Format-Fallback-Falle
 
-`canvas.toBlob(cb, type)` fällt bei nicht unterstützten Ausgabeformaten (AVIF fast überall, WebP in älterem Safari) laut Spezifikation still auf PNG zurück. `MP3Core.helpers.resizeImageFile()` prüft deshalb `blob.type !== file.type` und verwirft die Verkleinerung in dem Fall, statt eine Datei mit falschem `.type`-Label hochzuladen. GIFs/SVGs werden immer ausgeschlossen (`isResizableImageType()`).
+`canvas.toBlob(cb, type)` fällt bei nicht unterstützten Ausgabeformaten (AVIF fast überall, WebP in älterem Safari) laut Spezifikation still auf PNG zurück. `MPCore.helpers.resizeImageFile()` prüft deshalb `blob.type !== file.type` und verwirft die Verkleinerung in dem Fall, statt eine Datei mit falschem `.type`-Label hochzuladen. GIFs/SVGs werden immer ausgeschlossen (`isResizableImageType()`).
 
 ## YForm-Integration: `MEDIA_IS_IN_USE` ist Pflicht
 
@@ -147,7 +147,7 @@ YForm entdeckt eigene Werttypen (`rex_yform_value_<name>`) automatisch per Klass
 Das Widget MUSS mit dem MBlock-AddOn funktionieren. MBlock klont DOM-Elemente und triggert `rex:ready`.
 
 1. `initWidgets(scope)` akzeptiert einen optionalen DOM-Container als Scope.
-2. Clone-Cleanup: bei `rex:ready` werden geklonte `.mp3w-container` entfernt und `data-mp3-initialized` zurückgesetzt, bevor Widgets neu gebaut werden.
+2. Clone-Cleanup: bei `rex:ready` werden geklonte `.mpw-container` entfernt und `data-mp-initialized` zurückgesetzt, bevor Widgets neu gebaut werden.
 3. `rex:ready`-Handler nutzt den Container-Parameter von jQuery:
    ```javascript
    jQuery(document).on('rex:ready', function (e, container) {
@@ -157,7 +157,7 @@ Das Widget MUSS mit dem MBlock-AddOn funktionieren. MBlock klont DOM-Elemente un
    ```
 4. Keine IDs in Widget-HTML – MBlock ändert IDs/Names, nur Klassen/relative DOM-Traversierung.
 5. Events am Widget lokal am Container binden, nicht am Document.
-6. `data-mp3-initialized`-Flag verhindert Doppel-Init, muss bei Clone-Cleanup entfernt werden.
+6. `data-mp-initialized`-Flag verhindert Doppel-Init, muss bei Clone-Cleanup entfernt werden.
 
 ## Deploy-Workflow
 
@@ -175,13 +175,13 @@ tail -n 5 var/log/system.log    # nach jedem Deploy pruefen
 ## Häufige Fehlerquellen
 
 ### CSS
-- Bootstrap-3-Override vergessen – immer `#mp3-overlay` im Selektor (Overlay-Dateien).
+- Bootstrap-3-Override vergessen – immer `#mp-overlay` im Selektor (Overlay-Dateien).
 - `!important` vermeiden – Spezifität durch ID erhöhen.
 - Dark Mode nur in einem Block geändert.
 
 ### JavaScript
 - ES5-Syntax beibehalten.
-- `window.MP3` und `window.MP3Widget` sind die einzigen globalen Exports.
+- `window.MP` und `window.MPWidget` sind die einzigen globalen Exports.
 - API-Fehler abfangen – alle `apiFetch`/`apiUpload`/etc. brauchen `.catch()`.
 - Geteilte Logik (Resize, Helpers, API) gehört in `mediaplace-*.js`, nicht dupliziert in Overlay UND Widget.
 
@@ -199,11 +199,11 @@ tail -n 5 var/log/system.log    # nach jedem Deploy pruefen
 
 | Kontext | Prefix | Beispiel |
 |---------|--------|----------|
-| Overlay CSS-Klassen | `mp3-` | `.mp3-card`, `.mp3-sidebar` |
-| Overlay CSS-Variablen | `--mp3-` | `--mp3-modal-bg` |
-| Widget CSS-Klassen | `mp3w-` | `.mp3w-container`, `.mp3w-item` |
+| Overlay CSS-Klassen | `mp-` | `.mp-card`, `.mp-sidebar` |
+| Overlay CSS-Variablen | `--mp-` | `--mp-modal-bg` |
+| Widget CSS-Klassen | `mpw-` | `.mpw-container`, `.mpw-item` |
 | Overlay JS-Funktionen | camelCase | `showDetail()`, `renderFiles()` |
-| Widget Daten-Attribute | `data-mp3-` | `data-mp3-multiple`, `data-mp3-upload`, `data-mp3-max`, `data-mp3-view` |
+| Widget Daten-Attribute | `data-mp-` | `data-mp-multiple`, `data-mp-upload`, `data-mp-max`, `data-mp-view` |
 
 ## Abhängigkeiten
 

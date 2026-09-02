@@ -1,7 +1,7 @@
 <?php
 
 /**
- * YForm-Feldtyp "mediaplace": bindet das MediaPlace-Widget (<input class="mp3-widget">)
+ * YForm-Feldtyp "mediaplace": bindet das MediaPlace-Widget (<input class="mp-widget">)
  * als YForm-Werttyp ein, analog zu yform/lib/Field/value/be_media.php. Speichert
  * Dateiname(n) kommasepariert im DB-Feld, exakt das Format, das das Widget selbst
  * (mediaplace_widget.js, _getFiles()/_setFiles()) ohnehin liest/schreibt.

@@ -5,7 +5,7 @@
  * wie modules/providers.js.
  *
  * showRenameCategoryModal()/showMoveCategoryModal() nutzen dasselbe
- * ".mp3-cat-move-modal-overlay"-Markup, leben aber in modules/categories.js
+ * ".mp-cat-move-modal-overlay"-Markup, leben aber in modules/categories.js
  * (eng an Kategorie-State gekoppelt) statt hier.
  *
  * showAlertModal() ersetzt reine Info-/Fehler-alert()-Aufrufe (z.B. nach
@@ -16,15 +16,15 @@
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var buildCategoryOptionsHtml = MP3Core.helpers.buildCategoryOptionsHtml;
-var apiFetchAllCategoriesFlat = MP3Core.api.apiFetchAllCategoriesFlat;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var buildCategoryOptionsHtml = MPCore.helpers.buildCategoryOptionsHtml;
+var apiFetchAllCategoriesFlat = MPCore.api.apiFetchAllCategoriesFlat;
 
 /**
  * ctx-Vertrag: { overlay } -- nur showCategoryPickerModal() braucht das
- * Overlay-Root (dessen CSS ist "#mp3-overlay .mp3-catpick-modal"-gescoped,
+ * Overlay-Root (dessen CSS ist "#mp-overlay .mp-catpick-modal"-gescoped,
  * anders als die uebrigen Modals hier, die direkt an document.body haengen).
  */
 export function initModals(theCtx) {
@@ -47,22 +47,22 @@ export function initModals(theCtx) {
  */
 export function showConfirmModal(opts) {
     var overlay = document.createElement('div');
-    overlay.className = 'mp3-cat-move-modal-overlay';
+    overlay.className = 'mp-cat-move-modal-overlay';
     overlay.innerHTML =
-        '<div class="mp3-cat-move-modal">' +
-        '<h5 class="mp3-cat-move-modal-title">' +
+        '<div class="mp-cat-move-modal">' +
+        '<h5 class="mp-cat-move-modal-title">' +
         '<i class="fa-solid ' + escAttr(opts.icon || 'fa-triangle-exclamation') + '"></i> ' + escAttr(opts.title || t('mediaplace_confirm')) + '</h5>' +
-        '<p class="mp3-cat-move-modal-info">' + opts.message + '</p>' +
-        '<p class="mp3-cat-move-modal-error" style="display:none"></p>' +
-        '<div class="mp3-cat-move-modal-actions">' +
-        '<button class="mp3-cat-move-modal-ok btn ' + (opts.dangerous ? 'btn-danger' : 'btn-primary') + ' btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
-        '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
+        '<p class="mp-cat-move-modal-info">' + opts.message + '</p>' +
+        '<p class="mp-cat-move-modal-error" style="display:none"></p>' +
+        '<div class="mp-cat-move-modal-actions">' +
+        '<button class="mp-cat-move-modal-ok btn ' + (opts.dangerous ? 'btn-danger' : 'btn-primary') + ' btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
+        '<button class="mp-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
         '</div>' +
         '</div>';
     document.body.appendChild(overlay);
 
-    var errorEl = overlay.querySelector('.mp3-cat-move-modal-error');
-    var okBtn = overlay.querySelector('.mp3-cat-move-modal-ok');
+    var errorEl = overlay.querySelector('.mp-cat-move-modal-error');
+    var okBtn = overlay.querySelector('.mp-cat-move-modal-ok');
     var okLabel = escAttr(opts.confirmLabel || t('mediaplace_ok'));
 
     function onKeydown(e) {
@@ -75,7 +75,7 @@ export function showConfirmModal(opts) {
     }
 
     document.addEventListener('keydown', onKeydown);
-    overlay.querySelector('.mp3-cat-move-modal-cancel').addEventListener('click', close);
+    overlay.querySelector('.mp-cat-move-modal-cancel').addEventListener('click', close);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
 
     okBtn.addEventListener('click', function () {
@@ -108,19 +108,19 @@ export function showConfirmModal(opts) {
 export function showAlertModal(opts) {
     return new Promise(function (resolve) {
         var overlay = document.createElement('div');
-        overlay.className = 'mp3-cat-move-modal-overlay';
+        overlay.className = 'mp-cat-move-modal-overlay';
         overlay.innerHTML =
-            '<div class="mp3-cat-move-modal">' +
-            '<h5 class="mp3-cat-move-modal-title">' +
+            '<div class="mp-cat-move-modal">' +
+            '<h5 class="mp-cat-move-modal-title">' +
             '<i class="fa-solid ' + escAttr(opts.icon || 'fa-circle-info') + '"></i> ' + escAttr(opts.title || t('mediaplace_notice')) + '</h5>' +
-            '<p class="mp3-cat-move-modal-info">' + opts.message + '</p>' +
-            '<div class="mp3-cat-move-modal-actions">' +
-            '<button class="mp3-cat-move-modal-ok btn ' + (opts.dangerous ? 'btn-danger' : 'btn-primary') + ' btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
+            '<p class="mp-cat-move-modal-info">' + opts.message + '</p>' +
+            '<div class="mp-cat-move-modal-actions">' +
+            '<button class="mp-cat-move-modal-ok btn ' + (opts.dangerous ? 'btn-danger' : 'btn-primary') + ' btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
             '</div>' +
             '</div>';
         document.body.appendChild(overlay);
 
-        var okBtn = overlay.querySelector('.mp3-cat-move-modal-ok');
+        var okBtn = overlay.querySelector('.mp-cat-move-modal-ok');
 
         function onKeydown(e) {
             if (e.key === 'Escape' || e.key === 'Enter') close();
@@ -152,24 +152,24 @@ export function showPromptModal(opts) {
         // Info-Text darzustellen, den man exakt selbst abtippen muesste
         // (siehe startBulkAddToCollection() in categories.js).
         var hasDatalist = Array.isArray(opts.datalist) && opts.datalist.length > 0;
-        var datalistId = hasDatalist ? 'mp3-prompt-modal-datalist-' + Math.random().toString(36).slice(2) : '';
+        var datalistId = hasDatalist ? 'mp-prompt-modal-datalist-' + Math.random().toString(36).slice(2) : '';
         var overlay = document.createElement('div');
-        overlay.className = 'mp3-cat-move-modal-overlay';
+        overlay.className = 'mp-cat-move-modal-overlay';
         overlay.innerHTML =
-            '<div class="mp3-cat-move-modal">' +
-            '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid ' + escAttr(opts.icon || 'fa-pen') + '"></i> ' + opts.title + '</h5>' +
-            (opts.label ? '<p class="mp3-cat-move-modal-info">' + opts.label + '</p>' : '') +
-            '<input type="text" class="mp3-cat-move-modal-input" value="' + escAttr(opts.value || '') + '"' + (hasDatalist ? ' list="' + datalistId + '"' : '') + '>' +
+            '<div class="mp-cat-move-modal">' +
+            '<h5 class="mp-cat-move-modal-title"><i class="fa-solid ' + escAttr(opts.icon || 'fa-pen') + '"></i> ' + opts.title + '</h5>' +
+            (opts.label ? '<p class="mp-cat-move-modal-info">' + opts.label + '</p>' : '') +
+            '<input type="text" class="mp-cat-move-modal-input" value="' + escAttr(opts.value || '') + '"' + (hasDatalist ? ' list="' + datalistId + '"' : '') + '>' +
             (hasDatalist ? '<datalist id="' + datalistId + '">' + opts.datalist.map(function (v) { return '<option value="' + escAttr(v) + '">'; }).join('') + '</datalist>' : '') +
-            '<div class="mp3-cat-move-modal-actions">' +
-            '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
-            '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
+            '<div class="mp-cat-move-modal-actions">' +
+            '<button class="mp-cat-move-modal-ok btn btn-primary btn-sm">' + escAttr(opts.confirmLabel || t('mediaplace_ok')) + '</button>' +
+            '<button class="mp-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
             '</div>' +
             '</div>';
         document.body.appendChild(overlay);
 
-        var input = overlay.querySelector('.mp3-cat-move-modal-input');
-        var okBtn = overlay.querySelector('.mp3-cat-move-modal-ok');
+        var input = overlay.querySelector('.mp-cat-move-modal-input');
+        var okBtn = overlay.querySelector('.mp-cat-move-modal-ok');
         setTimeout(function () { input.focus(); input.select(); }, 0);
 
         function close() {
@@ -187,7 +187,7 @@ export function showPromptModal(opts) {
             resolve(null);
         }
 
-        overlay.querySelector('.mp3-cat-move-modal-cancel').addEventListener('click', cancel);
+        overlay.querySelector('.mp-cat-move-modal-cancel').addEventListener('click', cancel);
         overlay.addEventListener('click', function (e) {
             if (e.target === overlay) cancel();
         });
@@ -205,7 +205,7 @@ export function showPromptModal(opts) {
 }
 
 /**
- * Wiederverwendbarer Kategorie-Auswahl-Dialog (.mp3-catpick-*) --
+ * Wiederverwendbarer Kategorie-Auswahl-Dialog (.mp-catpick-*) --
  * gemeinsame Basis fuer showCollectionUploadCategoryPicker() (core.js) und
  * promptProviderImport() (modules/providers.js) statt Modal-Markup pro
  * Aufrufer neu zu schreiben. options: {icon, title, hint (fertiges HTML),
@@ -213,21 +213,21 @@ export function showPromptModal(opts) {
  */
 export function showCategoryPickerModal(options) {
     var modal = document.createElement('div');
-    modal.className = 'mp3-catpick-modal';
+    modal.className = 'mp-catpick-modal';
     modal.innerHTML =
-        '<div class="mp3-catpick-box">' +
-        '<div class="mp3-catpick-title"><i class="' + escAttr(options.icon) + '"></i> ' + options.title + '</div>' +
-        '<p class="mp3-catpick-info">' + options.hint + '</p>' +
-        '<select class="mp3-catpick-select"><option value="0">' + t('mediaplace_root_no_category') + '</option></select>' +
-        '<div class="mp3-catpick-actions">' +
-        '<button type="button" class="mp3-catpick-cancel">' + t('mediaplace_cancel') + '</button>' +
-        '<button type="button" class="mp3-catpick-confirm">' + options.confirmLabel + '</button>' +
+        '<div class="mp-catpick-box">' +
+        '<div class="mp-catpick-title"><i class="' + escAttr(options.icon) + '"></i> ' + options.title + '</div>' +
+        '<p class="mp-catpick-info">' + options.hint + '</p>' +
+        '<select class="mp-catpick-select"><option value="0">' + t('mediaplace_root_no_category') + '</option></select>' +
+        '<div class="mp-catpick-actions">' +
+        '<button type="button" class="mp-catpick-cancel">' + t('mediaplace_cancel') + '</button>' +
+        '<button type="button" class="mp-catpick-confirm">' + options.confirmLabel + '</button>' +
         '</div>' +
         '</div>';
 
     ctx.overlay.appendChild(modal);
 
-    var select = modal.querySelector('.mp3-catpick-select');
+    var select = modal.querySelector('.mp-catpick-select');
     // Flache, tiefensortierte Liste vom Server (dieselbe Route, die auch
     // den Sidebar-Baum liefert) statt verschachteltem catCache -- dessen
     // Kind-Struktur gibt es seit dem serverseitig gerenderten Baum nicht
@@ -238,11 +238,11 @@ export function showCategoryPickerModal(options) {
         // Bleibt bei der Stamm-Option, falls die Liste nicht geladen werden kann.
     });
 
-    modal.querySelector('.mp3-catpick-cancel').addEventListener('click', function () {
+    modal.querySelector('.mp-catpick-cancel').addEventListener('click', function () {
         modal.remove();
     });
 
-    modal.querySelector('.mp3-catpick-confirm').addEventListener('click', function () {
+    modal.querySelector('.mp-catpick-confirm').addEventListener('click', function () {
         var catId = parseInt(select.value || '0', 10);
         modal.remove();
         options.onConfirm(catId);

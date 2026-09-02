@@ -26,18 +26,18 @@ import { getCurrentTagCatalog } from './filters.js';
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var qs = MP3Core.helpers.qs;
-var qsa = MP3Core.helpers.qsa;
-var getCategoriesApiUrl = MP3Core.api.getCategoriesApiUrl;
-var apiFetchAllCategoriesFlat = MP3Core.api.apiFetchAllCategoriesFlat;
-var apiMoveCategory = MP3Core.api.apiMoveCategory;
-var apiCreateCategory = MP3Core.api.apiCreateCategory;
-var apiRenameCategory = MP3Core.api.apiRenameCategory;
-var apiCategoryBulkAction = MP3Core.api.apiCategoryBulkAction;
-var apiLoadSystemTagsForFiles = MP3Core.api.apiLoadSystemTagsForFiles;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var qs = MPCore.helpers.qs;
+var qsa = MPCore.helpers.qsa;
+var getCategoriesApiUrl = MPCore.api.getCategoriesApiUrl;
+var apiFetchAllCategoriesFlat = MPCore.api.apiFetchAllCategoriesFlat;
+var apiMoveCategory = MPCore.api.apiMoveCategory;
+var apiCreateCategory = MPCore.api.apiCreateCategory;
+var apiRenameCategory = MPCore.api.apiRenameCategory;
+var apiCategoryBulkAction = MPCore.api.apiCategoryBulkAction;
+var apiLoadSystemTagsForFiles = MPCore.api.apiLoadSystemTagsForFiles;
 
 /**
  * ctx-Vertrag:
@@ -59,7 +59,7 @@ var apiLoadSystemTagsForFiles = MP3Core.api.apiLoadSystemTagsForFiles;
  * - loadFiles(): noch-legacy-Funktion (Data-Loading-Domaene)
  * - refreshTagFilterSection(): noch-legacy-Funktion (Tag-Katalog/-Filter-State
  *   lebt in core.js) -- fuellt den hier nur als leerer Platzhalter
- *   angelegten #mp3-tag-filter-section-Container mit Inhalt (liest
+ *   angelegten #mp-tag-filter-section-Container mit Inhalt (liest
  *   ctx.features.tagging).
  */
 export function initCategories(theCtx) {
@@ -69,51 +69,51 @@ export function initCategories(theCtx) {
 export function applyCategorySearchFilter() {
     if (!ctx.sidebar) return;
 
-    var input = qs('.mp3-cat-search-input', ctx.sidebar);
+    var input = qs('.mp-cat-search-input', ctx.sidebar);
     var term = String((input ? input.value : ctx.getCategorySearchTerm()) || '').trim().toLowerCase();
     ctx.setCategorySearchTerm(term);
 
-    var headers = qsa('.mp3-cat-header', ctx.sidebar);
-    var nodes = qsa('.mp3-cat-node', ctx.sidebar);
-    var childrenBlocks = qsa('.mp3-cat-children', ctx.sidebar);
-    var emptyHint = qs('.mp3-cat-search-empty', ctx.sidebar);
+    var headers = qsa('.mp-cat-header', ctx.sidebar);
+    var nodes = qsa('.mp-cat-node', ctx.sidebar);
+    var childrenBlocks = qsa('.mp-cat-children', ctx.sidebar);
+    var emptyHint = qs('.mp-cat-search-empty', ctx.sidebar);
 
     if (!term) {
-        headers.forEach(function (el) { el.classList.remove('mp3-cat-hidden'); });
-        nodes.forEach(function (el) { el.classList.remove('mp3-cat-hidden', 'mp3-cat-match'); });
-        childrenBlocks.forEach(function (el) { el.classList.remove('mp3-cat-hidden'); });
+        headers.forEach(function (el) { el.classList.remove('mp-cat-hidden'); });
+        nodes.forEach(function (el) { el.classList.remove('mp-cat-hidden', 'mp-cat-match'); });
+        childrenBlocks.forEach(function (el) { el.classList.remove('mp-cat-hidden'); });
         if (emptyHint) emptyHint.remove();
         return;
     }
 
     headers.forEach(function (header) {
-        var label = qs('.mp3-cat', header);
+        var label = qs('.mp-cat', header);
         var text = String(label ? label.textContent : '').toLowerCase();
-        header.classList.toggle('mp3-cat-hidden', text.indexOf(term) === -1);
+        header.classList.toggle('mp-cat-hidden', text.indexOf(term) === -1);
     });
 
     nodes.forEach(function (node) {
-        var label = qs('.mp3-cat', node);
+        var label = qs('.mp-cat', node);
         var text = String(label ? label.textContent : '').toLowerCase();
         var isMatch = text.indexOf(term) !== -1;
-        node.classList.toggle('mp3-cat-match', isMatch);
-        node.classList.toggle('mp3-cat-hidden', !isMatch);
+        node.classList.toggle('mp-cat-match', isMatch);
+        node.classList.toggle('mp-cat-hidden', !isMatch);
     });
 
     // Keep category path visible for each matching node. Zugeklappte
-    // Vorfahren-Knoten muessen zusaetzlich "mp3-cat-node-open" bekommen --
-    // ihr .mp3-cat-children-Block ist per CSS sonst display:none (siehe
-    // mediaplace.css), das reine Entfernen von "mp3-cat-hidden" wuerde den
+    // Vorfahren-Knoten muessen zusaetzlich "mp-cat-node-open" bekommen --
+    // ihr .mp-cat-children-Block ist per CSS sonst display:none (siehe
+    // mediaplace.css), das reine Entfernen von "mp-cat-hidden" wuerde den
     // Treffer also nicht sichtbar machen.
     nodes.forEach(function (node) {
-        if (!node.classList.contains('mp3-cat-match')) return;
+        if (!node.classList.contains('mp-cat-match')) return;
         var parent = node.parentElement;
         while (parent && parent !== ctx.sidebar) {
-            var parentNode = parent.closest('.mp3-cat-node');
+            var parentNode = parent.closest('.mp-cat-node');
             if (!parentNode) break;
-            parentNode.classList.remove('mp3-cat-hidden');
-            parentNode.classList.add('mp3-cat-node-open');
-            var toggleIcon = parentNode.querySelector(':scope > .mp3-cat-row .mp3-cat-toggle');
+            parentNode.classList.remove('mp-cat-hidden');
+            parentNode.classList.add('mp-cat-node-open');
+            var toggleIcon = parentNode.querySelector(':scope > .mp-cat-row .mp-cat-toggle');
             if (toggleIcon) {
                 toggleIcon.classList.remove('fa-chevron-right');
                 toggleIcon.classList.add('fa-chevron-down');
@@ -123,22 +123,22 @@ export function applyCategorySearchFilter() {
     });
 
     childrenBlocks.forEach(function (block) {
-        var visible = !!qs('.mp3-cat-node:not(.mp3-cat-hidden)', block);
-        block.classList.toggle('mp3-cat-hidden', !visible);
+        var visible = !!qs('.mp-cat-node:not(.mp-cat-hidden)', block);
+        block.classList.toggle('mp-cat-hidden', !visible);
     });
 
-    var visibleHeaders = headers.filter(function (el) { return !el.classList.contains('mp3-cat-hidden'); }).length;
-    var visibleNodes = nodes.filter(function (el) { return !el.classList.contains('mp3-cat-hidden'); }).length;
+    var visibleHeaders = headers.filter(function (el) { return !el.classList.contains('mp-cat-hidden'); }).length;
+    var visibleNodes = nodes.filter(function (el) { return !el.classList.contains('mp-cat-hidden'); }).length;
     if ((visibleHeaders + visibleNodes) === 0) {
         if (!emptyHint) {
             emptyHint = document.createElement('div');
-            emptyHint.className = 'mp3-cat-search-empty';
+            emptyHint.className = 'mp-cat-search-empty';
             // insertBefore() verlangt, dass das Referenz-Element ein DIREKTES
-            // Kind des Knotens ist, auf dem es aufgerufen wird -- .mp3-cat-tree
+            // Kind des Knotens ist, auf dem es aufgerufen wird -- .mp-cat-tree
             // steckt seit dem ein-/ausklappbaren Sidebar-Abschnitt (siehe
-            // renderCategories()) in .mp3-cat-section-wrap > .mp3-sidebar-
+            // renderCategories()) in .mp-cat-section-wrap > .mp-sidebar-
             // section-body, ist also kein direktes Kind von ctx.sidebar mehr.
-            var catTreeEl = qs('.mp3-cat-tree', ctx.sidebar);
+            var catTreeEl = qs('.mp-cat-tree', ctx.sidebar);
             if (catTreeEl && catTreeEl.parentNode) {
                 catTreeEl.parentNode.insertBefore(emptyHint, catTreeEl);
             } else {
@@ -160,7 +160,7 @@ export function applyCategorySearchFilter() {
  */
 function isSectionCollapsed(key) {
     try {
-        return localStorage.getItem('mp3_sidebar_collapsed_' + key) === '1';
+        return localStorage.getItem('mp_sidebar_collapsed_' + key) === '1';
     } catch (e) {
         return false;
     }
@@ -175,34 +175,34 @@ export function renderCategories(treeHtml) {
     // vollstaendig, ohne dass ein eigener Rueckweg sichtbar bleibt (Nutzer-
     // Feedback). closeSidebar() wird ueber die bestehende, delegierte
     // Sidebar-Click-Listener in core.js aufgerufen (gleiches Muster wie der
-    // .mp3-cat-Klick, der die Sidebar dort ebenfalls schon schliesst).
-    var html = '<div class="mp3-sidebar-mobile-header">' +
-        '<span class="mp3-sidebar-mobile-title">' + t('mediaplace_categories') + '</span>' +
-        '<button type="button" class="mp3-sidebar-mobile-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
+    // .mp-cat-Klick, der die Sidebar dort ebenfalls schon schliesst).
+    var html = '<div class="mp-sidebar-mobile-header">' +
+        '<span class="mp-sidebar-mobile-title">' + t('mediaplace_categories') + '</span>' +
+        '<button type="button" class="mp-sidebar-mobile-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
         '</div>' +
-        '<div class="mp3-sidebar-section mp3-cat-section-wrap' + (catCollapsed ? ' mp3-sidebar-section-collapsed' : '') + '" data-section="categories">' +
-        '<div class="mp3-sidebar-section-head">' +
-            '<span class="mp3-sidebar-section-title"><i class="rex-icon rex-icon-media"></i> ' + t('mediaplace_categories') + '</span>' +
-            '<button type="button" class="mp3-sidebar-section-toggle" data-section="categories" title="' + escAttr(t('mediaplace_toggle_section')) + '"><i class="fa-solid fa-chevron-down"></i></button>' +
+        '<div class="mp-sidebar-section mp-cat-section-wrap' + (catCollapsed ? ' mp-sidebar-section-collapsed' : '') + '" data-section="categories">' +
+        '<div class="mp-sidebar-section-head">' +
+            '<span class="mp-sidebar-section-title"><i class="rex-icon rex-icon-media"></i> ' + t('mediaplace_categories') + '</span>' +
+            '<button type="button" class="mp-sidebar-section-toggle" data-section="categories" title="' + escAttr(t('mediaplace_toggle_section')) + '"><i class="fa-solid fa-chevron-down"></i></button>' +
         '</div>' +
-        '<div class="mp3-sidebar-section-body">' +
-        '<div class="mp3-cat-search-wrap">' +
+        '<div class="mp-sidebar-section-body">' +
+        '<div class="mp-cat-search-wrap">' +
         '<i class="fa-solid fa-magnifying-glass"></i>' +
-        '<input type="text" class="mp3-cat-search-input" placeholder="' + escAttr(t('mediaplace_search_category_placeholder')) + '" value="' + escAttr(ctx.getCategorySearchTerm()) + '">' +
+        '<input type="text" class="mp-cat-search-input" placeholder="' + escAttr(t('mediaplace_search_category_placeholder')) + '" value="' + escAttr(ctx.getCategorySearchTerm()) + '">' +
         '</div>' +
-        '<div class="mp3-cat-tree">' +
-            '<div class="mp3-cat-header">' +
-                '<a class="mp3-cat' + (currentCat === -1 ? ' mp3-cat-active' : '') + '" data-cat="-1">' +
+        '<div class="mp-cat-tree">' +
+            '<div class="mp-cat-header">' +
+                '<a class="mp-cat' + (currentCat === -1 ? ' mp-cat-active' : '') + '" data-cat="-1">' +
                     '<i class="fa-solid fa-layer-group"></i> ' + t('mediaplace_all_media') + '</a>' +
             '</div>' +
-            '<div class="mp3-cat-header">' +
+            '<div class="mp-cat-header">' +
                 (canAccessRootCategory
-                    ? '<a class="mp3-cat' + (currentCat === 0 ? ' mp3-cat-active' : '') + '" data-cat="0">' +
+                    ? '<a class="mp-cat' + (currentCat === 0 ? ' mp-cat-active' : '') + '" data-cat="0">' +
                         '<i class="fa-solid fa-house"></i> ' + t('mediaplace_root_media') + '</a>'
-                    : '<span class="mp3-cat mp3-cat-disabled" title="' + escAttr(t('mediaplace_root_media_no_access')) + '">' +
+                    : '<span class="mp-cat mp-cat-disabled" title="' + escAttr(t('mediaplace_root_media_no_access')) + '">' +
                         '<i class="fa-solid fa-house"></i> ' + t('mediaplace_root_media') + '</span>') +
                 (canAccessRootCategory
-                    ? '<button class="mp3-cat-add-btn" data-add-parent="0" title="' + escAttr(t('mediaplace_new_category')) + '">' +
+                    ? '<button class="mp-cat-add-btn" data-add-parent="0" title="' + escAttr(t('mediaplace_new_category')) + '">' +
                         '<i class="fa-solid fa-folder-plus"></i></button>'
                     : '') +
             '</div>' +
@@ -216,15 +216,15 @@ export function renderCategories(treeHtml) {
             // verwirrend) -- ctx.refreshAltMissingNav() blendet unten per
             // echtem Server-Count ein, nur wenn tatsaechlich Dateien ohne
             // ALT-Text existieren.
-            ? '<div class="mp3-alt-missing-nav-wrap"' + (ctx.getAltMissingActive() ? '' : ' style="display:none"') + '><a class="mp3-cat mp3-alt-missing-nav' + (ctx.getAltMissingActive() ? ' mp3-cat-active' : '') + '"><i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_alt_missing_filter') + '</a></div>'
+            ? '<div class="mp-alt-missing-nav-wrap"' + (ctx.getAltMissingActive() ? '' : ' style="display:none"') + '><a class="mp-cat mp-alt-missing-nav' + (ctx.getAltMissingActive() ? ' mp-cat-active' : '') + '"><i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_alt_missing_filter') + '</a></div>'
             : '') +
-        (ctx.features.collections ? '<div id="mp3-collections-section">' + renderCollectionsSection() + '</div>' : '') +
-        (ctx.features.tagging ? '<div class="mp3-sidebar-section mp3-tag-section-wrap' + (isSectionCollapsed('tags') ? ' mp3-sidebar-section-collapsed' : '') + '" data-section="tags" id="mp3-tag-filter-section"></div>' : '') +
-        (hasProviders() && !ctx.getOnMultiSelect() ? '<div id="mp3-providers-section">' + renderProvidersSection() + '</div>' : '');
+        (ctx.features.collections ? '<div id="mp-collections-section">' + renderCollectionsSection() + '</div>' : '') +
+        (ctx.features.tagging ? '<div class="mp-sidebar-section mp-tag-section-wrap' + (isSectionCollapsed('tags') ? ' mp-sidebar-section-collapsed' : '') + '" data-section="tags" id="mp-tag-filter-section"></div>' : '') +
+        (hasProviders() && !ctx.getOnMultiSelect() ? '<div id="mp-providers-section">' + renderProvidersSection() + '</div>' : '');
     ctx.sidebar.innerHTML = html;
     applyCategorySearchFilter();
     closeCatMenu();
-    // #mp3-tag-filter-section ist hier nur ein leerer Platzhalter (Tag-Daten
+    // #mp-tag-filter-section ist hier nur ein leerer Platzhalter (Tag-Daten
     // leben in core.js, nicht in diesem Modul) -- Inhalt kommt vom
     // Aufrufer nach, siehe refreshTagFilterSection() im ctx-Vertrag.
     if (ctx.features.tagging && typeof ctx.refreshTagFilterSection === 'function') {
@@ -245,7 +245,7 @@ export function renderCategories(treeHtml) {
  */
 export function refreshProvidersSection() {
     if (!hasProviders() || ctx.getOnMultiSelect()) return;
-    var section = document.getElementById('mp3-providers-section');
+    var section = document.getElementById('mp-providers-section');
     if (section) section.innerHTML = renderProvidersSection();
 }
 
@@ -257,25 +257,25 @@ export function refreshProvidersSection() {
  */
 export function updateSidebarActiveState() {
     var currentCat = ctx.getCurrentCat();
-    qsa('.mp3-cat[data-cat]', ctx.sidebar).forEach(function (el) {
+    qsa('.mp-cat[data-cat]', ctx.sidebar).forEach(function (el) {
         var id = parseInt(el.getAttribute('data-cat'), 10);
-        el.classList.toggle('mp3-cat-active', id === currentCat);
+        el.classList.toggle('mp-cat-active', id === currentCat);
     });
-    var altMissingNav = qs('.mp3-alt-missing-nav', ctx.sidebar);
+    var altMissingNav = qs('.mp-alt-missing-nav', ctx.sidebar);
     if (altMissingNav) {
-        altMissingNav.classList.toggle('mp3-cat-active', !!ctx.getAltMissingActive());
+        altMissingNav.classList.toggle('mp-cat-active', !!ctx.getAltMissingActive());
     }
     closeCatMenu();
 }
 
 /**
  * Baut das Kategorie-Aktionsmenue (Umbenennen/Verschieben/Unterkategorie/
- * Loeschen) dynamisch in #mp3-cat-menu-portal und positioniert es an
+ * Loeschen) dynamisch in #mp-cat-menu-portal und positioniert es an
  * anchorBtn. Portal statt Inline-Dropdown, weil overflow-y:auto der
  * Sidebar ein absolut positioniertes Kind sonst am Rand abschneidet.
  */
 export function openCatMenu(id, name, anchorBtn) {
-    var portal = document.getElementById('mp3-cat-menu-portal');
+    var portal = document.getElementById('mp-cat-menu-portal');
     if (!portal || !anchorBtn) return;
 
     // Umbenennen/Verschieben/Loeschen brauchen Zugriff auf die
@@ -286,12 +286,12 @@ export function openCatMenu(id, name, anchorBtn) {
 
     var html = '';
     if (canManage) {
-        html += '<button class="mp3-cat-rename-btn" data-rename-cat="' + id + '"><i class="fa-solid fa-pen"></i> ' + t('mediaplace_rename') + '</button>' +
-            '<button class="mp3-cat-move-btn" data-move-cat="' + id + '"><i class="fa-solid fa-folder-tree"></i> ' + t('mediaplace_move') + '</button>';
+        html += '<button class="mp-cat-rename-btn" data-rename-cat="' + id + '"><i class="fa-solid fa-pen"></i> ' + t('mediaplace_rename') + '</button>' +
+            '<button class="mp-cat-move-btn" data-move-cat="' + id + '"><i class="fa-solid fa-folder-tree"></i> ' + t('mediaplace_move') + '</button>';
     }
-    html += '<button class="mp3-cat-add-btn mp3-cat-add-sub" data-add-parent="' + id + '"><i class="fa-solid fa-plus"></i> ' + t('mediaplace_subcategory') + '</button>';
+    html += '<button class="mp-cat-add-btn mp-cat-add-sub" data-add-parent="' + id + '"><i class="fa-solid fa-plus"></i> ' + t('mediaplace_subcategory') + '</button>';
     if (canManage) {
-        html += '<button class="mp3-cat-delete-btn" data-delete-cat="' + id + '" data-delete-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete') + '</button>';
+        html += '<button class="mp-cat-delete-btn" data-delete-cat="' + id + '" data-delete-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_delete') + '</button>';
     }
     // Massenaktionen fuer ALLE Dateien DIESER Kategorie (nicht die Kategorie
     // selbst) -- eigene Berechtigung (MediaPermission::hasBulkOperationsAccess(),
@@ -304,11 +304,11 @@ export function openCatMenu(id, name, anchorBtn) {
     // loeschen/verschieben" waere zu riskant als Ein-Klick-Aktion im Menue
     // einer Kategorie, die eigentlich fuer "kein Ordner" steht.
     if (id > 0 && ctx.getCanBulkOperations()) {
-        html += '<div class="mp3-cat-menu-divider"></div>' +
-            '<button class="mp3-cat-bulk-move-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-arrow-right-arrow-left"></i> ' + t('mediaplace_bulk_move_files') + '</button>' +
-            '<button class="mp3-cat-bulk-tag-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-tag"></i> ' + t('mediaplace_bulk_add_tag') + '</button>' +
-            '<button class="mp3-cat-bulk-collection-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-bookmark"></i> ' + t('mediaplace_bulk_add_to_collection') + '</button>' +
-            '<button class="mp3-cat-bulk-delete-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_bulk_delete_files') + '</button>';
+        html += '<div class="mp-cat-menu-divider"></div>' +
+            '<button class="mp-cat-bulk-move-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-arrow-right-arrow-left"></i> ' + t('mediaplace_bulk_move_files') + '</button>' +
+            '<button class="mp-cat-bulk-tag-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-tag"></i> ' + t('mediaplace_bulk_add_tag') + '</button>' +
+            '<button class="mp-cat-bulk-collection-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-bookmark"></i> ' + t('mediaplace_bulk_add_to_collection') + '</button>' +
+            '<button class="mp-cat-bulk-delete-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_bulk_delete_files') + '</button>';
     }
     // Infobereich immer am Ende des Menues -- vor allem die Kategorie-ID,
     // die z.B. fuer REX_MEDIA-Widgets/YForm-Konfiguration/Templates
@@ -319,31 +319,31 @@ export function openCatMenu(id, name, anchorBtn) {
     // gleiche id>0-Einschraenkung wie der Massenaktionen-Block (Wurzel hat
     // keine sinnvolle "eigene" Dateianzahl).
     var showCount = id > 0 && ctx.getCanBulkOperations();
-    html += '<div class="mp3-cat-menu-divider"></div>' +
-        '<div class="mp3-cat-menu-info">' +
-        '<div class="mp3-cat-menu-info-row"><span class="mp3-cat-menu-info-label">' + t('mediaplace_cat_info_id') + '</span>' +
-        '<span class="mp3-cat-menu-info-value">' + id + '</span>' +
-        '<button class="mp3-cat-menu-info-copy" data-copy-cat-id="' + id + '" title="' + escAttr(t('mediaplace_cat_info_copy')) + '"><i class="fa-solid fa-copy"></i></button></div>' +
-        '<div class="mp3-cat-menu-info-row"><span class="mp3-cat-menu-info-label">' + t('mediaplace_cat_info_name') + '</span>' +
-        '<span class="mp3-cat-menu-info-value mp3-cat-menu-info-value-name">' + escAttr(name) + '</span></div>' +
-        (showCount ? ('<div class="mp3-cat-menu-info-row"><span class="mp3-cat-menu-info-label">' + t('mediaplace_cat_info_count') + '</span>' +
-            '<span class="mp3-cat-menu-info-value mp3-cat-menu-info-count">…</span></div>') : '') +
+    html += '<div class="mp-cat-menu-divider"></div>' +
+        '<div class="mp-cat-menu-info">' +
+        '<div class="mp-cat-menu-info-row"><span class="mp-cat-menu-info-label">' + t('mediaplace_cat_info_id') + '</span>' +
+        '<span class="mp-cat-menu-info-value">' + id + '</span>' +
+        '<button class="mp-cat-menu-info-copy" data-copy-cat-id="' + id + '" title="' + escAttr(t('mediaplace_cat_info_copy')) + '"><i class="fa-solid fa-copy"></i></button></div>' +
+        '<div class="mp-cat-menu-info-row"><span class="mp-cat-menu-info-label">' + t('mediaplace_cat_info_name') + '</span>' +
+        '<span class="mp-cat-menu-info-value mp-cat-menu-info-value-name">' + escAttr(name) + '</span></div>' +
+        (showCount ? ('<div class="mp-cat-menu-info-row"><span class="mp-cat-menu-info-label">' + t('mediaplace_cat_info_count') + '</span>' +
+            '<span class="mp-cat-menu-info-value mp-cat-menu-info-count">…</span></div>') : '') +
         '</div>';
     portal.innerHTML = html;
-    portal.classList.add('mp3-cat-menu-portal-open');
+    portal.classList.add('mp-cat-menu-portal-open');
     portal.setAttribute('data-open-for', String(id));
-    anchorBtn.classList.add('mp3-cat-menu-btn-active');
+    anchorBtn.classList.add('mp-cat-menu-btn-active');
 
     if (showCount) {
         apiCategoryBulkAction('count', { category_id: id })
             .then(function (result) {
                 if (portal.getAttribute('data-open-for') !== String(id)) return;
-                var countEl = qs('.mp3-cat-menu-info-count', portal);
+                var countEl = qs('.mp-cat-menu-info-count', portal);
                 if (countEl) countEl.textContent = String(parseInt(result.total, 10) || 0);
             })
             .catch(function () {
                 if (portal.getAttribute('data-open-for') !== String(id)) return;
-                var countEl = qs('.mp3-cat-menu-info-count', portal);
+                var countEl = qs('.mp-cat-menu-info-count', portal);
                 if (countEl) countEl.textContent = '–';
             });
     }
@@ -361,13 +361,13 @@ export function openCatMenu(id, name, anchorBtn) {
 }
 
 export function closeCatMenu() {
-    var portal = document.getElementById('mp3-cat-menu-portal');
+    var portal = document.getElementById('mp-cat-menu-portal');
     if (!portal) return;
-    portal.classList.remove('mp3-cat-menu-portal-open');
+    portal.classList.remove('mp-cat-menu-portal-open');
     portal.removeAttribute('data-open-for');
     portal.innerHTML = '';
-    qsa('.mp3-cat-menu-btn.mp3-cat-menu-btn-active', ctx.overlay).forEach(function (b) {
-        b.classList.remove('mp3-cat-menu-btn-active');
+    qsa('.mp-cat-menu-btn.mp-cat-menu-btn-active', ctx.overlay).forEach(function (b) {
+        b.classList.remove('mp-cat-menu-btn-active');
     });
 }
 
@@ -378,12 +378,12 @@ export function showCategoryInput(parentId) {
     var catCache = ctx.getCatCache();
 
     // Remove any existing input first
-    var existing = qs('.mp3-cat-new-wrap', ctx.sidebar);
+    var existing = qs('.mp-cat-new-wrap', ctx.sidebar);
     if (existing) existing.remove();
 
     // Build the inline input
     var wrap = document.createElement('div');
-    wrap.className = 'mp3-cat-new-wrap';
+    wrap.className = 'mp-cat-new-wrap';
 
     var indent = 12;
     if (parentId > 0) {
@@ -398,21 +398,21 @@ export function showCategoryInput(parentId) {
     }
 
     wrap.innerHTML =
-        '<div class="mp3-cat-new-input-row" style="padding-left:' + indent + 'px;">' +
-            '<i class="fa-solid fa-folder-plus mp3-cat-new-icon"></i>' +
-            '<input type="text" class="mp3-cat-new-input" data-parent="' + parentId + '" ' +
+        '<div class="mp-cat-new-input-row" style="padding-left:' + indent + 'px;">' +
+            '<i class="fa-solid fa-folder-plus mp-cat-new-icon"></i>' +
+            '<input type="text" class="mp-cat-new-input" data-parent="' + parentId + '" ' +
                 'placeholder="' + escAttr(t('mediaplace_category_name_placeholder')) + '" autocomplete="off">' +
-            '<button type="button" class="mp3-cat-new-confirm" title="' + escAttr(t('mediaplace_create')) + '"><i class="fa-solid fa-check"></i></button>' +
-            '<button type="button" class="mp3-cat-new-cancel" title="' + escAttr(t('mediaplace_cancel')) + '"><i class="fa-solid fa-xmark"></i></button>' +
+            '<button type="button" class="mp-cat-new-confirm" title="' + escAttr(t('mediaplace_create')) + '"><i class="fa-solid fa-check"></i></button>' +
+            '<button type="button" class="mp-cat-new-cancel" title="' + escAttr(t('mediaplace_cancel')) + '"><i class="fa-solid fa-xmark"></i></button>' +
         '</div>' +
-        '<p class="mp3-cat-new-error" style="display:none;padding-left:' + indent + 'px;"></p>';
+        '<p class="mp-cat-new-error" style="display:none;padding-left:' + indent + 'px;"></p>';
 
     // Insert at the right position
     if (parentId === 0) {
         // After root "Medienpool" entry, before first child list
-        var tree = qs('.mp3-cat-tree', ctx.sidebar);
+        var tree = qs('.mp-cat-tree', ctx.sidebar);
         if (tree) {
-            var firstChildren = qs('.mp3-cat-children', tree);
+            var firstChildren = qs('.mp-cat-children', tree);
             if (firstChildren) {
                 tree.insertBefore(wrap, firstChildren);
             } else {
@@ -421,7 +421,7 @@ export function showCategoryInput(parentId) {
         }
     } else {
         // After the parent category node
-        var parentNode = qs('.mp3-cat-node[data-cat-id="' + parentId + '"]', ctx.sidebar);
+        var parentNode = qs('.mp-cat-node[data-cat-id="' + parentId + '"]', ctx.sidebar);
         if (parentNode) {
             // Insert after the parent node's <a> and before children
             parentNode.appendChild(wrap);
@@ -429,7 +429,7 @@ export function showCategoryInput(parentId) {
     }
 
     // Focus the input
-    var input = qs('.mp3-cat-new-input', wrap);
+    var input = qs('.mp-cat-new-input', wrap);
     if (input) {
         setTimeout(function () { input.focus(); }, 50);
     }
@@ -447,8 +447,8 @@ export function submitNewCategory(input) {
     if (!name) return;
     var parentId = parseInt(input.getAttribute('data-parent'), 10) || 0;
     input.disabled = true;
-    var wrap = input.closest('.mp3-cat-new-wrap');
-    var confirmBtn = wrap ? qs('.mp3-cat-new-confirm', wrap) : null;
+    var wrap = input.closest('.mp-cat-new-wrap');
+    var confirmBtn = wrap ? qs('.mp-cat-new-confirm', wrap) : null;
     if (confirmBtn) confirmBtn.disabled = true;
 
     apiCreateCategory(name, parentId)
@@ -461,8 +461,8 @@ export function submitNewCategory(input) {
             if (parentId > 0) expandCategoryPath(parentId);
         })
         .catch(function (err) {
-            console.error('MP3 createCategory error:', err);
-            var errorEl = wrap ? qs('.mp3-cat-new-error', wrap) : null;
+            console.error('MP createCategory error:', err);
+            var errorEl = wrap ? qs('.mp-cat-new-error', wrap) : null;
             if (errorEl) {
                 errorEl.textContent = categoryErrorMessage(err, 'mediaplace_error_creating');
                 errorEl.style.display = '';
@@ -488,8 +488,8 @@ export function expandCategoryPath(catId) {
         id = catCache[id].parent_id || 0;
     }
     chain.forEach(function (cid) {
-        var node = qs('.mp3-cat-node[data-cat-id="' + cid + '"]', ctx.sidebar);
-        if (node && !node.classList.contains('mp3-cat-node-open')) {
+        var node = qs('.mp-cat-node[data-cat-id="' + cid + '"]', ctx.sidebar);
+        if (node && !node.classList.contains('mp-cat-node-open')) {
             toggleCategory(cid);
         }
     });
@@ -514,18 +514,18 @@ export function renderBreadcrumb() {
     if (!ctx.breadcrumb) return;
     var catPath = ctx.getCatPath();
     var html = ctx.getCanAccessRootCategory()
-        ? '<a class="mp3-bc-item" data-cat="0"><i class="fa-solid fa-house"></i></a>'
-        : '<span class="mp3-bc-item mp3-bc-item-disabled" title="' + escAttr(t('mediaplace_root_media_no_access')) + '"><i class="fa-solid fa-house"></i></span>';
+        ? '<a class="mp-bc-item" data-cat="0"><i class="fa-solid fa-house"></i></a>'
+        : '<span class="mp-bc-item mp-bc-item-disabled" title="' + escAttr(t('mediaplace_root_media_no_access')) + '"><i class="fa-solid fa-house"></i></span>';
     for (var i = 0; i < catPath.length; i++) {
-        html += ' <i class="fa-solid fa-chevron-right mp3-bc-sep"></i> ';
-        html += '<a class="mp3-bc-item" data-cat="' + catPath[i].id + '">' + escAttr(catPath[i].name) + '</a>';
+        html += ' <i class="fa-solid fa-chevron-right mp-bc-sep"></i> ';
+        html += '<a class="mp-bc-item" data-cat="' + catPath[i].id + '">' + escAttr(catPath[i].name) + '</a>';
     }
     ctx.breadcrumb.innerHTML = html;
 }
 
 export function navigateToCategory(catId) {
     ctx.setCurrentCat(catId);
-    localStorage.setItem('mp3_cat', String(catId));
+    localStorage.setItem('mp_cat', String(catId));
     setActiveCollection(null);
     buildBreadcrumb(catId);
     updateSidebarActiveState();
@@ -550,7 +550,7 @@ export function loadCategories() {
     // -- der frisch vom Server gerenderte Baum ist immer komplett
     // eingeklappt (siehe renderTreeHtml()), sonst wuerde jeder Reload
     // (nach Umbenennen/Verschieben/Loeschen) den ganzen Baum zuklappen.
-    var openIds = qsa('.mp3-cat-node.mp3-cat-node-open', ctx.sidebar).map(function (n) {
+    var openIds = qsa('.mp-cat-node.mp-cat-node-open', ctx.sidebar).map(function (n) {
         return n.getAttribute('data-cat-id');
     });
     var mySession = ctx.getLoadSessionId();
@@ -579,10 +579,10 @@ export function loadCategories() {
             ctx.setCatCache(catCache);
             renderCategories(typeof json.tree_html === 'string' ? json.tree_html : '');
             openIds.forEach(function (id) {
-                var node = qs('.mp3-cat-node[data-cat-id="' + id + '"]', ctx.sidebar);
+                var node = qs('.mp-cat-node[data-cat-id="' + id + '"]', ctx.sidebar);
                 if (!node) return;
-                node.classList.add('mp3-cat-node-open');
-                var icon = node.querySelector(':scope > .mp3-cat-row .mp3-cat-toggle');
+                node.classList.add('mp-cat-node-open');
+                var icon = node.querySelector(':scope > .mp-cat-row .mp-cat-toggle');
                 if (icon) {
                     icon.classList.remove('fa-chevron-right');
                     icon.classList.add('fa-chevron-down');
@@ -591,23 +591,23 @@ export function loadCategories() {
         })
         .catch(function (err) {
             if (mySession !== ctx.getLoadSessionId()) return;
-            console.error('MP3 loadCategories error:', err);
+            console.error('MP loadCategories error:', err);
             renderCategories('');
         });
 }
 
 /**
- * Kategorie im Baum auf-/zuklappen -- rein lokal (Klasse auf .mp3-cat-node
+ * Kategorie im Baum auf-/zuklappen -- rein lokal (Klasse auf .mp-cat-node
  * + Chevron-Icon umschalten), kein Request mehr: der ganze Baum ist seit
  * loadCategories() bereits im DOM, nur per CSS ausgeblendet
- * (.mp3-cat-children ohne .mp3-cat-node-open am Elternknoten, siehe
+ * (.mp-cat-children ohne .mp-cat-node-open am Elternknoten, siehe
  * mediaplace.css).
  */
 export function toggleCategory(catId) {
-    var node = qs('.mp3-cat-node[data-cat-id="' + catId + '"]', ctx.sidebar);
+    var node = qs('.mp-cat-node[data-cat-id="' + catId + '"]', ctx.sidebar);
     if (!node) return;
-    var isOpen = node.classList.toggle('mp3-cat-node-open');
-    var icon = qs('.mp3-cat-toggle[data-toggle-cat="' + catId + '"]', node);
+    var isOpen = node.classList.toggle('mp-cat-node-open');
+    var icon = qs('.mp-cat-toggle[data-toggle-cat="' + catId + '"]', node);
     if (icon) {
         icon.classList.toggle('fa-chevron-right', !isOpen);
         icon.classList.toggle('fa-chevron-down', isOpen);
@@ -628,24 +628,24 @@ export function categoryErrorMessage(err, fallbackKey) {
  */
 export function showRenameCategoryModal(catId, catName) {
     var modalOverlay = document.createElement('div');
-    modalOverlay.className = 'mp3-cat-move-modal-overlay';
+    modalOverlay.className = 'mp-cat-move-modal-overlay';
     modalOverlay.innerHTML =
-        '<div class="mp3-cat-move-modal">' +
-        '<h5 class="mp3-cat-move-modal-title">' +
+        '<div class="mp-cat-move-modal">' +
+        '<h5 class="mp-cat-move-modal-title">' +
         '<i class="fa-solid fa-pen"></i> ' + t('mediaplace_rename_category') + '</h5>' +
-        '<p class="mp3-cat-move-modal-info">' + t('mediaplace_new_name_for', { name: '<strong>' + escAttr(catName) + '</strong>' }) + '</p>' +
-        '<input type="text" class="mp3-cat-move-modal-input" value="' + escAttr(catName) + '">' +
-        '<p class="mp3-cat-move-modal-error" style="display:none"></p>' +
-        '<div class="mp3-cat-move-modal-actions">' +
-        '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">' + t('mediaplace_rename') + '</button>' +
-        '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
+        '<p class="mp-cat-move-modal-info">' + t('mediaplace_new_name_for', { name: '<strong>' + escAttr(catName) + '</strong>' }) + '</p>' +
+        '<input type="text" class="mp-cat-move-modal-input" value="' + escAttr(catName) + '">' +
+        '<p class="mp-cat-move-modal-error" style="display:none"></p>' +
+        '<div class="mp-cat-move-modal-actions">' +
+        '<button class="mp-cat-move-modal-ok btn btn-primary btn-sm">' + t('mediaplace_rename') + '</button>' +
+        '<button class="mp-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
         '</div>' +
         '</div>';
     document.body.appendChild(modalOverlay);
 
-    var input = modalOverlay.querySelector('.mp3-cat-move-modal-input');
-    var errorEl = modalOverlay.querySelector('.mp3-cat-move-modal-error');
-    var okBtn = modalOverlay.querySelector('.mp3-cat-move-modal-ok');
+    var input = modalOverlay.querySelector('.mp-cat-move-modal-input');
+    var errorEl = modalOverlay.querySelector('.mp-cat-move-modal-error');
+    var okBtn = modalOverlay.querySelector('.mp-cat-move-modal-ok');
     setTimeout(function () { input.focus(); input.select(); }, 0);
 
     function close() {
@@ -677,7 +677,7 @@ export function showRenameCategoryModal(catId, catName) {
             });
     }
 
-    modalOverlay.querySelector('.mp3-cat-move-modal-cancel').addEventListener('click', close);
+    modalOverlay.querySelector('.mp-cat-move-modal-cancel').addEventListener('click', close);
     modalOverlay.addEventListener('click', function (e) {
         if (e.target === modalOverlay) close();
     });
@@ -696,25 +696,25 @@ export function showRenameCategoryModal(catId, catName) {
 export function showMoveCategoryModal(catId, catName) {
     // Build a modal that lets the user pick a new parent for this category
     var modalOverlay = document.createElement('div');
-    modalOverlay.className = 'mp3-cat-move-modal-overlay';
+    modalOverlay.className = 'mp-cat-move-modal-overlay';
     modalOverlay.innerHTML =
-        '<div class="mp3-cat-move-modal">' +
-        '<h5 class="mp3-cat-move-modal-title">' +
+        '<div class="mp-cat-move-modal">' +
+        '<h5 class="mp-cat-move-modal-title">' +
         '<i class="fa-solid fa-folder-tree"></i> ' + t('mediaplace_move_category') + '</h5>' +
-        '<p class="mp3-cat-move-modal-info">' + t('mediaplace_new_parent_for', { name: '<strong>' + escAttr(catName) + '</strong>' }) + '</p>' +
-        '<select class="mp3-cat-move-modal-select">' +
+        '<p class="mp-cat-move-modal-info">' + t('mediaplace_new_parent_for', { name: '<strong>' + escAttr(catName) + '</strong>' }) + '</p>' +
+        '<select class="mp-cat-move-modal-select">' +
         '<option value="">' + t('mediaplace_loading_ellipsis') + '</option>' +
         '</select>' +
-        '<p class="mp3-cat-move-modal-error" style="display:none"></p>' +
-        '<div class="mp3-cat-move-modal-actions">' +
-        '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm">' + t('mediaplace_move') + '</button>' +
-        '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
+        '<p class="mp-cat-move-modal-error" style="display:none"></p>' +
+        '<div class="mp-cat-move-modal-actions">' +
+        '<button class="mp-cat-move-modal-ok btn btn-primary btn-sm">' + t('mediaplace_move') + '</button>' +
+        '<button class="mp-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
         '</div>' +
         '</div>';
     document.body.appendChild(modalOverlay);
 
-    var select = modalOverlay.querySelector('.mp3-cat-move-modal-select');
-    var errorEl = modalOverlay.querySelector('.mp3-cat-move-modal-error');
+    var select = modalOverlay.querySelector('.mp-cat-move-modal-select');
+    var errorEl = modalOverlay.querySelector('.mp-cat-move-modal-error');
 
     // "(Hauptverzeichnis)" nur anbieten, wenn der User ueberhaupt dorthin
     // verschieben darf (hasParentCategoryAccess(0), siehe canAccessRootCategory) --
@@ -758,13 +758,13 @@ export function showMoveCategoryModal(catId, catName) {
         if (modalOverlay.parentNode) modalOverlay.parentNode.removeChild(modalOverlay);
     }
 
-    modalOverlay.querySelector('.mp3-cat-move-modal-cancel').addEventListener('click', close);
+    modalOverlay.querySelector('.mp-cat-move-modal-cancel').addEventListener('click', close);
     modalOverlay.addEventListener('click', function (e) {
         if (e.target === modalOverlay) close();
     });
-    modalOverlay.querySelector('.mp3-cat-move-modal-ok').addEventListener('click', function () {
+    modalOverlay.querySelector('.mp-cat-move-modal-ok').addEventListener('click', function () {
         var newParentId = parseInt(select.value || '0', 10);
-        var okBtn = modalOverlay.querySelector('.mp3-cat-move-modal-ok');
+        var okBtn = modalOverlay.querySelector('.mp-cat-move-modal-ok');
         okBtn.disabled = true;
         okBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         errorEl.style.display = 'none';
@@ -798,7 +798,7 @@ export function showMoveCategoryModal(catId, catName) {
  * die Aktion einmal laeuft (kein "Abbrechen" mehr im ueblichen Sinn, sondern
  * ein fortlaufender Fortschrittsbalken + ein Button, der waehrend des Laufs
  * hart abbricht und danach zu "Schliessen" wird). Gleiches Grund-Markup
- * (.mp3-cat-move-modal-*) fuer optische Konsistenz.
+ * (.mp-cat-move-modal-*) fuer optische Konsistenz.
  *
  * "In Benutzung"-Fehler kommen als fertiges, von REDAXO selbst erzeugtes
  * HTML (inkl. Links zu den referenzierenden Objekten, siehe
@@ -811,24 +811,24 @@ export function showMoveCategoryModal(catId, catName) {
  */
 function showBulkProgressModal(title) {
     var overlay = document.createElement('div');
-    overlay.className = 'mp3-cat-move-modal-overlay';
+    overlay.className = 'mp-cat-move-modal-overlay';
     overlay.innerHTML =
-        '<div class="mp3-cat-move-modal mp3-bulk-progress-modal">' +
-        '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid fa-spinner fa-spin"></i> ' + escAttr(title) + '</h5>' +
-        '<p class="mp3-cat-move-modal-info mp3-bulk-progress-text"></p>' +
-        '<div class="mp3-bulk-progress-track"><div class="mp3-bulk-progress-fill" style="width:0%"></div></div>' +
-        '<div class="mp3-bulk-progress-errors" style="display:none"></div>' +
-        '<div class="mp3-cat-move-modal-actions">' +
-        '<button type="button" class="mp3-cat-move-modal-cancel mp3-bulk-progress-close">' + escAttr(t('mediaplace_cancel')) + '</button>' +
+        '<div class="mp-cat-move-modal mp-bulk-progress-modal">' +
+        '<h5 class="mp-cat-move-modal-title"><i class="fa-solid fa-spinner fa-spin"></i> ' + escAttr(title) + '</h5>' +
+        '<p class="mp-cat-move-modal-info mp-bulk-progress-text"></p>' +
+        '<div class="mp-bulk-progress-track"><div class="mp-bulk-progress-fill" style="width:0%"></div></div>' +
+        '<div class="mp-bulk-progress-errors" style="display:none"></div>' +
+        '<div class="mp-cat-move-modal-actions">' +
+        '<button type="button" class="mp-cat-move-modal-cancel mp-bulk-progress-close">' + escAttr(t('mediaplace_cancel')) + '</button>' +
         '</div>' +
         '</div>';
     document.body.appendChild(overlay);
 
-    var textEl = qs('.mp3-bulk-progress-text', overlay);
-    var fillEl = qs('.mp3-bulk-progress-fill', overlay);
-    var errorsEl = qs('.mp3-bulk-progress-errors', overlay);
-    var titleIcon = qs('.mp3-cat-move-modal-title i', overlay);
-    var closeBtn = qs('.mp3-bulk-progress-close', overlay);
+    var textEl = qs('.mp-bulk-progress-text', overlay);
+    var fillEl = qs('.mp-bulk-progress-fill', overlay);
+    var errorsEl = qs('.mp-bulk-progress-errors', overlay);
+    var titleIcon = qs('.mp-cat-move-modal-title i', overlay);
+    var closeBtn = qs('.mp-bulk-progress-close', overlay);
 
     var cancelled = false;
     var finished = false;
@@ -873,14 +873,14 @@ function showBulkProgressModal(title) {
             errorsEl.style.display = '';
             errList.forEach(function (err) {
                 var block = document.createElement('div');
-                block.className = 'mp3-bulk-progress-error-item';
+                block.className = 'mp-bulk-progress-error-item';
                 // Kein eigener Dateiname-Vorspann mehr: die Meldung (egal ob
                 // von REDAXO selbst wie bei "in Benutzung" oder von uns wie
                 // bei "nicht gefunden", siehe Api\CategoryBulk.php) nennt den
                 // Dateinamen bereits selbst -- ein zusaetzlicher fetter
                 // Vorspann duplizierte ihn nur sichtbar.
                 var messageHtml = (err && err.message) ? err.message : String(err);
-                block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp3-bulk-progress-error-text">' + messageHtml + '</div>';
+                block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp-bulk-progress-error-text">' + messageHtml + '</div>';
                 errorsEl.appendChild(block);
             });
         },
@@ -1030,7 +1030,7 @@ export function startBulkAddToCollection(categoryId, categoryName) {
  * ueblicherweise durch vorherige Datei-/Detail-Ladevorgaenge befuellt),
  * kein eigener Fetch -- collectionTagToName() filtert Sammlungs- von
  * echten Tag-Eintraegen (beide teilen denselben Katalog, siehe
- * SystemTagManager::getCatalog()). Gleiches ".mp3-catpick-*"-Markup wie
+ * SystemTagManager::getCatalog()). Gleiches ".mp-catpick-*"-Markup wie
  * showCategoryPickerModal() (modals.js), hier direkt gebaut statt dort
  * generalisiert, da die Optionsliste lokal/synchron vorliegt statt per
  * Server-Fetch.
@@ -1049,29 +1049,29 @@ export function startBulkTagFiles(categoryId, categoryName) {
     }
 
     var modal = document.createElement('div');
-    modal.className = 'mp3-catpick-modal';
+    modal.className = 'mp-catpick-modal';
     var optionsHtml = existingTags.map(function (tag) {
         return '<option value="' + escAttr(tag.name) + '">' + escAttr(tag.name) + '</option>';
     }).join('');
     modal.innerHTML =
-        '<div class="mp3-catpick-box">' +
-        '<div class="mp3-catpick-title"><i class="fa-solid fa-tag"></i> ' + escAttr(t('mediaplace_bulk_add_tag')) + '</div>' +
-        '<p class="mp3-catpick-info">' + t('mediaplace_bulk_tag_hint', { name: '<strong>' + escAttr(categoryName) + '</strong>' }) + '</p>' +
-        '<select class="mp3-catpick-select">' + optionsHtml + '</select>' +
-        '<div class="mp3-catpick-actions">' +
-        '<button type="button" class="mp3-catpick-cancel">' + escAttr(t('mediaplace_cancel')) + '</button>' +
-        '<button type="button" class="mp3-catpick-confirm">' + escAttr(t('mediaplace_save')) + '</button>' +
+        '<div class="mp-catpick-box">' +
+        '<div class="mp-catpick-title"><i class="fa-solid fa-tag"></i> ' + escAttr(t('mediaplace_bulk_add_tag')) + '</div>' +
+        '<p class="mp-catpick-info">' + t('mediaplace_bulk_tag_hint', { name: '<strong>' + escAttr(categoryName) + '</strong>' }) + '</p>' +
+        '<select class="mp-catpick-select">' + optionsHtml + '</select>' +
+        '<div class="mp-catpick-actions">' +
+        '<button type="button" class="mp-catpick-cancel">' + escAttr(t('mediaplace_cancel')) + '</button>' +
+        '<button type="button" class="mp-catpick-confirm">' + escAttr(t('mediaplace_save')) + '</button>' +
         '</div>' +
         '</div>';
     ctx.overlay.appendChild(modal);
 
-    var select = qs('.mp3-catpick-select', modal);
+    var select = qs('.mp-catpick-select', modal);
 
-    modal.querySelector('.mp3-catpick-cancel').addEventListener('click', function () {
+    modal.querySelector('.mp-catpick-cancel').addEventListener('click', function () {
         modal.remove();
     });
 
-    modal.querySelector('.mp3-catpick-confirm').addEventListener('click', function () {
+    modal.querySelector('.mp-catpick-confirm').addEventListener('click', function () {
         var tagName = select.value;
         modal.remove();
         if (!tagName) return;

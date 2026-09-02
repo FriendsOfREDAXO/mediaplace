@@ -13,11 +13,11 @@
  * Bleibt vorerst Teil des Haupt-Bundles (statischer Import, kein eigenes,
  * bedingt geladenes Bundle wie im Modularisierungs-Plan fuer diese Phase
  * urspruenglich skizziert) -- die addon-optionale Auslagerung (via
- * MP3.registerModule() + eigenes esbuild-Entry) ist als Folgeschritt
+ * MP.registerModule() + eigenes esbuild-Entry) ist als Folgeschritt
  * vorgesehen, siehe DEV.md.
  *
  * Event-Listener-REGISTRIERUNG: der Klick-/Change-Listener auf
- * #mp3-focuspoint-canvas selbst ist bereits vollstaendig eigenstaendig und
+ * #mp-focuspoint-canvas selbst ist bereits vollstaendig eigenstaendig und
  * wandert komplett hierher (initFocuspoint()). Die ESC-/Ctrl+S-Zweige in
  * core.js' geteiltem overlay-keydown-Listener und der "Fokuspunkt
  * bearbeiten"-Button im Detail-Panel-Klick-Listener bleiben dagegen als
@@ -34,13 +34,13 @@ var focuspointActiveField = null;
 var focuspointActiveType = '';
 var focuspointPos = [50, 50]; // aktuelle [x,y] fuer focuspointActiveField
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var qs = MP3Core.helpers.qs;
-var mediaThumbSrc = MP3Core.helpers.mediaThumbSrc;
-var apiLoadFocuspointInfo = MP3Core.api.apiLoadFocuspointInfo;
-var apiSaveFocuspoint = MP3Core.api.apiSaveFocuspoint;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var qs = MPCore.helpers.qs;
+var mediaThumbSrc = MPCore.helpers.mediaThumbSrc;
+var apiLoadFocuspointInfo = MPCore.api.apiLoadFocuspointInfo;
+var apiSaveFocuspoint = MPCore.api.apiSaveFocuspoint;
 
 /**
  * ctx-Vertrag:
@@ -58,33 +58,33 @@ export function initFocuspoint(theCtx) {
 
     // Fokuspunkt Canvas events -- vollstaendig eigenstaendig, siehe Docblock
     // oben.
-    var focuspointCanvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
+    var focuspointCanvas = qs('#mp-focuspoint-canvas', ctx.overlay);
     if (!focuspointCanvas) return;
 
     focuspointCanvas.addEventListener('click', function (e) {
-        if (e.target.closest('.mp3-focuspoint-canvas-back')) {
+        if (e.target.closest('.mp-focuspoint-canvas-back')) {
             closeFocuspointCanvas();
             return;
         }
-        if (e.target.closest('.mp3-focuspoint-canvas-save')) {
+        if (e.target.closest('.mp-focuspoint-canvas-save')) {
             commitFocuspointCanvas();
             return;
         }
-        if (e.target.closest('.mp3-focuspoint-reset-btn')) {
+        if (e.target.closest('.mp-focuspoint-reset-btn')) {
             focuspointPos = focuspointActiveField ? focuspointPosOrDefault(focuspointCurrent[focuspointActiveField]) : [50, 50];
             updateFocuspointMarker();
             updateFocuspointPreview();
             resetSaveButtonState();
             return;
         }
-        if (e.target.closest('.mp3-focuspoint-remove-btn')) {
+        if (e.target.closest('.mp-focuspoint-remove-btn')) {
             focuspointPos = [50, 50];
             updateFocuspointMarker();
             updateFocuspointPreview();
             resetSaveButtonState();
             return;
         }
-        var imageWrap = e.target.closest('.mp3-focuspoint-image-wrap');
+        var imageWrap = e.target.closest('.mp-focuspoint-image-wrap');
         if (imageWrap) {
             focuspointPos = focuspointPositionFromEvent(e, imageWrap);
             updateFocuspointMarker();
@@ -94,13 +94,13 @@ export function initFocuspoint(theCtx) {
     });
 
     focuspointCanvas.addEventListener('change', function (e) {
-        var typeSel = e.target.closest('.mp3-focuspoint-type-select');
+        var typeSel = e.target.closest('.mp-focuspoint-type-select');
         if (typeSel) {
             focuspointActiveType = typeSel.value || '';
             updateFocuspointPreview();
             return;
         }
-        var fieldSel = e.target.closest('.mp3-focuspoint-field-select');
+        var fieldSel = e.target.closest('.mp-focuspoint-field-select');
         if (fieldSel) {
             setFocuspointActiveField(fieldSel.value || null);
         }
@@ -117,10 +117,10 @@ export function isFocuspointCanvasOpen() {
 // erneut per Drag/Reset/Entfernen aendert und der Stand damit wieder
 // ungespeichert ist.
 function resetSaveButtonState() {
-    var canvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
-    var saveBtn = canvas ? qs('.mp3-focuspoint-canvas-save', canvas) : null;
+    var canvas = qs('#mp-focuspoint-canvas', ctx.overlay);
+    var saveBtn = canvas ? qs('.mp-focuspoint-canvas-save', canvas) : null;
     if (!saveBtn) return;
-    saveBtn.classList.remove('mp3-detail-save-success', 'mp3-detail-save-error');
+    saveBtn.classList.remove('mp-detail-save-success', 'mp-detail-save-error');
     saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
     saveBtn.title = '';
 }
@@ -132,10 +132,10 @@ function focuspointTypeNames() {
 }
 
 function updateFocuspointFieldSelect() {
-    var canvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
+    var canvas = qs('#mp-focuspoint-canvas', ctx.overlay);
     if (!canvas) return;
-    var wrap = qs('.mp3-focuspoint-field-wrap', canvas);
-    var sel = qs('.mp3-focuspoint-field-select', canvas);
+    var wrap = qs('.mp-focuspoint-field-wrap', canvas);
+    var sel = qs('.mp-focuspoint-field-select', canvas);
     if (!wrap || !sel) return;
     if (focuspointFields.length <= 1) {
         wrap.style.display = 'none';
@@ -151,9 +151,9 @@ function updateFocuspointFieldSelect() {
 }
 
 function updateFocuspointTypeSelect() {
-    var canvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
+    var canvas = qs('#mp-focuspoint-canvas', ctx.overlay);
     if (!canvas) return;
-    var sel = qs('.mp3-focuspoint-type-select', canvas);
+    var sel = qs('.mp-focuspoint-type-select', canvas);
     if (!sel) return;
     var names = focuspointTypeNames();
     if (!names.length) {
@@ -172,22 +172,22 @@ function updateFocuspointTypeSelect() {
 }
 
 function updateFocuspointMarker() {
-    var canvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
+    var canvas = qs('#mp-focuspoint-canvas', ctx.overlay);
     if (!canvas) return;
-    var marker = qs('.mp3-focuspoint-marker', canvas);
+    var marker = qs('.mp-focuspoint-marker', canvas);
     if (marker) {
         marker.style.left = focuspointPos[0] + '%';
         marker.style.top = focuspointPos[1] + '%';
     }
-    var coords = qs('.mp3-focuspoint-coords', canvas);
+    var coords = qs('.mp-focuspoint-coords', canvas);
     if (coords) coords.textContent = focuspointPos[0].toFixed(1) + '% | ' + focuspointPos[1].toFixed(1) + '%';
 }
 
 function updateFocuspointPreview() {
-    var canvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
+    var canvas = qs('#mp-focuspoint-canvas', ctx.overlay);
     if (!canvas) return;
-    var wrap = qs('.mp3-focuspoint-preview-wrap', canvas);
-    var img = qs('.mp3-focuspoint-preview-img', canvas);
+    var wrap = qs('.mp-focuspoint-preview-wrap', canvas);
+    var img = qs('.mp-focuspoint-preview-img', canvas);
     if (!wrap || !img) return;
     if (!focuspointActiveType || !focuspointFilename) {
         wrap.style.display = 'none';
@@ -237,7 +237,7 @@ export function openFocuspointCanvas(filename) {
     // in rex_api_mediaplace_json_metainfo.php) -- das ist die aktuelle,
     // echte Pruefung. Ein zusaetzlicher client-seitiger Gate auf einem nur
     // einmal beim Seitenaufbau gecachten Flag (frueher canFocuspoint,
-    // #mp3-root data-focuspoint-available) konnte veralten: legt ein
+    // #mp-root data-focuspoint-available) konnte veralten: legt ein
     // Admin z.B. waehrend eine MediaPlace-Session bereits offen ist einen
     // Media-Manager-Fokuspunkt-Effekt an, blieb der Button-Klick bis zum
     // naechsten Seiten-Reload wirkungslos -- ganz ohne Fehlermeldung.
@@ -253,19 +253,19 @@ export function openFocuspointCanvas(filename) {
     focuspointActiveType = '';
     focuspointPos = [50, 50];
 
-    var content = qs('.mp3-content', ctx.overlay);
-    if (content) content.classList.add('mp3-focuspoint-mode');
+    var content = qs('.mp-content', ctx.overlay);
+    if (content) content.classList.add('mp-focuspoint-mode');
 
-    var canvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
+    var canvas = qs('#mp-focuspoint-canvas', ctx.overlay);
     if (!canvas) return;
     canvas.style.display = '';
 
-    if (ctx.isCompactLayout() && ctx.detailPanel) ctx.detailPanel.classList.remove('mp3-detail-open');
+    if (ctx.isCompactLayout() && ctx.detailPanel) ctx.detailPanel.classList.remove('mp-detail-open');
 
-    var titleEl = qs('.mp3-focuspoint-canvas-title', canvas);
+    var titleEl = qs('.mp-focuspoint-canvas-title', canvas);
     if (titleEl) titleEl.textContent = 'Fokuspunkt: ' + filename;
 
-    var img = qs('.mp3-focuspoint-image', canvas);
+    var img = qs('.mp-focuspoint-image', canvas);
     if (img) img.src = mediaThumbSrc(filename, 'rex_media_large', filename, ctx.mediaForceCacheTokens, ctx.getLastLoadedFiles(), ctx.getMediaBaseUrl());
 
     updateFocuspointFieldSelect();
@@ -293,16 +293,16 @@ export function openFocuspointCanvas(filename) {
             updateFocuspointPreview();
         })
         .catch(function (err) {
-            var coords = qs('.mp3-focuspoint-coords', canvas);
+            var coords = qs('.mp-focuspoint-coords', canvas);
             if (coords) coords.textContent = t('mediaplace_error_loading', { msg: (err && err.message ? err.message : t('mediaplace_unknown')) });
-            console.error('MP3 focuspoint info failed:', err);
+            console.error('MP focuspoint info failed:', err);
         });
 }
 
 export function commitFocuspointCanvas() {
     if (!focuspointCanvasOpen || !focuspointActiveField || !focuspointFilename) return;
-    var canvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
-    var saveBtn = canvas ? qs('.mp3-focuspoint-canvas-save', canvas) : null;
+    var canvas = qs('#mp-focuspoint-canvas', ctx.overlay);
+    var saveBtn = canvas ? qs('.mp-focuspoint-canvas-save', canvas) : null;
     var xy = focuspointPos[0].toFixed(1) + ',' + focuspointPos[1].toFixed(1);
 
     if (saveBtn) saveBtn.disabled = true;
@@ -312,7 +312,7 @@ export function commitFocuspointCanvas() {
             if (saveBtn) {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' + t('mediaplace_saved');
-                saveBtn.classList.add('mp3-detail-save-success');
+                saveBtn.classList.add('mp-detail-save-success');
             }
             // Schliesst den Canvas nach kurzer Erfolgs-Rueckmeldung automatisch
             // (Detail-Panel wird dadurch wieder sichtbar, siehe closeFocuspointCanvas())
@@ -327,14 +327,14 @@ export function commitFocuspointCanvas() {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error');
                 saveBtn.title = t('mediaplace_error_saving', { msg: err.message });
-                saveBtn.classList.add('mp3-detail-save-error');
+                saveBtn.classList.add('mp-detail-save-error');
                 setTimeout(function () {
                     saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save');
                     saveBtn.title = '';
-                    saveBtn.classList.remove('mp3-detail-save-error');
+                    saveBtn.classList.remove('mp-detail-save-error');
                 }, 1800);
             }
-            console.error('MP3 focuspoint save failed:', err);
+            console.error('MP focuspoint save failed:', err);
         });
 }
 
@@ -348,10 +348,10 @@ export function closeFocuspointCanvas() {
     focuspointActiveType = '';
     focuspointPos = [50, 50];
 
-    var content = qs('.mp3-content', ctx.overlay);
-    if (content) content.classList.remove('mp3-focuspoint-mode');
-    var canvas = qs('#mp3-focuspoint-canvas', ctx.overlay);
+    var content = qs('.mp-content', ctx.overlay);
+    if (content) content.classList.remove('mp-focuspoint-mode');
+    var canvas = qs('#mp-focuspoint-canvas', ctx.overlay);
     if (canvas) canvas.style.display = 'none';
 
-    if (ctx.isCompactLayout() && ctx.detailPanel && ctx.getSelectedFile()) ctx.detailPanel.classList.add('mp3-detail-open');
+    if (ctx.isCompactLayout() && ctx.detailPanel && ctx.getSelectedFile()) ctx.detailPanel.classList.add('mp-detail-open');
 }

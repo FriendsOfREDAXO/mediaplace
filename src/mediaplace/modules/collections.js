@@ -32,14 +32,14 @@ var collectionCounts = {};
 
 var COLLECTION_TAG_PREFIX = 'collection:';
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var qsa = MP3Core.helpers.qsa;
-var deepClone = MP3Core.helpers.deepClone;
-var apiSaveJsonMetainfo = MP3Core.api.apiSaveJsonMetainfo;
-var apiLoadJsonMetainfo = MP3Core.api.apiLoadJsonMetainfo;
-var apiCollectionCatalogAction = MP3Core.api.apiCollectionCatalogAction;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var qsa = MPCore.helpers.qsa;
+var deepClone = MPCore.helpers.deepClone;
+var apiSaveJsonMetainfo = MPCore.api.apiSaveJsonMetainfo;
+var apiLoadJsonMetainfo = MPCore.api.apiLoadJsonMetainfo;
+var apiCollectionCatalogAction = MPCore.api.apiCollectionCatalogAction;
 
 /**
  * ctx-Vertrag:
@@ -330,9 +330,9 @@ export function getActiveCollection() {
 export function setActiveCollection(id) {
     activeCollectionId = id ? String(id) : null;
     if (activeCollectionId) {
-        localStorage.setItem('mp3_active_collection', activeCollectionId);
+        localStorage.setItem('mp_active_collection', activeCollectionId);
     } else {
-        localStorage.removeItem('mp3_active_collection');
+        localStorage.removeItem('mp_active_collection');
     }
 }
 
@@ -418,7 +418,7 @@ export function deleteCollection(catId, colId) {
 
 function isSectionCollapsed(key) {
     try {
-        return localStorage.getItem('mp3_sidebar_collapsed_' + key) === '1';
+        return localStorage.getItem('mp_sidebar_collapsed_' + key) === '1';
     } catch (e) {
         return false;
     }
@@ -427,33 +427,33 @@ function isSectionCollapsed(key) {
 export function renderCollectionsSection() {
     var list = getCollectionsForCurrentCategory();
     var collapsed = isSectionCollapsed('collections');
-    var html = '<div class="mp3-sidebar-section mp3-collections-wrap' + (collapsed ? ' mp3-sidebar-section-collapsed' : '') + '" data-section="collections">';
-    html += '<div class="mp3-collections-head mp3-sidebar-section-head">';
-    html += '<span class="mp3-collections-title mp3-sidebar-section-title"><i class="fa-solid fa-photo-film"></i> ' + t('mediaplace_collections') + '</span>';
-    html += '<button type="button" class="mp3-collection-add-btn" title="' + escAttr(t('mediaplace_create_collection')) + '"><i class="fa-solid fa-plus"></i></button>';
-    html += '<button type="button" class="mp3-sidebar-section-toggle" data-section="collections" title="' + escAttr(t('mediaplace_toggle_section')) + '"><i class="fa-solid fa-chevron-down"></i></button>';
+    var html = '<div class="mp-sidebar-section mp-collections-wrap' + (collapsed ? ' mp-sidebar-section-collapsed' : '') + '" data-section="collections">';
+    html += '<div class="mp-collections-head mp-sidebar-section-head">';
+    html += '<span class="mp-collections-title mp-sidebar-section-title"><i class="fa-solid fa-photo-film"></i> ' + t('mediaplace_collections') + '</span>';
+    html += '<button type="button" class="mp-collection-add-btn" title="' + escAttr(t('mediaplace_create_collection')) + '"><i class="fa-solid fa-plus"></i></button>';
+    html += '<button type="button" class="mp-sidebar-section-toggle" data-section="collections" title="' + escAttr(t('mediaplace_toggle_section')) + '"><i class="fa-solid fa-chevron-down"></i></button>';
     html += '</div>';
-    html += '<div class="mp3-sidebar-section-body">';
+    html += '<div class="mp-sidebar-section-body">';
 
     if (!list.length) {
-        html += '<div class="mp3-collection-empty">' + t('mediaplace_no_collections_yet') + '</div>';
+        html += '<div class="mp-collection-empty">' + t('mediaplace_no_collections_yet') + '</div>';
     } else {
-        html += '<div class="mp3-collections-list">';
+        html += '<div class="mp-collections-list">';
         for (var i = 0; i < list.length; i++) {
             var col = list[i];
-            html += '<div class="mp3-collection-row">';
-            html += '<a class="mp3-collection' + (String(activeCollectionId || '').toLowerCase() === String(col.id || '').toLowerCase() ? ' mp3-collection-active' : '') + '" data-collection-id="' + escAttr(col.id) + '">';
-            html += '<i class="fa-solid fa-compact-disc"></i> ' + escAttr(col.name) + ' <span class="mp3-collection-count">' + (parseInt(col.filesCount, 10) || 0) + '</span>';
+            html += '<div class="mp-collection-row">';
+            html += '<a class="mp-collection' + (String(activeCollectionId || '').toLowerCase() === String(col.id || '').toLowerCase() ? ' mp-collection-active' : '') + '" data-collection-id="' + escAttr(col.id) + '">';
+            html += '<i class="fa-solid fa-compact-disc"></i> ' + escAttr(col.name) + ' <span class="mp-collection-count">' + (parseInt(col.filesCount, 10) || 0) + '</span>';
             html += '</a>';
-            html += '<button type="button" class="mp3-collection-rename-btn" data-collection-id="' + escAttr(col.id) + '" title="' + escAttr(t('mediaplace_rename_collection')) + '"><i class="fa-solid fa-pen"></i></button>';
-            html += '<button type="button" class="mp3-collection-delete-btn" data-collection-id="' + escAttr(col.id) + '" title="' + escAttr(t('mediaplace_delete_collection')) + '"><i class="fa-solid fa-trash-can"></i></button>';
+            html += '<button type="button" class="mp-collection-rename-btn" data-collection-id="' + escAttr(col.id) + '" title="' + escAttr(t('mediaplace_rename_collection')) + '"><i class="fa-solid fa-pen"></i></button>';
+            html += '<button type="button" class="mp-collection-delete-btn" data-collection-id="' + escAttr(col.id) + '" title="' + escAttr(t('mediaplace_delete_collection')) + '"><i class="fa-solid fa-trash-can"></i></button>';
             html += '</div>';
         }
         html += '</div>';
     }
 
-    html += '</div>'; // .mp3-sidebar-section-body
-    html += '</div>'; // .mp3-collections-wrap
+    html += '</div>'; // .mp-sidebar-section-body
+    html += '</div>'; // .mp-collections-wrap
     return html;
 }
 
@@ -482,7 +482,7 @@ export function applyCollectionFilter(files) {
  */
 export function refreshCollectionsSection() {
     if (!ctx.features.collections) return;
-    var section = document.getElementById('mp3-collections-section');
+    var section = document.getElementById('mp-collections-section');
     if (section) section.innerHTML = renderCollectionsSection();
     ctx.closeCatMenu();
 }
@@ -503,31 +503,31 @@ export function showManageCollectionsModal(filename) {
     var allCollections = getCollectionsForCurrentCategory();
 
     var modal = document.createElement('div');
-    modal.className = 'mp3-cat-move-modal-overlay';
+    modal.className = 'mp-cat-move-modal-overlay';
     modal.innerHTML =
-        '<div class="mp3-cat-move-modal">' +
-        '<h5 class="mp3-cat-move-modal-title"><i class="fa-solid fa-bookmark"></i> ' + t('mediaplace_manage_collections') + '</h5>' +
-        '<p class="mp3-cat-move-modal-info">' + t('mediaplace_manage_collections_for', { name: '<strong>' + escAttr(filename) + '</strong>' }) + '</p>' +
-        '<div class="mp3-collection-picker-list">' +
-        (allCollections.length ? '' : '<div class="mp3-collection-empty">' + escAttr(t('mediaplace_no_collections_yet')) + '</div>') +
+        '<div class="mp-cat-move-modal">' +
+        '<h5 class="mp-cat-move-modal-title"><i class="fa-solid fa-bookmark"></i> ' + t('mediaplace_manage_collections') + '</h5>' +
+        '<p class="mp-cat-move-modal-info">' + t('mediaplace_manage_collections_for', { name: '<strong>' + escAttr(filename) + '</strong>' }) + '</p>' +
+        '<div class="mp-collection-picker-list">' +
+        (allCollections.length ? '' : '<div class="mp-collection-empty">' + escAttr(t('mediaplace_no_collections_yet')) + '</div>') +
         '</div>' +
-        '<p class="mp3-cat-move-modal-error" style="display:none"></p>' +
-        '<div class="mp3-cat-move-modal-actions">' +
-        '<button class="mp3-cat-move-modal-ok btn btn-primary btn-sm" disabled>' + escAttr(t('mediaplace_save')) + '</button>' +
-        '<button class="mp3-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
+        '<p class="mp-cat-move-modal-error" style="display:none"></p>' +
+        '<div class="mp-cat-move-modal-actions">' +
+        '<button class="mp-cat-move-modal-ok btn btn-primary btn-sm" disabled>' + escAttr(t('mediaplace_save')) + '</button>' +
+        '<button class="mp-cat-move-modal-cancel btn btn-default btn-sm">' + t('mediaplace_cancel') + '</button>' +
         '</div>' +
         '</div>';
     document.body.appendChild(modal);
 
-    var listEl = modal.querySelector('.mp3-collection-picker-list');
-    var errorEl = modal.querySelector('.mp3-cat-move-modal-error');
-    var okBtn = modal.querySelector('.mp3-cat-move-modal-ok');
+    var listEl = modal.querySelector('.mp-collection-picker-list');
+    var errorEl = modal.querySelector('.mp-cat-move-modal-error');
+    var okBtn = modal.querySelector('.mp-cat-move-modal-ok');
     var okLabel = escAttr(t('mediaplace_save'));
 
     function close() {
         if (modal.parentNode) modal.parentNode.removeChild(modal);
     }
-    modal.querySelector('.mp3-cat-move-modal-cancel').addEventListener('click', close);
+    modal.querySelector('.mp-cat-move-modal-cancel').addEventListener('click', close);
     modal.addEventListener('click', function (e) {
         if (e.target === modal) close();
     });
@@ -546,16 +546,16 @@ export function showManageCollectionsModal(filename) {
         for (var i = 0; i < allCollections.length; i++) {
             var col = allCollections[i];
             var checked = !!currentNames[String(col.name).toLowerCase()];
-            html += '<label class="mp3-collection-picker-item">' +
-                '<input type="checkbox" class="mp3-collection-picker-checkbox" value="' + escAttr(col.name) + '"' + (checked ? ' checked' : '') + '>' +
-                '<span class="mp3-collection-picker-name">' + escAttr(col.name) + '</span>' +
+            html += '<label class="mp-collection-picker-item">' +
+                '<input type="checkbox" class="mp-collection-picker-checkbox" value="' + escAttr(col.name) + '"' + (checked ? ' checked' : '') + '>' +
+                '<span class="mp-collection-picker-name">' + escAttr(col.name) + '</span>' +
                 '</label>';
         }
         listEl.innerHTML = html;
         okBtn.disabled = false;
 
         okBtn.addEventListener('click', function () {
-            var checkboxes = qsa('.mp3-collection-picker-checkbox', listEl);
+            var checkboxes = qsa('.mp-collection-picker-checkbox', listEl);
             var jobs = [];
             checkboxes.forEach(function (cb) {
                 var name = cb.value;
@@ -586,6 +586,6 @@ export function showManageCollectionsModal(filename) {
                 });
         });
     }).catch(function (err) {
-        listEl.innerHTML = '<div class="mp3-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
+        listEl.innerHTML = '<div class="mp-detail-error"><i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(err.message) + '</div>';
     });
 }

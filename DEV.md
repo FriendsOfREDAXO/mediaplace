@@ -1,7 +1,7 @@
 # MediaPlace – Entwicklung am Overlay-Kern (mediaplace.js)
 
 Dieses Dokument beschreibt zwei Dinge: den Build-Workflow für den
-Overlay-Kern (`window.MP3`) und die Schnittstellen, über die andere Addons
+Overlay-Kern (`window.MP`) und die Schnittstellen, über die andere Addons
 mit MediaPlace zusammenarbeiten (eigene Erweiterungspunkte, JS-API,
 Berechtigungen, REST-Endpunkte).
 
@@ -89,7 +89,7 @@ einfacheres, direkteres Muster ersetzt:
 - **Module, die etwas von einem Geschwistermodul brauchen, importieren es
   direkt** (z. B. importiert `filters.js` `applyCollectionFilter` aus
   `collections.js`) – kein Umweg über core.js oder einen Event-Bus.
-- **Kein Laufzeit-Registrierungsmechanismus** (`MP3.registerModule()` o. ä.):
+- **Kein Laufzeit-Registrierungsmechanismus** (`MP.registerModule()` o. ä.):
   Cropper-, Fokuspunkt- und Optimieren-Integration sind normale Module wie
   jedes andere, per `import` fest in `core.js` verdrahtet und Teil desselben
   Haupt-Bundles – nicht (wie ursprünglich angedacht) separate, nur bei
@@ -137,7 +137,7 @@ akzeptieren. Das `fragment` bekommt dieselben Variablen wie die eingebauten
 `detail_field_body_*.php` (`$field`, `$value`, `$info`, `$clangs`). Für
 Feldwerte, die nicht ins generische Sammel-Muster passen (ein
 `data-json-field`-Element, skalar oder pro Sprache), siehe
-`MP3.registerFieldCollector()` unten.
+`MP.registerFieldCollector()` unten.
 
 ```php
 rex_extension::register('MEDIAPLACE_WIDGET_TYPES', function (rex_extension_point $ep) {
@@ -185,7 +185,7 @@ rex_extension::register('MEDIAPLACE_STORAGE_PROVIDERS', function (rex_extension_
 **`MEDIAPLACE_UPLOAD_PROVIDERS`** – Subject ist
 `array<string, array{label:string, perm:string}>`, Startwert `[]`. Kein
 `class`-Feld (anders als bei Storage-Providern) – die Übernahme läuft rein
-clientseitig über `MP3.registerUploadProvider()` (siehe unten), PHP liefert
+clientseitig über `MP.registerUploadProvider()` (siehe unten), PHP liefert
 hier nur Label + Recht für die Auswahlliste auf der Einstellungsseite. Jeder
 Provider bringt wieder sein **eigenes** Recht mit. Anders als bei
 Storage-Providern (koexistieren alle gleichzeitig) ist immer nur **ein**
@@ -204,33 +204,33 @@ rex_extension::register('MEDIAPLACE_UPLOAD_PROVIDERS', function (rex_extension_p
 });
 ```
 
-Auf der JS-Seite muss dasselbe Addon zusätzlich `MP3.registerUploadProvider()`
+Auf der JS-Seite muss dasselbe Addon zusätzlich `MP.registerUploadProvider()`
 aufrufen (siehe unten) – erst wenn BEIDES vorhanden ist (hier registriert
 **und** als aktiver Provider eingestellt **und** clientseitig tatsächlich
 registriert), greift die Delegation. Ist der eingestellte Provider (noch)
 nicht registriert (Addon deaktiviert, Script nicht geladen), bleibt es beim
 eingebauten Upload – kein Fehlerzustand.
 
-### 2. Client-seitige Erweiterung (`window.MP3`)
+### 2. Client-seitige Erweiterung (`window.MP`)
 
 Drei echte Registrierungs-Mechanismen im JS-Kern:
 
-**`MP3.registerFieldCollector(widgetType, collector)`** – das
+**`MP.registerFieldCollector(widgetType, collector)`** – das
 JS-Gegenstück zu `MEDIAPLACE_WIDGET_TYPES` für Widget-Typen, deren Wert sich
 nicht über das generische Ein-`data-json-field`-Element-Muster einsammeln
 lässt. `collector(key, panelEl)` liefert den zu speichernden Wert zurück
 (`null` löscht das Feld). Siehe `src/mediaplace/modules/detail.js`
 (`fieldCollectors`) für den Konsumenten.
 
-**`MP3.registerUploadProvider(id, handler)`** – siehe Abschnitt 1 oben
+**`MP.registerUploadProvider(id, handler)`** – siehe Abschnitt 1 oben
 (`MEDIAPLACE_UPLOAD_PROVIDERS`).
 
-**`MP3.registerAdminMenuItem(id, { label, icon, onClick })`** – eigener
+**`MP.registerAdminMenuItem(id, { label, icon, onClick })`** – eigener
 Eintrag im Zahnrad-Menü, der JS-Code INNERHALB des laufenden Overlays
 ausführt (`onClick()`, ohne Argumente), statt wie die klassische
 Unterseiten-Liste im selben Menü immer eine echte Seite/ein Popup zu öffnen.
 `icon` ist eine `fa-solid`-Klasse (optional, Default ein Zauberstab-Icon).
-Rendert in `#mp3-admin-menu-extensions`, oberhalb der klassischen
+Rendert in `#mp-admin-menu-extensions`, oberhalb der klassischen
 Unterseiten-Links. Registrierung ist bewusst mehrfach-sicher: kann vor ODER
 nach dem ersten `open()` aufgerufen werden (Eintrag bleibt über
 open()/close()-Zyklen hinweg bestehen). Noch kein externer Nutzer – mediaplace's
@@ -241,7 +241,7 @@ mediaplace-interne Klassen wie `AltTextStatus`, eine externe Anbindung hätte
 dort keinen Vorteil gebracht).
 
 ```js
-MP3.registerAdminMenuItem('my_addon_bulk', {
+MP.registerAdminMenuItem('my_addon_bulk', {
     label: 'Mein Bulk-Feature',
     icon: 'fa-solid fa-wand-magic-sparkles',
     onClick: function () {
@@ -250,29 +250,29 @@ MP3.registerAdminMenuItem('my_addon_bulk', {
 });
 ```
 
-Ansonsten ist `window.MP3` bewusst schlank und bietet keine weitere
+Ansonsten ist `window.MP` bewusst schlank und bietet keine weitere
 Plugin-Registrierung, nur Aufruf-/Daten-Methoden:
 
-- `MP3.open(opts)` / `MP3.close()` – Overlay öffnen/schließen.
-- `MP3.openFile(filename, callback, opts)` – Overlay öffnen und direkt die
+- `MP.open(opts)` / `MP.close()` – Overlay öffnen/schließen.
+- `MP.openFile(filename, callback, opts)` – Overlay öffnen und direkt die
   Detailansicht einer Datei zeigen.
-- `MP3.showFileDetail(filename)` – Detailansicht in einem bereits offenen
+- `MP.showFileDetail(filename)` – Detailansicht in einem bereits offenen
   Overlay wechseln.
-- `MP3.startMetainfoPick(wrapper, isList)` – öffnet das Grid im
+- `MP.startMetainfoPick(wrapper, isList)` – öffnet das Grid im
   Auswahl-Modus für klassische `REX_MEDIA[n]`/`REX_MEDIALIST[n]`-Widgets
   *innerhalb* des Metainfo-Canvas (siehe `assets/mediaplace_classic.js`).
 
-`window.MP3Widget.init(scope)` initialisiert `input.mp3-widget`-Elemente in
+`window.MPWidget.init(scope)` initialisiert `input.mp-widget`-Elemente in
 einem gegebenen DOM-Bereich neu (z. B. nach dynamisch nachgeladenem HTML).
 
-`window.MP3Core` (`i18n`/`helpers`/`api`, aufgebaut aus
+`window.MPCore` (`i18n`/`helpers`/`api`, aufgebaut aus
 `mediaplace-i18n.js`/`-helpers.js`/`-api.js`) ist zwar global erreichbar und
 wird intern von `mediaplace.js`/`mediaplace_widget.js`/`mediaplace_classic.js`
 gemeinsam genutzt, aber **keine stabile Drittanbieter-API** – keine
 Versionsgarantie, kann sich zwischen Releases ändern.
 
 **Nicht vorhanden, trotz Erwähnung an anderer Stelle im Code:**
-`MP3.registerModule()` taucht nur als Kommentar in
+`MP.registerModule()` taucht nur als Kommentar in
 `src/mediaplace/modules/focuspoint.js` auf (Idee: Cropper-/Fokuspunkt-/
 Optimieren-Integration als optional nachladbare, eigene Bundles statt fest
 im Hauptbundle) – siehe "Architektur: Hub-and-Spoke" oben, bislang nicht
@@ -289,9 +289,9 @@ zusätzlich beeinflussen will (`boot.php`, sofern nicht anders angegeben):
 |---|---|
 | `MEDIA_IS_IN_USE` | Registriert `rex_yform_value_mediaplace::isMediaInUse()` (nur wenn `yform` verfügbar) – durchsucht alle YForm-Felder vom Typ `mediaplace` nach Referenzen auf die Datei; feuert intern selbst nochmal `YFORM_MEDIA_IS_IN_USE` (siehe oben) |
 | `MEDIA_MANAGER_FILTERSET` | Liefert für MediaPlace's Video-Thumbnail-Typen ein leeres Effekt-Set, falls `ffmpeg` gerade nicht verfügbar ist (verhindert Fatal Error) |
-| `PAGES_PREPARED` | Biegt den klassischen "Medienpool"-Menüpunkt auf `MP3.open()` um (abschaltbar über die Einstellung "Klassischen Medienpool ersetzen") |
+| `PAGES_PREPARED` | Biegt den klassischen "Medienpool"-Menüpunkt auf `MP.open()` um (abschaltbar über die Einstellung "Klassischen Medienpool ersetzen") |
 | `METAINFO_CUSTOM_FIELD` | Zeigt `med_json_data` read-only im klassischen Medien-Bearbeiten-Formular (nur wenn `metainfo` verfügbar) |
-| `OUTPUT_FILTER` | Injiziert `#mp3-root` (API-URLs, Feature-Flags, Rechte, i18n-JSON) vor `</body>` jeder Backend-Seite – der Bootstrap-Mechanismus des gesamten Frontends |
+| `OUTPUT_FILTER` | Injiziert `#mp-root` (API-URLs, Feature-Flags, Rechte, i18n-JSON) vor `</body>` jeder Backend-Seite – der Bootstrap-Mechanismus des gesamten Frontends |
 | `MEDIA_FORM_EDIT` / `MEDIA_UPDATED` | Nativer Metainfo-Canvas: `lib/Api/MetainfoForm.php` rendert/speichert echte `med_*`-Felder über REDAXOs eigenen Pfad (kein eigenes Feldtyp-System); `lib/FocuspointIntegration.php` feuert `MEDIA_UPDATED` manuell nach einem Direkt-SQL-Save, damit Listener denselben Effekt sehen wie bei einem normalen Update |
 
 ### 4. REDAXO-Berechtigungen

@@ -33,7 +33,7 @@ if (isset($fileId) && (int) $fileId > 0) {
 }
 
 ?>
-<div id="mp3-takeover" style="padding:80px 20px;text-align:center;color:#777;">
+<div id="mp-takeover" style="padding:80px 20px;text-align:center;color:#777;">
     <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;"></i>
     <noscript>
         <p><?= rex_i18n::msg('mediaplace_takeover_noscript') ?></p>
@@ -86,30 +86,30 @@ if (isset($fileId) && (int) $fileId > 0) {
 
     var tries = 0;
     function boot() {
-        if (window.MP3 && typeof window.MP3.open === 'function' && typeof window.MP3.openFile === 'function') {
+        if (window.MP && typeof window.MP.open === 'function' && typeof window.MP.openFile === 'function') {
             if (isMedialist) {
                 // Deep-Link + Mehrfachauswahl kommt beim klassischen Vertrag nicht vor
                 // (REX_MEDIALIST view() nutzt file_name nur zur reinen Ansicht, nicht
                 // kombiniert mit Mehrfachauswahl) -- deepLinkFilename bleibt hier ungenutzt.
-                window.MP3.open(finishMulti, { multiple: true, fullscreen: true, onClose: function () { window.close(); } });
+                window.MP.open(finishMulti, { multiple: true, fullscreen: true, onClose: function () { window.close(); } });
             } else if (openerField) {
-                window.MP3.openFile(deepLinkFilename, finishSingle, { fullscreen: true, onClose: function () { window.close(); } });
+                window.MP.openFile(deepLinkFilename, finishSingle, { fullscreen: true, onClose: function () { window.close(); } });
             } else if (deepLinkFilename) {
                 // Direkter Deep-Link ohne Popup-Kontext, z.B. ?page=mediapool/media&file_id=127:
                 // Overlay oeffnet direkt mit sichtbarem Detail-Panel fuer diese Datei. callback
                 // bleibt null (kein Select-Vorgang, kein Opener) -- der "Auswaehlen"-Button im
                 // Detail-Panel blendet sich nur bei einem echten onSelect-Callback ein.
-                window.MP3.openFile(deepLinkFilename, null, { fullscreen: true, closeHref: closeHref });
+                window.MP.openFile(deepLinkFilename, null, { fullscreen: true, closeHref: closeHref });
             } else if (window.opener) {
-                window.MP3.open({ fullscreen: true, onClose: function () { window.close(); } });
+                window.MP.open({ fullscreen: true, onClose: function () { window.close(); } });
             } else {
-                window.MP3.open({ fullscreen: true, closeHref: closeHref });
+                window.MP.open({ fullscreen: true, closeHref: closeHref });
             }
             return;
         }
         tries++;
         if (tries > 100) {
-            var el = document.getElementById('mp3-takeover');
+            var el = document.getElementById('mp-takeover');
             if (el) el.textContent = <?= json_encode(rex_i18n::msg('mediaplace_takeover_failed')) ?>;
             return;
         }
@@ -117,13 +117,13 @@ if (isset($fileId) && (int) $fileId > 0) {
     }
 
     // WICHTIG: mediaplace.js laedt ueber addJsFile() blockierend im Head-Bereich
-    // (kein defer/async), window.MP3 existiert deshalb oft schon, WAEHREND der
-    // Browser diese Seite noch mitten im Body parst -- #mp3-root/#mp3-i18n-data
+    // (kein defer/async), window.MP existiert deshalb oft schon, WAEHREND der
+    // Browser diese Seite noch mitten im Body parst -- #mp-root/#mp-i18n-data
     // werden aber erst GANZ AM ENDE des Bodys eingefuegt (boot.php OUTPUT_FILTER,
     // direkt vor dem schliessenden body-Tag). Ein sofortiger boot()-Aufruf haette
     // build() dazu gebracht,
-    // #mp3-root NICHT zu finden und ein leeres Ersatz-Root ohne jegliche data-*-
-    // Attribute anzulegen -- u.a. blieb dadurch MP3Core.i18n.initLang() komplett
+    // #mp-root NICHT zu finden und ein leeres Ersatz-Root ohne jegliche data-*-
+    // Attribute anzulegen -- u.a. blieb dadurch MPCore.i18n.initLang() komplett
     // wirkungslos (jeder t()-Aufruf zeigte den rohen Sprachschluessel statt Text).
     // Erst NACH DOMContentLoaded starten, wenn der komplette Body inkl. des
     // Inject-Blocks garantiert geparst ist.

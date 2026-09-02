@@ -4,7 +4,7 @@
  * Mehrsprachigkeits-Huelle fuer ein uebersetzbares Feld: bei genau einer
  * Sprache nur die einzelne Zeile, bei mehreren die erste Sprache offen plus
  * kollabierbarer "N weitere Sprachen"-Umschalter (Auf-/Zuklappen bleibt rein
- * JS-seitig, siehe .mp3-lang-toggle Handler in mediaplace.js). Markup
+ * JS-seitig, siehe .mp-lang-toggle Handler in mediaplace.js). Markup
  * identisch zu renderLangInputs() in mediaplace.js.
  *
  * Vars:
@@ -44,7 +44,7 @@ if (count($clangs) <= 1) {
 
 $restCount = count($clangs) - 1;
 ?>
-<div class="mp3-lang-group" data-lang-group="<?= rex_escape($fieldKey) ?>">
+<div class="mp-lang-group" data-lang-group="<?= rex_escape($fieldKey) ?>">
     <?php $this->subfragment('mediaplace/detail_lang_row.php', [
         'field_key' => $fieldKey,
         'clang' => $clangs[0],
@@ -52,8 +52,8 @@ $restCount = count($clangs) - 1;
         'multiline' => $multiline,
         'input_class' => $inputClass,
     ]); ?>
-    <button type="button" class="mp3-lang-toggle" data-lang-toggle="<?= rex_escape($fieldKey) ?>"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n($restCount > 1 ? 'mediaplace_lang_more_many' : 'mediaplace_lang_more_one', $restCount)) ?></button>
-    <div class="mp3-lang-extra" style="display:none">
+    <button type="button" class="mp-lang-toggle" data-lang-toggle="<?= rex_escape($fieldKey) ?>"><i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n($restCount > 1 ? 'mediaplace_lang_more_many' : 'mediaplace_lang_more_one', $restCount)) ?></button>
+    <div class="mp-lang-extra" style="display:none">
         <?php for ($i = 1; $i < count($clangs); $i++): ?>
             <?php $this->subfragment('mediaplace/detail_lang_row.php', [
                 'field_key' => $fieldKey,

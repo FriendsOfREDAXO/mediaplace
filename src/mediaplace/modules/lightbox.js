@@ -3,8 +3,8 @@
  * Extraktion aus core.js (siehe DEV.md/Modularisierungs-Plan), nach dem
  * gleichen Muster wie modules/providers.js/modals.js.
  *
- * Event-Listener-REGISTRIERUNG (Klick auf .mp3-fullscreen-toggle/
- * .mp3-lightbox-open-btn/.mp3-lightbox-close/Backdrop, ESC-/F-Taste) bleibt
+ * Event-Listener-REGISTRIERUNG (Klick auf .mp-fullscreen-toggle/
+ * .mp-lightbox-open-btn/.mp-lightbox-close/Backdrop, ESC-/F-Taste) bleibt
  * bewusst noch in core.js' build() -- wie bei providers.js/modals.js nur
  * die schlanken if/return-Zweige rufen hierher durch. Wichtig: der ESC-
  * Handler fuer die Lightbox teilt sich sein document-keydown-Listener mit
@@ -19,9 +19,9 @@ var ctx = null;
 var fullscreenMode = false;
 var lightboxOpen = false;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var qs = MP3Core.helpers.qs;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var qs = MPCore.helpers.qs;
 
 /** ctx-Vertrag: { overlay, lightboxLayer, lightboxImage, lightboxCaption }. */
 export function initLightbox(theCtx) {
@@ -39,8 +39,8 @@ export function isLightboxOpen() {
 export function setFullscreenMode(enabled) {
     fullscreenMode = !!enabled;
     if (!ctx.overlay) return;
-    ctx.overlay.classList.toggle('mp3-fullscreen-mode', fullscreenMode);
-    var btn = qs('.mp3-fullscreen-toggle', ctx.overlay);
+    ctx.overlay.classList.toggle('mp-fullscreen-mode', fullscreenMode);
+    var btn = qs('.mp-fullscreen-toggle', ctx.overlay);
     if (!btn) return;
     btn.innerHTML = fullscreenMode
         ? '<i class="fa-solid fa-compress"></i>'
@@ -57,13 +57,13 @@ export function openLightbox(src, caption) {
         ctx.lightboxCaption.textContent = caption || '';
         ctx.lightboxCaption.style.display = caption ? '' : 'none';
     }
-    ctx.lightboxLayer.classList.add('mp3-lightbox-open');
+    ctx.lightboxLayer.classList.add('mp-lightbox-open');
     lightboxOpen = true;
 }
 
 export function closeLightbox() {
     if (!ctx.lightboxLayer) return;
-    ctx.lightboxLayer.classList.remove('mp3-lightbox-open');
+    ctx.lightboxLayer.classList.remove('mp-lightbox-open');
     if (ctx.lightboxImage) {
         ctx.lightboxImage.removeAttribute('src');
     }

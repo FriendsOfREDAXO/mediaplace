@@ -18,7 +18,7 @@ use rex_api_result;
  * geladenen Seiten, das wuerde die Trefferzahl pro Seite verfaelschen).
  *
  * Wird nur genutzt, wenn boot.php (OUTPUT_FILTER) die installierte api-Version
- * als zu alt erkennt (data-api-media-list-secure="0" am #mp3-root); mediaplace.js
+ * als zu alt erkennt (data-api-media-list-secure="0" am #mp-root); mediaplace.js
  * schickt den Request dann hierher statt an /api/backend/media. Sobald api
  * ueberall in Version >=1.3.1 installiert ist, kann diese Datei inklusive
  * boot.php-Weiche und dem JS-Umschalter in mediaplace-api.js wieder entfernt
@@ -193,11 +193,11 @@ class MediaList extends rex_api_function
         // rex-api-call-Request mit &page=1 im Query-String wird dadurch als
         // "zeig Backend-Seite '1'" fehlinterpretiert -- nicht gefunden, also
         // 302-Redirect auf die Standardseite (HTML statt JSON, "Unexpected
-        // token '<'" im Client). Deshalb hier "mp3_page"/"mp3_per_page";
+        // token '<'" im Client). Deshalb hier "mp_page"/"mp_per_page";
         // apiFetchMediaList() (mediaplace-api.js) benennt beim Aufbau der
         // Fallback-URL entsprechend um.
-        $page = max(1, rex_request('mp3_page', 'int', 1));
-        $perPage = min(self::MAX_PER_PAGE, max(1, rex_request('mp3_per_page', 'int', 100)));
+        $page = max(1, rex_request('mp_page', 'int', 1));
+        $perPage = min(self::MAX_PER_PAGE, max(1, rex_request('mp_per_page', 'int', 100)));
         $totalPages = (int) ceil($total / $perPage);
         $offset = ($page - 1) * $perPage;
 

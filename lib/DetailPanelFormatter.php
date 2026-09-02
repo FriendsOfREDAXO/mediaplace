@@ -110,11 +110,11 @@ class DetailPanelFormatter
 
         if (preg_match('/\.svg$/i', $filename)) {
             $url = \rex_url::media(rawurlencode($filename));
-            return $token ? $url . '?mp3v=' . rawurlencode($token) : $url;
+            return $token ? $url . '?mpv=' . rawurlencode($token) : $url;
         }
 
         $url = \rex_url::backendController(['rex_media_type' => $mmType, 'rex_media_file' => $filename], false);
-        return $token ? $url . '&mp3v=' . rawurlencode($token) : $url;
+        return $token ? $url . '&mpv=' . rawurlencode($token) : $url;
     }
 
     /**
@@ -125,6 +125,6 @@ class DetailPanelFormatter
     {
         $token = $updatedate ?: (string) $filesize;
         $url = \rex_url::media(rawurlencode($filename));
-        return $token ? $url . '?mp3v=' . rawurlencode($token) : $url;
+        return $token ? $url . '?mpv=' . rawurlencode($token) : $url;
     }
 }

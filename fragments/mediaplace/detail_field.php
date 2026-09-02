@@ -2,7 +2,7 @@
 
 /**
  * Dispatcher fuer ein einzelnes Custom-Feld (Widget-Klassen-System) --
- * rendert die gemeinsame .mp3-edit-field.mp3-json-field-Huelle (Label +
+ * rendert die gemeinsame .mp-edit-field.mp-json-field-Huelle (Label +
  * Speichern-Button) und delegiert den eigentlichen Feldkoerper an das
  * fuer den widget_type registrierte Subfragment, siehe
  * MetainfoWidget::getRegisteredTypes() -- eingebaute Typen wie externe
@@ -31,13 +31,13 @@ $label = '' !== (string) $field['label'] ? $field['label'] : $key;
 $registeredTypes = MetainfoWidget::getRegisteredTypes();
 $bodyFragment = $registeredTypes[$widget]['fragment'] ?? 'mediaplace/detail_field_body_text.php';
 ?>
-<div class="mp3-edit-field mp3-json-field" data-field-key="<?= rex_escape($key) ?>">
-    <label class="mp3-edit-label"><?= rex_escape($label) ?></label>
+<div class="mp-edit-field mp-json-field" data-field-key="<?= rex_escape($key) ?>">
+    <label class="mp-edit-label"><?= rex_escape($label) ?></label>
     <?php $this->subfragment($bodyFragment, [
         'field' => $field,
         'value' => $value,
         'info' => $info,
         'clangs' => $clangs,
     ]); ?>
-    <button type="button" class="mp3-field-save-btn" data-save-field="<?= rex_escape($key) ?>" style="display:none"><i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
+    <button type="button" class="mp-field-save-btn" data-save-field="<?= rex_escape($key) ?>" style="display:none"><i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
 </div>

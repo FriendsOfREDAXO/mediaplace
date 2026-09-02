@@ -2,7 +2,7 @@
  * Optionale KI-Tag-Vorschlaege (siehe AiAutoTagService::isAvailable() --
  * rein soft-optional, ohne installiertes+konfiguriertes ai_platform-Addon,
  * aktivierte Einstellung UND mindestens einen KI-freigegebenen Tag bleibt
- * die URL am #mp3-root leer und diese Funktionen sind No-Ops).
+ * die URL am #mp-root leer und diese Funktionen sind No-Ops).
  *
  * GESCHLOSSENES Vokabular (siehe AiAutoTagService-Docblock): Vorschlaege
  * kommen ausschliesslich aus bereits bestehenden, in der Tag-Verwaltung fuer
@@ -22,17 +22,17 @@ import { isSvgFilename, rasterizeSvgToPngDataUrl, buildIconButton, attachToLabel
 
 var ctx = null;
 
-var MP3Core = window.MP3Core;
-var t = MP3Core.i18n.t;
-var escAttr = MP3Core.helpers.escAttr;
-var qs = MP3Core.helpers.qs;
-var apiSuggestAiTags = MP3Core.api.apiSuggestAiTags;
+var MPCore = window.MPCore;
+var t = MPCore.i18n.t;
+var escAttr = MPCore.helpers.escAttr;
+var qs = MPCore.helpers.qs;
+var apiSuggestAiTags = MPCore.api.apiSuggestAiTags;
 
 /**
  * ctx-Vertrag:
  * - getAiAutoTagAvailable(): true nur wenn Feature aktiv, ai_platform
  *   verfuegbar UND mindestens ein Tag fuer KI freigegeben ist (siehe
- *   data-ai-auto-tag-url am #mp3-root)
+ *   data-ai-auto-tag-url am #mp-root)
  * - getMediaBaseUrl(): siehe ai_alt.js -- fuer den SVG-Rasterisierungs-Fetch
  */
 export function initAiTags(theCtx) {
@@ -51,7 +51,7 @@ function generateAiTagsFor(filename) {
 
 function setBusy(btn, busy) {
     btn.disabled = busy;
-    btn.classList.toggle('mp3-ai-tags-busy', busy);
+    btn.classList.toggle('mp-ai-tags-busy', busy);
 }
 
 // Namen bereits im (ggf. noch ungespeicherten) Widget-Zustand gewaehlter
@@ -71,7 +71,7 @@ function currentTagNames(wrap) {
 }
 
 /**
- * wrap: .mp3-tags-widget-Element (System-Tags-Feld).
+ * wrap: .mp-tags-widget-Element (System-Tags-Feld).
  * onAdd: function(tagName) -- vom Aufrufer hereingereicht, ruft
  *   detail.js's addTagFromWidget(wrap, tagName) auf.
  */
@@ -89,7 +89,7 @@ export function attachTagSuggestButton(wrap, filename, onAdd) {
     }
 
     var suggestionsEl = document.createElement('div');
-    suggestionsEl.className = 'mp3-ai-tags-suggestions';
+    suggestionsEl.className = 'mp-ai-tags-suggestions';
     suggestionsEl.style.display = 'none';
     wrap.appendChild(suggestionsEl);
 
@@ -108,31 +108,31 @@ export function attachTagSuggestButton(wrap, filename, onAdd) {
             });
 
             if (0 === tags.length) {
-                suggestionsEl.innerHTML = '<span class="mp3-ai-tags-empty">' + escAttr(t('mediaplace_ai_tags_none_suggested')) + '</span>';
+                suggestionsEl.innerHTML = '<span class="mp-ai-tags-empty">' + escAttr(t('mediaplace_ai_tags_none_suggested')) + '</span>';
                 suggestionsEl.style.display = '';
                 return;
             }
 
-            var html = '<span class="mp3-ai-tags-hint">' + escAttr(t('mediaplace_ai_tags_suggestions_hint')) + '</span>';
+            var html = '<span class="mp-ai-tags-hint">' + escAttr(t('mediaplace_ai_tags_suggestions_hint')) + '</span>';
             tags.forEach(function (tagName) {
-                html += '<button type="button" class="mp3-ai-tags-chip" data-tag="' + escAttr(tagName) + '">' +
+                html += '<button type="button" class="mp-ai-tags-chip" data-tag="' + escAttr(tagName) + '">' +
                     '<i class="fa-solid fa-plus"></i> ' + escAttr(tagName) + '</button>';
             });
             suggestionsEl.innerHTML = html;
             suggestionsEl.style.display = '';
         }).catch(function (err) {
             setBusy(btn, false);
-            suggestionsEl.innerHTML = '<span class="mp3-ai-tags-empty mp3-ai-tags-error">' + escAttr(err.message || t('mediaplace_ai_tags_error_network')) + '</span>';
+            suggestionsEl.innerHTML = '<span class="mp-ai-tags-empty mp-ai-tags-error">' + escAttr(err.message || t('mediaplace_ai_tags_error_network')) + '</span>';
             suggestionsEl.style.display = '';
         });
     });
 
     suggestionsEl.addEventListener('click', function (e) {
-        var chip = e.target.closest ? e.target.closest('.mp3-ai-tags-chip') : null;
+        var chip = e.target.closest ? e.target.closest('.mp-ai-tags-chip') : null;
         if (!chip) return;
         var tagName = chip.getAttribute('data-tag');
         if (tagName && typeof onAdd === 'function') onAdd(tagName);
         chip.remove();
-        if (!qs('.mp3-ai-tags-chip', suggestionsEl)) suggestionsEl.style.display = 'none';
+        if (!qs('.mp-ai-tags-chip', suggestionsEl)) suggestionsEl.style.display = 'none';
     });
 }

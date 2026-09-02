@@ -18,12 +18,12 @@
 
 $tags = $this->getVar('tags');
 ?>
-<div class="mp3-edit-field mp3-json-field" data-field-key="__system_tags">
-    <label class="mp3-edit-label"><?= rex_escape($this->i18n('mediaplace_system_tags')) ?> <span class="mp3-edit-kind-badge">global</span></label>
+<div class="mp-edit-field mp-json-field" data-field-key="__system_tags">
+    <label class="mp-edit-label"><?= rex_escape($this->i18n('mediaplace_system_tags')) ?> <span class="mp-edit-kind-badge">global</span></label>
     <?php $this->subfragment('mediaplace/detail_tags_widget.php', [
         'key' => '__system_tags',
         'tags' => $tags,
         'with_suggestions' => true,
     ]); ?>
-    <button type="button" class="mp3-field-save-btn" data-save-field="__system_tags" style="display:none"><i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
+    <button type="button" class="mp-field-save-btn" data-save-field="__system_tags" style="display:none"><i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
 </div>

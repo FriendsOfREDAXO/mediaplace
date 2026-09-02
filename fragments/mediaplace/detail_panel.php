@@ -46,10 +46,10 @@ $featureMetainfoEditing = (bool) $this->getVar('feature_metainfo_editing');
 $altTextMissing = (bool) $this->getVar('alt_text_missing');
 
 ?>
-<div class="mp3-detail-inner">
-    <div class="mp3-detail-header">
-        <span class="mp3-detail-header-name"><?= rex_escape($this->i18n('mediaplace_details')) ?></span>
-        <button class="mp3-detail-close" title="<?= rex_escape($this->i18n('mediaplace_close')) ?>"><i class="fa-solid fa-xmark"></i></button>
+<div class="mp-detail-inner">
+    <div class="mp-detail-header">
+        <span class="mp-detail-header-name"><?= rex_escape($this->i18n('mediaplace_details')) ?></span>
+        <button class="mp-detail-close" title="<?= rex_escape($this->i18n('mediaplace_close')) ?>"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <?php $this->subfragment('mediaplace/detail_preview.php', [
@@ -58,19 +58,19 @@ $altTextMissing = (bool) $this->getVar('alt_text_missing');
         'data' => $data,
     ]); ?>
 
-    <div class="mp3-edit-section">
+    <div class="mp-edit-section">
         <?php $this->subfragment('mediaplace/detail_field_title.php', [
             'title' => $info['title'],
         ]); ?>
 
         <?php if ($featureMetainfoEditing): ?>
-            <button type="button" class="mp3-metainfo-native-edit-btn mp3-metainfo-canvas-open"
+            <button type="button" class="mp-metainfo-native-edit-btn mp-metainfo-canvas-open"
                     data-canvas-file="<?= rex_escape($info['filename']) ?>"
                     data-canvas-label="<?= rex_escape($info['filename']) ?>">
                 <i class="fa-solid fa-lemon"></i> <?= rex_escape($this->i18n('mediaplace_metainfo_edit_native')) ?>
             </button>
             <?php if ($altTextMissing): ?>
-                <p class="mp3-alt-missing-hint"><i class="fa-solid fa-triangle-exclamation"></i> <?= rex_escape($this->i18n('mediaplace_alt_text_missing')) ?></p>
+                <p class="mp-alt-missing-hint"><i class="fa-solid fa-triangle-exclamation"></i> <?= rex_escape($this->i18n('mediaplace_alt_text_missing')) ?></p>
             <?php endif; ?>
         <?php endif; ?>
 
@@ -80,7 +80,7 @@ $altTextMissing = (bool) $this->getVar('alt_text_missing');
                      bleiben, sonst liest collectJsonValuesFromDetail() beim naechsten
                      Speichern (z.B. nur Titel geaendert) fuer diese Felder nichts mehr aus
                      und wuerde bereits gespeicherte Werte mit null ueberschreiben. */ ?>
-            <div class="mp3-own-metadata-fields"<?= $featureOwnMetadata ? '' : ' style="display:none"' ?>>
+            <div class="mp-own-metadata-fields"<?= $featureOwnMetadata ? '' : ' style="display:none"' ?>>
                 <?php foreach ($fields as $field): ?>
                     <?php
                     $fieldKey = (string) $field['key'];
@@ -97,7 +97,7 @@ $altTextMissing = (bool) $this->getVar('alt_text_missing');
         <?php endif; ?>
 
         <?php /* Zuletzt, direkt vor den technischen Details (detail_info_table.php
-                 unterhalb dieses .mp3-edit-section-Blocks) -- Nutzer-Feedback:
+                 unterhalb dieses .mp-edit-section-Blocks) -- Nutzer-Feedback:
                  Tags sollen immer nach den eigenen Metadaten-Feldern stehen, nicht
                  davor. */ ?>
         <?php if ($featureTagging): ?>
