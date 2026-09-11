@@ -241,12 +241,7 @@ function showGridError(message) {
 }
 
 // Gleiches Prinzip wie categoryErrorMessage(), fuer Datei- statt
-// Kategorie-Operationen (Upload/Loeschen/Verschieben). Faengt insbesondere
-// den Fall ab, dass die installierte FriendsOfRedaxo/api-Version
-// permitted_only noch nicht kaskadierend auswertet (siehe apiUpload()/
-// apiDelete()/apiUpdate() in mediaplace-api.js) -- ein 403 beim Arbeiten
-// in einer Unterkategorie einer freigegebenen Kategorie ist dann kein
-// unerwarteter Fehler, sondern genau dieser (bekannte, temporaere) Fall.
+// Kategorie-Operationen (Upload/Loeschen/Verschieben).
 export function mediaErrorMessage(err, fallbackKey) {
     if (err && 403 === err.status) {
         return t('mediaplace_media_permission_denied');

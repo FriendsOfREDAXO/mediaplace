@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 2.0.1 – 2026-09-11
+
+### Fixes
+- Video-Upload schlug mit „Unknown field(s): permitted_only" fehl: der Chunked-Upload-Pfad (`media/upload`-Init) validiert Request-Bodys inzwischen strikt, `permitted_only` war dort nie ein bekanntes Feld und wurde serverseitig ohnehin nicht ausgewertet (REDAXOs `hasCategoryPerm()` prüft Kategorie-Rechte bereits kaskadierend). Entfernt aus Upload/Update/Delete in `mediaplace-api.js`.
+
 ## Version 2.0.0 – 2026-09-02
 
 ### Breaking Change
