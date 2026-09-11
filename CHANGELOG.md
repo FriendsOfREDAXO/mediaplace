@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 2.0.2 – 2026-09-11
+
+### Fixes
+- Gesamt-Fortschrittsbalken beim Upload blieb bis zum Abschluss der jeweiligen Datei unverändert: er wurde nur nach kompletten Dateien aktualisiert, nicht anhand des Chunk-Fortschritts der aktuell laufenden Datei. Bezieht den Byte-Fortschritt der laufenden Datei jetzt live mit ein.
+
 ## Version 2.0.1 – 2026-09-11
 
 ### Fixes

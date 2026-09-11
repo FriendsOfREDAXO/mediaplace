@@ -388,10 +388,16 @@ function startUpload(files, catId, assignToCollectionName) {
         // Ordner-Upload weist einzelnen Dateien ihre eigene (aus dem Ordnerpfad
         // aufgeloeste) Kategorie zu; ohne das faellt jede Datei auf catId zurueck.
         var uploadCatId = (uploadFile.__mpCategoryId != null) ? uploadFile.__mpCategoryId : catId;
-        var onFileProgress = function (sent, total) {
-            if (!itemEl) return;
-            var st = itemEl.querySelector('.mp-upload-item-status');
-            if (st) st.textContent = Math.round((sent / total) * 100) + '%';
+        var onFileProgress = function (sent, fileSize) {
+            if (itemEl) {
+                var st = itemEl.querySelector('.mp-upload-item-status');
+                if (st) st.textContent = Math.round((sent / fileSize) * 100) + '%';
+            }
+            var fillEl = document.getElementById('mp-progress-fill');
+            if (fillEl) {
+                var overallPct = Math.round(((done + failed + (sent / fileSize)) / total) * 100);
+                fillEl.style.width = overallPct + '%';
+            }
         };
         maybeResizeUploadFile(uploadFile)
             .then(function (fileToSend) {
