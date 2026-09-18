@@ -5159,6 +5159,49 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     outline-offset: -3px;
 }
 
+/* Schnellauswahl-Button auf der Kachel (nur im Einzelauswahl-Modus, siehe
+   renderFilesGrid()): per Hover eingeblendet, waehlt die Datei sofort aus
+   ohne die Detailansicht/Sidebar oeffnen zu muessen. Klick auf die Kachel
+   selbst bleibt unveraendert (oeffnet weiterhin die Detailansicht) - der
+   Button ist eine zusaetzliche, schnellere Alternative dazu. */
+#mp-overlay .mp-card-select-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 3;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: var(--mp-select-btn-bg);
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity .15s, transform .15s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+#mp-overlay .mp-card:hover .mp-card-select-btn,
+#mp-overlay .mp-card-select-btn:focus-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+#mp-overlay .mp-card-select-btn:hover {
+    filter: brightness(1.08);
+}
+/* Touch-Geraete haben kein zuverlaessiges :hover -- Button bleibt dort
+   dauerhaft sichtbar, damit die Schnellauswahl trotzdem erreichbar ist. */
+@media (hover: none) {
+    #mp-overlay .mp-card-select-btn {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 /* List row multi-select */
 #mp-overlay .mp-list-cell-check {
     width: 30px;
@@ -5174,6 +5217,32 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
 }
 #mp-overlay .mp-list-row-multi-selected {
     background: var(--mp-multi-selected-bg) !important;
+}
+/* In der Media-Wall sitzt der Button MIT in der bereits absolut
+   positionierten .mp-masonry-toolbar (siehe deren eigenes Hover-Reveal) -
+   dort waere eine zweite eigene absolute Positionierung falsch, er soll
+   sich stattdessen normal neben die Checkbox einreihen. */
+#mp-overlay .mp-masonry-toolbar .mp-masonry-select-btn {
+    position: static;
+    opacity: 1;
+    transform: none;
+}
+
+#mp-overlay .mp-list-th-select,
+#mp-overlay .mp-list-cell-select {
+    width: 40px;
+    text-align: center;
+}
+/* In der Listenansicht ist genug Platz fuer eine eigene Spalte - der
+   Schnellauswahl-Button ist dort dauerhaft sichtbar statt per Hover
+   eingeblendet (anders als die absolut positionierte Kachel-Variante). */
+#mp-overlay .mp-list-select-btn {
+    position: static;
+    opacity: 1;
+    transform: none;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
 }
 #mp-overlay .mp-list-row-multi-selected:hover {
     background: var(--mp-list-selected-hover-bg) !important;

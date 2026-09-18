@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 2.1.0 – 2026-09-18
+
+### Neu
+- **Schnellauswahl im Einzelauswahl-Modus**: Wenn das Overlay für ein einzelnes Bild-Feld geöffnet ist (kein Multi-Select), erscheint auf jeder Kachel ein grüner Auswahl-Button – Grid-Ansicht beim Hover oben rechts, Listenansicht als eigene, dauerhaft sichtbare Spalte, Media-Wall-Ansicht in der bestehenden Hover-Toolbar. Ein Klick wählt die Datei sofort aus und schließt das Overlay, ohne erst die Detailansicht öffnen zu müssen. Ein normaler Klick auf die Kachel selbst öffnet weiterhin wie gewohnt die Detailansicht.
+
 ## Version 2.0.2 – 2026-09-11
 
 ### Fixes

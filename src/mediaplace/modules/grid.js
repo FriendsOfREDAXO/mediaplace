@@ -282,12 +282,19 @@ export function renderFilesGrid(files) {
     var collectionDragSelected = ctx.getCollectionDragSelected();
     var html = '';
     var showCheck = multiMode || batchSelectMode;
+    // Schnellauswahl-Button: nur im echten Einzelauswahl-Modus (ein Feld
+    // wartet auf genau eine Datei, kein Multi-/Batch-Select aktiv) - sonst
+    // wuerde er mit der Mehrfachauswahl-Checkbox kollidieren bzw. im reinen
+    // Durchsuchen-Modus (kein onSelect) ins Leere klicken.
+    var showQuickSelect = !multiMode && !batchSelectMode && typeof ctx.getOnSelect === 'function' && !!ctx.getOnSelect();
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         var isMultiSel = multiMode ? multiSelected[f.filename] : (batchSelectMode && collectionDragSelected[f.filename]);
         var displayName = f.title || f.filename;
+        var quickSelectable = showQuickSelect && ctx.isFileSelectable(f.filename);
         html += '<div class="mp-card' + (isMultiSel ? ' mp-card-multi-selected' : '') + '" draggable="true" data-filename="' + escAttr(f.filename) + '">' +
             (showCheck ? '<div class="mp-card-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></div>' : '') +
+            (quickSelectable ? '<button type="button" class="mp-card-select-btn" data-filename="' + escAttr(f.filename) + '" title="' + escAttr(t('mediaplace_select')) + '"><i class="fa-solid fa-check"></i></button>' : '') +
             previewHtml(f) +
             '<div class="mp-info">' +
                 '<span class="mp-card-name" title="' + escAttr(f.filename) + '">' + escAttr(displayName) + '</span>' +
@@ -313,6 +320,7 @@ export function renderFilesList(files) {
     var lastLoadedFiles = ctx.getLastLoadedFiles();
     var mediaBaseUrl = ctx.getMediaBaseUrl();
     var showCheck = multiMode || batchSelectMode;
+    var showQuickSelect = !multiMode && !batchSelectMode && typeof ctx.getOnSelect === 'function' && !!ctx.getOnSelect();
     var html = '<table class="mp-list-table">';
     html += '<thead><tr>' +
         (showCheck ? '<th class="mp-list-th-check"></th>' : '') +
@@ -321,6 +329,7 @@ export function renderFilesList(files) {
         '<th>' + t('mediaplace_field_type') + '</th>' +
         '<th>' + t('mediaplace_field_size') + '</th>' +
         '<th>' + t('mediaplace_date') + '</th>' +
+        (showQuickSelect ? '<th class="mp-list-th-select"></th>' : '') +
     '</tr></thead><tbody>';
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
@@ -345,6 +354,12 @@ export function renderFilesList(files) {
         html += '<td class="mp-list-cell-type">' + escAttr(f.filetype || '') + '</td>';
         html += '<td class="mp-list-cell-size">' + formatBytes(f.filesize) + '</td>';
         html += '<td class="mp-list-cell-date">' + formatDate(f.createdate) + '</td>';
+        if (showQuickSelect) {
+            var listQuickSelectable = ctx.isFileSelectable(f.filename);
+            html += '<td class="mp-list-cell-select">' +
+                (listQuickSelectable ? '<button type="button" class="mp-card-select-btn mp-list-select-btn" data-filename="' + escAttr(f.filename) + '" title="' + escAttr(t('mediaplace_select')) + '"><i class="fa-solid fa-check"></i></button>' : '') +
+            '</td>';
+        }
         html += '</tr>';
     }
     html += '</tbody></table>';
@@ -361,11 +376,13 @@ export function renderFilesMediaWall(files) {
     var selectedFile = ctx.getSelectedFile();
     var html = '';
     var showCheck = multiMode || batchSelectMode;
+    var showQuickSelect = !multiMode && !batchSelectMode && typeof ctx.getOnSelect === 'function' && !!ctx.getOnSelect();
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         var isSel = (selectedFile === f.filename);
         var isMultiSel = multiMode ? multiSelected[f.filename] : (batchSelectMode && collectionDragSelected[f.filename]);
         var displayName = f.title || f.filename;
+        var wallQuickSelectable = showQuickSelect && ctx.isFileSelectable(f.filename);
 
         html += '<div class="mp-masonry-card' +
             (isSel ? ' mp-masonry-card-selected' : '') +
@@ -376,6 +393,9 @@ export function renderFilesMediaWall(files) {
         html += '<div class="mp-masonry-toolbar">';
         if (showCheck) {
             html += '<span class="mp-masonry-check"><i class="fa-solid ' + (isMultiSel ? 'fa-square-check' : 'fa-square') + '"></i></span>';
+        }
+        if (wallQuickSelectable) {
+            html += '<button type="button" class="mp-card-select-btn mp-masonry-select-btn" data-filename="' + escAttr(f.filename) + '" title="' + escAttr(t('mediaplace_select')) + '"><i class="fa-solid fa-check"></i></button>';
         }
         html += '</div>';
 
