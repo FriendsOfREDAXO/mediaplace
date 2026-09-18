@@ -123,7 +123,12 @@ class AltTextStatus
             return false;
         }
 
-        return '' === trim((string) $sql->getValue('med_alt'));
+        $rawAlt = (string) $sql->getValue('med_alt');
+        if (\rex_addon::get('metainfo_lang_fields')->isAvailable() && class_exists('FriendsOfRedaxo\\MetaInfoLangFields\\MetainfoLangHelper')) {
+            return !\FriendsOfRedaxo\MetaInfoLangFields\MetainfoLangHelper::hasTranslationForLanguage($rawAlt, \rex_clang::getCurrentId());
+        }
+
+        return '' === trim($rawAlt);
     }
 
     private static function classicAltFieldExists(): bool
@@ -211,7 +216,11 @@ class AltTextStatus
             if ($decorativeExists && !empty($row[self::CLASSIC_DECORATIVE_FIELD])) {
                 continue;
             }
-            if ('' === trim((string) ($row['med_alt'] ?? ''))) {
+            $rawAlt = (string) ($row['med_alt'] ?? '');
+            $isEmpty = \rex_addon::get('metainfo_lang_fields')->isAvailable() && class_exists('FriendsOfRedaxo\\MetaInfoLangFields\\MetainfoLangHelper')
+                ? !\FriendsOfRedaxo\MetaInfoLangFields\MetainfoLangHelper::hasTranslationForLanguage($rawAlt, \rex_clang::getCurrentId())
+                : '' === trim($rawAlt);
+            if ($isEmpty) {
                 $missing[] = (string) $row['filename'];
             }
         }

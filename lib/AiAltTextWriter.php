@@ -23,8 +23,13 @@ class AiAltTextWriter
             return \rex_clang::getAllIds();
         }
 
-        // Klassisches med_alt: bewusst nur die Startsprache -- keine volle
-        // metainfo_lang_fields-Integration in v1.
+        // Klassisches med_alt: seit der Umstellung auf metainfo_lang_fields
+        // (lang_text) mehrsprachig -- alle Sprachen anbieten statt nur die
+        // Startsprache.
+        if (\rex_addon::get('metainfo_lang_fields')->isAvailable()) {
+            return \rex_clang::getAllIds();
+        }
+
         return [\rex_clang::getStartId()];
     }
 
@@ -75,8 +80,27 @@ class AiAltTextWriter
      */
     private static function writeClassicField(\rex_media $media, array $textByClangId): void
     {
-        $text = (string) reset($textByClangId);
         $filename = $media->getFileName();
+
+        // med_alt ist seit der Umstellung auf metainfo_lang_fields ein
+        // lang_text-Feld ([{"clang_id":1,"value":"..."}]) -- bestehende
+        // Sprachen aus dem aktuellen Wert erhalten und nur die per KI
+        // generierten Sprachen mergen, statt die Spalte komplett zu
+        // ueberschreiben (das wuerde sonst alle anderen Sprachen loeschen).
+        $value = $textByClangId;
+        if (\rex_addon::get('metainfo_lang_fields')->isAvailable() && class_exists('FriendsOfRedaxo\\MetaInfoLangFields\\MetainfoLangHelper')) {
+            $existing = [];
+            foreach (\FriendsOfRedaxo\MetaInfoLangFields\MetainfoLangHelper::normalizeLanguageData($media->getValue('med_alt')) as $item) {
+                $existing[(string) $item['clang_id']] = (string) $item['value'];
+            }
+            $value = array_replace($existing, $textByClangId);
+        }
+
+        $entries = [];
+        foreach ($value as $clangId => $text) {
+            $entries[] = ['clang_id' => (int) $clangId, 'value' => (string) $text];
+        }
+        $json = json_encode($entries, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         // rex_media_service::updateMedia() ist HIER die falsche Wahl: die
         // Funktion kennt nur title/category_id/Datei-Upload-Spalten fest
@@ -92,7 +116,7 @@ class AiAltTextWriter
         $sql = \rex_sql::factory();
         $sql->setTable(\rex::getTable('media'));
         $sql->setWhere(['filename' => $filename]);
-        $sql->setValue('med_alt', $text);
+        $sql->setValue('med_alt', $json);
         $sql->addGlobalUpdateFields();
         $sql->update();
 
