@@ -1581,6 +1581,13 @@ import {
             getVideoThumbType: function () { return videoThumbType; },
             getVideoThumbStatic: function () { return videoThumbStatic; },
             updateStatus: updateStatus,
+            // Fuer den Schnellauswahl-Button auf der Kachel (Grid/Liste/
+            // Media-Wall): renderFilesGrid()/-List()/-MediaWall() muessen
+            // wissen, ob ein Feld auf genau eine Auswahl wartet (onSelect,
+            // kein multiMode) und ob eine konkrete Datei ueberhaupt waehlbar
+            // ist (Endungsfilter, siehe isFileSelectable()).
+            getOnSelect: function () { return onSelect; },
+            isFileSelectable: isFileSelectable,
         });
 
         initAiAlt({
@@ -2828,6 +2835,22 @@ import {
                     toggleProviderSelected(entryPath);
                 } else {
                     showProviderDetail(entryPath, providerCard.getAttribute('data-provider-name') || '');
+                }
+                return;
+            }
+
+            // Schnellauswahl-Button auf der Kachel selbst (nur sichtbar/gerendert
+            // im Einzelauswahl-Modus, siehe renderFilesGrid()): waehlt sofort aus,
+            // ohne erst die Detailansicht/Sidebar oeffnen zu muessen. Muss VOR der
+            // allgemeinen Card-Ermittlung geprueft werden, damit der Klick auf den
+            // Button nicht stattdessen als Klick auf die Kachel (-> showDetail())
+            // durchgereicht wird.
+            var quickSelectBtn = e.target.closest('.mp-card-select-btn');
+            if (quickSelectBtn) {
+                var quickFilename = quickSelectBtn.getAttribute('data-filename');
+                if (!multiMode && onSelect && quickFilename && isFileSelectable(quickFilename)) {
+                    onSelect(quickFilename);
+                    close();
                 }
                 return;
             }
