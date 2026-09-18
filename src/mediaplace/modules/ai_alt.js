@@ -223,8 +223,53 @@ export function attachOwnFieldButton(wrap, filename) {
 
 // ---- Einzeldatei: klassisches med_alt-Feld im nativen Metainfo-Canvas ----
 
+// metainfo_lang_fields rendert med_alt (Feldtyp lang_text/lang_textarea
+// bzw. lang_text_all/lang_textarea_all) als Repeater bzw. "alle Sprachen"-
+// Container mit einem <input type="hidden" name="med_alt"> als reinem
+// JSON-Sammelbehaelter -- die sichtbaren, tatsaechlich editierbaren Felder
+// haben KEIN name-Attribut, sondern liegen als .meta_lang_input/
+// .meta_lang_textarea (Repeater) bzw. .meta_lang_field_input (Alle-Modus)
+// mit data-clang-id im Container. Schreiben ins Hidden-Feld direkt haette
+// keine sichtbare Wirkung (das Feld wird von metainfo_lang_fields' eigenem
+// JS bei jeder Eingabe ueberschrieben) -- die generierten Texte muessen
+// also in die sichtbaren Felder je Sprache geschrieben werden, analog zu
+// attachOwnFieldButton() oben.
+function findLangFieldContainer(canvas) {
+    return qs('.meta_lang_field[data-field-name="med_alt"]', canvas)
+        || qs('.meta_lang_field_all[data-field-name="med_alt"]', canvas);
+}
+
+function writeLangFieldValue(container, clangId, text) {
+    var input = qs('.meta_lang_translation_item[data-clang-id="' + clangId + '"] .meta_lang_input, ' +
+        '.meta_lang_translation_item[data-clang-id="' + clangId + '"] .meta_lang_textarea, ' +
+        '.meta_lang_field_input[data-clang-id="' + clangId + '"]', container);
+    if (input) {
+        input.value = text;
+        dispatchNativeInput(input);
+        return true;
+    }
+
+    // Sprache hat im Repeater-Modus noch keine Zeile -- ueber das
+    // bestehende "Neue Sprache hinzufuegen"-UI von metainfo_lang_fields
+    // selbst anlegen (loest dessen eigenen add-translation-Handler aus,
+    // der Zeile + hidden-Feld-Sync uebernimmt), statt das Markup hier
+    // zu duplizieren.
+    var select = qs('select[name="new_lang_select"]', container);
+    var newValueInput = qs('.meta_lang_new_translation_input, .meta_lang_new_translation_textarea', container);
+    var addBtn = qs('.add-translation', container);
+    if (!select || !newValueInput || !addBtn) return false;
+    if (!qs('option[value="' + clangId + '"]', select)) return false;
+
+    select.value = String(clangId);
+    newValueInput.value = text;
+    addBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    return true;
+}
+
 export function attachClassicFieldButton(canvas, filename) {
     if (!ctx.getAiAltAvailable() || !filename) return;
+
+    var langContainer = findLangFieldContainer(canvas);
 
     var selectors = [
         'input[name="med_alt"]',
@@ -239,7 +284,7 @@ export function attachClassicFieldButton(canvas, filename) {
     }
     if (!input) return;
 
-    var formGroup = input.closest('.form-group') || input.parentNode;
+    var formGroup = langContainer || input.closest('.form-group') || input.parentNode;
     if (!formGroup || formGroup.hasAttribute('data-ai-alt-attached')) return;
     formGroup.setAttribute('data-ai-alt-attached', '1');
 
@@ -251,6 +296,8 @@ export function attachClassicFieldButton(canvas, filename) {
     // .form-group -- ':scope > label' fand deshalb nie etwas, der Icon-Button
     // landete ueber den insertBefore()-Fallback unterhalb des (vollbreiten)
     // Eingabefelds statt im Label. Einfache Nachfahren-Suche behebt das.
+    // Fuer metainfo_lang_fields-Markup (langContainer) greift dasselbe
+    // Muster ueber dessen eigenes .meta_lang_main_label.
     var classicLabel = qs('label', formGroup);
     if (classicLabel) {
         classicLabel.classList.add('mp-edit-label-with-ai', 'mp-edit-label-with-ai-classic');
@@ -268,12 +315,22 @@ export function attachClassicFieldButton(canvas, filename) {
         generateAiAltFor(filename).then(function (res) {
             setBusy(btn, false);
             var texts = res.texts || {};
-            var firstKey = Object.keys(texts)[0];
-            if (undefined === firstKey) {
+            var keys = Object.keys(texts);
+            if (0 === keys.length) {
                 setStatus(statusEl, t('mediaplace_ai_alt_error_generic'), true);
                 return;
             }
-            input.value = texts[firstKey];
+
+            if (langContainer) {
+                var wrote = false;
+                keys.forEach(function (clangId) {
+                    if (writeLangFieldValue(langContainer, clangId, texts[clangId])) wrote = true;
+                });
+                if (!wrote) setStatus(statusEl, t('mediaplace_ai_alt_error_generic'), true);
+                return;
+            }
+
+            input.value = texts[keys[0]];
             dispatchNativeInput(input);
         }).catch(function (err) {
             setBusy(btn, false);

@@ -37,7 +37,7 @@ class AltTextStatus
 
         $ownField = self::findOwnAltField();
         if ($ownField instanceof MetainfoField) {
-            return self::isOwnValueEmpty($ownData[$ownField->getKey()] ?? null);
+            return self::isOwnValueEmpty($ownField, $ownData[$ownField->getKey()] ?? null);
         }
 
         return self::isClassicAltEmpty($media);
@@ -88,7 +88,16 @@ class AltTextStatus
         return null;
     }
 
-    private static function isOwnValueEmpty(mixed $value): bool
+    /**
+     * "Fehlt" heisst bei einem MEHRSPRACHIGEN eigenen Feld: mindestens eine
+     * der von AiAltTextWriter::resolveClangIds() abgedeckten Sprachen hat
+     * noch keinen Text -- nicht erst, wenn ALLE leer sind. Vorher genuegte
+     * bereits irgendeine einzelne gepflegte Sprache, um das Bild komplett
+     * als "erledigt" zu werten, wodurch andere, noch leere Sprachen nie
+     * mehr von der KI-Vervollstaendigung angefasst wurden (analog zum
+     * gleichartigen Bug in isClassicAltValueMissingAnyLanguage()).
+     */
+    private static function isOwnValueEmpty(MetainfoField $field, mixed $value): bool
     {
         if (!is_array($value)) {
             return true;
@@ -96,12 +105,21 @@ class AltTextStatus
         if (!empty($value['decorative'])) {
             return false;
         }
-        foreach ((array) ($value['text'] ?? []) as $text) {
-            if ('' !== trim((string) $text)) {
-                return false;
+
+        $textData = $value['text'] ?? [];
+
+        if (!$field->isTranslatable()) {
+            return '' === trim((string) $textData);
+        }
+
+        $textData = is_array($textData) ? $textData : [];
+        foreach (AiAltTextWriter::resolveClangIds() as $clangId) {
+            if ('' === trim((string) ($textData[(string) $clangId] ?? ''))) {
+                return true;
             }
         }
-        return true;
+
+        return false;
     }
 
     private static function isClassicAltEmpty(\rex_media $media): bool
@@ -124,11 +142,36 @@ class AltTextStatus
         }
 
         $rawAlt = (string) $sql->getValue('med_alt');
-        if (\rex_addon::get('metainfo_lang_fields')->isAvailable() && class_exists('FriendsOfRedaxo\\MetaInfoLangFields\\MetainfoLangHelper')) {
-            return !\FriendsOfRedaxo\MetaInfoLangFields\MetainfoLangHelper::hasTranslationForLanguage($rawAlt, \rex_clang::getCurrentId());
+
+        return self::isClassicAltValueMissingAnyLanguage($rawAlt);
+    }
+
+    /**
+     * Ob $rawAlt (Rohwert der med_alt-Spalte) fuer IRGENDEINE der von
+     * AiAltTextWriter::resolveClangIds() abgedeckten Sprachen noch keine
+     * Uebersetzung hat -- nicht nur fuer die aktuelle. Ein Bild, bei dem nur
+     * Deutsch gepflegt ist, gilt damit weiterhin als "unvollstaendig",
+     * solange z.B. Niederlaendisch noch fehlt, auch wenn man es gerade in
+     * der deutschen Sprachvariante des Backends betrachtet -- vorher wurde
+     * hier nur rex_clang::getCurrentId() geprueft, wodurch ein Bild mit
+     * "nur die aktuelle Sprache gepflegt" faelschlich als komplett
+     * erledigt galt und von der KI-Vervollstaendigung (Api\AiAltComplete,
+     * AiAltCompleteCronjob) sowie der "Medien ohne ALT-Text"-Ansicht nie
+     * mehr angefasst wurde.
+     */
+    public static function isClassicAltValueMissingAnyLanguage(string $rawAlt): bool
+    {
+        if (!\rex_addon::get('metainfo_lang_fields')->isAvailable() || !class_exists('FriendsOfRedaxo\\MetaInfoLangFields\\MetainfoLangHelper')) {
+            return '' === trim($rawAlt);
         }
 
-        return '' === trim($rawAlt);
+        foreach (AiAltTextWriter::resolveClangIds() as $clangId) {
+            if (!\FriendsOfRedaxo\MetaInfoLangFields\MetainfoLangHelper::hasTranslationForLanguage($rawAlt, $clangId)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function classicAltFieldExists(): bool
@@ -208,7 +251,7 @@ class AltTextStatus
             if (null !== $ownField) {
                 $json = json_decode((string) ($row['med_json_data'] ?? ''), true);
                 $ownData = is_array($json) ? $json : [];
-                if (self::isOwnValueEmpty($ownData[$ownField->getKey()] ?? null)) {
+                if (self::isOwnValueEmpty($ownField, $ownData[$ownField->getKey()] ?? null)) {
                     $missing[] = (string) $row['filename'];
                 }
                 continue;
@@ -217,10 +260,7 @@ class AltTextStatus
                 continue;
             }
             $rawAlt = (string) ($row['med_alt'] ?? '');
-            $isEmpty = \rex_addon::get('metainfo_lang_fields')->isAvailable() && class_exists('FriendsOfRedaxo\\MetaInfoLangFields\\MetainfoLangHelper')
-                ? !\FriendsOfRedaxo\MetaInfoLangFields\MetainfoLangHelper::hasTranslationForLanguage($rawAlt, \rex_clang::getCurrentId())
-                : '' === trim($rawAlt);
-            if ($isEmpty) {
+            if (self::isClassicAltValueMissingAnyLanguage($rawAlt)) {
                 $missing[] = (string) $row['filename'];
             }
         }

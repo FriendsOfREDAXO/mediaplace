@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 2.2.0 – 2026-09-18
+
+### Neue Features
+- **Hintergrund-Modus für "ALT-Texte vervollständigen"**: die Admin-Seite `mediaplace/ai_alt_complete` startet die vollständige KI-Vervollständigung jetzt wahlweise als serverseitigen Hintergrundprozess (`php bin/console mediaplace:ai-alt-complete`, analog zum "Vorschaubilder vorwärmen"-Hintergrundmodus) statt nur im Browser mit offenem Tab – läuft weiter, auch wenn der Tab geschlossen wird, die Seite kann jederzeit neu geladen werden und zeigt den laufenden Fortschritt weiter an. Automatischer Fallback auf den Browser-Modus, falls `shell_exec()` auf dem Server nicht verfügbar ist.
+
+### Bugfixes
+- **Bilder mit bereits einer gepflegten Sprache wurden fälschlich als "erledigt" gewertet**: sowohl beim klassischen `med_alt`-Feld als auch beim eigenen JSON-Alt-Feld prüfte die "ALT-Text fehlt"-Ermittlung (`AltTextStatus`) bisher nur, ob IRGENDEINE Sprache bereits einen Text hat, statt ob ALLE konfigurierten Sprachen vollständig sind. Ein Bild mit nur deutschem ALT-Text (Niederländisch noch leer) wurde dadurch von der KI-Vervollständigung (Bulk-Panel, `ai_alt_complete`-Seite, Cronjob) sowie der "Medien ohne ALT-Text"-Ansicht nie wieder angefasst. Prüft jetzt korrekt pro konfigurierter Sprache.
+- **KI-ALT-Text-Button im Metadaten-Dialog schrieb ins Leere**: bei mehrsprachigen ALT-Text-Feldern (`metainfo_lang_fields`, Typ `lang_text`/`lang_text_all`) schrieb der Zauberstab-Button den generierten Text in ein unsichtbares Sammel-Feld statt in die sichtbaren Sprachfelder – der Button wirkte dadurch komplett wirkungslos. Schreibt jetzt korrekt in jedes sichtbare Sprachfeld (inkl. automatischem Anlegen einer noch nicht vorhandenen Sprachzeile im Repeater-Modus).
+
 ## Version 2.1.0 – 2026-09-18
 
 ### Neu

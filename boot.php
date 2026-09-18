@@ -41,6 +41,10 @@ rex_api_function::register('mediaplace_video_optimize', \FriendsOfRedaxo\Mediapl
 // ai_platform-Addon UND aktivierte Einstellung "AI Alt-Text aktivieren").
 rex_api_function::register('mediaplace_ai_alt_text', \FriendsOfRedaxo\Mediaplace\Api\AiAltText::class);
 rex_api_function::register('mediaplace_ai_alt_bulk', \FriendsOfRedaxo\Mediaplace\Api\AiAltBulk::class);
+// Vollstaendige, automatische Vervollstaendigung ohne Review (Admin-Seite
+// ai_alt_complete + AiAltCompleteCronjob) -- eigener Endpunkt statt Eingriff
+// in AiAltBulk, siehe Api\AiAltComplete-Docblock fuer den Unterschied.
+rex_api_function::register('mediaplace_ai_alt_complete', \FriendsOfRedaxo\Mediaplace\Api\AiAltComplete::class);
 // Optionale KI-Auto-Tagging-Vorschlaege (siehe AiAutoTagService::isAvailable()
 // -- rein soft-optional, zusaetzlich nur aktiv, wenn mindestens ein Tag in
 // der Tag-Verwaltung fuer KI freigegeben ist).
@@ -90,6 +94,13 @@ rex_extension::register('MEDIA_MANAGER_FILTERSET', static function (rex_extensio
 // verfuegbar ist -- entscheidet der Cronjob selbst zur Laufzeit.
 if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
     rex_cronjob_manager::registerType(\FriendsOfRedaxo\Mediaplace\ThumbWarmupCronjob::class);
+    // Cronjob-Typ "ALT-Texte automatisch vervollstaendigen" -- unconditional
+    // registrierbar wie ThumbWarmupCronjob; ob er tatsaechlich etwas tut,
+    // entscheidet der Cronjob selbst zur Laufzeit ueber
+    // Api\AiAltComplete::isEnabled()/AiAltTextService::isAvailable() (siehe
+    // dortiger Docblock) -- kein toter Eintrag in der Cronjob-Liste, falls
+    // die Funktion (noch) nicht aktiviert ist, aber auch kein Fehler.
+    rex_cronjob_manager::registerType(\FriendsOfRedaxo\Mediaplace\AiAltCompleteCronjob::class);
 }
 
 if (rex::isBackend() && rex::getUser()) {

@@ -110,6 +110,16 @@ $field = $form->addCheckboxField('enable_ai_alt_text');
 $field->addOption(rex_i18n::rawMsg('mediaplace_settings_ai_alt_enable_label'), 1);
 $field->setNotice(rex_i18n::msg('mediaplace_settings_ai_alt_enable_hint') . ($aiPlatformAvailable ? '' : ' <strong>' . rex_i18n::msg('mediaplace_settings_ai_alt_not_available_hint') . '</strong>'));
 
+// Vollstaendige, automatische Vervollstaendigung (Admin-Seite +
+// AiAltCompleteCronjob) -- bewusst getrennt von enable_ai_alt_text: dieser
+// Schalter erlaubt zusaetzlich, dass generierte Texte OHNE Review-Schritt
+// direkt geschrieben werden (siehe Api\AiAltComplete-Docblock). Der
+// bestehende "AI Bulk Management"-Dialog im Overlay bleibt davon
+// unberuehrt (Review-vor-Speichern-Prinzip dort unveraendert).
+$field = $form->addCheckboxField('enable_ai_alt_auto_complete');
+$field->addOption(rex_i18n::rawMsg('mediaplace_settings_ai_alt_auto_complete_enable_label'), 1);
+$field->setNotice(rex_i18n::msg('mediaplace_settings_ai_alt_auto_complete_enable_hint'));
+
 $field = $form->addSelectField('ai_alt_prompt_profile');
 $field->setLabel(rex_i18n::msg('mediaplace_settings_ai_alt_prompt_profile_label'));
 $select = $field->getSelect();
@@ -222,6 +232,7 @@ if ($formWasSubmitted) {
         'disable_collections',
         'enable_upload_resize',
         'enable_ai_alt_text',
+        'enable_ai_alt_auto_complete',
         'enable_ai_auto_tag',
     ];
     foreach ($checkboxFields as $checkboxField) {
