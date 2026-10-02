@@ -1372,6 +1372,14 @@ body.mp-embedded-editor-active .ck-body-wrapper {
     overflow-y: auto;
     background: var(--mp-sidebar-bg);
     padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Nur die Tag-Sektion darf schrumpfen/wachsen (siehe .mp-tag-section-wrap),
+   alle anderen Abschnitte behalten ihre natuerliche Hoehe. */
+#mp-overlay .mp-sidebar > * {
+    flex-shrink: 0;
 }
 
 /* Eigener Schliessen-Button innerhalb der Sidebar (siehe renderCategories()
@@ -2437,6 +2445,38 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     border-color: var(--mp-filter-active-hover-border);
 }
 
+/* Verwendungs-Filter: natives Select im Pill-Look (Alle/Nur benutzte/Nur unbenutzte). */
+#mp-overlay .mp-usage-filter {
+    margin: 0;
+    font-weight: normal;
+}
+
+#mp-overlay .mp-usage-filter-select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    padding: 0 14px 0 0;
+    cursor: pointer;
+    outline: none;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: right 4px center, right 0 center;
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+}
+
+#mp-overlay .mp-usage-filter:focus-within {
+    box-shadow: 0 0 0 2px rgba(60, 141, 188, 0.35);
+}
+
+#mp-overlay .mp-usage-filter-select option {
+    color: var(--mp-input-text);
+    background: var(--mp-input-bg);
+}
+
 /* Sitzt im Header neben dem Zahnrad (.mp-header-actions, siehe core.js-
    Markup-Kommentar dort), NICHT mehr in .mp-filter-bar -- gleiche 36px-
    Hoehe wie die uebrigen Header-Buttons (.mp-admin-menu-btn/.mp-close/
@@ -2539,8 +2579,29 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     color: #fff;
 }
 
+/* Die Tagliste nutzt den Platz, den die Sidebar unter den uebrigen
+   Abschnitten noch hat, und scrollt erst darin. Lange Listen behalten eine
+   Mindesthoehe (.mp-tag-section-long), sonst scrollt die ganze Sidebar. */
+#mp-overlay .mp-tag-section-wrap:not(.mp-sidebar-section-collapsed) {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+#mp-overlay .mp-tag-section-wrap.mp-tag-section-long:not(.mp-sidebar-section-collapsed) {
+    min-height: 220px;
+}
+
+#mp-overlay .mp-tag-section-wrap:not(.mp-sidebar-section-collapsed) > .mp-sidebar-section-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 #mp-overlay .mp-tag-filter-list {
-    max-height: 220px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -2552,6 +2613,8 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     border: none;
     background: transparent;
     color: var(--mp-filter-btn-text);
+    font-size: 13px;
+    line-height: 1.4;
     padding: 6px 8px;
     border-radius: 0;
     text-align: left;
@@ -2637,7 +2700,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
 }
 
 #mp-overlay .mp-filter-dropdown-option,
-#mp-overlay .mp-filter-dropdown-unused-option {
+#mp-overlay .mp-filter-dropdown-usage-option {
     width: 100%;
     display: flex;
     align-items: center;
@@ -2652,7 +2715,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
 }
 
 #mp-overlay .mp-filter-dropdown-option:hover,
-#mp-overlay .mp-filter-dropdown-unused-option:hover {
+#mp-overlay .mp-filter-dropdown-usage-option:hover {
     background: var(--mp-filter-hover-bg);
 }
 
@@ -2661,7 +2724,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
 }
 
 #mp-overlay .mp-filter-dropdown-option.is-selected,
-#mp-overlay .mp-filter-dropdown-unused-option.is-selected {
+#mp-overlay .mp-filter-dropdown-usage-option.is-selected {
     color: var(--mp-card-name);
 }
 

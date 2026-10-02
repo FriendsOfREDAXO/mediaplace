@@ -38,6 +38,25 @@
         return str;
     }
 
+    // Das Woerterbuch enthaelt rex_i18n::msg()-Ausgaben, also bereits HTML-
+    // escapte Strings: t() ist fuer HTML-Sinks gedacht (nicht nochmal
+    // escAttr() drumherum). tText() liefert Klartext fuer textContent/title/
+    // alert()/Toasts; vars werden dabei unveraendert eingesetzt.
+    var ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#039;': "'", '&#39;': "'" };
+
+    function tText(key, vars) {
+        var str = String(dict[key] || key).replace(/&(?:amp|lt|gt|quot|#0?39);/g, function (m) {
+            return ENTITIES[m];
+        });
+        if (vars) {
+            Object.keys(vars).forEach(function (k) {
+                str = str.replace('{' + k + '}', vars[k]);
+            });
+        }
+        return str;
+    }
+
     Core.i18n.t = t;
+    Core.i18n.tText = tText;
     Core.i18n.initLang = initLang;
 })(window.MPCore = window.MPCore || {});

@@ -107,7 +107,7 @@ export function renderProvidersSection() {
     var replaceTargetHint = ctx.getReplaceTarget ? ctx.getReplaceTarget() : null;
     if (replaceTargetHint) {
         html += '<div class="mp-providers-replace-hint"><i class="fa-solid fa-arrows-rotate"></i> ' +
-            escAttr(t('mediaplace_replace_pick_hint', { name: replaceTargetHint })) + '</div>';
+            t('mediaplace_replace_pick_hint', { name: escAttr(replaceTargetHint) }) + '</div>';
     }
     for (var i = 0; i < providers.length; i++) {
         var p = providers[i];
@@ -483,7 +483,7 @@ export function showProviderDetail(path, name) {
         html += '<div class="mp-image-optimize-status mp-provider-replace-status" style="display:none"></div>';
     } else {
         html += '<button type="button" class="mp-image-optimize-btn mp-provider-import-btn" data-provider-import-path="' + escAttr(path) + '" data-provider-import-name="' + escAttr(name) + '">' +
-            '<i class="fa-solid fa-cloud-arrow-down"></i> ' + escAttr(isPicker ? t('mediaplace_provider_import_and_select') : t('mediaplace_provider_import')) +
+            '<i class="fa-solid fa-cloud-arrow-down"></i> ' + (isPicker ? t('mediaplace_provider_import_and_select') : t('mediaplace_provider_import')) +
             '</button>';
         html += '<div class="mp-image-optimize-status mp-provider-import-status" style="display:none"></div>';
     }

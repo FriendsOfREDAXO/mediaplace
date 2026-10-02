@@ -1,5 +1,5 @@
 /**
- * Typ-/Tag-/"Nur unbenutzte"-Filter, Sortierung und das mobile Filter-Dropdown.
+ * Typ-/Tag-/Verwendungs-Filter, Sortierung und das mobile Filter-Dropdown.
  * Extraktion aus core.js (siehe DEV.md/Modularisierungs-Plan), Phase 8.
  *
  * Bewusst NICHT mit hierher gewandert: TYPE_EXTENSIONS/SORT_API_MAP/
@@ -28,7 +28,7 @@ var currentSort = 'date_desc'; // date_desc | date_asc | filename_asc | filename
 var currentTagFilters = {}; // tagName -> true
 var currentTagCatalog = []; // [{name,color}]
 var currentTagCounts = {}; // tagName -> Dateianzahl, siehe SystemTagManager::getTagCounts()
-var unusedOnlyFilter = false;
+var usageFilter = 'all'; // all | used | unused
 var unusedStatusCache = {};
 
 var FILTER_MAP = {
@@ -100,13 +100,16 @@ export function applyFilterSort(files) {
         result = result.filter(filterFn);
     }
 
-    // "Nur unbenutzte Medien" -- unabhaengig vom Typ-/Tag-Filter kombinierbar.
-    // Dateien, deren Status noch nicht geprueft wurde (siehe loadFiles()),
-    // werden herausgefiltert statt optimistisch angezeigt -- sonst wuerden
-    // gerade erst nachgeladene Seiten kurz falsche Treffer zeigen.
-    if (ctx.getCanFilterUnused() && unusedOnlyFilter) {
+    // Verwendungs-Filter ("Nur benutzte"/"Nur unbenutzte") -- unabhaengig vom
+    // Typ-/Tag-Filter kombinierbar. Dateien, deren Status noch nicht geprueft
+    // wurde (siehe loadFiles()), werden in beiden Richtungen herausgefiltert
+    // statt optimistisch angezeigt -- sonst wuerden gerade erst nachgeladene
+    // Seiten kurz falsche Treffer zeigen.
+    if (ctx.getCanFilterUnused() && 'all' !== usageFilter) {
+        var wantUnused = 'unused' === usageFilter;
         result = result.filter(function (f) {
-            return true === unusedStatusCache[f.filename];
+            var status = unusedStatusCache[f.filename];
+            return 'boolean' === typeof status && status === wantUnused;
         });
     }
 
@@ -185,7 +188,7 @@ export function updateFilterCounts() {
 
 /** Sortierung zaehlt bewusst NICHT als Filter (reine Anzeige-Praeferenz). */
 export function hasActiveFilters() {
-    return 'all' !== currentFilter || Object.keys(currentTagFilters).length > 0 || unusedOnlyFilter;
+    return 'all' !== currentFilter || Object.keys(currentTagFilters).length > 0 || 'all' !== usageFilter;
 }
 
 /**
@@ -201,21 +204,21 @@ function updateFilterResetVisibility() {
 }
 
 /**
- * Setzt Typ-/Tag-/"Nur unbenutzte"-Filter zurueck (NICHT die Suche -- die
+ * Setzt Typ-/Tag-/Verwendungs-Filter zurueck (NICHT die Suche -- die
  * hat ihre eigene, unabhaengige Bedeutung, siehe Nutzer-Feedback). Reload
  * obliegt bewusst dem Aufrufer (core.js): hier nur einmalig die drei
- * Zustaende geradeziehen statt applyTypeFilter()/toggleUnusedOnlyFilter()
+ * Zustaende geradeziehen statt applyTypeFilter()/setUsageFilter()
  * einzeln aufzurufen, die sonst je einen eigenen (ueberfluessigen) Reload/
  * Refresh ausloesen wuerden.
  */
 export function clearAllFilters() {
     currentFilter = 'all';
     currentTagFilters = {};
-    unusedOnlyFilter = false;
-    qsa('.mp-filter-btn', ctx.overlay).forEach(function (b) {
-        var isUnused = b.classList.contains('mp-unused-filter-btn');
-        b.classList.toggle('mp-filter-active', isUnused ? false : 'all' === b.getAttribute('data-filter'));
+    usageFilter = 'all';
+    qsa('.mp-filter-btn[data-filter]', ctx.overlay).forEach(function (b) {
+        b.classList.toggle('mp-filter-active', 'all' === b.getAttribute('data-filter'));
     });
+    syncUsageFilterControls();
     updateFilterDropdownLabel();
     updateTagFilterOptions();
 }
@@ -270,12 +273,14 @@ export function updateTagFilterOptions() {
 
     var listHtml = '';
     var visibleNames = {};
+    var visibleCount = 0;
     for (var k = 0; k < tags.length; k++) {
         var name = String((tags[k] && tags[k].name) || '').trim();
         var color = String((tags[k] && tags[k].color) || '#4a90d9');
         if (collectionTagToName(name)) continue;
         if (!name || visibleNames[name]) continue;
         visibleNames[name] = true;
+        visibleCount++;
         if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
             color = '#4a90d9';
         }
@@ -283,7 +288,7 @@ export function updateTagFilterOptions() {
         listHtml += '<button type="button" class="mp-tag-filter-option' + (selected[name] ? ' is-selected' : '') + '" data-tag-name="' + escAttr(name) + '">';
         listHtml += '<span class="mp-tag-dot" style="background:' + escAttr(color.toLowerCase()) + '"></span>';
         listHtml += '<span class="mp-tag-filter-option-label">' + escAttr(name) + '</span>';
-        listHtml += '<i class="fa-solid ' + (selected[name] ? 'fa-square-check' : 'fa-square') + '"></i>';
+        listHtml += '<i class="' + (selected[name] ? 'fa-solid fa-square-check' : 'fa-regular fa-square') + '"></i>';
         listHtml += '</button>';
     }
     if (!listHtml) {
@@ -298,7 +303,13 @@ export function updateTagFilterOptions() {
         (selectedCount ? '<button type="button" class="mp-tag-filter-clear-btn" title="' + escAttr(t('mediaplace_deselect_all_action')) + '"><i class="fa-solid fa-xmark"></i></button>' : '') +
         '<button type="button" class="mp-sidebar-section-toggle" data-section="tags" title="' + escAttr(t('mediaplace_toggle_section')) + '"><i class="fa-solid fa-chevron-down"></i></button>' +
         '</div>';
+    // Neuzeichnen per innerHTML wuerde die Liste bei jedem Tag-Klick nach oben springen lassen.
+    var oldList = menu.querySelector('.mp-tag-filter-list');
+    var scrollTop = oldList ? oldList.scrollTop : 0;
     menu.innerHTML = headHtml + '<div class="mp-sidebar-section-body"><div class="mp-tag-filter-list">' + listHtml + '</div></div>';
+    // Ab dieser Laenge bekommt die Liste eine Mindesthoehe (siehe CSS), kuerzere bleiben kompakt.
+    menu.classList.toggle('mp-tag-section-long', visibleCount > 6);
+    if (scrollTop) menu.querySelector('.mp-tag-filter-list').scrollTop = scrollTop;
 
     // Clean up stale selected tags that are not visible anymore
     var dirty = false;
@@ -316,7 +327,7 @@ export function updateTagFilterOptions() {
 }
 
 // ---- Mobiles Filter-Dropdown (Compact-Modus) ----
-// Fasst Typ-Filter + "Nur unbenutzte" in einem Dropdown zusammen (Tags
+// Fasst Typ-Filter + Verwendungs-Filter in einem Dropdown zusammen (Tags
 // bewusst NICHT mit drin -- eigener Sidebar-Abschnitt bleibt getrennt).
 var FILTER_TYPE_OPTIONS = [
     { value: 'all', labelKey: 'mediaplace_filter_all', icon: null },
@@ -338,7 +349,8 @@ export function updateFilterDropdownLabel() {
     var label = qs('.mp-filter-dropdown-label', ctx.overlay);
     if (!label) return;
     var text = filterTypeLabel(currentFilter);
-    if (ctx.getCanFilterUnused() && unusedOnlyFilter) text += ' ' + t('mediaplace_plus_unused');
+    if (ctx.getCanFilterUnused() && 'unused' === usageFilter) text += ' ' + t('mediaplace_plus_unused');
+    if (ctx.getCanFilterUnused() && 'used' === usageFilter) text += ' ' + t('mediaplace_plus_used');
     label.textContent = text;
 }
 
@@ -355,12 +367,17 @@ function buildFilterDropdownMenuHtml() {
             '</button>';
     }
     if (ctx.getCanFilterUnused()) {
+        // Zwei sich gegenseitig ausschliessende Optionen; Klick auf die
+        // aktive setzt zurueck auf "alle" (siehe core.js).
         html += '<div class="mp-filter-dropdown-separator"></div>';
-        html += '<button type="button" class="mp-filter-dropdown-unused-option' + (unusedOnlyFilter ? ' is-selected' : '') + '">' +
-            '<i class="fa-solid fa-trash-can mp-filter-dropdown-option-icon"></i>' +
-            '<span class="mp-filter-dropdown-option-label">' + t('mediaplace_unused_only') + '</span>' +
-            '<i class="fa-solid ' + (unusedOnlyFilter ? 'fa-square-check' : 'fa-square') + ' mp-filter-dropdown-option-check"></i>' +
-            '</button>';
+        [['used', 'fa-link', 'mediaplace_used_only'], ['unused', 'fa-link-slash', 'mediaplace_unused_only']].forEach(function (u) {
+            var on = usageFilter === u[0];
+            html += '<button type="button" class="mp-filter-dropdown-usage-option' + (on ? ' is-selected' : '') + '" data-usage="' + u[0] + '">' +
+                '<i class="fa-solid ' + u[1] + ' mp-filter-dropdown-option-icon"></i>' +
+                '<span class="mp-filter-dropdown-option-label">' + t(u[2]) + '</span>' +
+                '<i class="fa-solid ' + (on ? 'fa-square-check' : 'fa-square') + ' mp-filter-dropdown-option-check"></i>' +
+                '</button>';
+        });
     }
     return html;
 }
@@ -400,10 +417,8 @@ export function setFilterDropdownMenuOpen(open) {
 // falsche Auswahl anzeigt.
 export function applyTypeFilter(type) {
     currentFilter = type || 'all';
-    qsa('.mp-filter-btn', ctx.overlay).forEach(function (b) {
-        if (!b.classList.contains('mp-unused-filter-btn')) {
-            b.classList.toggle('mp-filter-active', b.getAttribute('data-filter') === currentFilter);
-        }
+    qsa('.mp-filter-btn[data-filter]', ctx.overlay).forEach(function (b) {
+        b.classList.toggle('mp-filter-active', b.getAttribute('data-filter') === currentFilter);
     });
     updateFilterDropdownLabel();
     // Server neu abfragen statt nur die bereits geladene(n) Seite(n)
@@ -414,34 +429,55 @@ export function applyTypeFilter(type) {
     ctx.loadFiles(ctx.getCurrentCat(), true);
 }
 
-// Analog zu applyTypeFilter(): gemeinsame Logik fuer Pill-Button und
+function syncUsageFilterControls() {
+    qsa('.mp-usage-filter', ctx.overlay).forEach(function (wrap) {
+        wrap.classList.toggle('mp-filter-active', 'all' !== usageFilter);
+        var select = wrap.querySelector('select');
+        if (select) select.value = usageFilter;
+    });
+}
+
+var usageChecksPending = 0;
+
+function setUsagePending(delta) {
+    usageChecksPending = Math.max(0, usageChecksPending + delta);
+    qsa('.mp-usage-filter > i', ctx.overlay).forEach(function (icon) {
+        icon.className = usageChecksPending ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-link';
+    });
+}
+
+// Analog zu applyTypeFilter(): gemeinsame Logik fuer Pill-Select und
 // Dropdown-Option, inkl. Nachladen des Unbenutzt-Status fuer bereits
 // geladene, aber noch nicht geprueften Dateien (siehe loadFiles()).
-export function toggleUnusedOnlyFilter() {
-    unusedOnlyFilter = !unusedOnlyFilter;
-    qsa('.mp-unused-filter-btn', ctx.overlay).forEach(function (b) {
-        b.classList.toggle('mp-filter-active', unusedOnlyFilter);
-    });
+// Die Pruefung dauert bei vielen Dateien spuerbar -- bis dahin bleibt das
+// Raster unveraendert (Spinner im Filter), statt kurz "0 Treffer" zu zeigen.
+export function setUsageFilter(value) {
+    usageFilter = ('used' === value || 'unused' === value) ? value : 'all';
+    syncUsageFilterControls();
     updateFilterDropdownLabel();
 
-    if (unusedOnlyFilter) {
-        var uncheckedFilenames = ctx.getLastLoadedFiles()
-            .map(function (f) { return f.filename; })
-            .filter(function (fn) { return fn && !(fn in unusedStatusCache); });
-        if (uncheckedFilenames.length) {
-            apiCheckUnusedMedia(uncheckedFilenames)
-                .then(function (unusedList) {
-                    var unusedSet = {};
-                    for (var u = 0; u < unusedList.length; u++) unusedSet[unusedList[u]] = true;
-                    for (var j = 0; j < uncheckedFilenames.length; j++) {
-                        unusedStatusCache[uncheckedFilenames[j]] = !!unusedSet[uncheckedFilenames[j]];
-                    }
-                    ctx.refreshDisplay();
-                })
-                .catch(function () {});
-        }
+    var uncheckedFilenames = 'all' === usageFilter ? [] : ctx.getLastLoadedFiles()
+        .map(function (f) { return f.filename; })
+        .filter(function (fn) { return fn && !(fn in unusedStatusCache); });
+    if (!uncheckedFilenames.length) {
+        ctx.refreshDisplay();
+        return;
     }
-    ctx.refreshDisplay();
+
+    setUsagePending(1);
+    apiCheckUnusedMedia(uncheckedFilenames)
+        .then(function (unusedList) {
+            var unusedSet = {};
+            for (var u = 0; u < unusedList.length; u++) unusedSet[unusedList[u]] = true;
+            for (var j = 0; j < uncheckedFilenames.length; j++) {
+                unusedStatusCache[uncheckedFilenames[j]] = !!unusedSet[uncheckedFilenames[j]];
+            }
+        })
+        .catch(function () {})
+        .then(function () {
+            setUsagePending(-1);
+            ctx.refreshDisplay();
+        });
 }
 
 export function toggleTagFilter(name) {
@@ -473,7 +509,7 @@ export function resetFilterState(options) {
     currentTagFilters = {};
     currentTagCatalog = [];
     currentTagCounts = {};
-    unusedOnlyFilter = false;
+    usageFilter = 'all';
     unusedStatusCache = {};
     currentSort = localStorage.getItem('mp_sort') || 'date_desc';
 }
@@ -503,8 +539,8 @@ export function setCurrentTagCounts(v) {
     currentTagCounts = (v && typeof v === 'object') ? v : {};
 }
 
-export function getUnusedOnlyFilter() {
-    return unusedOnlyFilter;
+export function getUsageFilter() {
+    return usageFilter;
 }
 
 /** Objekt-Referenz -- Aufrufer duerfen direkt hineinschreiben (in-place mutiert). */

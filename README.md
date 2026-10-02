@@ -17,7 +17,7 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 **Overlay & Medienverwaltung**
 - Kategorie-Baum mit Suche, Verschieben, Anlegen/Umbenennen
 - Serverseitige Suche über Titel, Dateiname, Originalname und Metadaten
-- Typ- und Tag-Filter, „Nur unbenutzte Medien“-Filter, 8 Sortieroptionen
+- Typ- und Tag-Filter, Verwendungs-Filter („Nur benutzte“ / „Nur unbenutzte“), 8 Sortieroptionen
 - Grid, Liste & Media Wall (Masonry), Kachelgröße per Slider
 - Detail-Panel mit editierbarem Titel, eigenen Metadaten-Feldern, Verwendungsstatus, Datei tauschen/löschen/downloaden
 - Fokuspunkt-Editor direkt im Detail-Panel, sobald das [focuspoint](https://github.com/FriendsOfREDAXO/focuspoint)-Addon installiert ist
@@ -68,7 +68,7 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 2. Das [FriendsOfREDAXO/api](https://github.com/FriendsOfREDAXO/api)-Addon muss ebenfalls installiert sein – unter **API → Konfiguration** die `backend/media*`-Endpunkte (Liste, Get, Add, Delete, Update, Category) aktivieren.
 3. Fertig. Der Hauptmenüpunkt „Medienpool“ öffnet ab sofort direkt den neuen Overlay.
 
-Unter **MediaPlace** finden sich die Admin-Seiten **Einstellungen**, **Metainfo Felder**, **Demo** und **Hilfe**. Der Picker/Overlay selbst bleibt für alle Backend-User mit Medienrecht nutzbar – nur der „Nur unbenutzte Medien“-Filter braucht zusätzlich ein eigenes Recht, das sich über Benutzer → Rollen vergeben lässt.
+Unter **MediaPlace** finden sich die Admin-Seiten **Einstellungen**, **Metainfo Felder**, **Demo** und **Hilfe**. Der Picker/Overlay selbst bleibt für alle Backend-User mit Medienrecht nutzbar – nur der Verwendungs-Filter („Nur benutzte“ / „Nur unbenutzte“) braucht zusätzlich ein eigenes Recht, das sich über Benutzer → Rollen vergeben lässt.
 
 ### Klassischen Medienpool zurückholen
 

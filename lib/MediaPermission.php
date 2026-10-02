@@ -97,10 +97,13 @@ class MediaPermission
             return [];
         }
         if (self::hasFullAccess()) {
-            return array_map('intval', array_column(
+            $ids = array_map('intval', array_column(
                 \rex_sql::factory()->getArray('SELECT id FROM ' . \rex::getTable('media_category')),
                 'id',
             ));
+            $ids[] = 0; // Hauptkategorie, sonst fehlen deren Dateien in Tag-/Sammlungszaehlern
+
+            return $ids;
         }
 
         $allCategoryIds = array_map('intval', array_column(

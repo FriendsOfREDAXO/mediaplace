@@ -28,6 +28,7 @@ var ctx = null;
 
 var MPCore = window.MPCore;
 var t = MPCore.i18n.t;
+var tText = MPCore.i18n.tText;
 var escAttr = MPCore.helpers.escAttr;
 var qs = MPCore.helpers.qs;
 var qsa = MPCore.helpers.qsa;
@@ -199,7 +200,7 @@ export function renderCategories(treeHtml) {
                 (canAccessRootCategory
                     ? '<a class="mp-cat' + (currentCat === 0 ? ' mp-cat-active' : '') + '" data-cat="0">' +
                         '<i class="fa-solid fa-house"></i> ' + t('mediaplace_root_media') + '</a>'
-                    : '<span class="mp-cat mp-cat-disabled" title="' + escAttr(t('mediaplace_root_media_no_access')) + '">' +
+                    : '<span class="mp-cat mp-cat-disabled" title="' + t('mediaplace_root_media_no_access') + '">' +
                         '<i class="fa-solid fa-house"></i> ' + t('mediaplace_root_media') + '</span>') +
                 (canAccessRootCategory
                     ? '<button class="mp-cat-add-btn" data-add-parent="0" title="' + escAttr(t('mediaplace_new_category')) + '">' +
@@ -515,7 +516,7 @@ export function renderBreadcrumb() {
     var catPath = ctx.getCatPath();
     var html = ctx.getCanAccessRootCategory()
         ? '<a class="mp-bc-item" data-cat="0"><i class="fa-solid fa-house"></i></a>'
-        : '<span class="mp-bc-item mp-bc-item-disabled" title="' + escAttr(t('mediaplace_root_media_no_access')) + '"><i class="fa-solid fa-house"></i></span>';
+        : '<span class="mp-bc-item mp-bc-item-disabled" title="' + t('mediaplace_root_media_no_access') + '"><i class="fa-solid fa-house"></i></span>';
     for (var i = 0; i < catPath.length; i++) {
         html += ' <i class="fa-solid fa-chevron-right mp-bc-sep"></i> ';
         html += '<a class="mp-bc-item" data-cat="' + catPath[i].id + '">' + escAttr(catPath[i].name) + '</a>';
@@ -616,9 +617,9 @@ export function toggleCategory(catId) {
 
 export function categoryErrorMessage(err, fallbackKey) {
     if (err && 403 === err.status) {
-        return t('mediaplace_cat_permission_denied');
+        return tText('mediaplace_cat_permission_denied');
     }
-    return t(fallbackKey, { msg: err.message });
+    return tText(fallbackKey, { msg: err.message });
 }
 
 /**

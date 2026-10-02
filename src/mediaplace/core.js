@@ -117,7 +117,7 @@ import {
     updateFilterDropdownLabel,
     setFilterDropdownMenuOpen,
     applyTypeFilter,
-    toggleUnusedOnlyFilter,
+    setUsageFilter,
     toggleTagFilter,
     clearTagFilters,
     getSelectedTagFilters,
@@ -129,7 +129,7 @@ import {
     getCurrentTagCatalog,
     setCurrentTagCatalog,
     setCurrentTagCounts,
-    getUnusedOnlyFilter,
+    getUsageFilter,
     getUnusedStatusCache,
 } from './modules/filters.js';
 import {
@@ -255,9 +255,9 @@ import {
     // blockiert die Auswahl, siehe applyFilterSort()/isFileSelectable(). null =
     // keine Einschraenkung.
     var allowedExtensions = null;
-    // "Nur unbenutzte Medien"-Filter (eigenes Recht, siehe MediaPermission::
-    // hasUnusedFilterAccess() + data-can-filter-unused am #mp-root). Zustand
-    // selbst lebt in modules/filters.js (unusedOnlyFilter/unusedStatusCache),
+    // Verwendungs-Filter "Nur benutzte"/"Nur unbenutzte" (eigenes Recht, siehe
+    // MediaPermission::hasUnusedFilterAccess() + data-can-filter-unused am
+    // #mp-root). Zustand selbst lebt in modules/filters.js (usageFilter/unusedStatusCache),
     // dieses Flag nur, weil das Recht schon beim Seitenaufbau feststeht.
     var canFilterUnused = false;
     // Eigene, engere Berechtigung fuer die Kategorie-Massenaktionen (Alle
@@ -400,6 +400,7 @@ import {
     var apiLoadFocuspointInfo = MPCore.api.apiLoadFocuspointInfo;
     var apiSaveFocuspoint = MPCore.api.apiSaveFocuspoint;
     var t = MPCore.i18n.t;
+    var tText = MPCore.i18n.tText;
     var qs = MPCore.helpers.qs;
     var qsa = MPCore.helpers.qsa;
     var formatBytes = MPCore.helpers.formatBytes;
@@ -1043,7 +1044,7 @@ import {
                 // Recht + Toggle) -- pro geladener Seite, nicht fuer den ganzen Pool
                 // (siehe rex_api_mediaplace_unused.php). Eigener catch(), damit
                 // ein Fehler hier nicht das Laden der Seite insgesamt blockiert.
-                var unusedPromise = (canFilterUnused && getUnusedOnlyFilter() && filenames.length)
+                var unusedPromise = (canFilterUnused && 'all' !== getUsageFilter() && filenames.length)
                     ? apiCheckUnusedMedia(filenames).catch(function () { return null; })
                     : Promise.resolve(null);
 
@@ -1215,9 +1216,16 @@ import {
         // Eigenes Recht (siehe MediaPermission::hasUnusedFilterAccess()), nicht
         // Teil von features -- deshalb separate Bedingung statt im selben
         // Feature-Toggle-Muster wie Tagging/Sammlungen.
+        // Ein Select statt zweier Toggle-Buttons (Alle/Nur benutzte/Nur unbenutzte),
+        // haelt die Filter-Leiste schmal. Bewusst ohne data-filter: ist kein Typ-Filter.
         var unusedFilterHtml = canFilterUnused
-            ? '<button type="button" class="mp-filter-btn mp-unused-filter-btn" title="' + escAttr(t('mediaplace_unused_only_hint')) + '">' +
-                '<i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_unused_only') + '</button>'
+            ? '<label class="mp-filter-btn mp-usage-filter" title="' + t('mediaplace_usage_filter_hint') + '">' +
+                '<i class="fa-solid fa-link"></i>' +
+                '<select class="mp-usage-filter-select" aria-label="' + t('mediaplace_usage_filter') + '">' +
+                    '<option value="all">' + t('mediaplace_usage_filter') + '</option>' +
+                    '<option value="used">' + t('mediaplace_used_only') + '</option>' +
+                    '<option value="unused">' + t('mediaplace_unused_only') + '</option>' +
+                '</select></label>'
             : '';
 
         // Eigenes, engeres Recht (MediaPermission::hasBulkOperationsAccess(),
@@ -1630,6 +1638,7 @@ import {
             updateMultiUI: updateMultiUI,
             updateTagFilterOptions: updateTagFilterOptions,
             setCurrentTagCatalog: setCurrentTagCatalog,
+            setCurrentTagCounts: setCurrentTagCounts,
             getAltMissingActive: function () { return altMissingActive; },
             refreshAltMissingNav: refreshAltMissingNav,
             loadFiles: loadFiles,
@@ -2274,7 +2283,7 @@ import {
                             showAlertModal({
                                 icon: 'fa-circle-check',
                                 title: t('mediaplace_notice'),
-                                message: escAttr(t('mediaplace_collection_activated_hint')),
+                                message: t('mediaplace_collection_activated_hint'),
                             });
                         })
                         .catch(function (err) {
@@ -3695,7 +3704,7 @@ import {
                         // Gleiches Feedback wie beim Cloud-Ersetzen (siehe
                         // finishProviderReplace()) -- vorher gab es bei
                         // Erfolg ueberhaupt keine sichtbare Rueckmeldung.
-                        showToast(t('mediaplace_replace_success', { name: selectedFile }), 'success');
+                        showToast(tText('mediaplace_replace_success', { name: selectedFile }), 'success');
                     })
                     .catch(function (err) {
                         alert(t('mediaplace_error_replacing_file', { msg: err.message }));
@@ -3941,27 +3950,28 @@ import {
         // Filter buttons (event delegation on filter bar)
         var filterBar = qs('.mp-filter-bar', overlay);
         filterBar.addEventListener('click', function (e) {
-            // Unabhaengiger Toggle, kein data-filter -- deshalb vor dem
-            // generischen Typ-Filter-Handler unten geprueft, sonst wuerde
-            // currentFilter faelschlich auf 'all' zurueckgesetzt.
-            var unusedBtn = e.target.closest('.mp-unused-filter-btn');
-            if (unusedBtn) {
-                toggleUnusedOnlyFilter();
-                return;
-            }
+            // Verwendungs-Select hat kein data-filter -- vor dem generischen
+            // Typ-Filter-Handler unten abfangen, sonst wuerde jeder Klick ins
+            // Select currentFilter faelschlich auf 'all' zuruecksetzen.
+            if (e.target.closest('.mp-usage-filter')) return;
 
             var btn = e.target.closest('.mp-filter-btn');
             if (!btn) return;
             applyTypeFilter(btn.getAttribute('data-filter') || 'all');
+        });
+        filterBar.addEventListener('change', function (e) {
+            if (e.target.classList.contains('mp-usage-filter-select')) {
+                setUsageFilter(e.target.value);
+            }
         });
         updateFilterDropdownLabel();
 
         // Tag-Liste lebt jetzt fest in der Sidebar (#mp-tag-filter-section,
         // siehe updateTagFilterOptions()), kein eigenes Portal/Toggle mehr
         // noetig. Das mobile Filter-Dropdown (#mp-filter-dropdown-menu-portal)
-        // fuer Typ-Filter/"Nur unbenutzte" bleibt unveraendert ein eigenes
+        // fuer Typ-/Verwendungs-Filter bleibt unveraendert ein eigenes
         // Portal -- die Auswahl-Logik selbst laeuft ueber dieselben
-        // applyTypeFilter()/toggleUnusedOnlyFilter()-Funktionen wie die
+        // applyTypeFilter()/setUsageFilter()-Funktionen wie die
         // Desktop-Pills, damit beide UIs immer synchron bleiben.
         overlay.addEventListener('click', function (e) {
             var option = e.target.closest('.mp-tag-filter-option');
@@ -4007,10 +4017,11 @@ import {
                 return;
             }
 
-            var unusedOption = e.target.closest('.mp-filter-dropdown-unused-option');
-            if (unusedOption) {
+            var usageOption = e.target.closest('.mp-filter-dropdown-usage-option');
+            if (usageOption) {
                 e.stopPropagation();
-                toggleUnusedOnlyFilter();
+                var usage = usageOption.getAttribute('data-usage');
+                setUsageFilter(getUsageFilter() === usage ? 'all' : usage);
                 setFilterDropdownMenuOpen(true); // re-render, Menue bleibt offen (kombinierbar)
                 return;
             }
@@ -4254,7 +4265,7 @@ import {
         // Cloud-Detail-Panel (".mp-provider-replace-status") durch den
         // showDetail()-Panel-Wechsel hier sofort wieder ueberschrieben wird,
         // bevor er wahrnehmbar war (Bug-Report: kein sichtbares Feedback).
-        showToast(t('mediaplace_replace_success', { name: filename }), 'success');
+        showToast(tText('mediaplace_replace_success', { name: filename }), 'success');
     }
 
     // ---- Open / Close ----
@@ -4443,6 +4454,7 @@ import {
         qsa('.mp-filter-btn', overlay).forEach(function (b) {
             b.classList.toggle('mp-filter-active', b.getAttribute('data-filter') === 'all');
         });
+        qsa('.mp-usage-filter-select', overlay).forEach(function (sel) { sel.value = 'all'; });
         updateTagFilterOptions();
         setFilterDropdownMenuOpen(false);
         updateFilterDropdownLabel();

@@ -30,6 +30,7 @@ var ctx = null;
 
 var MPCore = window.MPCore;
 var t = MPCore.i18n.t;
+var tText = MPCore.i18n.tText;
 var escAttr = MPCore.helpers.escAttr;
 var qs = MPCore.helpers.qs;
 var qsa = MPCore.helpers.qsa;
@@ -497,7 +498,7 @@ export function openBulkPanel() {
             clangById[String(clang.id)] = clang;
         });
         if (svgSkipped > 0) {
-            svgNoteEl.textContent = t('mediaplace_ai_alt_bulk_svg_skipped', { count: svgSkipped });
+            svgNoteEl.textContent = tText('mediaplace_ai_alt_bulk_svg_skipped', { count: svgSkipped });
             svgNoteEl.style.display = '';
         }
         if (0 === total) {
@@ -527,13 +528,13 @@ export function openBulkPanel() {
         if (remaining > 0) {
             continueBtn.style.display = '';
             textEl.textContent = order.length > 0
-                ? t('mediaplace_ai_alt_bulk_review_ready_more', { count: order.length, remaining: remaining })
-                : t('mediaplace_ai_alt_bulk_run_limit_none', { remaining: remaining });
+                ? tText('mediaplace_ai_alt_bulk_review_ready_more', { count: order.length, remaining: remaining })
+                : tText('mediaplace_ai_alt_bulk_run_limit_none', { remaining: remaining });
         } else {
             continueBtn.style.display = 'none';
             textEl.textContent = order.length > 0
-                ? t('mediaplace_ai_alt_bulk_review_ready', { count: order.length })
-                : t('mediaplace_ai_alt_bulk_none_generated');
+                ? tText('mediaplace_ai_alt_bulk_review_ready', { count: order.length })
+                : tText('mediaplace_ai_alt_bulk_none_generated');
         }
     }
 

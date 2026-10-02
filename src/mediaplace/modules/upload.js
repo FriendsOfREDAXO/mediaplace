@@ -19,6 +19,7 @@ var ctx = null;
 
 var MPCore = window.MPCore;
 var t = MPCore.i18n.t;
+var tText = MPCore.i18n.tText;
 var escAttr = MPCore.helpers.escAttr;
 var qs = MPCore.helpers.qs;
 var isImage = MPCore.helpers.isImage;
@@ -244,9 +245,9 @@ function showGridError(message) {
 // Kategorie-Operationen (Upload/Loeschen/Verschieben).
 export function mediaErrorMessage(err, fallbackKey) {
     if (err && 403 === err.status) {
-        return t('mediaplace_media_permission_denied');
+        return tText('mediaplace_media_permission_denied');
     }
-    return t(fallbackKey, { msg: err.message });
+    return tText(fallbackKey, { msg: err.message });
 }
 
 function showCollectionUploadCategoryPicker(files, collection) {

@@ -28,6 +28,7 @@ var ctx = null;
 
 var MPCore = window.MPCore;
 var t = MPCore.i18n.t;
+var tText = MPCore.i18n.tText;
 var escAttr = MPCore.helpers.escAttr;
 var qs = MPCore.helpers.qs;
 var qsa = MPCore.helpers.qsa;
@@ -88,7 +89,7 @@ export function setDetailOriginalSystemTags(v) {
  * - getMetainfoPickTarget()/setMetainfoPickTarget(v): noch-legacy-State
  * - getMediaLinkPickFieldKey()/setMediaLinkPickFieldKey(v): noch-legacy-State
  * - isCompactLayout()/applyDetailWidth()/updateMultiUI(): noch-legacy-Funktionen
- * - updateTagFilterOptions()/setCurrentTagCatalog(catalog): noch-legacy-Funktionen
+ * - updateTagFilterOptions()/setCurrentTagCatalog(catalog)/setCurrentTagCounts(counts): noch-legacy-Funktionen
  *   (eigentlich aus modules/filters.js, core.js reicht sie nur durch)
  */
 export function initDetail(theCtx) {
@@ -385,7 +386,7 @@ export function startMetainfoPick(wrapper, isList) {
     var banner = qs('#mp-metainfo-pick-banner', overlay);
     if (banner) {
         var text = qs('.mp-metainfo-pick-banner-text', banner);
-        if (text) text.textContent = t(isList ? 'mediaplace_metainfo_pick_hint_multi' : 'mediaplace_metainfo_pick_hint');
+        if (text) text.textContent = tText(isList ? 'mediaplace_metainfo_pick_hint_multi' : 'mediaplace_metainfo_pick_hint');
         banner.style.display = '';
     }
 }
@@ -559,7 +560,7 @@ export function updateTagsComboList(wrap) {
     }
     if (term && !exactMatch) {
         html += '<button type="button" class="mp-tags-combo-create" data-tag-name="' + escAttr(term) + '">' +
-            '<i class="fa-solid fa-plus"></i> ' + escAttr(t('mediaplace_create_tag', { name: term })) +
+            '<i class="fa-solid fa-plus"></i> ' + t('mediaplace_create_tag', { name: escAttr(term) }) +
             '</button>';
     }
     if (!html) {
@@ -999,6 +1000,9 @@ export function saveDetail() {
             if (systemTagsChanged && selectedFile) {
                 apiLoadSystemTagsForFiles([selectedFile]).then(function (payload) {
                     ctx.setCurrentTagCatalog(Array.isArray(payload.catalog) ? payload.catalog : []);
+                    // Ohne frische Zaehler blendet die Sidebar einen gerade
+                    // erst vergebenen Tag aus (Zaehler 0, siehe updateTagFilterOptions()).
+                    ctx.setCurrentTagCounts(payload.tag_counts);
                     var ft = payload.file_tags || {};
                     var selectedFileTags = Array.isArray(ft[selectedFile]) ? ft[selectedFile] : [];
                     var splitTags = splitSystemTags(selectedFileTags);

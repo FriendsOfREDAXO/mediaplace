@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 2.3.0 – 2026-10-02
+
+### Neue Features
+- **Verwendungs-Filter „Nur benutzte“ / „Nur unbenutzte“** (#9): der bisherige Button „Nur unbenutzte“ ist jetzt ein Auswahlfeld „Verwendung“ mit drei Zuständen (Alle / Nur benutzte / Nur unbenutzte) – kein zusätzlicher Button in der Filterleiste. Im kompakten Layout stehen beide Optionen im Filter-Dropdown. Während die Verwendung geprüft wird, bleibt das Raster stehen und das Feld zeigt einen Spinner, statt kurz „0 Treffer“ anzuzeigen.
+- **Tagliste nutzt den freien Platz der Sidebar**: statt fester 220 px wächst die Liste in den Raum unter Kategorien und Sammlungen und scrollt erst, wenn dieser ausgeht. Lange Listen behalten eine Mindesthöhe. Zeilen so kompakt wie die Kategorie-Zeilen, beim Anklicken eines Tags springt die Liste nicht mehr nach oben.
+
+### Bugfixes
+- **Tags von Dateien in der Hauptkategorie fehlten in der Sidebar** (#10): für Admins wurde die Hauptkategorie bei den Tag- und Sammlungszählern nicht berücksichtigt – solche Tags tauchten nie im Sidebar-Filter auf, Sammlungen zeigten zu niedrige Zahlen.
+- **Neu vergebene Tags erschienen erst nach einem Neuladen in der Sidebar** (#10): nach dem Speichern im Detail-Panel werden jetzt auch die Tag-Zähler aktualisiert.
+- **Einheitliche Bezeichnung „Hauptkategorie“** (#10): Auswahlfeld und Hinweistexte sagten bisher „(Hauptverzeichnis)“ bzw. „Kein Ordner“.
+- **`&quot;` und andere HTML-Entities in Hinweisen** (#10): Sprachtexte wurden an mehreren Stellen doppelt escaped (u. a. „Sammlung aktiviert“-Hinweis, Toasts, Fehlermeldungen, Tooltips). Neue Hilfsfunktion `MPCore.i18n.tText()` für reine Textausgaben.
+
 ## Version 2.2.0 – 2026-09-18
 
 ### Neue Features
