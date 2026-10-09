@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 2.4.0 – unveröffentlicht
+## Version 2.4.0 – 2026-10-09
 
 ### Neue Features
 - **Eigene Bildbearbeitung statt cropper-Integration**: Der Regler-Button in der Bildvorschau öffnet die Bearbeitung im Hauptbereich – Zuschneiden (frei oder mit Seitenverhältnis), Drehen, Spiegeln, Ausrichten bis ±45°, Perspektive korrigieren (vier Eckpunkte), Helligkeit, Kontrast, Gamma und Sättigung. Live-Vorschau mit denselben Schritten und Formeln wie die serverseitige Verarbeitung (Imagick, mit GD nur die Geometrie). Beim Korrigieren der Perspektive zeigt eine mitlaufende Vorschau das entzerrte Ergebnis, „Ergebnis groß anzeigen“ wechselt zwischen Eckpunkten und Ergebnis.
