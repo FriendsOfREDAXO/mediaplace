@@ -309,7 +309,8 @@ function applyPermissions(info) {
     el('.mp-ie-copy-name').hidden = !info.canCopy;
     overwriteRadio.closest('label').hidden = !info.canOverwrite;
     el('.mp-ie-overwrite-hint').hidden = !info.canOverwrite;
-    (info.canCopy ? copyRadio : overwriteRadio).checked = true;
+    // Standard: Datei ersetzen (Original bleibt wiederherstellbar), sonst als neue Datei
+    (info.canOverwrite ? overwriteRadio : copyRadio).checked = true;
     el('.mp-ie-name').value = info.copyName || '';
     el('.mp-ie-ext').textContent = '.' + (info.extension || '');
     el('.mp-ie-restore').hidden = !(info.hasBackup && info.canOverwrite);
