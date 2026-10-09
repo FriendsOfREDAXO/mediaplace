@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 2.5.1 – 2026-10-09
+
+### Geändert
+- Bildbearbeitung speichert standardmäßig ersetzend („Datei ersetzen“): Dateiname und Verwendungen bleiben, das Original wird aufbewahrt und lässt sich wiederherstellen. User ohne das Recht `mediaplace[edit_image_overwrite]` speichern weiterhin als neue Datei.
+- Bildbearbeitung: „Zuschneiden und Drehen“ ist beim ersten Öffnen aufgeklappt, „Automatisch korrigieren“ steht als hervorgehobener Knopf oben in diesem Bereich statt in der Kopfleiste. Danach gilt wie bisher der gemerkte Zustand der Bereiche.
+
 ## Version 2.5.0 – 2026-10-09
 
 ### Neue Features (Bildbearbeitung)

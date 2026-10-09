@@ -39,7 +39,7 @@ var CONTROLS = {
     vignette: { min: 0, max: 100, def: 0 }
 };
 var EFFECTS = ['none', 'bw', 'sepia', 'warm', 'cold', 'faded'];
-var SECTIONS_STORAGE_KEY = 'mediaplace.imageEditor.openSections';
+var SECTIONS_STORAGE_KEY = 'mediaplace.imageEditor.sections';
 
 /**
  * ctx-Vertrag:
@@ -125,7 +125,6 @@ function buildMarkup() {
         '<div class="mp-editor-canvas-header">' +
             '<button type="button" class="mp-ie-back mp-ie-header-btn" title="' + escAttr(t('mediaplace_back_to_overview')) + '"><i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') + '</button>' +
             '<div class="mp-ie-title"></div>' +
-            '<button type="button" class="mp-ie-auto mp-ie-header-btn" data-action="auto" title="' + escAttr(t('mediaplace_image_edit_auto_hint')) + '"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + t('mediaplace_image_edit_auto') + '</button>' +
             '<button type="button" class="mp-ie-compare mp-ie-header-btn" aria-pressed="false" title="' + escAttr(t('mediaplace_image_edit_compare_hint')) + '"><i class="fa-solid fa-circle-half-stroke"></i> ' + t('mediaplace_image_edit_compare') + '</button>' +
             '<button type="button" class="mp-ie-reset-all mp-ie-header-btn"><i class="fa-solid fa-rotate-left"></i> ' + t('mediaplace_image_edit_reset_all') + '</button>' +
             '<button type="button" class="mp-ie-save"><i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save') + '</button>' +
@@ -143,6 +142,7 @@ function buildMarkup() {
                 '<section class="mp-ie-section" data-section="geometry" data-key="crop">' +
                     sectionHead('crop', t('mediaplace_image_edit_section_crop')) +
                     '<div class="mp-ie-section-body" id="mp-ie-section-crop">' +
+                    '<button type="button" class="mp-ie-btn mp-ie-btn-primary mp-ie-auto" data-action="auto" title="' + escAttr(t('mediaplace_image_edit_auto_hint')) + '"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + t('mediaplace_image_edit_auto') + '</button>' +
                     '<label class="mp-ie-field"><span>' + t('mediaplace_image_edit_aspect') + '</span><select class="mp-ie-aspect">' + aspectOptions + '</select></label>' +
                     '<div class="mp-ie-tools">' +
                         tool('rotate-left', 'fa-rotate-left', t('mediaplace_image_edit_rotate_left')) +
@@ -309,7 +309,8 @@ function applyPermissions(info) {
     el('.mp-ie-copy-name').hidden = !info.canCopy;
     overwriteRadio.closest('label').hidden = !info.canOverwrite;
     el('.mp-ie-overwrite-hint').hidden = !info.canOverwrite;
-    (info.canCopy ? copyRadio : overwriteRadio).checked = true;
+    // Standard: Datei ersetzen (Original bleibt wiederherstellbar), sonst als neue Datei
+    (info.canOverwrite ? overwriteRadio : copyRadio).checked = true;
     el('.mp-ie-name').value = info.copyName || '';
     el('.mp-ie-ext').textContent = '.' + (info.extension || '');
     el('.mp-ie-restore').hidden = !(info.hasBackup && info.canOverwrite);
@@ -1108,12 +1109,15 @@ export function commitImageEditor() {
 
 // ---- Aufklappbare Bereiche (Zustand pro Browser gemerkt) ----
 
+/** Ohne gespeicherten Zustand ist „Zuschneiden und Drehen“ offen (Standardnutzung). */
 function readOpenSections() {
     try {
-        var stored = JSON.parse(window.localStorage.getItem(SECTIONS_STORAGE_KEY) || '[]');
-        return Array.isArray(stored) ? stored : [];
+        var raw = window.localStorage.getItem(SECTIONS_STORAGE_KEY);
+        if (null === raw) return ['crop'];
+        var stored = JSON.parse(raw);
+        return Array.isArray(stored) ? stored : ['crop'];
     } catch (e) {
-        return [];
+        return ['crop'];
     }
 }
 
