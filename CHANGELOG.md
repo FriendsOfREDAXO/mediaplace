@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 2.5.1 – unveröffentlicht
+
+### Geändert
+- Bildbearbeitung: „Zuschneiden und Drehen“ ist beim ersten Öffnen aufgeklappt, „Automatisch korrigieren“ steht als hervorgehobener Knopf oben in diesem Bereich statt in der Kopfleiste. Danach gilt wie bisher der gemerkte Zustand der Bereiche.
+
 ## Version 2.5.0 – 2026-10-09
 
 ### Neue Features (Bildbearbeitung)

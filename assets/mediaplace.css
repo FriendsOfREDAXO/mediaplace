@@ -7553,3 +7553,8 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
 #mp-overlay .mp-ie-slider[data-adjust="highlights"] { --mp-ie-track: linear-gradient(to right, #9a9a9a, #fafafa); }
 #mp-overlay .mp-ie-slider[data-adjust="vignette"] { --mp-ie-track: linear-gradient(to right, #e8e8e8, #2b2b2b); }
 #mp-overlay .mp-ie-slider[data-adjust="contrast"] { --mp-ie-track: linear-gradient(to right, #8c8c8c, #8c8c8c 50%, #000 50%, #fff); }
+
+#mp-overlay .mp-ie-auto {
+    width: 100%;
+    margin: 0 0 12px;
+}
