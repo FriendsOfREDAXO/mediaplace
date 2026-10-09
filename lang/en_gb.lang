@@ -103,6 +103,7 @@ mediaplace_image_edit_temperature = Temperature
 mediaplace_image_edit_tint = Tint
 mediaplace_image_edit_section_tone = Tones
 mediaplace_image_edit_auto = Auto correct
+mediaplace_image_edit_auto_hint = Set black and white point and correct a colour cast
 mediaplace_image_edit_black = Black point
 mediaplace_image_edit_white = White point
 mediaplace_image_edit_highlights = Highlights

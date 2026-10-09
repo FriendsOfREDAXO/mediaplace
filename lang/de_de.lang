@@ -103,6 +103,7 @@ mediaplace_image_edit_temperature = Farbtemperatur
 mediaplace_image_edit_tint = Tönung
 mediaplace_image_edit_section_tone = Tonwerte
 mediaplace_image_edit_auto = Automatisch korrigieren
+mediaplace_image_edit_auto_hint = Schwarz- und Weißpunkt setzen und einen Farbstich ausgleichen
 mediaplace_image_edit_black = Schwarzpunkt
 mediaplace_image_edit_white = Weißpunkt
 mediaplace_image_edit_highlights = Lichter

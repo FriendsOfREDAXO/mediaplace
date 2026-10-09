@@ -39,6 +39,7 @@ var CONTROLS = {
     vignette: { min: 0, max: 100, def: 0 }
 };
 var EFFECTS = ['none', 'bw', 'sepia', 'warm', 'cold', 'faded'];
+var SECTIONS_STORAGE_KEY = 'mediaplace.imageEditor.openSections';
 
 /**
  * ctx-Vertrag:
@@ -54,6 +55,7 @@ export function initImageEditor(theCtx) {
     if (!canvas) return;
 
     canvas.innerHTML = buildMarkup();
+    applySections(readOpenSections());
     canvas.addEventListener('click', onClick);
     canvas.addEventListener('input', onInput);
     canvas.addEventListener('change', onChange);
@@ -102,6 +104,10 @@ function buildMarkup() {
             '<input type="range" min="' + c.min + '" max="' + c.max + '" step="1" value="' + c.def + '" data-adjust="' + key + '">' +
         '</label>';
     };
+    var sectionHead = function (key, title) {
+        return '<h3 class="mp-ie-section-title"><button type="button" class="mp-ie-section-toggle" data-section-toggle="' + key + '" aria-expanded="false" aria-controls="mp-ie-section-' + key + '">' +
+            '<span>' + title + '</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button></h3>';
+    };
     var effectOptions = EFFECTS.map(function (key) {
         return '<option value="' + key + '">' + escAttr(t('mediaplace_image_edit_effect_' + key)) + '</option>';
     }).join('');
@@ -119,6 +125,7 @@ function buildMarkup() {
         '<div class="mp-editor-canvas-header">' +
             '<button type="button" class="mp-ie-back mp-ie-header-btn" title="' + escAttr(t('mediaplace_back_to_overview')) + '"><i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') + '</button>' +
             '<div class="mp-ie-title"></div>' +
+            '<button type="button" class="mp-ie-auto mp-ie-header-btn" data-action="auto" title="' + escAttr(t('mediaplace_image_edit_auto_hint')) + '"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + t('mediaplace_image_edit_auto') + '</button>' +
             '<button type="button" class="mp-ie-compare mp-ie-header-btn" aria-pressed="false" title="' + escAttr(t('mediaplace_image_edit_compare_hint')) + '"><i class="fa-solid fa-circle-half-stroke"></i> ' + t('mediaplace_image_edit_compare') + '</button>' +
             '<button type="button" class="mp-ie-reset-all mp-ie-header-btn"><i class="fa-solid fa-rotate-left"></i> ' + t('mediaplace_image_edit_reset_all') + '</button>' +
             '<button type="button" class="mp-ie-save"><i class="fa-solid fa-floppy-disk"></i> ' + t('mediaplace_save') + '</button>' +
@@ -133,8 +140,9 @@ function buildMarkup() {
                 '</div>' +
             '</div>' +
             '<aside class="mp-ie-sidebar">' +
-                '<section class="mp-ie-section" data-section="geometry">' +
-                    '<h3>' + t('mediaplace_image_edit_section_crop') + '</h3>' +
+                '<section class="mp-ie-section" data-section="geometry" data-key="crop">' +
+                    sectionHead('crop', t('mediaplace_image_edit_section_crop')) +
+                    '<div class="mp-ie-section-body" id="mp-ie-section-crop">' +
                     '<label class="mp-ie-field"><span>' + t('mediaplace_image_edit_aspect') + '</span><select class="mp-ie-aspect">' + aspectOptions + '</select></label>' +
                     '<div class="mp-ie-tools">' +
                         tool('rotate-left', 'fa-rotate-left', t('mediaplace_image_edit_rotate_left')) +
@@ -145,9 +153,11 @@ function buildMarkup() {
                     '<label class="mp-ie-slider" data-angle="1"><span class="mp-ie-slider-label">' + t('mediaplace_image_edit_straighten') + '<output>0°</output></span>' +
                         '<input type="range" class="mp-ie-angle" min="-45" max="45" step="0.1" value="0">' +
                     '</label>' +
+                    '</div>' +
                 '</section>' +
-                '<section class="mp-ie-section" data-section="perspective">' +
-                    '<h3>' + t('mediaplace_image_edit_section_perspective') + '</h3>' +
+                '<section class="mp-ie-section" data-section="perspective" data-key="perspective">' +
+                    sectionHead('perspective', t('mediaplace_image_edit_section_perspective')) +
+                    '<div class="mp-ie-section-body" id="mp-ie-section-perspective">' +
                     '<p class="mp-ie-hint mp-ie-perspective-hint">' + t('mediaplace_image_edit_perspective_hint') + '</p>' +
                     '<figure class="mp-ie-persp-preview"><canvas aria-hidden="true"></canvas><figcaption>' + t('mediaplace_image_edit_perspective_preview') + '</figcaption></figure>' +
                     '<div class="mp-ie-buttons">' +
@@ -157,37 +167,43 @@ function buildMarkup() {
                         '<button type="button" class="mp-ie-btn" data-action="perspective-compare" aria-pressed="false"><i class="fa-solid fa-eye"></i> <span>' + t('mediaplace_image_edit_perspective_show_result') + '</span></button>' +
                         '<button type="button" class="mp-ie-btn" data-action="perspective-reset">' + t('mediaplace_reset') + '</button>' +
                     '</div>' +
+                    '</div>' +
                 '</section>' +
-                '<section class="mp-ie-section" data-section="adjust">' +
-                    '<h3>' + t('mediaplace_image_edit_section_white_balance') + '</h3>' +
+                '<section class="mp-ie-section" data-section="adjust" data-key="white_balance">' +
+                    sectionHead('white_balance', t('mediaplace_image_edit_section_white_balance')) +
+                    '<div class="mp-ie-section-body" id="mp-ie-section-white_balance">' +
                     '<div class="mp-ie-buttons">' +
                         '<button type="button" class="mp-ie-btn" data-action="pipette" aria-pressed="false"><i class="fa-solid fa-eye-dropper"></i> ' + t('mediaplace_image_edit_pipette') + '</button>' +
                     '</div>' +
                     '<p class="mp-ie-hint mp-ie-pipette-hint">' + t('mediaplace_image_edit_pipette_hint') + '</p>' +
                     slider('temperature') + slider('tint') +
-                '</section>' +
-                '<section class="mp-ie-section" data-section="adjust">' +
-                    '<h3>' + t('mediaplace_image_edit_section_tone') + '</h3>' +
-                    '<div class="mp-ie-buttons">' +
-                        '<button type="button" class="mp-ie-btn" data-action="auto"><i class="fa-solid fa-wand-magic-sparkles"></i> ' + t('mediaplace_image_edit_auto') + '</button>' +
                     '</div>' +
+                '</section>' +
+                '<section class="mp-ie-section" data-section="adjust" data-key="tone">' +
+                    sectionHead('tone', t('mediaplace_image_edit_section_tone')) +
+                    '<div class="mp-ie-section-body" id="mp-ie-section-tone">' +
                     slider('black') + slider('white') + slider('brightness') + slider('contrast') +
                     slider('highlights') + slider('shadows') + slider('gamma') +
+                    '</div>' +
                 '</section>' +
-                '<section class="mp-ie-section" data-section="adjust">' +
-                    '<h3>' + t('mediaplace_image_edit_section_color') + '</h3>' +
+                '<section class="mp-ie-section" data-section="adjust" data-key="color">' +
+                    sectionHead('color', t('mediaplace_image_edit_section_color')) +
+                    '<div class="mp-ie-section-body" id="mp-ie-section-color">' +
                     slider('saturation') +
                     '<label class="mp-ie-field"><span>' + t('mediaplace_image_edit_effect') + '</span><select class="mp-ie-effect">' + effectOptions + '</select></label>' +
                     slider('effectStrength') + slider('vignette') +
                     '<button type="button" class="mp-ie-link" data-action="adjust-reset">' + t('mediaplace_image_edit_reset_tone') + '</button>' +
+                    '</div>' +
                 '</section>' +
-                '<section class="mp-ie-section" data-section="save">' +
-                    '<h3>' + t('mediaplace_image_edit_section_save') + '</h3>' +
+                '<section class="mp-ie-section" data-section="save" data-key="save">' +
+                    sectionHead('save', t('mediaplace_image_edit_section_save')) +
+                    '<div class="mp-ie-section-body" id="mp-ie-section-save">' +
                     '<label class="mp-ie-radio"><input type="radio" name="mp-ie-mode" value="copy"> ' + t('mediaplace_image_edit_mode_copy') + '</label>' +
                     '<div class="mp-ie-copy-name"><input type="text" class="mp-ie-name" aria-label="' + escAttr(t('mediaplace_image_edit_copy_name')) + '"><span class="mp-ie-ext"></span></div>' +
                     '<label class="mp-ie-radio"><input type="radio" name="mp-ie-mode" value="overwrite"> ' + t('mediaplace_image_edit_mode_overwrite') + '</label>' +
                     '<p class="mp-ie-hint mp-ie-overwrite-hint">' + t('mediaplace_image_edit_overwrite_hint') + '</p>' +
                     '<button type="button" class="mp-ie-btn mp-ie-restore" data-action="restore"><i class="fa-solid fa-clock-rotate-left"></i> ' + t('mediaplace_image_edit_restore') + '</button>' +
+                    '</div>' +
                 '</section>' +
                 '<p class="mp-ie-size" aria-live="polite"></p>' +
             '</aside>' +
@@ -283,8 +299,8 @@ function resetControls() {
 function applyPermissions(info) {
     var caps = info.capabilities || {};
     el('[data-section="perspective"]').hidden = !caps.perspective;
-    qs('#mp-image-editor-canvas', ctx.overlay).querySelectorAll('[data-section="adjust"]').forEach(function (section) {
-        section.hidden = !caps.adjust;
+    qs('#mp-image-editor-canvas', ctx.overlay).querySelectorAll('[data-section="adjust"], .mp-ie-auto').forEach(function (node) {
+        node.hidden = !caps.adjust;
     });
 
     var copyRadio = el('input[name="mp-ie-mode"][value="copy"]');
@@ -823,6 +839,7 @@ function resizeRect(start, handle, dx, dy, width, height, ratio) {
 var quadDrag = null;
 
 function startPerspective() {
+    openSection('perspective');
     state.mode = 'perspective';
     state.quadDraft = state.ops.perspective
         ? state.ops.perspective.map(function (p) { return p.slice(); })
@@ -923,6 +940,11 @@ function onQuadKeydown(e) {
 // ---- Bedienelemente ----
 
 function onClick(e) {
+    var toggle = e.target.closest('.mp-ie-section-toggle');
+    if (toggle) {
+        toggleSection(toggle.dataset.sectionToggle);
+        return;
+    }
     if (!state) return;
     if (e.target.closest('.mp-ie-back')) {
         closeImageEditor();
@@ -1082,6 +1104,58 @@ export function handleImageEditorEscape() {
 
 export function commitImageEditor() {
     save();
+}
+
+// ---- Aufklappbare Bereiche (Zustand pro Browser gemerkt) ----
+
+function readOpenSections() {
+    try {
+        var stored = JSON.parse(window.localStorage.getItem(SECTIONS_STORAGE_KEY) || '[]');
+        return Array.isArray(stored) ? stored : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function writeOpenSections(keys) {
+    try {
+        window.localStorage.setItem(SECTIONS_STORAGE_KEY, JSON.stringify(keys));
+    } catch (e) {
+        // Ohne Speicher bleibt es beim Zustand dieser Sitzung
+    }
+}
+
+function applySections(openKeys) {
+    var canvas = qs('#mp-image-editor-canvas', ctx.overlay);
+    canvas.querySelectorAll('.mp-ie-section-toggle').forEach(function (btn) {
+        var open = openKeys.indexOf(btn.dataset.sectionToggle) !== -1;
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        qs('#' + btn.getAttribute('aria-controls'), canvas).hidden = !open;
+    });
+}
+
+function currentOpenSections() {
+    var keys = [];
+    qs('#mp-image-editor-canvas', ctx.overlay).querySelectorAll('.mp-ie-section-toggle[aria-expanded="true"]').forEach(function (btn) {
+        keys.push(btn.dataset.sectionToggle);
+    });
+    return keys;
+}
+
+function toggleSection(key) {
+    var keys = currentOpenSections();
+    var index = keys.indexOf(key);
+    if (index === -1) keys.push(key); else keys.splice(index, 1);
+    applySections(keys);
+    writeOpenSections(keys);
+}
+
+function openSection(key) {
+    var keys = currentOpenSections();
+    if (keys.indexOf(key) !== -1) return;
+    keys.push(key);
+    applySections(keys);
+    writeOpenSections(keys);
 }
 
 // ---- Weißabgleich, Auto, Vorher/Nachher ----
