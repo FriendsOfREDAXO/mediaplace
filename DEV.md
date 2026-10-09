@@ -90,7 +90,7 @@ einfacheres, direkteres Muster ersetzt:
   direkt** (z. B. importiert `filters.js` `applyCollectionFilter` aus
   `collections.js`) – kein Umweg über core.js oder einen Event-Bus.
 - **Kein Laufzeit-Registrierungsmechanismus** (`MP.registerModule()` o. ä.):
-  Cropper-, Fokuspunkt- und Optimieren-Integration sind normale Module wie
+  Bildbearbeitung, Fokuspunkt- und Optimieren-Integration sind normale Module wie
   jedes andere, per `import` fest in `core.js` verdrahtet und Teil desselben
   Haupt-Bundles – nicht (wie ursprünglich angedacht) separate, nur bei
   installiertem Fremd-Addon geladene Zusatz-Bundles. Das wäre ein größerer,
@@ -98,7 +98,7 @@ einfacheres, direkteres Muster ersetzt:
 
 ## Module (Stand: alle 12 Extraktionsphasen abgeschlossen)
 
-`providers.js`, `modals.js`, `lightbox.js`, `focuspoint.js`, `cropper.js`,
+`providers.js`, `modals.js`, `lightbox.js`, `focuspoint.js`, `image_editor.js`,
 `optimize.js`, `collections.js`, `categories.js`, `filters.js`, `grid.js`,
 `detail.js`, `upload.js`, `multiselect.js`.
 
@@ -273,7 +273,7 @@ Versionsgarantie, kann sich zwischen Releases ändern.
 
 **Nicht vorhanden, trotz Erwähnung an anderer Stelle im Code:**
 `MP.registerModule()` taucht nur als Kommentar in
-`src/mediaplace/modules/focuspoint.js` auf (Idee: Cropper-/Fokuspunkt-/
+`src/mediaplace/modules/focuspoint.js` auf (Idee: Fokuspunkt-/
 Optimieren-Integration als optional nachladbare, eigene Bundles statt fest
 im Hauptbundle) – siehe "Architektur: Hub-and-Spoke" oben, bislang nicht
 umgesetzt. Ebenso existiert aktuell **kein** Erweiterungspunkt, um den
@@ -328,7 +328,7 @@ dieser Endpunkte nutzt).
 | `mediaplace_ai_auto_tag` | `AiAutoTag` | KI-Tag-Vorschläge für eine einzelne Datei (geschlossenes Vokabular, siehe `AiAutoTagService`), schreibt nicht selbst |
 | `mediaplace_categories` | `Categories` | Kategoriebaum + CRUD (eigene Rechteprüfung statt `api`-Addon-Routen) |
 | `mediaplace_category_bulk` | `CategoryBulk` | Massenaktionen für alle Dateien einer Kategorie (verschieben/löschen/taggen/Sammlung) |
-| `mediaplace_crop` | `Crop` | Bettet die UI/Speicherlogik des `cropper`-Addons im Overlay ein |
+| `mediaplace_image_edit` | `ImageEdit` | Bildbearbeitung (siehe `ImageEditor`): Info, Speichern als Kopie/ersetzend, Original wiederherstellen |
 | `mediaplace_focuspoint` | `Focuspoint` | Fokuspunkt-Info/Speichern |
 | `mediaplace_image_optimize` | `ImageOptimize` | "Bild optimieren"-Button |
 | `mediaplace_json_metainfo` | `JsonMetainfo` | Speichert MediaPlace's eigene JSON-Metadaten |

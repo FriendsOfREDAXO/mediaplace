@@ -55,11 +55,13 @@ import {
     commitFocuspointCanvas,
 } from './modules/focuspoint.js';
 import {
-    initCropper,
-    isCropCanvasOpen,
-    openCropCanvas,
-    closeCropCanvas,
-} from './modules/cropper.js';
+    initImageEditor,
+    isImageEditorOpen,
+    openImageEditor,
+    closeImageEditor,
+    commitImageEditor,
+    handleImageEditorEscape,
+} from './modules/image_editor.js';
 import {
     initOptimize,
     startOptimizeVideo,
@@ -334,11 +336,6 @@ import {
     var metainfoPickTarget = null; // { type: 'media', input } | { type: 'medialist', select, listId } while picking from the grid for a classic widget inside the metainfo canvas
     // Fokuspunkt-Canvas-State lebt jetzt in modules/focuspoint.js -- siehe
     // initFocuspoint()-Aufruf in build().
-    // Zuschneiden-Canvas-State (bis auf canCropper) lebt jetzt in
-    // modules/cropper.js -- siehe initCropper()-Aufruf in build(). canCropper
-    // bleibt hier: einmalig aus #mp-root data-cropper-available gelesen,
-    // dann per ctx an das Modul durchgereicht.
-    var canCropper = false;
     // ffmpeg-Integration (siehe FfmpegIntegration.php): videoThumbType ist der
     // zu verwendende Media-Manager-Typ-Name fuer die Video-Vorschau im Grid
     // (haengt vom Einstellungen-Modus ab: aus/Standbild/animiert), leerer
@@ -384,8 +381,6 @@ import {
     var apiSaveJsonMetainfo = MPCore.api.apiSaveJsonMetainfo;
     var apiLoadMetainfoForm = MPCore.api.apiLoadMetainfoForm;
     var apiSaveMetainfoForm = MPCore.api.apiSaveMetainfoForm;
-    var apiLoadCropPanel = MPCore.api.apiLoadCropPanel;
-    var apiSaveCrop = MPCore.api.apiSaveCrop;
     var apiStartOptimizeVideo = MPCore.api.apiStartOptimizeVideo;
     var apiPollOptimizeVideo = MPCore.api.apiPollOptimizeVideo;
     var apiLoadVideoDetails = MPCore.api.apiLoadVideoDetails;
@@ -1200,7 +1195,6 @@ import {
         canFilterUnused = root.dataset.canFilterUnused === '1';
         canBulkOperations = root.dataset.canBulkOperations === '1';
         activeUploadProviderId = root.dataset.uploadProvider || '';
-        canCropper = root.dataset.cropperAvailable === '1';
         videoThumbType = root.dataset.videoThumbType || '';
         videoThumbStatic = root.dataset.videoThumbStatic === '1';
         canOptimizeVideo = root.dataset.optimizeVideoAvailable === '1';
@@ -1425,23 +1419,7 @@ import {
                                     '<form id="mp-metainfo-form" class="mp-metainfo-canvas-form"></form>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="mp-editor-canvas" id="mp-crop-canvas" style="display:none">' +
-                                '<div class="mp-editor-canvas-header">' +
-                                    '<button type="button" class="mp-crop-canvas-back" title="' + escAttr(t('mediaplace_back_to_overview')) + '">' +
-                                        '<i class="fa-solid fa-arrow-left"></i> ' + t('mediaplace_back') +
-                                    '</button>' +
-                                    '<div class="mp-crop-canvas-title"></div>' +
-                                    // id="cropper_sidebar_toggle" ist bewusst cropper's eigene ID --
-                                    // rex_cropper.js sucht danach im ganzen Dokument (nicht nur im
-                                    // gefetchten Panel) und steuert Ein-/Ausblenden + Merken der
-                                    // Info-Sidebar (Vorschau/Zuschnittdaten) komplett selbst, siehe
-                                    // initSidebarToggle() dort -- kein eigener Handler noetig.
-                                    '<button type="button" id="cropper_sidebar_toggle" class="mp-crop-sidebar-toggle" aria-expanded="true" aria-controls="cropper-sidebar" data-expanded-label="' + escAttr(t('mediaplace_crop_sidebar_collapse')) + '" data-collapsed-label="' + escAttr(t('mediaplace_crop_sidebar_expand')) + '" title="' + escAttr(t('mediaplace_crop_sidebar_collapse')) + '">' +
-                                        '<i class="fa fa-info-circle"></i>' +
-                                    '</button>' +
-                                '</div>' +
-                                '<div class="mp-editor-canvas-body" id="mp-crop-canvas-body"></div>' +
-                            '</div>' +
+                            '<div class="mp-editor-canvas mp-image-editor" id="mp-image-editor-canvas" style="display:none"></div>' +
                         '</div>' +
                         '<div class="mp-detail-resize-handle" id="mp-detail-resize-handle" title="' + escAttr(t('mediaplace_resize_handle_title')) + '" style="display:none"></div>' +
                         '<div class="mp-detail" id="mp-detail"></div>' +
@@ -1554,14 +1532,18 @@ import {
             isCompactLayout: isCompactLayout,
         });
 
-        initCropper({
+        initImageEditor({
             overlay: overlay,
-            canCropper: canCropper,
+            detailPanel: detailPanel,
             mediaForceCacheTokens: mediaForceCacheTokens,
             getCurrentCat: function () { return currentCat; },
             setCurrentCat: function (v) { currentCat = v; },
+            getSelectedFile: function () { return selectedFile; },
             isMetainfoCanvasOpen: function () { return metainfoCanvasOpen; },
             closeMetainfoCanvas: closeMetainfoCanvas,
+            isFocuspointCanvasOpen: isFocuspointCanvasOpen,
+            closeFocuspointCanvas: closeFocuspointCanvas,
+            isCompactLayout: isCompactLayout,
             loadFiles: loadFiles,
             showDetail: showDetail,
         });
@@ -2179,8 +2161,8 @@ import {
                     closeFocuspointCanvas();
                     return;
                 }
-                if (isCropCanvasOpen()) {
-                    closeCropCanvas();
+                if (isImageEditorOpen()) {
+                    if (!handleImageEditorEscape()) closeImageEditor();
                     return;
                 }
                 if (metainfoPickTarget) {
@@ -3019,9 +3001,9 @@ import {
                 return;
             }
 
-            var openCropBtn = e.target.closest('.mp-cropper-edit-btn');
-            if (openCropBtn) {
-                openCropCanvas(openCropBtn.getAttribute('data-cropper-file') || '');
+            var openImageEditBtn = e.target.closest('.mp-image-edit-btn');
+            if (openImageEditBtn) {
+                openImageEditor(openImageEditBtn.getAttribute('data-image-edit-file') || '');
                 return;
             }
 
@@ -4050,14 +4032,17 @@ import {
                 } else if (isFocuspointCanvasOpen()) {
                     closeFocuspointCanvas();
                     e.stopPropagation();
-                } else if (isCropCanvasOpen()) {
-                    closeCropCanvas();
+                } else if (isImageEditorOpen()) {
+                    if (!handleImageEditorEscape()) closeImageEditor();
                     e.stopPropagation();
                 }
             }
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S') && isFocuspointCanvasOpen()) {
                 e.preventDefault();
                 commitFocuspointCanvas();
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S') && isImageEditorOpen()) {
+                e.preventDefault();
+                commitImageEditor();
             }
         });
 
@@ -4083,7 +4068,7 @@ import {
         }
 
         // Fokuspunkt-Canvas-Events: siehe initFocuspoint() (modules/focuspoint.js).
-        // Zuschneiden-Canvas-Events: siehe initCropper() (modules/cropper.js).
+        // Bildbearbeitungs-Canvas-Events: siehe initImageEditor() (modules/image_editor.js).
 
         // "Nativ bearbeiten"-Button (echte Metainfo-Felder im eigenen Canvas)
         overlay.addEventListener('click', function (e) {

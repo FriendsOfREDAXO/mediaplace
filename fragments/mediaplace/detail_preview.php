@@ -31,8 +31,8 @@ $filename = $info['filename'];
         <?php if (!empty($info['focuspoint_available'])): ?>
             <button type="button" class="mp-focuspoint-edit-btn" data-focuspoint-file="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_edit_focuspoint')) ?>"><i class="fa-solid fa-crosshairs"></i></button>
         <?php endif; ?>
-        <?php if (!empty($info['cropper_available'])): ?>
-            <button type="button" class="mp-cropper-edit-btn" data-cropper-file="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_edit_crop')) ?>"><i class="fa-solid fa-crop"></i></button>
+        <?php if (!empty($info['image_edit_available'])): ?>
+            <button type="button" class="mp-image-edit-btn" data-image-edit-file="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_image_edit')) ?>"><i class="fa-solid fa-sliders"></i></button>
         <?php endif; ?>
         <img src="<?= rex_escape($src) ?>" alt="<?= rex_escape($info['title'] !== '' ? $info['title'] : $filename) ?>">
     </div>

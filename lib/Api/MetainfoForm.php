@@ -86,16 +86,8 @@ class MetainfoForm extends rex_api_function
     }
 
     /**
-     * Das separate cropper-Addon haengt sich ueber denselben MEDIA_FORM_EDIT-
-     * Punkt einen eigenen "Zuschneiden"-Link auf die klassische Seite
-     * mediapool/cropper an (siehe cropper/boot.php). MediaPlace hat dafuer
-     * einen eigenen, im Overlay eingebetteten Zuschneiden-Button (siehe
-     * CropperIntegration, Detail-Vorschau-Icon) -- ein zweiter Link, der aus
-     * dem Overlay heraus auf die klassische Seite navigieren wuerde (und
-     * damit das Overlay verlassen), waere nur verwirrend/kaputt. Wird hier
-     * gefiltert statt cropper's Extension-Point-Handler zu deaktivieren --
-     * andere Aufrufer der klassischen Seite (falls "MediaPlace ersetzt
-     * klassischen Medienpool" deaktiviert ist) behalten den Link.
+     * Entfernt den Link des cropper-Addons auf seine klassische Seite; im Overlay
+     * würde er MediaPlace verlassen (dort gibt es die eigene Bildbearbeitung).
      */
     private function stripCropperField(string $html): string
     {

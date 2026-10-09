@@ -188,7 +188,7 @@ class JsonMetainfo extends rex_api_function
             'file_exists' => (bool) $media->fileExists(),
             'category_id' => (int) $media->getCategoryId(),
             'focuspoint_available' => $media->isImage() && \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit(),
-            'cropper_available' => \FriendsOfRedaxo\Mediaplace\CropperIntegration::canEdit($media->getFileName()),
+            'image_edit_available' => \FriendsOfRedaxo\Mediaplace\ImageEditor::canEdit($media),
             'optimize_video_available' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::canOptimize($media->getFileName()),
             // Nur die (billige, keine ffprobe-Kosten) Sichtbarkeits-Flag hier --
             // die eigentlichen Technikdaten werden erst beim Aufklappen lazy
@@ -272,7 +272,7 @@ class JsonMetainfo extends rex_api_function
             'file_exists' => (bool) ($apiInfo['file_exists'] ?? $media->fileExists()),
             'category_id' => (int) ($apiInfo['category_id'] ?? $media->getCategoryId()),
             'focuspoint_available' => (bool) ($apiInfo['focuspoint_available'] ?? false),
-            'cropper_available' => (bool) ($apiInfo['cropper_available'] ?? false),
+            'image_edit_available' => (bool) ($apiInfo['image_edit_available'] ?? false),
             'optimize_video_available' => (bool) ($apiInfo['optimize_video_available'] ?? false),
             'video_details_available' => (bool) ($apiInfo['video_details_available'] ?? false),
             'optimize_video_job' => $apiInfo['optimize_video_job'] ?? null,
