@@ -118,11 +118,14 @@ Bei JPEG-, PNG-, WebP- (und, wenn der Server es kann, AVIF-) Bildern öffnet der
 - **Drehen** in 90°-Schritten, **Spiegeln** horizontal und vertikal
 - **Ausrichten** um bis zu ±45°; leere Ecken werden automatisch weggeschnitten
 - **Perspektive korrigieren**: vier Punkte auf die Ecken einer Fläche ziehen (Fassade, Dokument, Schild), die rechteckig werden soll – mit mitlaufender Vorschau und großer Ergebnisansicht
-- **Licht und Farbe**: Helligkeit, Kontrast, Gamma (Mitteltöne), Sättigung
+- **Weißabgleich** per Pipette (neutrale Stelle anklicken) oder Farbtemperatur/Tönung
+- **Tonwerte**: automatische Korrektur, Schwarz- und Weißpunkt, Helligkeit, Kontrast, Lichter, Tiefen, Gamma (Mitteltöne)
+- **Farbe und Effekte**: Sättigung, Schwarzweiß, Sepia, Warm, Kühl, Ausgeblichen (jeweils mit Stärke), Vignette
+- **Vorher/Nachher**-Vergleich mit dem Original
 
 Die Vorschau rechnet live auf einer verkleinerten Kopie, gespeichert wird am Original mit denselben Schritten. Gespeichert wird wahlweise **als neue Datei** (Titel und alle Metadaten werden übernommen) oder **ersetzend** – dann bleiben Dateiname und Verwendungen erhalten, das Original wird aufbewahrt und lässt sich über „Original wiederherstellen“ zurückholen. Ein gesetzter Fokuspunkt wird mitgerechnet bzw. geleert, wenn er nach dem Zuschnitt außerhalb liegt.
 
-Rechte: `mediaplace[edit_image]` (bearbeiten, als neue Datei speichern), `mediaplace[edit_image_overwrite]` (ersetzen, Original wiederherstellen). Mit der PHP-Erweiterung Imagick stehen alle Werkzeuge zur Verfügung; nur mit GD fehlen Perspektive sowie Licht und Farbe.
+Rechte: `mediaplace[edit_image]` (bearbeiten, als neue Datei speichern), `mediaplace[edit_image_overwrite]` (ersetzen, Original wiederherstellen). Mit der PHP-Erweiterung Imagick stehen alle Werkzeuge zur Verfügung; nur mit GD fehlen Perspektive, Weißabgleich, Tonwerte, Farbe und Effekte.
 
 ### Cloud-Speicher durchsuchen und importieren
 

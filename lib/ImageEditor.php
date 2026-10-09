@@ -12,10 +12,13 @@ use ImagickPixel;
  * Reihenfolge der Schritte (identisch in modules/image_editor.js):
  * EXIF-Orientierung → 90°-Drehung → Spiegeln → Perspektive → Ausrichten
  * (mit Zuschnitt auf das größte Rechteck ohne leere Ecken) → Zuschnitt →
- * Helligkeit → Kontrast → Gamma → Sättigung.
+ * Tonwerte (eine Kurve je Kanal: Weißabgleich, Schwarz-/Weißpunkt, Helligkeit,
+ * Kontrast, Tiefen/Lichter, Gamma, Ausbleichen) → Sättigung → Effekt → Vignette.
  *
  * Mit Imagick stehen alle Werkzeuge zur Verfügung, mit GD nur die Geometrie
  * ohne Perspektive.
+ *
+ * @phpstan-type Operations array{quarter: int, flipH: bool, flipV: bool, perspective: list<array{0: float, 1: float}>|null, angle: float, crop: array{x: float, y: float, w: float, h: float}|null, temperature: float, tint: float, black: float, white: float, brightness: float, contrast: float, highlights: float, shadows: float, gamma: float, saturation: float, effect: string, effectStrength: float, vignette: float}
  */
 final class ImageEditor
 {
@@ -23,6 +26,11 @@ final class ImageEditor
     public const PERM_OVERWRITE = 'mediaplace[edit_image_overwrite]';
 
     private const MAX_ANGLE = 45.0;
+
+    public const EFFECTS = ['none', 'bw', 'sepia', 'warm', 'cold', 'faded'];
+
+    /** Tonwert-Schlüssel, die nur mit Imagick wirken */
+    private const TONE_KEYS = ['temperature', 'tint', 'brightness', 'contrast', 'highlights', 'shadows', 'gamma', 'saturation', 'vignette', 'effectStrength'];
 
     public static function engine(): ?string
     {
@@ -137,7 +145,7 @@ final class ImageEditor
      * Normalisiert die vom Client übergebenen Schritte.
      *
      * @param array<mixed> $raw
-     * @return array{quarter: int, flipH: bool, flipV: bool, perspective: list<array{0: float, 1: float}>|null, angle: float, crop: array{x: float, y: float, w: float, h: float}|null, brightness: float, contrast: float, gamma: float, saturation: float}
+     * @return Operations
      */
     public static function normalizeOperations(array $raw): array
     {
@@ -169,10 +177,19 @@ final class ImageEditor
             'perspective' => $perspective,
             'angle' => $num($raw['angle'] ?? 0, -self::MAX_ANGLE, self::MAX_ANGLE),
             'crop' => $crop,
+            'temperature' => $num($raw['temperature'] ?? 0, -100, 100),
+            'tint' => $num($raw['tint'] ?? 0, -100, 100),
+            'black' => $num($raw['black'] ?? 0, 0, 0.5),
+            'white' => $num($raw['white'] ?? 1, 0.5, 1),
             'brightness' => $num($raw['brightness'] ?? 0, -100, 100),
             'contrast' => $num($raw['contrast'] ?? 0, -100, 100),
+            'highlights' => $num($raw['highlights'] ?? 0, -100, 100),
+            'shadows' => $num($raw['shadows'] ?? 0, -100, 100),
             'gamma' => $num($raw['gamma'] ?? 0, -100, 100),
             'saturation' => $num($raw['saturation'] ?? 0, -100, 100),
+            'effect' => in_array($raw['effect'] ?? 'none', self::EFFECTS, true) ? (string) $raw['effect'] : 'none',
+            'effectStrength' => $num($raw['effectStrength'] ?? 100, 0, 100),
+            'vignette' => $num($raw['vignette'] ?? 0, 0, 100),
         ];
     }
 
@@ -189,7 +206,12 @@ final class ImageEditor
             $ops['perspective'] = null;
         }
         if (!self::capabilities()['adjust']) {
-            $ops['brightness'] = $ops['contrast'] = $ops['gamma'] = $ops['saturation'] = 0.0;
+            foreach (self::TONE_KEYS as $key) {
+                $ops[$key] = 0.0;
+            }
+            $ops['black'] = 0.0;
+            $ops['white'] = 1.0;
+            $ops['effect'] = 'none';
         }
 
         $filename = $media->getFileName();
@@ -230,7 +252,7 @@ final class ImageEditor
     }
 
     /**
-     * @param array{quarter: int, flipH: bool, flipV: bool, perspective: list<array{0: float, 1: float}>|null, angle: float, crop: array{x: float, y: float, w: float, h: float}|null, brightness: float, contrast: float, gamma: float, saturation: float} $ops
+     * @param Operations $ops
      * @return array{0: int, 1: int}
      */
     private static function renderImagick(string $source, string $target, array $ops): array
@@ -296,33 +318,50 @@ final class ImageEditor
 
         // Nur RGB, Alpha bleibt unverändert; die Imagick-Stubs kennen keine kombinierten Masken
         $rgb = Imagick::CHANNEL_RED | Imagick::CHANNEL_GREEN | Imagick::CHANNEL_BLUE;
-        if (0.0 !== $ops['brightness']) {
-            $image->evaluateImage(Imagick::EVALUATE_MULTIPLY, self::brightnessFactor($ops['brightness']), $rgb); // @phpstan-ignore argument.type
-            $image->clampImage($rgb);
+        if (self::hasToneCurve($ops)) {
+            $n = 1024;
+            $lut = [];
+            for ($i = 0; $i < $n; ++$i) {
+                $v = $i / ($n - 1);
+                $lut[] = self::toneCurve(0, $v, $ops);
+                $lut[] = self::toneCurve(1, $v, $ops);
+                $lut[] = self::toneCurve(2, $v, $ops);
+            }
+            $clut = new Imagick();
+            $clut->newImage($n, 1, new ImagickPixel('black'));
+            $clut->importImagePixels(0, 0, $n, 1, 'RGB', Imagick::PIXEL_FLOAT, $lut);
+            $image->setImageInterpolateMethod(Imagick::INTERPOLATE_BILINEAR);
+            $image->clutImage($clut, $rgb); // @phpstan-ignore argument.type
+            $clut->clear();
         }
-        if (0.0 !== $ops['contrast']) {
-            $k = self::contrastFactor($ops['contrast']);
-            $image->functionImage(Imagick::FUNCTION_POLYNOMIAL, [$k, 0.5 - 0.5 * $k], $rgb); // @phpstan-ignore argument.type
-            $image->clampImage($rgb);
-        }
-        if (0.0 !== $ops['gamma']) {
-            $image->gammaImage(self::gammaValue($ops['gamma']), $rgb); // @phpstan-ignore argument.type
-            $image->clampImage($rgb);
-        }
-        if (0.0 !== $ops['saturation']) {
-            $s = 1 + $ops['saturation'] / 100;
-            $lr = 0.2126 * (1 - $s);
-            $lg = 0.7152 * (1 - $s);
-            $lb = 0.0722 * (1 - $s);
+
+        $matrix = self::colorMatrix($ops);
+        if (null !== $matrix) {
             // Imagick verlangt 5×5; die ersten drei Zeilen/Spalten sind RGB, Alpha bleibt unverändert
             $image->colorMatrixImage([
-                $lr + $s, $lg, $lb, 0, 0,
-                $lr, $lg + $s, $lb, 0, 0,
-                $lr, $lg, $lb + $s, 0, 0,
+                $matrix[0], $matrix[1], $matrix[2], 0, 0,
+                $matrix[3], $matrix[4], $matrix[5], 0, 0,
+                $matrix[6], $matrix[7], $matrix[8], 0, 0,
                 0, 0, 0, 1, 0,
                 0, 0, 0, 0, 1,
             ]);
-            $image->clampImage($rgb);
+            $image->clampImage($rgb); // @phpstan-ignore argument.type
+        }
+
+        if ($ops['vignette'] > 0) {
+            $size = 512;
+            $map = [];
+            for ($y = 0; $y < $size; ++$y) {
+                for ($x = 0; $x < $size; ++$x) {
+                    $map[] = self::vignetteFactor(($x + 0.5) / $size, ($y + 0.5) / $size, $ops['vignette']);
+                }
+            }
+            $mask = new Imagick();
+            $mask->newImage($size, $size, new ImagickPixel('white'));
+            $mask->importImagePixels(0, 0, $size, $size, 'I', Imagick::PIXEL_FLOAT, $map);
+            $mask->resizeImage($image->getImageWidth(), $image->getImageHeight(), Imagick::FILTER_TRIANGLE, 1);
+            $image->compositeImage($mask, Imagick::COMPOSITE_MULTIPLY, 0, 0, $rgb); // @phpstan-ignore argument.type
+            $mask->clear();
         }
 
         if ($quality > 0) {
@@ -338,7 +377,7 @@ final class ImageEditor
     /**
      * Nur Geometrie: Drehen, Spiegeln, Ausrichten, Zuschneiden.
      *
-     * @param array{quarter: int, flipH: bool, flipV: bool, perspective: list<array{0: float, 1: float}>|null, angle: float, crop: array{x: float, y: float, w: float, h: float}|null, brightness: float, contrast: float, gamma: float, saturation: float} $ops
+     * @param Operations $ops
      * @return array{0: int, 1: int}
      */
     private static function renderGd(string $source, string $target, array $ops): array
@@ -481,19 +520,123 @@ final class ImageEditor
         ];
     }
 
-    public static function brightnessFactor(float $value): float
+    // ---- Tonwerte und Farbe (identisch in modules/image_editor.js) ----
+
+    /**
+     * @param Operations $ops
+     */
+    private static function hasToneCurve(array $ops): bool
     {
-        return 2 ** ($value / 100);
+        foreach (['temperature', 'tint', 'brightness', 'contrast', 'highlights', 'shadows', 'gamma'] as $key) {
+            if (0.0 !== $ops[$key]) {
+                return true;
+            }
+        }
+
+        return $ops['black'] > 0 || $ops['white'] < 1 || ('faded' === $ops['effect'] && $ops['effectStrength'] > 0);
     }
 
-    public static function contrastFactor(float $value): float
+    /**
+     * Verstärkung je Kanal für Farbtemperatur und Tönung, auf gleiche Helligkeit normiert.
+     *
+     * @return array{0: float, 1: float, 2: float}
+     */
+    public static function whiteBalanceGains(float $temperature, float $tint): array
     {
-        return $value >= 0 ? 1 + $value / 50 : 1 + $value / 100;
+        $r = 2 ** ($temperature / 200 + $tint / 400);
+        $g = 2 ** (-$tint / 200);
+        $b = 2 ** (-$temperature / 200 + $tint / 400);
+        $norm = 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
+
+        return [$r / $norm, $g / $norm, $b / $norm];
     }
 
-    public static function gammaValue(float $value): float
+    /**
+     * Tonwertkurve eines Kanals (0 = R, 1 = G, 2 = B) für einen Wert 0…1.
+     *
+     * @param Operations $ops
+     */
+    public static function toneCurve(int $channel, float $v, array $ops): float
     {
-        return 2 ** ($value / 50);
+        $clamp = static fn (float $x): float => max(0.0, min(1.0, $x));
+
+        if (0.0 !== $ops['temperature'] || 0.0 !== $ops['tint']) {
+            $v = $clamp($v * self::whiteBalanceGains($ops['temperature'], $ops['tint'])[$channel]);
+        }
+        if ($ops['black'] > 0 || $ops['white'] < 1) {
+            $v = $clamp(($v - $ops['black']) / max(0.01, $ops['white'] - $ops['black']));
+        }
+        if (0.0 !== $ops['brightness']) {
+            $v = $clamp($v * 2 ** ($ops['brightness'] / 100));
+        }
+        if (0.0 !== $ops['contrast']) {
+            $k = $ops['contrast'] >= 0 ? 1 + $ops['contrast'] / 50 : 1 + $ops['contrast'] / 100;
+            $v = $clamp($k * $v + 0.5 - 0.5 * $k);
+        }
+        if (0.0 !== $ops['shadows'] || 0.0 !== $ops['highlights']) {
+            $v = $clamp($v + 0.25 * ($ops['shadows'] / 100) * 6.75 * $v * (1 - $v) ** 2 + 0.25 * ($ops['highlights'] / 100) * 6.75 * $v ** 2 * (1 - $v));
+        }
+        if (0.0 !== $ops['gamma']) {
+            $v = $clamp($v ** (1 / 2 ** ($ops['gamma'] / 50)));
+        }
+        if ('faded' === $ops['effect'] && $ops['effectStrength'] > 0) {
+            $lift = 0.12 * $ops['effectStrength'] / 100;
+            $v = $lift + $v * (1 - $lift);
+        }
+
+        return $v;
+    }
+
+    /**
+     * Sättigung und Effekt als 3×3-Matrix (zeilenweise), null wenn ohne Wirkung.
+     *
+     * @param Operations $ops
+     * @return list<float>|null
+     */
+    public static function colorMatrix(array $ops): ?array
+    {
+        $identity = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+        $luma = [0.2126, 0.7152, 0.0722, 0.2126, 0.7152, 0.0722, 0.2126, 0.7152, 0.0722];
+        $mix = static fn (array $a, array $b, float $t): array => array_map(static fn (float $x, float $y): float => $x + ($y - $x) * $t, $a, $b);
+        $multiply = static function (array $a, array $b): array {
+            $out = [];
+            for ($r = 0; $r < 3; ++$r) {
+                for ($c = 0; $c < 3; ++$c) {
+                    $out[] = $a[$r * 3] * $b[$c] + $a[$r * 3 + 1] * $b[3 + $c] + $a[$r * 3 + 2] * $b[6 + $c];
+                }
+            }
+
+            return $out;
+        };
+
+        $matrix = $identity;
+        if (0.0 !== $ops['saturation']) {
+            $matrix = $mix($luma, $identity, 1 + $ops['saturation'] / 100);
+        }
+
+        $strength = $ops['effectStrength'] / 100;
+        $effect = match ($ops['effect']) {
+            'bw' => $luma,
+            'sepia' => [0.393, 0.769, 0.189, 0.349, 0.686, 0.168, 0.272, 0.534, 0.131],
+            'warm' => [1.1, 0.0, 0.0, 0.0, 1.02, 0.0, 0.0, 0.0, 0.85],
+            'cold' => [0.88, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.12],
+            'faded' => $mix($identity, $luma, 0.3),
+            default => null,
+        };
+        if (null !== $effect && $strength > 0) {
+            $matrix = $multiply($mix($identity, $effect, $strength), $matrix);
+        }
+
+        return $matrix === $identity ? null : $matrix;
+    }
+
+    /** Abdunklung zum Rand, x/y normalisiert im fertigen Bild. */
+    public static function vignetteFactor(float $x, float $y, float $amount): float
+    {
+        $d = hypot(($x - 0.5) * 2, ($y - 0.5) * 2);
+        $t = max(0.0, min(1.0, ($d - 0.45) / 0.8));
+
+        return 1 - ($amount / 100) * 0.7 * $t * $t * (3 - 2 * $t);
     }
 
     // ---- Fokuspunkt ----
@@ -501,7 +644,7 @@ final class ImageEditor
     /**
      * Rechnet gesetzte Fokuspunkte durch die Geometrie; außerhalb des Ergebnisses → geleert.
      *
-     * @param array{quarter: int, flipH: bool, flipV: bool, perspective: list<array{0: float, 1: float}>|null, angle: float, crop: array{x: float, y: float, w: float, h: float}|null, brightness: float, contrast: float, gamma: float, saturation: float} $ops
+     * @param Operations $ops
      * @return array<string, string>
      */
     private static function mapFocuspoints(\rex_media $media, array $ops): array
@@ -527,7 +670,7 @@ final class ImageEditor
 
     /**
      * @param array{0: float, 1: float} $p normalisiert im Original
-     * @param array{quarter: int, flipH: bool, flipV: bool, perspective: list<array{0: float, 1: float}>|null, angle: float, crop: array{x: float, y: float, w: float, h: float}|null, brightness: float, contrast: float, gamma: float, saturation: float} $ops
+     * @param Operations $ops
      * @return array{0: float, 1: float}|null
      */
     public static function mapPoint(array $p, array $ops, int $width, int $height): ?array
