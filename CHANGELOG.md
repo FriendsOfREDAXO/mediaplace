@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 2.5.0 – unveröffentlicht
+## Version 2.5.0 – 2026-10-09
 
 ### Neue Features (Bildbearbeitung)
 - **Weißabgleich**: Pipette für eine neutrale Stelle, dazu Regler für Farbtemperatur und Tönung.
