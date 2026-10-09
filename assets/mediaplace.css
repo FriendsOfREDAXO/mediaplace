@@ -7323,6 +7323,40 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
     display: none;
 }
 
+#mp-overlay .mp-ie-buttons [data-action="perspective-compare"],
+#mp-overlay .mp-ie-persp-preview {
+    display: none;
+}
+
+#mp-overlay .mp-ie-perspective-mode .mp-ie-buttons [data-action="perspective-compare"] {
+    display: inline-flex;
+}
+
+#mp-overlay .mp-ie-perspective-mode .mp-ie-persp-preview {
+    display: block;
+    margin: 0 0 10px;
+}
+
+#mp-overlay .mp-ie-persp-preview canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 220px;
+    margin: 0 auto;
+    background: var(--mp-sidebar-bg);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+#mp-overlay .mp-ie-persp-preview figcaption {
+    margin-top: 4px;
+    color: var(--mp-status-text);
+    font-size: 12px;
+    text-align: center;
+}
+
+#mp-overlay .mp-ie-perspective-compare .mp-ie-quad {
+    display: none;
+}
+
 #mp-overlay .mp-ie-perspective-mode [data-section="geometry"],
 #mp-overlay .mp-ie-perspective-mode [data-section="adjust"] {
     opacity: 0.45;

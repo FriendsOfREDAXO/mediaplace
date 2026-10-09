@@ -127,10 +127,12 @@ function buildMarkup() {
                 '<section class="mp-ie-section" data-section="perspective">' +
                     '<h3>' + t('mediaplace_image_edit_section_perspective') + '</h3>' +
                     '<p class="mp-ie-hint mp-ie-perspective-hint">' + t('mediaplace_image_edit_perspective_hint') + '</p>' +
+                    '<figure class="mp-ie-persp-preview"><canvas aria-hidden="true"></canvas><figcaption>' + t('mediaplace_image_edit_perspective_preview') + '</figcaption></figure>' +
                     '<div class="mp-ie-buttons">' +
                         '<button type="button" class="mp-ie-btn" data-action="perspective-start"><i class="fa-solid fa-vector-square"></i> ' + t('mediaplace_image_edit_perspective_start') + '</button>' +
                         '<button type="button" class="mp-ie-btn mp-ie-btn-primary" data-action="perspective-apply">' + t('mediaplace_image_edit_apply') + '</button>' +
                         '<button type="button" class="mp-ie-btn" data-action="perspective-cancel">' + t('mediaplace_cancel') + '</button>' +
+                        '<button type="button" class="mp-ie-btn" data-action="perspective-compare" aria-pressed="false"><i class="fa-solid fa-eye"></i> <span>' + t('mediaplace_image_edit_perspective_show_result') + '</span></button>' +
                         '<button type="button" class="mp-ie-btn" data-action="perspective-reset">' + t('mediaplace_reset') + '</button>' +
                     '</div>' +
                 '</section>' +
@@ -460,7 +462,16 @@ function draw() {
     var frame = qs('.mp-ie-frame', canvas);
     var view = qs('.mp-ie-view', canvas);
     var perspective = state.mode === 'perspective';
+    var compare = perspective && state.perspectiveCompare;
     var image = perspective ? state.stages.geometry : state.stages.adjusted;
+    if (compare) {
+        var key = JSON.stringify(state.quadDraft);
+        if (!state.compareImage || state.compareKey !== key) {
+            state.compareImage = stagePerspective(state.stages.geometry, state.quadDraft);
+            state.compareKey = key;
+        }
+        image = state.compareImage;
+    }
 
     var maxW = Math.max(50, stage.clientWidth - 32);
     var maxH = Math.max(50, stage.clientHeight - 32);
@@ -480,8 +491,12 @@ function draw() {
     state.scale = scale;
 
     canvas.classList.toggle('mp-ie-perspective-mode', perspective);
-    if (perspective) {
+    canvas.classList.toggle('mp-ie-perspective-compare', compare);
+    if (perspective && !compare) {
         drawQuad(cssW, cssH);
+        schedulePerspectivePreview();
+    } else if (perspective) {
+        schedulePerspectivePreview();
     } else {
         drawCrop(cssW, cssH);
     }
@@ -685,6 +700,12 @@ function startPerspective() {
     state.quadDraft = state.ops.perspective
         ? state.ops.perspective.map(function (p) { return p.slice(); })
         : [[0.05, 0.05], [0.95, 0.05], [0.95, 0.95], [0.05, 0.95]];
+    // Verkleinerte Kopie für die Live-Vorschau beim Ziehen
+    var geometry = state.stages.geometry;
+    var scale = Math.min(1, 360 / Math.max(geometry.width, geometry.height));
+    state.perspectiveSmall = makeCanvas(Math.max(1, Math.round(geometry.width * scale)), Math.max(1, Math.round(geometry.height * scale)));
+    state.perspectiveSmall.getContext('2d').drawImage(geometry, 0, 0, state.perspectiveSmall.width, state.perspectiveSmall.height);
+    setPerspectiveCompare(false);
     render();
     var first = el('.mp-ie-quad-handle');
     if (first) first.focus({ preventScroll: true });
@@ -700,7 +721,33 @@ function endPerspective(apply) {
     }
     state.mode = 'crop';
     state.quadDraft = null;
+    state.perspectiveSmall = null;
+    state.compareImage = null;
+    setPerspectiveCompare(false);
     render();
+}
+
+function setPerspectiveCompare(on) {
+    state.perspectiveCompare = on;
+    var btn = el('[data-action="perspective-compare"]');
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.querySelector('span').textContent = t(on ? 'mediaplace_image_edit_perspective_show_points' : 'mediaplace_image_edit_perspective_show_result');
+    btn.querySelector('i').className = 'fa-solid ' + (on ? 'fa-vector-square' : 'fa-eye');
+}
+
+var previewQueued = false;
+function schedulePerspectivePreview() {
+    if (previewQueued) return;
+    previewQueued = true;
+    requestAnimationFrame(function () {
+        previewQueued = false;
+        if (!state || state.mode !== 'perspective' || !state.perspectiveSmall) return;
+        var result = stagePerspective(state.perspectiveSmall, state.quadDraft);
+        var canvas = el('.mp-ie-persp-preview canvas');
+        canvas.width = result.width;
+        canvas.height = result.height;
+        canvas.getContext('2d').drawImage(result, 0, 0);
+    });
 }
 
 function onQuadPointerDown(e) {
@@ -720,6 +767,7 @@ function onQuadPointerMove(e) {
         Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height))
     ];
     drawQuad(rect.width, rect.height);
+    schedulePerspectivePreview();
 }
 
 function onQuadPointerUp(e) {
@@ -742,6 +790,7 @@ function onQuadKeydown(e) {
         Math.min(1, Math.max(0, p[1] + keys[e.key][1] * step / frame.clientHeight))
     ];
     drawQuad(frame.clientWidth, frame.clientHeight);
+    schedulePerspectivePreview();
 }
 
 // ---- Bedienelemente ----
@@ -801,9 +850,14 @@ function onClick(e) {
         case 'perspective-cancel':
             endPerspective(false);
             return;
+        case 'perspective-compare':
+            setPerspectiveCompare(!state.perspectiveCompare);
+            render();
+            return;
         case 'perspective-reset':
             if (state.mode === 'perspective') {
                 state.quadDraft = [[0, 0], [1, 0], [1, 1], [0, 1]];
+                setPerspectiveCompare(false);
             } else {
                 ops.perspective = null;
                 state.dirty.perspective = true;
@@ -865,7 +919,12 @@ function onDoubleClick(e) {
 /** Escape im Perspektivmodus verlässt nur diesen Modus. */
 export function handleImageEditorEscape() {
     if (state && state.mode === 'perspective') {
-        endPerspective(false);
+        if (state.perspectiveCompare) {
+            setPerspectiveCompare(false);
+            render();
+        } else {
+            endPerspective(false);
+        }
         return true;
     }
     return false;

@@ -117,7 +117,7 @@ Bei JPEG-, PNG-, WebP- (und, wenn der Server es kann, AVIF-) Bildern öffnet der
 - **Zuschneiden** frei oder mit festem Seitenverhältnis (Original, 1:1, 4:3, 3:2, 16:9 und Hochformate), per Maus, Touch oder Tastatur
 - **Drehen** in 90°-Schritten, **Spiegeln** horizontal und vertikal
 - **Ausrichten** um bis zu ±45°; leere Ecken werden automatisch weggeschnitten
-- **Perspektive korrigieren**: vier Punkte auf die Ecken einer Fläche ziehen (Fassade, Dokument, Schild), die rechteckig werden soll
+- **Perspektive korrigieren**: vier Punkte auf die Ecken einer Fläche ziehen (Fassade, Dokument, Schild), die rechteckig werden soll – mit mitlaufender Vorschau und großer Ergebnisansicht
 - **Licht und Farbe**: Helligkeit, Kontrast, Gamma (Mitteltöne), Sättigung
 
 Die Vorschau rechnet live auf einer verkleinerten Kopie, gespeichert wird am Original mit denselben Schritten. Gespeichert wird wahlweise **als neue Datei** (Titel und alle Metadaten werden übernommen) oder **ersetzend** – dann bleiben Dateiname und Verwendungen erhalten, das Original wird aufbewahrt und lässt sich über „Original wiederherstellen“ zurückholen. Ein gesetzter Fokuspunkt wird mitgerechnet bzw. geleert, wenn er nach dem Zuschnitt außerhalb liegt.
