@@ -9,6 +9,8 @@ rex_perm::register('mediaplace[optimize_video]', 'Videos optimieren (ffmpeg-Addo
 rex_perm::register('mediaplace[optimize_image]', 'Bilder optimieren');
 rex_perm::register('mediaplace[manage_tags]', 'Tags umbenennen, Farbe bestehender Tags ändern, Tags löschen oder für KI-Vorschläge freigeben');
 rex_perm::register('mediaplace[bulk_operations]', 'Massenaktionen für ganze Kategorien (alle Dateien verschieben/löschen/taggen)');
+rex_perm::register(\FriendsOfRedaxo\Mediaplace\ImageEditor::PERM_EDIT, 'Bilder bearbeiten und als neue Datei speichern');
+rex_perm::register(\FriendsOfRedaxo\Mediaplace\ImageEditor::PERM_OVERWRITE, 'Bearbeitete Bilder überschreiben und Originale wiederherstellen');
 
 // Eigene rex_api_function-Endpunkte laufen unter dem Namespace
 // FriendsOfRedaxo\Mediaplace\Api (siehe https://redaxo.org/doku/5.x/api#namespace-registrierung)
@@ -21,8 +23,8 @@ rex_perm::register('mediaplace[bulk_operations]', 'Massenaktionen für ganze Kat
 // Endpunkte (rex::getUser() + MediaPermission) ohnehin selbst in execute().
 rex_api_function::register('mediaplace_categories', \FriendsOfRedaxo\Mediaplace\Api\Categories::class);
 rex_api_function::register('mediaplace_category_bulk', \FriendsOfRedaxo\Mediaplace\Api\CategoryBulk::class);
-rex_api_function::register('mediaplace_crop', \FriendsOfRedaxo\Mediaplace\Api\Crop::class);
 rex_api_function::register('mediaplace_focuspoint', \FriendsOfRedaxo\Mediaplace\Api\Focuspoint::class);
+rex_api_function::register('mediaplace_image_edit', \FriendsOfRedaxo\Mediaplace\Api\ImageEdit::class);
 rex_api_function::register('mediaplace_image_optimize', \FriendsOfRedaxo\Mediaplace\Api\ImageOptimize::class);
 rex_api_function::register('mediaplace_json_metainfo', \FriendsOfRedaxo\Mediaplace\Api\JsonMetainfo::class);
 rex_api_function::register('mediaplace_media_list', \FriendsOfRedaxo\Mediaplace\Api\MediaList::class);
@@ -124,21 +126,6 @@ if (rex::isBackend() && rex::getUser()) {
 
     // Klassische REX_MEDIA[n]/REX_MEDIALIST[n]-Widgets auf den neuen Overlay umleiten
     rex_view::addJsFile($this->getAssetsUrl('mediaplace_classic.js') . $bust('mediaplace_classic.js'));
-
-    // Zuschneiden-Canvas nutzt cropper's eigene Assets 1:1 (siehe CropperIntegration) --
-    // nur laden, wenn das Addon installiert ist und der User das Recht hat.
-    if (\FriendsOfRedaxo\Mediaplace\CropperIntegration::isAvailable() && rex::getUser()->hasPerm('cropper[]')) {
-        $cropperAssets = \FriendsOfRedaxo\Mediaplace\CropperIntegration::assetUrls();
-        foreach ($cropperAssets['css'] as $cssUrl) {
-            rex_view::addCssFile($cssUrl);
-        }
-        foreach ($cropperAssets['js'] as $jsUrl) {
-            rex_view::addJsFile($jsUrl);
-        }
-        rex_view::setJsProperty('cropperI18n', [
-            'savingMessage' => rex_i18n::msg('cropper_saving_message'),
-        ]);
-    }
 
     // Video-Vorschau-Typen (ffmpeg-Integration, siehe FfmpegIntegration) --
     // idempotente Existenzpruefung, legt beide Typen (animiert + Standbild)
@@ -304,12 +291,8 @@ if (rex::isBackend() && rex::getUser()) {
         $focuspointUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_focuspoint']);
         $metainfoFormUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_metainfo_form']);
         $metainfoFormAvailable = rex_addon::get('metainfo')->isAvailable() ? '1' : '0';
-        // Globale Verfuegbarkeit (Addon + Recht) -- ob eine KONKRETE Datei
-        // zuschneidbar ist (Bild-Endung), entscheidet der Client anhand des
-        // Dateinamens, siehe CropperIntegration::isSupportedMedia()/mediaplace.js.
-        $cropperUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_crop']);
-        $cropperAvailable = \FriendsOfRedaxo\Mediaplace\CropperIntegration::isAvailable()
-            && null !== rex::getUser() && rex::getUser()->hasPerm('cropper[]') ? '1' : '0';
+        $imageEditUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_image_edit']);
+        $imageEditToken = rex_csrf_token::factory(\FriendsOfRedaxo\Mediaplace\Api\ImageEdit::CSRF)->getValue();
 
         // ffmpeg-Integration (siehe FfmpegIntegration): Video-Vorschau im Grid
         // (Typ-Name direkt, kein API-Umweg -- Grid baut die Thumb-URL genauso
@@ -348,7 +331,7 @@ if (rex::isBackend() && rex::getUser()) {
         // hasMediaAccess(), sonst wuerde der Button auch fuer Backend-User
         // OHNE jede Medien-Berechtigung injiziert (nur der Server-Endpunkt
         // haette das dann noch abgefangen -- gleiches Defense-in-Depth-Muster
-        // wie cropperAvailable/optimizeVideoAvailable oben). aiAltBulkAvailable
+        // wie optimizeVideoAvailable oben). aiAltBulkAvailable
         // zusaetzlich das granularere Recht fuer die kategorieuebergreifende
         // Massengenerierung (Zahnrad-Menue) -- Massenaktionen sind ein
         // groesseres Blast-Radius-/Kosten-Risiko (viele KI-Aufrufe pro Klick)
@@ -462,7 +445,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-storage-usage-url="' . rex_escape($storageUsageUrl) . '" data-replace-file-url="' . rex_escape($replaceFileUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-cropper-url="' . rex_escape($cropperUrl) . '" data-cropper-available="' . $cropperAvailable . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '" data-ai-alt-url="' . rex_escape($aiAltUrl) . '" data-ai-alt-bulk-url="' . rex_escape($aiAltBulkUrl) . '" data-ai-auto-tag-url="' . rex_escape($aiAutoTagUrl) . '"></div>'
+        $inject = '<div id="mp-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-storage-usage-url="' . rex_escape($storageUsageUrl) . '" data-replace-file-url="' . rex_escape($replaceFileUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-image-edit-url="' . rex_escape($imageEditUrl) . '" data-image-edit-token="' . rex_escape($imageEditToken) . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '" data-ai-alt-url="' . rex_escape($aiAltUrl) . '" data-ai-alt-bulk-url="' . rex_escape($aiAltBulkUrl) . '" data-ai-auto-tag-url="' . rex_escape($aiAutoTagUrl) . '"></div>'
             . "\n" . '<script type="application/json" id="mp-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         // Nur das LETZTE '</body>' ersetzen, nicht jedes Vorkommen: ein einfaches
         // str_replace() traf schon einmal versehentlich den Text eines eigenen
@@ -479,3 +462,7 @@ if (rex::isBackend() && rex::getUser()) {
         $ep->setSubject($content);
     });
 }
+
+rex_extension::register('MEDIA_DELETED', static function (rex_extension_point $ep): void {
+    \FriendsOfRedaxo\Mediaplace\ImageEditor::deleteBackup((string) $ep->getParam('filename'));
+});

@@ -3344,7 +3344,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
 }
 
 /* Gleiches Muster wie .mp-focuspoint-edit-btn, naechster Slot in der Reihe. */
-#mp-overlay .mp-cropper-edit-btn {
+#mp-overlay .mp-image-edit-btn {
     position: absolute;
     left: 78px;
     top: 10px;
@@ -3362,7 +3362,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     font-size: 14px;
 }
 
-#mp-overlay .mp-cropper-edit-btn:hover {
+#mp-overlay .mp-image-edit-btn:hover {
     background: rgba(0, 0, 0, 0.65);
 }
 
@@ -5714,11 +5714,11 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
 #mp-overlay .mp-content.mp-focuspoint-mode .mp-status,
 #mp-overlay .mp-content.mp-focuspoint-mode .mp-grid-wrap,
 #mp-overlay .mp-content.mp-focuspoint-mode .mp-page-footer,
-#mp-overlay .mp-content.mp-crop-mode .mp-filter-bar,
-#mp-overlay .mp-content.mp-crop-mode .mp-breadcrumb,
-#mp-overlay .mp-content.mp-crop-mode .mp-status,
-#mp-overlay .mp-content.mp-crop-mode .mp-grid-wrap,
-#mp-overlay .mp-content.mp-crop-mode .mp-page-footer {
+#mp-overlay .mp-content.mp-image-edit-mode .mp-filter-bar,
+#mp-overlay .mp-content.mp-image-edit-mode .mp-breadcrumb,
+#mp-overlay .mp-content.mp-image-edit-mode .mp-status,
+#mp-overlay .mp-content.mp-image-edit-mode .mp-grid-wrap,
+#mp-overlay .mp-content.mp-image-edit-mode .mp-page-footer {
     display: none !important;
 }
 
@@ -5732,11 +5732,9 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
     display: none !important;
 }
 
-/* Gleiches Prinzip wie beim Fokuspunkt-Canvas -- cropper's UI (Bild + Toolbar +
-   Live-Vorschau-Sidebar) braucht die volle Breite, das Detail-Panel bleibt
-   bis zum Zurueck-Klick ausgeblendet. */
-#mp-overlay .mp-content.mp-crop-mode ~ .mp-detail-resize-handle,
-#mp-overlay .mp-content.mp-crop-mode ~ .mp-detail {
+/* Bildbearbeitung braucht die volle Breite, das Detail-Panel bleibt bis zum Zurueck-Klick ausgeblendet. */
+#mp-overlay .mp-content.mp-image-edit-mode ~ .mp-detail-resize-handle,
+#mp-overlay .mp-content.mp-image-edit-mode ~ .mp-detail {
     display: none !important;
 }
 
@@ -5765,7 +5763,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
 }
 
 #mp-overlay .mp-metainfo-canvas-back,
-#mp-overlay .mp-crop-canvas-back {
+#mp-overlay .mp-ie-header-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -5780,38 +5778,13 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
 }
 
 #mp-overlay .mp-metainfo-canvas-back:hover,
-#mp-overlay .mp-crop-canvas-back:hover {
-    border-color: var(--mp-filter-active-border);
-    background: var(--mp-filter-hover-bg);
-}
-
-/* Steuert cropper's eigene Info-Sidebar (Vorschau/Zuschnittdaten) -- siehe
-   Kommentar bei der Markup-Erzeugung in mediaplace.js. Startet standardmaessig
-   eingeklappt (cropper-Einstellung "show_info_sidebar_initially"), damit sie
-   nicht unnoetig Platz wegnimmt. */
-#mp-overlay .mp-crop-sidebar-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border: 1px solid var(--mp-filter-btn-border);
-    border-radius: 0;
-    background: var(--mp-filter-btn-bg);
-    color: var(--mp-filter-btn-text);
-    font-size: 13px;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-#mp-overlay .mp-crop-sidebar-toggle:hover {
+#mp-overlay .mp-ie-header-btn:hover {
     border-color: var(--mp-filter-active-border);
     background: var(--mp-filter-hover-bg);
 }
 
 #mp-overlay .mp-metainfo-canvas-title,
-#mp-overlay .mp-crop-canvas-title {
+#mp-overlay .mp-ie-title {
     flex: 1;
     font-size: 14px;
     font-weight: 600;
@@ -5821,7 +5794,8 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
     white-space: nowrap;
 }
 
-#mp-overlay .mp-metainfo-canvas-save {
+#mp-overlay .mp-metainfo-canvas-save,
+#mp-overlay .mp-ie-save {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -5836,11 +5810,13 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
     white-space: nowrap;
 }
 
-#mp-overlay .mp-metainfo-canvas-save.mp-detail-save-success {
+#mp-overlay .mp-metainfo-canvas-save.mp-detail-save-success,
+#mp-overlay .mp-ie-save.mp-detail-save-success {
     background: #27ae60;
 }
 
-#mp-overlay .mp-metainfo-canvas-save.mp-detail-save-error {
+#mp-overlay .mp-metainfo-canvas-save.mp-detail-save-error,
+#mp-overlay .mp-ie-save.mp-detail-save-error {
     background: #e74c3c;
 }
 
@@ -7097,4 +7073,317 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
 #mp-overlay.mp-compact .mp-list-cell-date,
 #mp-overlay.mp-compact .mp-list-table thead th:nth-child(5) {
     display: none;
+}
+
+/* ---- Bildbearbeitung ---- */
+
+#mp-overlay .mp-image-editor [hidden] {
+    display: none !important;
+}
+
+#mp-overlay .mp-ie-body {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: var(--mp-modal-bg);
+}
+
+#mp-overlay .mp-ie-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background:
+        repeating-conic-gradient(rgba(127, 127, 127, 0.12) 0 25%, transparent 0 50%) 0 0 / 20px 20px,
+        var(--mp-sidebar-bg);
+}
+
+#mp-overlay .mp-ie-loading {
+    display: none;
+    color: var(--mp-status-text);
+    font-size: 14px;
+}
+
+#mp-overlay .mp-ie-is-loading .mp-ie-loading {
+    display: block;
+}
+
+#mp-overlay .mp-ie-is-loading .mp-ie-frame {
+    display: none;
+}
+
+#mp-overlay .mp-ie-frame {
+    position: relative;
+    touch-action: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+#mp-overlay .mp-ie-view {
+    display: block;
+}
+
+#mp-overlay .mp-ie-crop {
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px solid #fff;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+    cursor: move;
+    touch-action: none;
+    background-image:
+        linear-gradient(to right, transparent calc(33.333% - 0.5px), rgba(255, 255, 255, 0.4) calc(33.333% - 0.5px), rgba(255, 255, 255, 0.4) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px), transparent calc(66.666% - 0.5px), rgba(255, 255, 255, 0.4) calc(66.666% - 0.5px), rgba(255, 255, 255, 0.4) calc(66.666% + 0.5px), transparent calc(66.666% + 0.5px)),
+        linear-gradient(to bottom, transparent calc(33.333% - 0.5px), rgba(255, 255, 255, 0.4) calc(33.333% - 0.5px), rgba(255, 255, 255, 0.4) calc(33.333% + 0.5px), transparent calc(33.333% + 0.5px), transparent calc(66.666% - 0.5px), rgba(255, 255, 255, 0.4) calc(66.666% - 0.5px), rgba(255, 255, 255, 0.4) calc(66.666% + 0.5px), transparent calc(66.666% + 0.5px));
+}
+
+#mp-overlay .mp-ie-crop:focus-visible,
+#mp-overlay .mp-ie-quad-handle:focus-visible {
+    outline: 2px solid var(--mp-confirm-btn-bg);
+    outline-offset: 2px;
+}
+
+#mp-overlay .mp-ie-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    background: #fff;
+    border: 1px solid #324050;
+}
+
+#mp-overlay .mp-ie-handle-nw { left: 0; top: 0; cursor: nwse-resize; }
+#mp-overlay .mp-ie-handle-n { left: 50%; top: 0; cursor: ns-resize; }
+#mp-overlay .mp-ie-handle-ne { left: 100%; top: 0; cursor: nesw-resize; }
+#mp-overlay .mp-ie-handle-e { left: 100%; top: 50%; cursor: ew-resize; }
+#mp-overlay .mp-ie-handle-se { left: 100%; top: 100%; cursor: nwse-resize; }
+#mp-overlay .mp-ie-handle-s { left: 50%; top: 100%; cursor: ns-resize; }
+#mp-overlay .mp-ie-handle-sw { left: 0; top: 100%; cursor: nesw-resize; }
+#mp-overlay .mp-ie-handle-w { left: 0; top: 50%; cursor: ew-resize; }
+
+#mp-overlay .mp-ie-quad {
+    display: none;
+    position: absolute;
+    inset: 0;
+    touch-action: none;
+}
+
+#mp-overlay .mp-ie-perspective-mode .mp-ie-quad {
+    display: block;
+}
+
+#mp-overlay .mp-ie-perspective-mode .mp-ie-crop {
+    display: none;
+}
+
+#mp-overlay .mp-ie-quad-lines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+#mp-overlay .mp-ie-quad-lines polygon {
+    fill: rgba(91, 181, 133, 0.12);
+    stroke: #fff;
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.8));
+}
+
+#mp-overlay .mp-ie-quad-handle {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--mp-confirm-btn-bg);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+    cursor: move;
+}
+
+#mp-overlay .mp-ie-sidebar {
+    flex: 0 0 280px;
+    overflow-y: auto;
+    padding: 12px 16px;
+    border-left: 1px solid var(--mp-detail-border);
+    background: var(--mp-modal-bg);
+    color: var(--mp-card-name);
+    font-size: 13px;
+}
+
+#mp-overlay .mp-ie-section {
+    padding: 4px 0 14px;
+    border-bottom: 1px solid var(--mp-detail-border);
+    margin-bottom: 12px;
+}
+
+#mp-overlay .mp-ie-section h3 {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--mp-status-text);
+}
+
+#mp-overlay .mp-ie-field,
+#mp-overlay .mp-ie-slider {
+    display: block;
+    margin: 0 0 10px;
+    font-weight: normal;
+}
+
+#mp-overlay .mp-ie-field span,
+#mp-overlay .mp-ie-slider-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+#mp-overlay .mp-ie-slider-label output {
+    font-variant-numeric: tabular-nums;
+    color: var(--mp-status-text);
+}
+
+#mp-overlay .mp-ie-field select,
+#mp-overlay .mp-ie-name {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--mp-input-border);
+    border-radius: 0;
+    background: var(--mp-input-bg);
+    color: var(--mp-input-text);
+    font-size: 13px;
+}
+
+#mp-overlay .mp-ie-slider input[type="range"] {
+    width: 100%;
+    accent-color: var(--mp-confirm-btn-bg);
+}
+
+#mp-overlay .mp-ie-tools,
+#mp-overlay .mp-ie-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+#mp-overlay .mp-ie-tool,
+#mp-overlay .mp-ie-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--mp-filter-btn-border);
+    border-radius: 0;
+    background: var(--mp-filter-btn-bg);
+    color: var(--mp-filter-btn-text);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+#mp-overlay .mp-ie-tool {
+    width: 36px;
+    padding: 0;
+}
+
+#mp-overlay .mp-ie-tool:hover,
+#mp-overlay .mp-ie-btn:hover {
+    border-color: var(--mp-filter-active-border);
+    background: var(--mp-filter-hover-bg);
+}
+
+#mp-overlay .mp-ie-btn-primary {
+    border-color: var(--mp-confirm-btn-bg);
+    background: var(--mp-confirm-btn-bg);
+    color: #fff;
+}
+
+#mp-overlay .mp-ie-btn-primary:hover {
+    background: var(--mp-confirm-btn-hover-bg);
+    color: #fff;
+}
+
+#mp-overlay .mp-ie-buttons [data-action="perspective-apply"],
+#mp-overlay .mp-ie-buttons [data-action="perspective-cancel"],
+#mp-overlay .mp-ie-perspective-hint {
+    display: none;
+}
+
+#mp-overlay .mp-ie-perspective-mode .mp-ie-buttons [data-action="perspective-apply"],
+#mp-overlay .mp-ie-perspective-mode .mp-ie-buttons [data-action="perspective-cancel"],
+#mp-overlay .mp-ie-perspective-mode .mp-ie-perspective-hint {
+    display: inline-flex;
+}
+
+#mp-overlay .mp-ie-perspective-mode .mp-ie-buttons [data-action="perspective-start"] {
+    display: none;
+}
+
+#mp-overlay .mp-ie-perspective-mode [data-section="geometry"],
+#mp-overlay .mp-ie-perspective-mode [data-section="adjust"] {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+#mp-overlay .mp-ie-hint {
+    margin: 0 0 10px;
+    color: var(--mp-status-text);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+#mp-overlay .mp-ie-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--mp-link-color);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#mp-overlay .mp-ie-radio {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 6px;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+#mp-overlay .mp-ie-copy-name {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 10px 22px;
+}
+
+#mp-overlay .mp-ie-ext {
+    color: var(--mp-status-text);
+}
+
+#mp-overlay .mp-ie-size {
+    margin: 0;
+    color: var(--mp-status-text);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+    #mp-overlay .mp-ie-body {
+        flex-direction: column;
+    }
+
+    #mp-overlay .mp-ie-stage {
+        min-height: 50vh;
+    }
+
+    #mp-overlay .mp-ie-sidebar {
+        flex: 0 0 auto;
+        max-height: 45vh;
+        border-left: none;
+        border-top: 1px solid var(--mp-detail-border);
+    }
 }

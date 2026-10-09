@@ -21,7 +21,7 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 - Grid, Liste & Media Wall (Masonry), Kachelgröße per Slider
 - Detail-Panel mit editierbarem Titel, eigenen Metadaten-Feldern, Verwendungsstatus, Datei tauschen/löschen/downloaden
 - Fokuspunkt-Editor direkt im Detail-Panel, sobald das [focuspoint](https://github.com/FriendsOfREDAXO/focuspoint)-Addon installiert ist
-- Zuschneiden direkt im Detail-Panel, sobald das [cropper](https://github.com/FriendsOfREDAXO/cropper)-Addon installiert ist
+- Eigene Bildbearbeitung im Detail-Panel: Zuschneiden, Drehen, Spiegeln, Ausrichten, Perspektive korrigieren, Helligkeit/Kontrast/Gamma/Sättigung – als neue Datei oder ersetzend mit wiederherstellbarem Original
 - Upload per Drag & Drop, Button oder einfach **Cmd+V/Ctrl+V** pasten
 - Responsive Compact-Mode fürs schmale Fenster, Dark Mode Toggle
 - Sieht aus wie REDAXO, weil es sich an `be_style` orientiert
@@ -110,9 +110,19 @@ Im Detail-Panel eines Videos gibt es außerdem, sofern ffmpeg lauffähig ist:
 - **„Video optimieren“** (Rollenrecht `mediaplace[optimize_video]`): ersetzt die Videodatei in-place durch eine kleinere, gleicher Dateiname. Läuft im Hintergrund weiter, eine Statuszeile zeigt den Fortschritt; bereits optimierte Dateien zeigen die erreichte Kompressionsrate.
 - **„Technische Details“**: aufklappbare Auflösung/Dauer/Codec/Bitrate/Framerate-Angaben, erst beim Aufklappen nachgeladen.
 
-### Zuschneiden
+### Bildbearbeitung
 
-Ist das [cropper](https://github.com/FriendsOfREDAXO/cropper)-Addon installiert und hat der User das Recht `cropper[]`, zeigt das Detail-Panel bei Bildern einen Zuschneiden-Button – öffnet cropper's Bearbeitungsoberfläche direkt im MediaPlace-Overlay, ohne Seitenwechsel.
+Bei JPEG-, PNG-, WebP- (und, wenn der Server es kann, AVIF-) Bildern öffnet der Regler-Button in der Vorschau des Detail-Panels die Bildbearbeitung im Hauptbereich:
+
+- **Zuschneiden** frei oder mit festem Seitenverhältnis (Original, 1:1, 4:3, 3:2, 16:9 und Hochformate), per Maus, Touch oder Tastatur
+- **Drehen** in 90°-Schritten, **Spiegeln** horizontal und vertikal
+- **Ausrichten** um bis zu ±45°; leere Ecken werden automatisch weggeschnitten
+- **Perspektive korrigieren**: vier Punkte auf die Ecken einer Fläche ziehen (Fassade, Dokument, Schild), die rechteckig werden soll
+- **Licht und Farbe**: Helligkeit, Kontrast, Gamma (Mitteltöne), Sättigung
+
+Die Vorschau rechnet live auf einer verkleinerten Kopie, gespeichert wird am Original mit denselben Schritten. Gespeichert wird wahlweise **als neue Datei** (Titel und alle Metadaten werden übernommen) oder **ersetzend** – dann bleiben Dateiname und Verwendungen erhalten, das Original wird aufbewahrt und lässt sich über „Original wiederherstellen“ zurückholen. Ein gesetzter Fokuspunkt wird mitgerechnet bzw. geleert, wenn er nach dem Zuschnitt außerhalb liegt.
+
+Rechte: `mediaplace[edit_image]` (bearbeiten, als neue Datei speichern), `mediaplace[edit_image_overwrite]` (ersetzen, Original wiederherstellen). Mit der PHP-Erweiterung Imagick stehen alle Werkzeuge zur Verfügung; nur mit GD fehlen Perspektive sowie Licht und Farbe.
 
 ### Cloud-Speicher durchsuchen und importieren
 
@@ -209,7 +219,7 @@ Alle `mediaplace_*`-Endpunkte laufen über REDAXOs `rex-api-call`-Mechanismus un
 | GET/PATCH | `?rex-api-call=mediaplace_categories` | Kategorien laden, verschieben |
 | GET | `?rex-api-call=mediaplace_unused&filenames=a,b,c` | Prüft, welche Dateien unbenutzt sind |
 | GET/POST | `?rex-api-call=mediaplace_focuspoint` | Fokuspunkt lesen/speichern (nur mit `focuspoint`-Addon) |
-| GET/POST | `?rex-api-call=mediaplace_crop` | Zuschneiden (nur mit `cropper`-Addon) |
+| GET/POST | `?rex-api-call=mediaplace_image_edit&action=info\|save\|restore&file={f}` | Bildbearbeitung (POST mit CSRF-Token) |
 | GET | `?rex-api-call=mediaplace_video_optimize&func=start\|status` | Video optimieren starten/pollen (nur mit `ffmpeg`-Addon) |
 | GET | `?rex-api-call=mediaplace_video_info&file={f}` | Technische Videodaten lazy nachladen (nur mit `ffmpeg`-Addon) |
 | GET | `?rex-api-call=mediaplace_image_optimize&func=optimize&file={f}` | Übergroßes Bild in-place verkleinern |

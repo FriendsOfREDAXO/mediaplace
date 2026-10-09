@@ -756,52 +756,21 @@
         });
     }
 
-    // Zuschneiden (cropper-Addon-Integration), siehe rex_api_mediaplace_crop.php
-    // (boot.php liefert die URL ueber #mp-root[data-cropper-url]).
-    function getCropApiUrl(filename) {
+    // Bildbearbeitung, siehe Api\ImageEdit.php (URL und CSRF-Token aus #mp-root)
+    function imageEditRequest(action, filename, body) {
         var root = document.getElementById('mp-root');
-        var baseUrl = root ? root.dataset.cropperUrl : null;
-        if (!baseUrl) {
-            baseUrl = 'index.php?rex-api-call=mediaplace_crop';
-        }
-        if (filename) {
-            baseUrl += (baseUrl.indexOf('?') === -1 ? '?' : '&') + 'file=' + encodeURIComponent(filename);
-        }
-        return baseUrl;
-    }
-
-    // Liefert cropper's eigenes Panel-Markup (Bild + Toolbar + Formularfelder)
-    // als String, siehe rex_api_mediaplace_crop.php::handleForm().
-    function apiLoadCropPanel(filename) {
-        return fetch(getCropApiUrl(filename), {
+        var url = (root && root.dataset.imageEditUrl) || 'index.php?rex-api-call=mediaplace_image_edit';
+        url += (url.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(action) + '&file=' + encodeURIComponent(filename);
+        var options = {
             credentials: 'same-origin',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        })
-        .then(function (r) {
-            return r.json().then(function (json) {
-                if (!r.ok || !json.success) throw new Error(json.error || 'HTTP ' + r.status);
-                return typeof json.html === 'string' ? json.html : '';
-            });
-        });
-    }
-
-    // formData = ein FormData-Objekt aus dem #mp-crop-canvas-Formular (echtes
-    // multipart/form-data -- cropper's eigener CropperExecutor liest $_POST
-    // direkt, siehe rex_api_mediaplace_crop.php::handleSave()).
-    function apiSaveCrop(filename, formData) {
-        return fetch(getCropApiUrl(filename), {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            body: formData
-        })
-        .then(function (r) {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        };
+        if (body) {
+            body.append('_csrf_token', (root && root.dataset.imageEditToken) || '');
+            options.method = 'POST';
+            options.body = body;
+        }
+        return fetch(url, options).then(function (r) {
             return r.json().then(function (json) {
                 if (!r.ok || !json.success) throw new Error(json.error || 'HTTP ' + r.status);
                 return json;
@@ -809,10 +778,26 @@
         });
     }
 
+    function apiImageEditInfo(filename) {
+        return imageEditRequest('info', filename, null);
+    }
+
+    function apiImageEditSave(filename, ops, mode, name) {
+        var body = new FormData();
+        body.append('ops', JSON.stringify(ops));
+        body.append('mode', mode);
+        body.append('name', name || '');
+        return imageEditRequest('save', filename, body);
+    }
+
+    function apiImageEditRestore(filename) {
+        return imageEditRequest('restore', filename, new FormData());
+    }
+
     // "Video optimieren" (ffmpeg-Integration), siehe
     // rex_api_mediaplace_video_optimize.php. Antwortform kommt 1:1 von
     // ffmpeg's eigener Job-Engine durch (status/job/progress/message/log --
-    // kein {success:true}-Wrapper wie bei Crop/Metainfo), daher hier nur auf
+    // kein {success:true}-Wrapper wie bei Metainfo), daher hier nur auf
     // r.ok bzw. ein "error"-Feld pruefen.
     function getOptimizeVideoApiUrl(func, params) {
         var root = document.getElementById('mp-root');
@@ -1265,8 +1250,9 @@
     Core.api.apiSaveJsonMetainfo = apiSaveJsonMetainfo;
     Core.api.apiLoadMetainfoForm = apiLoadMetainfoForm;
     Core.api.apiSaveMetainfoForm = apiSaveMetainfoForm;
-    Core.api.apiLoadCropPanel = apiLoadCropPanel;
-    Core.api.apiSaveCrop = apiSaveCrop;
+    Core.api.apiImageEditInfo = apiImageEditInfo;
+    Core.api.apiImageEditSave = apiImageEditSave;
+    Core.api.apiImageEditRestore = apiImageEditRestore;
     Core.api.apiStartOptimizeVideo = apiStartOptimizeVideo;
     Core.api.apiPollOptimizeVideo = apiPollOptimizeVideo;
     Core.api.apiLoadVideoDetails = apiLoadVideoDetails;

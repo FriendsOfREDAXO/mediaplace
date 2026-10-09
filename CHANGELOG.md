@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 2.4.0 – unveröffentlicht
+
+### Neue Features
+- **Eigene Bildbearbeitung statt cropper-Integration**: Der Regler-Button in der Bildvorschau öffnet die Bearbeitung im Hauptbereich – Zuschneiden (frei oder mit Seitenverhältnis), Drehen, Spiegeln, Ausrichten bis ±45°, Perspektive korrigieren (vier Eckpunkte), Helligkeit, Kontrast, Gamma und Sättigung. Live-Vorschau mit denselben Schritten und Formeln wie die serverseitige Verarbeitung (Imagick, mit GD nur die Geometrie).
+- **Als neue Datei oder ersetzend speichern**: neue Dateien übernehmen Titel und alle Metadaten; beim Ersetzen bleiben Dateiname und Verwendungen erhalten, das Original wird aufbewahrt und lässt sich wiederherstellen. Fokuspunkte werden mitgerechnet.
+- Neue Rechte `mediaplace[edit_image]` und `mediaplace[edit_image_overwrite]`.
+
+### Entfernt
+- Integration des cropper-Addons (Zuschneiden-Canvas, `mediaplace_crop`-Endpunkt). Das cropper-Addon selbst funktioniert außerhalb von MediaPlace unverändert weiter.
+
 ## Version 2.3.0 – 2026-10-02
 
 ### Neue Features
