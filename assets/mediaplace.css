@@ -7421,3 +7421,28 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
         border-top: 1px solid var(--mp-detail-border);
     }
 }
+
+#mp-overlay .mp-ie-pipette-hint {
+    display: none;
+}
+
+#mp-overlay .mp-ie-pipette-mode .mp-ie-pipette-hint {
+    display: block;
+}
+
+#mp-overlay .mp-ie-pipette-mode .mp-ie-frame,
+#mp-overlay .mp-ie-pipette-mode .mp-ie-crop {
+    cursor: crosshair;
+}
+
+#mp-overlay .mp-ie-btn[aria-pressed="true"],
+#mp-overlay .mp-ie-header-btn[aria-pressed="true"] {
+    border-color: var(--mp-filter-active-border);
+    background: var(--mp-filter-active-bg);
+    color: #fff;
+}
+
+#mp-overlay .mp-ie-show-original .mp-ie-crop,
+#mp-overlay .mp-ie-show-original .mp-ie-quad {
+    display: none;
+}

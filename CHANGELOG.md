@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 2.5.0 – unveröffentlicht
+
+### Neue Features (Bildbearbeitung)
+- **Weißabgleich**: Pipette für eine neutrale Stelle, dazu Regler für Farbtemperatur und Tönung.
+- **Automatisch korrigieren**: setzt Schwarz- und Weißpunkt aus dem Histogramm und gleicht einen Farbstich gedämpft aus; die Werte stehen danach in den Reglern und lassen sich anpassen.
+- **Schwarzpunkt, Weißpunkt, Lichter, Tiefen** als eigene Regler.
+- **Effekte** mit einstellbarer Stärke: Schwarzweiß, Sepia, Warm, Kühl, Ausgeblichen; dazu eine **Vignette**.
+- **Vorher/Nachher**: „Vorher“ zeigt das unbearbeitete Original zum Vergleich.
+
+### Intern
+- Alle kanalweisen Korrekturen werden als eine gemeinsame Tonwertkurve berechnet (Browser: Lookup-Tabelle, Server: `Imagick::clutImage()`), Sättigung und Effekt als eine Farbmatrix – Vorschau und gespeicherte Datei stimmen damit überein.
+
 ## Version 2.4.0 – 2026-10-09
 
 ### Neue Features
