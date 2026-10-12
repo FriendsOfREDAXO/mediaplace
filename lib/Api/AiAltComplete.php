@@ -2,7 +2,9 @@
 
 namespace FriendsOfRedaxo\Mediaplace\Api;
 
+use FriendsOfRedaxo\Mediaplace\AiAltFailures;
 use FriendsOfRedaxo\Mediaplace\AiAltTextService;
+use FriendsOfRedaxo\Mediaplace\AiImagePreparer;
 use FriendsOfRedaxo\Mediaplace\AiAltTextWriter;
 use FriendsOfRedaxo\Mediaplace\AltTextStatus;
 use FriendsOfRedaxo\Mediaplace\MediaPermission;
@@ -149,13 +151,16 @@ class AiAltComplete extends \rex_api_function
                 $texts = $service->generateAltText($media, $clangIds);
                 if ([] === $texts) {
                     $errors[] = ['filename' => $filename, 'message' => 'Keine verwertbare Antwort für "' . \rex_escape($filename) . '" erhalten.'];
+                    AiAltFailures::mark($filename, 'Keine verwertbare Antwort der KI erhalten.');
 
                     continue;
                 }
                 AiAltTextWriter::write($media, $texts);
+                AiAltFailures::clear($filename);
                 ++$succeeded;
             } catch (\Throwable $e) {
                 $errors[] = ['filename' => $filename, 'message' => \rex_escape($filename) . ': ' . $e->getMessage()];
+                AiAltFailures::mark($filename, $e->getMessage());
             }
         }
 
@@ -182,12 +187,12 @@ class AiAltComplete extends \rex_api_function
      */
     private function accessibleEligibleFilenames(): array
     {
-        $filenames = array_values(array_filter(
+        $filenames = AiAltFailures::withoutMarked(array_values(array_filter(
             AltTextStatus::getFilenamesMissingAlt(),
             static function (string $filename): bool {
-                return 'svg' !== strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                return 'svg' !== strtolower(pathinfo($filename, PATHINFO_EXTENSION)) && AiImagePreparer::canPrepare($filename);
             },
-        ));
+        )));
 
         if (MediaPermission::hasFullAccess()) {
             return $filenames;

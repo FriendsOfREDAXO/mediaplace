@@ -6586,6 +6586,43 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
     gap: 8px;
 }
 
+/* KI-Alt-Text-Generator: übersprungene Dateien als EINE aufklappbare Zeile (statt einer Box je Datei) */
+.mp-ai-alt-errors {
+    border-left: 3px solid #c9302c;
+    background: var(--mp-upload-failed-bg, rgba(201, 48, 44, 0.08));
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--mp-cat-text);
+}
+.mp-ai-alt-errors > summary {
+    cursor: pointer;
+    padding: 8px 12px;
+    font-weight: 600;
+    list-style-position: inside;
+}
+.mp-ai-alt-errors > summary > i {
+    color: #c9302c;
+    margin: 0 4px;
+}
+.mp-ai-alt-errors-hint {
+    margin: 0 12px 6px;
+    opacity: .8;
+}
+.mp-ai-alt-errors-list {
+    margin: 0;
+    padding: 0 12px 10px 28px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.mp-ai-alt-errors-list li {
+    overflow-wrap: anywhere;
+    padding: 2px 0;
+}
+.mp-ai-alt-bulk-failed-note .btn-link {
+    padding: 0 4px;
+    vertical-align: baseline;
+}
+
 .mp-bulk-progress-error-item {
     display: flex;
     align-items: flex-start;

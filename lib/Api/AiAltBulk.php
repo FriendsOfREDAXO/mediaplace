@@ -2,7 +2,9 @@
 
 namespace FriendsOfRedaxo\Mediaplace\Api;
 
+use FriendsOfRedaxo\Mediaplace\AiAltFailures;
 use FriendsOfRedaxo\Mediaplace\AiAltTextService;
+use FriendsOfRedaxo\Mediaplace\AiImagePreparer;
 use FriendsOfRedaxo\Mediaplace\AiAltTextWriter;
 use FriendsOfRedaxo\Mediaplace\AltTextStatus;
 use FriendsOfRedaxo\Mediaplace\MediaPermission;
@@ -35,6 +37,12 @@ class AiAltBulk extends \rex_api_function
     private const BATCH_LIMIT_DEFAULT = 10;
     private const BATCH_LIMIT_MAX = 25;
 
+    // Zeitbudget je Anfrage: danach liefert der Endpunkt, was fertig ist (der Rest bleibt „remaining“) – so stirbt eine
+    // Anfrage nicht am PHP-Zeitlimit und reißt die schon erzeugten Vorschläge mit.
+    private const TIME_BUDGET_SECONDS = 40;
+
+    private bool $retryFailed = false;
+
     public function execute(): \rex_api_result
     {
         if (!\rex::getUser()) {
@@ -53,10 +61,12 @@ class AiAltBulk extends \rex_api_function
 
         switch ($action) {
             case 'count':
+                $this->retryFailed = !empty($body['retry_failed']);
                 $this->handleCount();
 
                 break;
             case 'generate_batch':
+                $this->retryFailed = !empty($body['retry_failed']);
                 $this->handleGenerateBatch($body);
 
                 break;
@@ -64,6 +74,16 @@ class AiAltBulk extends \rex_api_function
                 $this->handleApply($body);
 
                 break;
+            case 'mark_failed':
+                // Anfrage für genau diese Datei ist abgestürzt (Zeitlimit, Speicher) – der Client meldet sie zum Überspringen
+                $filename = (string) ($body['filename'] ?? '');
+                if ('' !== $filename && \rex_media::get($filename)) {
+                    AiAltFailures::mark($filename, (string) ($body['message'] ?? 'Serverfehler bei der Verarbeitung'));
+                }
+                $this->send(['success' => true]);
+            case 'clear_failed':
+                AiAltFailures::clearAll();
+                $this->send(['success' => true]);
             default:
                 $this->send(['success' => false, 'error' => 'Unbekannte Aktion.'], 400);
         }
@@ -82,10 +102,17 @@ class AiAltBulk extends \rex_api_function
             ];
         }
 
+        $eligible = $this->accessibleEligibleFilenames();
         $this->send([
             'success' => true,
-            'total' => count($this->accessibleEligibleFilenames()),
+            'total' => count($eligible),
+            'files' => $eligible,
             'svgSkipped' => count($this->accessibleSvgFilenames()),
+            'unsupportedSkipped' => count($this->accessibleUnsupportedFilenames()),
+            'failedSkipped' => $this->retryFailed ? 0 : count($this->filterAccessible(array_values(array_filter(
+                $this->filterByExtension(AltTextStatus::getFilenamesMissingAlt(), false),
+                static fn (string $f): bool => AiAltFailures::isMarked($f),
+            )))),
             'clangs' => $clangs,
         ]);
     }
@@ -111,41 +138,58 @@ class AiAltBulk extends \rex_api_function
                 return !isset($exclude[$filename]);
             },
         ));
-        $batch = array_slice($eligible, 0, $limit);
+        // Client nennt die Dateien selbst (feste Reihenfolge, bei Fehlern einzeln wiederholbar) – nur zulässige
+        if (is_array($body['files'] ?? null)) {
+            $allowed = array_flip($eligible);
+            $batch = array_values(array_filter(array_map('strval', $body['files']), static fn (string $f): bool => isset($allowed[$f])));
+            $batch = array_slice($batch, 0, $limit);
+        } else {
+            $batch = array_slice($eligible, 0, $limit);
+        }
+        @set_time_limit(max(60, self::TIME_BUDGET_SECONDS + 60));
+        $started = microtime(true);
 
         $service = new AiAltTextService();
         $clangIds = AiAltTextWriter::resolveClangIds();
         $items = [];
         $errors = [];
 
+        $processed = 0;
         foreach ($batch as $filename) {
+            if ($processed > 0 && microtime(true) - $started > self::TIME_BUDGET_SECONDS) {
+                break; // Rest kommt mit der nächsten Anfrage
+            }
+            ++$processed;
             $media = \rex_media::get($filename);
             if (!$media) {
-                $errors[] = ['filename' => $filename, 'message' => 'Datei "' . \rex_escape($filename) . '" nicht gefunden.'];
+                $errors[] = ['filename' => $filename, 'message' => 'Datei nicht gefunden.'];
 
                 continue;
             }
             try {
                 $texts = $service->generateAltText($media, $clangIds);
                 if ([] === $texts) {
-                    $errors[] = ['filename' => $filename, 'message' => 'Keine verwertbare Antwort für "' . \rex_escape($filename) . '" erhalten.'];
+                    $errors[] = ['filename' => $filename, 'message' => 'Keine verwertbare Antwort der KI erhalten.'];
+                    AiAltFailures::mark($filename, 'Keine verwertbare Antwort der KI erhalten.');
 
                     continue;
                 }
+                AiAltFailures::clear($filename);
                 $items[] = [
                     'filename' => $filename,
                     'title' => (string) $media->getValue('title'),
                     'texts' => $texts,
                 ];
             } catch (\Throwable $e) {
-                $errors[] = ['filename' => $filename, 'message' => \rex_escape($filename) . ': ' . $e->getMessage()];
+                $errors[] = ['filename' => $filename, 'message' => $e->getMessage()];
+                AiAltFailures::mark($filename, $e->getMessage());
             }
         }
 
-        $processed = count($batch);
         $remaining = max(0, count($eligible) - $processed);
+        $notProcessed = array_slice($batch, $processed); // wegen Zeitbudget offen geblieben – Client fragt sie erneut an
 
-        $this->send(['success' => true, 'items' => $items, 'errors' => $errors, 'processed' => $processed, 'remaining' => $remaining]);
+        $this->send(['success' => true, 'items' => $items, 'errors' => $errors, 'processed' => $processed, 'remaining' => $remaining, 'pending' => $notProcessed]);
     }
 
     /**
@@ -194,6 +238,7 @@ class AiAltBulk extends \rex_api_function
 
             try {
                 AiAltTextWriter::write($media, $textByClangId);
+                AiAltFailures::clear($filename);
                 ++$succeeded;
             } catch (\Throwable $e) {
                 $errors[] = ['filename' => $filename, 'message' => \rex_escape($filename) . ': ' . $e->getMessage()];
@@ -215,7 +260,28 @@ class AiAltBulk extends \rex_api_function
      */
     private function accessibleEligibleFilenames(): array
     {
-        return $this->filterAccessible($this->filterByExtension(AltTextStatus::getFilenamesMissingAlt(), false));
+        $files = array_values(array_filter(
+            $this->filterByExtension(AltTextStatus::getFilenamesMissingAlt(), false),
+            static fn (string $f): bool => AiImagePreparer::canPrepare($f),
+        ));
+        if (!$this->retryFailed) {
+            $files = AiAltFailures::withoutMarked($files); // früher gescheitert → überspringen, bis „erneut versuchen“
+        }
+
+        return $this->filterAccessible($files);
+    }
+
+    /**
+     * Bildformate, die weder die KI versteht noch der Server umwandeln kann (ohne Imagick z. B. TIFF/HEIC/PSD).
+     *
+     * @return list<string>
+     */
+    private function accessibleUnsupportedFilenames(): array
+    {
+        return $this->filterAccessible(array_values(array_filter(
+            $this->filterByExtension(AltTextStatus::getFilenamesMissingAlt(), false),
+            static fn (string $f): bool => !AiImagePreparer::canPrepare($f),
+        )));
     }
 
     /**

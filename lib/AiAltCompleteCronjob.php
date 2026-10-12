@@ -36,12 +36,14 @@ class AiAltCompleteCronjob extends rex_cronjob
 
         $batchSize = max(1, (int) $this->getParam('batch_size', 20));
 
-        $filenames = array_values(array_filter(
+        // ohne SVG, nur aufbereitbare Formate, ohne früher gescheiterte Dateien (AiAltFailures) – sonst blockieren
+        // dauerhaft scheiternde Dateien am Anfang der Liste jeden Lauf
+        $filenames = AiAltFailures::withoutMarked(array_values(array_filter(
             AltTextStatus::getFilenamesMissingAlt(),
             static function (string $filename): bool {
-                return 'svg' !== strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                return 'svg' !== strtolower(pathinfo($filename, PATHINFO_EXTENSION)) && AiImagePreparer::canPrepare($filename);
             },
-        ));
+        )));
         $batch = array_slice($filenames, 0, $batchSize);
 
         $service = new AiAltTextService();
@@ -60,13 +62,16 @@ class AiAltCompleteCronjob extends rex_cronjob
                 $texts = $service->generateAltText($media, $clangIds);
                 if ([] === $texts) {
                     ++$failed;
+                    AiAltFailures::mark($filename, 'Keine verwertbare Antwort der KI erhalten.');
 
                     continue;
                 }
                 AiAltTextWriter::write($media, $texts);
+                AiAltFailures::clear($filename);
                 ++$succeeded;
             } catch (\Throwable $e) {
                 ++$failed;
+                AiAltFailures::mark($filename, $e->getMessage());
             }
         }
 

@@ -47,12 +47,90 @@ final class AiImagePreparer
             throw new \rex_exception('Bilddatei nicht auf dem Dateisystem gefunden: ' . $media->getFileName());
         }
 
+        // Nicht-Webformate (TIFF, BMP, HEIC, AVIF, PSD …) versteht die Vision-API meist nicht – und unverkleinert als
+        // Base64 sprengen große Dateien Speicher/Zeitlimit. Daher vorher in ein verkleinertes JPEG umwandeln; geht das
+        // nicht, sauber abbrechen (der Aufrufer überspringt und markiert die Datei).
+        $extension = strtolower(pathinfo($media->getFileName(), PATHINFO_EXTENSION));
+        if (!in_array($extension, self::WEB_FORMATS, true)) {
+            return ['path' => self::convertToJpeg($sourcePath, $extension), 'temp' => true];
+        }
+
         $downscaled = self::downscaleIfNeeded($sourcePath);
         if (null !== $downscaled) {
             return ['path' => $downscaled, 'temp' => true];
         }
+        if (filesize($sourcePath) > self::MAX_SOURCE_BYTES) {
+            // GD konnte nicht verkleinern (z. B. CMYK, beschädigt) – Imagick versuchen statt riesiger Base64-Last
+            return ['path' => self::convertToJpeg($sourcePath, $extension), 'temp' => true];
+        }
 
         return ['path' => $sourcePath, 'temp' => false];
+    }
+
+    /** Formate, die die Vision-APIs direkt annehmen */
+    public const WEB_FORMATS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+    /** Größere Originale werden nie unverändert gesendet */
+    private const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+
+    /** Kann diese Datei für die KI aufbereitet werden (Webformat oder umwandelbar)? */
+    public static function canPrepare(string $filename): bool
+    {
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        if (in_array($extension, self::WEB_FORMATS, true) || 'svg' === $extension) {
+            return true;
+        }
+        if (class_exists(\Imagick::class)) {
+            try {
+                return in_array(strtoupper('jpg' === $extension ? 'jpeg' : ('tif' === $extension ? 'tiff' : $extension)), \Imagick::queryFormats(), true);
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        return in_array($extension, ['bmp', 'avif'], true) && extension_loaded('gd');
+    }
+
+    /** Erstes Bild/erste Ebene → sRGB-JPEG mit höchstens der konfigurierten Kantenlänge (Imagick, sonst GD) */
+    private static function convertToJpeg(string $sourcePath, string $extension): string
+    {
+        $max = self::resolveMaxImageDimension();
+        if (class_exists(\Imagick::class)) {
+            try {
+                $image = new \Imagick();
+                $image->setResourceLimit(\Imagick::RESOURCETYPE_MEMORY, 256 * 1024 * 1024);
+                $image->readImage($sourcePath . '[0]'); // erste Seite/Ebene (mehrseitige TIFF, PSD)
+                if (method_exists($image, 'transformImageColorspace')) {
+                    $image->transformImageColorspace(\Imagick::COLORSPACE_SRGB); // CMYK-Druckdaten
+                }
+                $image->setImageBackgroundColor('white');
+                $image = $image->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+                $image->thumbnailImage($max, $max, true);
+                $image->setImageFormat('jpeg');
+                $image->setImageCompressionQuality(85);
+                $blob = $image->getImagesBlob();
+                $image->clear();
+                if ('' !== $blob) {
+                    return self::writeTempFile($blob, 'jpg');
+                }
+            } catch (\Throwable $e) {
+                throw new \rex_exception('Format „' . strtoupper($extension) . '“ konnte nicht für die KI umgewandelt werden (' . $e->getMessage() . ').');
+            }
+        }
+        $gd = extension_loaded('gd') ? @imagecreatefromstring((string) \rex_file::get($sourcePath)) : false;
+        if (false !== $gd) {
+            $w = imagesx($gd);
+            $h = imagesy($gd);
+            $scale = min(1, $max / max($w, $h, 1));
+            $resized = $scale < 1 ? imagescale($gd, max(1, (int) round($w * $scale)), max(1, (int) round($h * $scale))) : $gd;
+            ob_start();
+            imagejpeg($resized ?: $gd, null, 85);
+            $blob = (string) ob_get_clean();
+            if ('' !== $blob) {
+                return self::writeTempFile($blob, 'jpg');
+            }
+        }
+        throw new \rex_exception('Format „' . strtoupper($extension) . '“ wird für die KI nicht unterstützt (kein Imagick zum Umwandeln) – übersprungen.');
     }
 
     /**
