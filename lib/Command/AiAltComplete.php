@@ -2,7 +2,9 @@
 
 namespace FriendsOfRedaxo\Mediaplace\Command;
 
+use FriendsOfRedaxo\Mediaplace\AiAltFailures;
 use FriendsOfRedaxo\Mediaplace\AiAltTextService;
+use FriendsOfRedaxo\Mediaplace\AiImagePreparer;
 use FriendsOfRedaxo\Mediaplace\AiAltTextWriter;
 use FriendsOfRedaxo\Mediaplace\AltTextStatus;
 use FriendsOfRedaxo\Mediaplace\Api\AiAltComplete as AiAltCompleteApi;
@@ -65,12 +67,14 @@ class AiAltComplete extends rex_console_command
             return 1;
         }
 
-        $filenames = array_values(array_filter(
+        // ohne SVG, nur aufbereitbare Formate, ohne früher gescheiterte Dateien (AiAltFailures) – sonst blockieren
+        // dauerhaft scheiternde Dateien am Anfang der Liste jeden Lauf
+        $filenames = AiAltFailures::withoutMarked(array_values(array_filter(
             AltTextStatus::getFilenamesMissingAlt(),
             static function (string $filename): bool {
-                return 'svg' !== strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                return 'svg' !== strtolower(pathinfo($filename, PATHINFO_EXTENSION)) && AiImagePreparer::canPrepare($filename);
             },
-        ));
+        )));
         $total = count($filenames);
 
         $service = new AiAltTextService();
@@ -95,14 +99,17 @@ class AiAltComplete extends rex_console_command
                     $texts = $service->generateAltText($media, $clangIds);
                     if ([] !== $texts) {
                         AiAltTextWriter::write($media, $texts);
+                        AiAltFailures::clear($filename);
                         ++$succeeded;
                         $io->writeln('OK: ' . $filename);
                     } else {
                         ++$errors;
+                        AiAltFailures::mark($filename, 'Keine verwertbare Antwort der KI erhalten.');
                         $io->writeln('FEHLER (keine Antwort): ' . $filename);
                     }
                 } catch (\Throwable $e) {
                     ++$errors;
+                    AiAltFailures::mark($filename, $e->getMessage());
                     $io->writeln('FEHLER: ' . $filename . ' (' . $e->getMessage() . ')');
                 }
             } else {

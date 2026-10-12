@@ -392,23 +392,55 @@ export function openBulkPanel() {
         if (overlayEl.parentNode) overlayEl.parentNode.removeChild(overlayEl);
     }
     closeBtn.addEventListener('click', function () {
-        if (running) cancelled = true;
+        // Waehrend des Laufs nur anhalten -- bereits erzeugte Vorschlaege bleiben zum Uebernehmen stehen
+        if (running) {
+            cancelled = true;
+            closeBtn.disabled = true;
+            textEl.textContent = t('mediaplace_ai_alt_bulk_stopping');
+            return;
+        }
         close();
     });
     overlayEl.addEventListener('click', function (e) {
         if (e.target === overlayEl && !running) close();
     });
 
+    // Fehler/uebersprungene Dateien: eine aufklappbare Zeile statt einer Box je Datei
+    var errorCount = 0;
+    var errorsDetails = null;
+    var errorsSummary = null;
+    var errorsList = null;
     function addErrors(list) {
         if (!list || !list.length) return;
+        if (!errorsDetails) {
+            errorsEl.innerHTML = '';
+            errorsDetails = document.createElement('details');
+            errorsDetails.className = 'mp-ai-alt-errors';
+            errorsSummary = document.createElement('summary');
+            errorsList = document.createElement('ul');
+            errorsList.className = 'mp-ai-alt-errors-list';
+            var hint = document.createElement('p');
+            hint.className = 'mp-ai-alt-errors-hint';
+            hint.textContent = t('mediaplace_ai_alt_bulk_errors_hint');
+            errorsDetails.appendChild(errorsSummary);
+            errorsDetails.appendChild(hint);
+            errorsDetails.appendChild(errorsList);
+            errorsEl.appendChild(errorsDetails);
+        }
         errorsEl.style.display = '';
         list.forEach(function (err) {
-            var block = document.createElement('div');
-            block.className = 'mp-bulk-progress-error-item';
-            block.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><div class="mp-bulk-progress-error-text"></div>';
-            qs('.mp-bulk-progress-error-text', block).textContent = err.message || String(err);
-            errorsEl.appendChild(block);
+            var li = document.createElement('li');
+            var name = document.createElement('strong');
+            name.textContent = err.filename || '';
+            var msg = document.createElement('span');
+            msg.textContent = (err.filename ? ' – ' : '') + (err.message || String(err));
+            li.appendChild(name);
+            li.appendChild(msg);
+            if (err.filename) li.title = err.filename + ': ' + (err.message || '');
+            errorsList.appendChild(li);
+            errorCount++;
         });
+        errorsSummary.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + escAttr(tText('mediaplace_ai_alt_bulk_errors_summary', { count: errorCount }));
     }
 
     function removeRow(filename) {
@@ -491,33 +523,65 @@ export function openBulkPanel() {
         order.push(item.filename);
     }
 
-    apiAiAltBulkAction('count').then(function (res) {
-        var total = parseInt(res.total, 10) || 0;
-        var svgSkipped = parseInt(res.svgSkipped, 10) || 0;
-        (res.clangs || []).forEach(function (clang) {
-            clangById[String(clang.id)] = clang;
+    // Warteschlange mit festen Dateinamen (aus 'count'): je Anfrage ein kleines Paket; stirbt eine Anfrage
+    // (Zeitlimit, Speicher, Serverfehler), wird das Paket Datei fuer Datei wiederholt -- nur die schuldige Datei wird
+    // uebersprungen und serverseitig markiert (AiAltFailures), alle anderen Vorschlaege bleiben erhalten.
+    var CHUNK = 3;
+    var queue = [];
+    var totalFiles = 0;
+    var doneFiles = 0;
+    var retryFailed = false;
+    var failedNoteEl = document.createElement('p');
+    failedNoteEl.className = 'mp-cat-move-modal-info mp-ai-alt-bulk-failed-note';
+    failedNoteEl.style.display = 'none';
+    svgNoteEl.parentNode.insertBefore(failedNoteEl, svgNoteEl.nextSibling);
+
+    function loadCount() {
+        textEl.textContent = t('mediaplace_loading_ellipsis');
+        apiAiAltBulkAction('count', { retry_failed: retryFailed }).then(function (res) {
+            var total = parseInt(res.total, 10) || 0;
+            var notes = [];
+            if ((parseInt(res.svgSkipped, 10) || 0) > 0) notes.push(tText('mediaplace_ai_alt_bulk_svg_skipped', { count: res.svgSkipped }));
+            if ((parseInt(res.unsupportedSkipped, 10) || 0) > 0) notes.push(tText('mediaplace_ai_alt_bulk_unsupported_skipped', { count: res.unsupportedSkipped }));
+            svgNoteEl.textContent = notes.join(' ');
+            svgNoteEl.style.display = notes.length ? '' : 'none';
+            var failed = parseInt(res.failedSkipped, 10) || 0;
+            if (failed > 0) {
+                failedNoteEl.innerHTML = escAttr(tText('mediaplace_ai_alt_bulk_failed_skipped', { count: failed })) +
+                    ' <button type="button" class="btn btn-link btn-xs mp-ai-alt-bulk-retry">' + escAttr(t('mediaplace_ai_alt_bulk_retry_failed')) + '</button>';
+                failedNoteEl.style.display = '';
+                qs('.mp-ai-alt-bulk-retry', failedNoteEl).addEventListener('click', function () {
+                    retryFailed = true;
+                    failedNoteEl.style.display = 'none';
+                    loadCount();
+                });
+            } else {
+                failedNoteEl.style.display = 'none';
+            }
+            (res.clangs || []).forEach(function (clang) {
+                clangById[String(clang.id)] = clang;
+            });
+            queue = (res.files || []).slice();
+            totalFiles = queue.length;
+            doneFiles = 0;
+            if (0 === total) {
+                textEl.textContent = t('mediaplace_ai_alt_bulk_none_missing');
+                startBtn.style.display = 'none';
+                return;
+            }
+            startBtn.style.display = '';
+            textEl.textContent = t('mediaplace_ai_alt_bulk_ready', { count: total });
+        }).catch(function (err) {
+            textEl.textContent = err.message;
         });
-        if (svgSkipped > 0) {
-            svgNoteEl.textContent = tText('mediaplace_ai_alt_bulk_svg_skipped', { count: svgSkipped });
-            svgNoteEl.style.display = '';
-        }
-        if (0 === total) {
-            textEl.textContent = t('mediaplace_ai_alt_bulk_none_missing');
-            startBtn.style.display = 'none';
-            return;
-        }
-        textEl.textContent = t('mediaplace_ai_alt_bulk_ready', { count: total });
-    }).catch(function (err) {
-        textEl.textContent = err.message;
-    });
+    }
+    loadCount();
 
-    // excludeList lebt ausserhalb von startGenerationRun(), damit "Weitere
-    // generieren" (continueBtn) nahtlos an der vorherigen Ausschlussliste
-    // weitermacht statt bereits gesehene Dateien erneut anzufragen.
-    var excludeList = [];
-
-    function finishGenerationRun(remaining) {
+    function finishGenerationRun() {
         running = false;
+        cancelled = false;
+        closeBtn.disabled = false;
+        closeBtn.textContent = t('mediaplace_close');
         trackEl.style.display = 'none';
         startBtn.style.display = 'none';
         continueBtn.disabled = false;
@@ -525,6 +589,7 @@ export function openBulkPanel() {
 
         if (order.length > 0) applyBtn.style.display = '';
 
+        var remaining = queue.length;
         if (remaining > 0) {
             continueBtn.style.display = '';
             textEl.textContent = order.length > 0
@@ -538,55 +603,65 @@ export function openBulkPanel() {
         }
     }
 
+    function progress() {
+        var pct = totalFiles > 0 ? Math.min(100, Math.round((doneFiles / totalFiles) * 100)) : 100;
+        fillEl.style.width = pct + '%';
+        textEl.textContent = t('mediaplace_ai_alt_bulk_progress', { done: order.length, remaining: queue.length });
+    }
+
+    var runCount = 0;
     function runGenerationStep() {
-        if (cancelled) return;
-        apiAiAltBulkAction('generate_batch', { limit: 10, exclude: excludeList }).then(function (res) {
+        if (cancelled || 0 === queue.length || runCount >= RUN_LIMIT) {
+            finishGenerationRun();
+            return;
+        }
+        var chunk = queue.splice(0, Math.min(CHUNK, RUN_LIMIT - runCount));
+        apiAiAltBulkAction('generate_batch', { files: chunk, limit: chunk.length, retry_failed: retryFailed }).then(function (res) {
+            // Anzeigefehler im Browser duerfen nicht als Serverfehler gelten (sonst wuerde eine gute Datei markiert)
             (res.items || []).forEach(function (item) {
-                addReviewRow(item);
-                excludeList.push(item.filename);
-            });
-            (res.errors || []).forEach(function (err) {
-                if (err && err.filename) excludeList.push(err.filename);
+                try {
+                    addReviewRow(item);
+                } catch (e) {
+                    addErrors([{ filename: item.filename, message: e.message }]);
+                }
             });
             addErrors(res.errors);
-
-            var remaining = parseInt(res.remaining, 10) || 0;
-            var processed = parseInt(res.processed, 10) || 0;
-            var totalEstimate = excludeList.length + remaining;
-            var pct = totalEstimate > 0 ? Math.min(100, Math.round((excludeList.length / totalEstimate) * 100)) : 100;
-            fillEl.style.width = pct + '%';
-            textEl.textContent = t('mediaplace_ai_alt_bulk_progress', { done: order.length, remaining: remaining });
-
-            var reachedRunLimit = excludeList.length >= RUN_LIMIT;
-            if (remaining > 0 && processed > 0 && !cancelled && !reachedRunLimit) {
+            var pending = res.pending || [];
+            if (pending.length) queue = pending.concat(queue); // wegen Zeitbudget offen -- vorne wieder einreihen
+            var handled = chunk.length - pending.length; // Server bearbeitet je Anfrage immer mindestens eine Datei
+            doneFiles += handled;
+            runCount += handled;
+            progress();
+            runGenerationStep();
+        }).catch(function (err) {
+            if (chunk.length > 1) {
+                // Paket gescheitert: jede Datei einzeln versuchen, um die schuldige zu finden
+                queue = chunk.concat(queue);
+                CHUNK = 1;
                 runGenerationStep();
                 return;
             }
-
-            finishGenerationRun(remaining);
-        }).catch(function (err) {
-            running = false;
-            trackEl.style.display = 'none';
-            applyBtn.disabled = false;
-            if (order.length > 0) applyBtn.style.display = '';
-            // Wieder anzeigen statt endgueltig ausgeblendet zu lassen --
-            // Netzwerkfehler soll den Lauf unterbrechen, nicht beenden.
-            if (0 === order.length) {
-                startBtn.style.display = '';
-            } else {
-                continueBtn.style.display = '';
-            }
-            addErrors([{ message: err.message }]);
-            textEl.textContent = t('mediaplace_ai_alt_bulk_error');
+            var message = t('mediaplace_ai_alt_bulk_error_server') + (err && err.message ? ' (' + err.message + ')' : '');
+            addErrors([{ filename: chunk[0], message: message }]);
+            apiAiAltBulkAction('mark_failed', { filename: chunk[0], message: message }).catch(function () {});
+            doneFiles += 1;
+            runCount += 1;
+            CHUNK = 3;
+            progress();
+            runGenerationStep();
         });
     }
 
     function startGenerationRun() {
         running = true;
+        cancelled = false;
+        runCount = 0;
         startBtn.style.display = 'none';
         continueBtn.style.display = 'none';
         applyBtn.disabled = true;
         trackEl.style.display = '';
+        closeBtn.textContent = t('mediaplace_ai_alt_bulk_stop');
+        progress();
         runGenerationStep();
     }
 

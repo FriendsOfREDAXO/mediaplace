@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 2.5.2 – 2026-10-12
+
+### Behoben (KI-Alt-Text-Generator)
+- **Massengenerierung bricht nicht mehr ab**: Eine nicht lesbare oder zu große Datei (z. B. TIFF) ließ bisher eine ganze Anfrage mit zehn Bildern scheitern – die schon erzeugten Vorschläge waren weg, es gab keinen „Übernehmen“-Knopf, und beim Fortsetzen kam wieder dieselbe Datei. Jetzt verarbeitet der Dialog eine feste Warteschlange in kleinen Paketen; scheitert ein Paket, wird jede Datei einzeln versucht und nur die fehlerhafte übersprungen.
+- **Fehlerhafte Dateien werden markiert** (`AiAltFailures`, rex_config) und bei den nächsten Läufen übersprungen – auch im Cronjob und auf der Konsole, die sonst an immer denselben Dateien hängen blieben. „Erneut versuchen“ im Dialog; eine ersetzte Datei gilt wieder als neu.
+- **Nicht-Webformate** (TIFF, BMP, HEIC, AVIF, PSD …) werden vor dem Senden in ein verkleinertes JPEG umgewandelt (Imagick, sonst GD; erste Seite/Ebene, CMYK → sRGB). Formate, die der Server nicht umwandeln kann, werden gezählt und übersprungen. Große Originale gehen nie mehr unverkleinert an die KI.
+- Zeitbudget je Anfrage (40 s): Was nicht fertig wird, kommt mit der nächsten Anfrage – keine Abbrüche am PHP-Zeitlimit.
+- „Schließen“ heißt während des Laufs **„Anhalten“** und behält die erzeugten Vorschläge zum Übernehmen.
+- Übersprungene Dateien erscheinen als **eine aufklappbare Zeile** („3 Datei(en) übersprungen – Details“) statt einer Box je Datei.
+
 ## Version 2.5.1 – 2026-10-09
 
 ### Geändert
