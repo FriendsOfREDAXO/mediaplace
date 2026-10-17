@@ -598,3 +598,5 @@ mediaplace_demo_yform_native_intro = Der eigene YForm-Werttyp „mediaplace" nut
 mediaplace_demo_yform_native_json_intro = Im Tabellensets-JSON-Export sieht der Feld-Eintrag so aus:
 mediaplace_demo_yform_html_heading = Alternative: eigenes HTML per Feldtyp „html"
 mediaplace_demo_yform_intro = Alternativ lässt sich das Widget-HTML auch direkt über den generischen „html"-Feldtyp einbinden (mehr Layout-Freiheit, aber ohne automatische MEDIA_IS_IN_USE-Erkennung). Im YForm-Manager per Freitext hinzufügen (Tabelle bearbeiten → Feld hinzufügen → Textfeld oben): Typ "html" mit Feldname, leerem Label und dem Widget-HTML als Inhalt, getrennt durch Pipe-Zeichen.
+
+mediaplace_error_blocked_by_server = Der Server hat die Anfrage abgelehnt (HTTP {status}), bevor sie REDAXO erreicht hat – vermutlich eine Firewall des Hosters. Mit der aktuellen Version des API-AddOns (ab 1.3.1) sollte das Löschen funktionieren; sonst bitte den Hoster fragen.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 2.5.3 – 2026-10-17
+
+### Behoben
+- **Löschen hinter Web Application Firewalls**: Firewalls wie Imperva/Incapsula blocken Adressen mit `/delete`. Dateien ließen sich dahinter nicht löschen, auch nicht als Admin. MediaPlace löscht jetzt über die REST-Adresse `DELETE /api/backend/media/{datei}` (API-AddOn ab 1.3.1, FriendsOfREDAXO/api#84) und weicht bei älteren API-Versionen automatisch auf die bisherige Adresse aus.
+- **Ehrliche Fehlermeldung bei 403**: „Keine Berechtigung … nur in zugewiesenen Kategorien“ erscheint nur noch, wenn REDAXO die Anfrage wirklich abgelehnt hat. Lehnt ein Server oder eine Firewall davor ab (Antwort ohne JSON), sagt MediaPlace das jetzt auch so.
+
 ## Version 2.5.2 – 2026-10-12
 
 ### Behoben (KI-Alt-Text-Generator)

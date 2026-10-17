@@ -598,3 +598,5 @@ mediaplace_demo_yform_native_intro = The dedicated "mediaplace" YForm value type
 mediaplace_demo_yform_native_json_intro = In the tableset JSON export, the field entry looks like this:
 mediaplace_demo_yform_html_heading = Alternative: raw HTML via the "html" field type
 mediaplace_demo_yform_intro = Alternatively, the widget HTML can be embedded directly via the generic "html" field type (more layout freedom, but without automatic MEDIA_IS_IN_USE detection). Add it in the YForm manager via the free-text box (edit table → add field → text field at the top): type "html" with a field name, empty label, and the widget HTML as content, separated by pipe characters.
+
+mediaplace_error_blocked_by_server = The server rejected the request (HTTP {status}) before it reached REDAXO – most likely the host's firewall. Deleting should work with the current version of the API addon (1.3.1 or later); otherwise please ask your host.
