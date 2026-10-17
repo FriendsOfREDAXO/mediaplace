@@ -60,6 +60,8 @@
             return r.json().catch(function () { return null; }).then(function (body) {
                 var err = new Error((body && body.error) || ('HTTP ' + r.status));
                 err.status = r.status;
+                // Antwort von REDAXO (JSON) oder von einem Server/einer Firewall davor (HTML)?
+                err.fromApi = !!(body && typeof body === 'object' && Object.keys(body).length);
                 throw err;
             });
         }
@@ -516,6 +518,8 @@
         return r.json().catch(function () { return {}; }).then(function (body) {
             var err = new Error(body.error || ('HTTP ' + r.status));
             err.status = r.status;
+            // Antwort von REDAXO (JSON) oder von einem Server/einer Firewall davor (HTML)?
+            err.fromApi = !!(body && typeof body === 'object' && Object.keys(body).length);
             throw err;
         });
     }
@@ -609,6 +613,8 @@
                 return r.json().catch(function () { return null; }).then(function (body) {
                     var err = new Error((body && body.error) || ('HTTP ' + r.status));
                     err.status = r.status;
+                    // Antwort von REDAXO (JSON) oder von einem Server/einer Firewall davor (HTML)?
+                    err.fromApi = !!(body && typeof body === 'object' && Object.keys(body).length);
                     throw err;
                 });
             }
@@ -617,24 +623,38 @@
     }
 
     function apiDelete(filename) {
-        return fetch(API_BASE + 'media/' + encodeURIComponent(filename) + '/delete', {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
+        // REST-Form zuerst (api >= 1.3.1). Viele Web Application Firewalls blocken Pfade mit "/delete";
+        // bei älteren api-Versionen (404 "Route not found" / 405) auf die bisherige Route ausweichen.
+        function send(url) {
+            return fetch(url, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            }).then(function (r) {
+                if (!r.ok) {
+                    return r.json().catch(function () { return {}; }).then(function (body) {
+                        var err = new Error(body.error || 'HTTP ' + r.status);
+                        err.status = r.status;
+                        err.fromApi = !!(body && typeof body === 'object' && Object.keys(body).length);
+                        err.routeMissing = (404 === r.status && body.error === 'Route not found') || 405 === r.status;
+                        throw err;
+                    });
+                }
+                return r.json();
+            });
+        }
+        var name = encodeURIComponent(filename);
+        return send(API_BASE + 'media/' + name).catch(function (err) {
+            if (err && err.routeMissing) {
+                return send(API_BASE + 'media/' + name + '/delete');
             }
-        }).then(function (r) {
-            if (!r.ok) {
-                return r.json().catch(function () { return {}; }).then(function (body) {
-                    var err = new Error(body.error || 'HTTP ' + r.status);
-                    err.status = r.status;
-                    throw err;
-                });
-            }
-            return r.json();
+            throw err;
         });
     }
+
 
     function getJsonApiUrl(filename) {
         var root = document.getElementById('mp-root');
@@ -985,6 +1005,8 @@
     function throwCategoryApiError(r, body) {
         var err = new Error((body && body.error) || ('HTTP ' + r.status));
         err.status = r.status;
+        // Antwort von REDAXO (JSON) oder von einem Server/einer Firewall davor (HTML)?
+        err.fromApi = !!(body && typeof body === 'object' && Object.keys(body).length);
         throw err;
     }
 
@@ -1153,6 +1175,8 @@
                 return r.json().catch(function () { return null; }).then(function (body) {
                     var err = new Error((body && body.error) || ('HTTP ' + r.status));
                     err.status = r.status;
+                    // Antwort von REDAXO (JSON) oder von einem Server/einer Firewall davor (HTML)?
+                    err.fromApi = !!(body && typeof body === 'object' && Object.keys(body).length);
                     throw err;
                 });
             }

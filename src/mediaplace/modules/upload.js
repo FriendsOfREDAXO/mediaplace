@@ -244,6 +244,10 @@ function showGridError(message) {
 // Gleiches Prinzip wie categoryErrorMessage(), fuer Datei- statt
 // Kategorie-Operationen (Upload/Loeschen/Verschieben).
 export function mediaErrorMessage(err, fallbackKey) {
+    if (err && 403 === err.status && false === err.fromApi) {
+        // 403 ohne JSON: nicht REDAXO, sondern ein Server/eine Firewall davor hat abgelehnt
+        return tText('mediaplace_error_blocked_by_server', { status: String(err.status) });
+    }
     if (err && 403 === err.status) {
         return tText('mediaplace_media_permission_denied');
     }

@@ -616,6 +616,10 @@ export function toggleCategory(catId) {
 }
 
 export function categoryErrorMessage(err, fallbackKey) {
+    if (err && 403 === err.status && false === err.fromApi) {
+        // 403 ohne JSON: nicht REDAXO, sondern ein Server/eine Firewall davor hat abgelehnt
+        return tText('mediaplace_error_blocked_by_server', { status: String(err.status) });
+    }
     if (err && 403 === err.status) {
         return tText('mediaplace_cat_permission_denied');
     }
