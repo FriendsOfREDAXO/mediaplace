@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 2.6.0 – 2026-10-28
+
+### Neu
+- **Dateien umbenennen** (Recht `mediaplace[rename_files]`, Admins immer): Knopf im Detail-Panel, Dialog mit Live-Vorschau des endgültigen Namens. Die Datei heißt sofort anders; alle Verweise in den REDAXO-Tabellen ersetzt ein Job im Hintergrund – nur ganze Dateinamen, auch in JSON und PHP-serialisierten Daten. Bis zum Ende bleibt eine Übergangskopie unter dem alten Namen liegen. Der Job läuft weiter, wenn der Browser geschlossen wird (direkt nach dem Start, auf jeder Backend-Seite, per Cronjob „MediaPlace: Umbenennungen fortsetzen“ oder `mediaplace:rename-work`). Extension Points `MEDIAPLACE_RENAME_TABLES` und `MEDIAPLACE_MEDIA_RENAMED`.
+
+### Behoben
+- **Abgeschaltetes Tagging und abgeschaltete Sammlungen tauchten noch auf** ([#17](https://github.com/FriendsOfREDAXO/mediaplace/issues/17)): Das Drei-Punkte-Menü einer Kategorie bot weiter „Alle Dateien taggen“ und „Alle Dateien zu Sammlung hinzufügen“ an, das Menü im Overlay und die Backend-Navigation die „Tag-Verwaltung“. Diese Einträge erscheinen jetzt nur noch, wenn die Funktion eingeschaltet ist. Ein direkter Aufruf der Tag-Verwaltung zeigt bei abgeschaltetem Tagging einen Hinweis mit Link zu den Einstellungen.
+
 ## Version 2.5.3 – 2026-10-17
 
 ### Behoben

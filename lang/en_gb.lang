@@ -469,6 +469,7 @@ mediaplace_no_tags_found = No tags found
 mediaplace_tag_management = Tag management
 mediaplace_tag_management_title = Tag management
 mediaplace_tag_management_hint = Renaming and deleting immediately affect all files with this tag. Color for existing tags can only be changed here – in the detail panel it can only be set right when a tag is first created.
+mediaplace_tag_management_disabled = Tagging is switched off in the <a href="{0}">settings</a>. Existing tags are kept; tag management is available again once tagging is switched on.
 mediaplace_tag_name = Tag name
 mediaplace_tag_usage_count = Used on
 mediaplace_tag_ai_allowed_column = AI suggestions
@@ -600,3 +601,29 @@ mediaplace_demo_yform_html_heading = Alternative: raw HTML via the "html" field 
 mediaplace_demo_yform_intro = Alternatively, the widget HTML can be embedded directly via the generic "html" field type (more layout freedom, but without automatic MEDIA_IS_IN_USE detection). Add it in the YForm manager via the free-text box (edit table → add field → text field at the top): type "html" with a field name, empty label, and the widget HTML as content, separated by pipe characters.
 
 mediaplace_error_blocked_by_server = The server rejected the request (HTTP {status}) before it reached REDAXO – most likely the host's firewall. Deleting should work with the current version of the API addon (1.3.1 or later); otherwise please ask your host.
+
+mediaplace_rename_file = Rename
+mediaplace_rename_title = Rename file
+mediaplace_rename_intro = The file gets its new name right away. References in articles, modules, metadata and other tables are updated in the background. Until then it is also reachable under its old name.
+mediaplace_rename_label = New file name
+mediaplace_rename_preview = Will be saved as: {name}
+mediaplace_rename_start = Rename
+mediaplace_rename_running = The file is now called "{name}". Updating references …
+mediaplace_rename_progress = Table {done} of {total} · {replaced} references replaced
+mediaplace_rename_background = You can close this window, the update continues in the background.
+mediaplace_rename_done = Done: "{old}" is now "{name}", {replaced} references were updated.
+mediaplace_rename_failed = Updating the references was interrupted: {msg}
+mediaplace_rename_retry = Continue
+mediaplace_rename_external_hint = Links from outside (other websites, search engines, sent documents) to the old name stop working once this is finished.
+mediaplace_rename_error_empty = Please enter a file name.
+mediaplace_rename_error_same = The name is unchanged.
+mediaplace_rename_error_long = The file name is too long.
+mediaplace_rename_error_exists = "{0}" is already taken.
+mediaplace_rename_error_busy = A rename for this file is already running.
+mediaplace_rename_error_missing = The file was not found.
+mediaplace_rename_error_file = The file could not be renamed (check write permissions in the media folder).
+mediaplace_rename_error_perm = No permission to rename.
+mediaplace_cronjob_rename = MediaPlace: continue renames
+mediaplace_cronjob_rename_seconds = Maximum duration per run (seconds)
+mediaplace_cronjob_rename_pending = Renames processed, some are still open.
+mediaplace_cronjob_rename_idle = No open renames.

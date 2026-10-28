@@ -295,6 +295,7 @@ class JsonMetainfo extends rex_api_function
         $fragment->setVar('feature_own_metadata', (bool) \rex_config::get('mediaplace', 'enable_own_metadata', false), false);
         $fragment->setVar('feature_tagging', !\rex_config::get('mediaplace', 'disable_tagging', false), false);
         $fragment->setVar('feature_collections', !\rex_config::get('mediaplace', 'disable_collections', false), false);
+        $fragment->setVar('rename_available', \FriendsOfRedaxo\Mediaplace\MediaRename::canRename($media), false);
         $featureMetainfoEditing = (bool) \rex_config::get('mediaplace', 'enable_metainfo_editing', false);
         $fragment->setVar('feature_metainfo_editing', $featureMetainfoEditing, false);
         $fragment->setVar('alt_text_missing', $featureMetainfoEditing && \FriendsOfRedaxo\Mediaplace\AltTextStatus::shouldShowNativeCanvasHint($media, $data), false);

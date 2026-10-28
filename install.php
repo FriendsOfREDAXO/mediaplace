@@ -10,6 +10,7 @@ require_once __DIR__ . '/lib/MetainfoFieldGroup.php';
 \FriendsOfRedaxo\Mediaplace\MetainfoFieldGroup::ensureJsonField();
 require_once __DIR__ . '/lib/SystemTagManager.php';
 \FriendsOfRedaxo\Mediaplace\SystemTagManager::ensureSchema();
+\FriendsOfRedaxo\Mediaplace\MediaRename::ensureSchema();
 
 // Standard-Feld "Beschreibung" anlegen, damit das Detail-Panel nach der
 // Installation nicht komplett leer ist. install.php laeuft sowohl beim

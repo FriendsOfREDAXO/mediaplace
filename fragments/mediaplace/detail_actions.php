@@ -53,6 +53,10 @@ $downloadUrl = $apiBase . 'media/' . rawurlencode($filename) . '/file' . ($token
     <div class="mp-detail-actions-row">
         <label class="mp-detail-replace-btn" title="<?= rex_escape($this->i18n('mediaplace_replace_file')) ?>">
             <i class="fa-solid fa-arrows-rotate"></i><input type="file" class="mp-detail-replace-input" accept="<?= rex_escape(DetailPanelFormatter::replacementAccept($filename)) ?>" style="display:none"></label>
+        <?php if ($this->getVar('rename_available')): ?>
+            <button type="button" class="mp-detail-rename-btn" data-filename="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_rename_file')) ?>">
+                <i class="fa-solid fa-i-cursor"></i></button>
+        <?php endif; ?>
         <a class="mp-detail-download-btn" href="<?= rex_escape($downloadUrl) ?>" download="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_download_file')) ?>">
             <i class="fa-solid fa-download"></i></a>
         <?php if ($featureCollections): ?>

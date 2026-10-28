@@ -1,5 +1,5 @@
 package: mediaplace
-version: '2.5.3'
+version: '2.6.0'
 author: FriendsOfREDAXO
 supportpage: https://github.com/FriendsOfREDAXO
 
@@ -63,6 +63,7 @@ requires:
 
 console_commands:
     mediaplace:ai-alt-complete: FriendsOfRedaxo\Mediaplace\Command\AiAltComplete
+    mediaplace:rename-work: FriendsOfRedaxo\Mediaplace\Command\MediaRenameWork
 
 default_config:
     replace_classic_mediapool: true

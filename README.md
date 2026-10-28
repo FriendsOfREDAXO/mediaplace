@@ -19,7 +19,7 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 - Serverseitige Suche über Titel, Dateiname, Originalname und Metadaten
 - Typ- und Tag-Filter, Verwendungs-Filter („Nur benutzte“ / „Nur unbenutzte“), 8 Sortieroptionen
 - Grid, Liste & Media Wall (Masonry), Kachelgröße per Slider
-- Detail-Panel mit editierbarem Titel, eigenen Metadaten-Feldern, Verwendungsstatus, Datei tauschen/löschen/downloaden
+- Detail-Panel mit editierbarem Titel, eigenen Metadaten-Feldern, Verwendungsstatus, Datei tauschen/umbenennen/löschen/downloaden
 - Fokuspunkt-Editor direkt im Detail-Panel, sobald das [focuspoint](https://github.com/FriendsOfREDAXO/focuspoint)-Addon installiert ist
 - Eigene Bildbearbeitung im Detail-Panel: Zuschneiden, Drehen, Spiegeln, Ausrichten, Perspektive korrigieren, Helligkeit/Kontrast/Gamma/Sättigung – als neue Datei oder ersetzend mit wiederherstellbarem Original
 - Upload per Drag & Drop, Button oder einfach **Cmd+V/Ctrl+V** pasten
@@ -90,6 +90,19 @@ Unter **MediaPlace → Tag-Verwaltung** (Recht `mediaplace[manage_tags]`) lassen
 - **Löschen** – entfernt den Tag von allen Dateien.
 
 Sammlungen (`collection:`-Präfix) tauchen hier bewusst nicht auf – die haben ihre eigene Verwaltung („Sammlungen verwalten“ im Overlay).
+
+### Dateien umbenennen
+
+Mit dem Recht `mediaplace[rename_files]` (Admins immer) erscheint im Detail-Panel der Knopf **Umbenennen**. Der Dialog zeigt beim Tippen den endgültigen Namen – normalisiert wie im Medienpool, die Endung bleibt – und meldet, wenn der Name schon vergeben ist.
+
+- **Sofort:** Die Datei heißt anders, MediaPlace zeigt den neuen Namen. Die alte Datei bleibt als Übergangskopie liegen, damit Seiten mit dem alten Namen bis zum Ende weiter funktionieren.
+- **Im Hintergrund:** Alle Verweise in den REDAXO-Tabellen werden ersetzt – Artikel, Module, Metadaten, YForm-Tabellen, `rex_config` usw. Ersetzt wird nur der ganze Dateiname (`bild.jpg` trifft nicht `alt-bild.jpg`), auch in JSON und PHP-serialisierten Daten. Ausgenommen sind temporäre Tabellen, Tabellen mit Endung `_log` und der Originalname der Datei.
+- **Ohne offenen Browser:** Der Dialog darf geschlossen werden. Weiter geht es direkt nach dem Start, auf jeder Backend-Seite, per Cronjob „MediaPlace: Umbenennungen fortsetzen“ oder per Konsole `php redaxo/bin/console mediaplace:rename-work`. Für große Datenbanken den Cronjob einrichten.
+- **Zum Schluss:** Übergangskopie löschen, Media-Manager-Cache und die Cache-Dateien der betroffenen Artikel leeren.
+
+Links von außen (andere Websites, Suchmaschinen, verschickte PDFs) auf den alten Namen funktionieren danach nicht mehr.
+
+Für Entwickler: Extension Point `MEDIAPLACE_RENAME_TABLES` (Tabellenliste anpassen, je Eintrag `t`, `pk`, `cols`) und `MEDIAPLACE_MEDIA_RENAMED` (nach Abschluss, Parameter `old_filename`, `new_filename`, `replaced`).
 
 ### Bilder beim Upload verkleinern
 

@@ -18,6 +18,11 @@
 
 use FriendsOfRedaxo\Mediaplace\SystemTagManager;
 
+if (rex_config::get('mediaplace', 'disable_tagging', false)) {
+    echo rex_view::info(rex_i18n::rawMsg('mediaplace_tag_management_disabled', rex_url::backendPage('mediaplace/settings')));
+    return;
+}
+
 SystemTagManager::ensureSchema();
 
 $func = rex_request('func', 'string', '');
