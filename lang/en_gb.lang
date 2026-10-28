@@ -469,6 +469,7 @@ mediaplace_no_tags_found = No tags found
 mediaplace_tag_management = Tag management
 mediaplace_tag_management_title = Tag management
 mediaplace_tag_management_hint = Renaming and deleting immediately affect all files with this tag. Color for existing tags can only be changed here – in the detail panel it can only be set right when a tag is first created.
+mediaplace_tag_management_disabled = Tagging is switched off in the <a href="{0}">settings</a>. Existing tags are kept; tag management is available again once tagging is switched on.
 mediaplace_tag_name = Tag name
 mediaplace_tag_usage_count = Used on
 mediaplace_tag_ai_allowed_column = AI suggestions

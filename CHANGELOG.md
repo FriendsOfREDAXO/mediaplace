@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 2.5.4 – 2026-10-28
+
+### Behoben
+- **Abgeschaltetes Tagging und abgeschaltete Sammlungen tauchten noch auf** ([#17](https://github.com/FriendsOfREDAXO/mediaplace/issues/17)): Das Drei-Punkte-Menü einer Kategorie bot weiter „Alle Dateien taggen“ und „Alle Dateien zu Sammlung hinzufügen“ an, das Menü im Overlay und die Backend-Navigation die „Tag-Verwaltung“. Diese Einträge erscheinen jetzt nur noch, wenn die Funktion eingeschaltet ist. Ein direkter Aufruf der Tag-Verwaltung zeigt bei abgeschaltetem Tagging einen Hinweis mit Link zu den Einstellungen.
+
 ## Version 2.5.3 – 2026-10-17
 
 ### Behoben

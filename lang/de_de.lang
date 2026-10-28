@@ -469,6 +469,7 @@ mediaplace_no_tags_found = Keine Tags gefunden
 mediaplace_tag_management = Tag-Verwaltung
 mediaplace_tag_management_title = Tag-Verwaltung
 mediaplace_tag_management_hint = Umbenennen und Löschen wirken sich sofort auf alle Dateien mit diesem Tag aus. Die Farbe ist hier für bestehende Tags zentral änderbar – im Detail-Panel lässt sie sich nur noch direkt bei der Neuanlage eines Tags setzen.
+mediaplace_tag_management_disabled = Tagging ist in den <a href="{0}">Einstellungen</a> abgeschaltet. Vorhandene Tags bleiben gespeichert; die Tag-Verwaltung steht wieder zur Verfügung, sobald Tagging eingeschaltet ist.
 mediaplace_tag_name = Tag-Name
 mediaplace_tag_usage_count = Verwendet bei
 mediaplace_tag_ai_allowed_column = KI-Vorschläge

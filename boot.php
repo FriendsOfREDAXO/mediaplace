@@ -136,6 +136,13 @@ if (rex::isBackend() && rex::getUser()) {
     // abschaltbar ueber die Einstellungsseite.
     // https://friendsofredaxo.github.io/tricks/backend/backend_snippets#seite-eines-addons-durch-eigene-austauschenersetzen
     $addonName = $this->getName();
+    // Tagging abgeschaltet: Tag-Verwaltung nicht im Menue (direkter Aufruf zeigt einen Hinweis)
+    rex_extension::register('PAGES_PREPARED', static function () use ($addonName) {
+        if (rex_config::get($addonName, 'disable_tagging', false)) {
+            rex_be_controller::getPageObject($addonName . '/tag_management')?->setHidden(true);
+        }
+    });
+
     rex_extension::register('PAGES_PREPARED', static function () use ($addonName) {
         if (!rex_config::get($addonName, 'replace_classic_mediapool', true)) {
             return;
@@ -424,7 +431,7 @@ if (rex::isBackend() && rex::getUser()) {
         $mediaplaceTagManagementSubpage = $mediaplaceSettingsPage instanceof rex_be_page
             ? $mediaplaceSettingsPage->getSubpage('tag_management')
             : null;
-        if ($mediaplaceTagManagementSubpage instanceof rex_be_page && $mediaplaceTagManagementSubpage->checkPermission(rex::requireUser())) {
+        if ('1' === $featureTagging && $mediaplaceTagManagementSubpage instanceof rex_be_page && $mediaplaceTagManagementSubpage->checkPermission(rex::requireUser())) {
             $subpages[] = [
                 'title' => rex_i18n::msg('mediaplace_tag_management'),
                 'href' => $mediaplaceTagManagementSubpage->getHref(),

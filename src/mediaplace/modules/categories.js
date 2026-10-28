@@ -307,8 +307,9 @@ export function openCatMenu(id, name, anchorBtn) {
     if (id > 0 && ctx.getCanBulkOperations()) {
         html += '<div class="mp-cat-menu-divider"></div>' +
             '<button class="mp-cat-bulk-move-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-arrow-right-arrow-left"></i> ' + t('mediaplace_bulk_move_files') + '</button>' +
-            '<button class="mp-cat-bulk-tag-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-tag"></i> ' + t('mediaplace_bulk_add_tag') + '</button>' +
-            '<button class="mp-cat-bulk-collection-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-bookmark"></i> ' + t('mediaplace_bulk_add_to_collection') + '</button>' +
+            // Tagging/Sammlungen in den Einstellungen abschaltbar (ctx.features)
+            (ctx.features.tagging ? '<button class="mp-cat-bulk-tag-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-tag"></i> ' + t('mediaplace_bulk_add_tag') + '</button>' : '') +
+            (ctx.features.collections ? '<button class="mp-cat-bulk-collection-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-bookmark"></i> ' + t('mediaplace_bulk_add_to_collection') + '</button>' : '') +
             '<button class="mp-cat-bulk-delete-btn" data-bulk-cat="' + id + '" data-bulk-cat-name="' + escAttr(name) + '"><i class="fa-solid fa-trash-can"></i> ' + t('mediaplace_bulk_delete_files') + '</button>';
     }
     // Infobereich immer am Ende des Menues -- vor allem die Kategorie-ID,
