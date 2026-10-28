@@ -69,6 +69,7 @@ import {
     toggleVideoDetails,
     pollOptimizeVideo,
 } from './modules/optimize.js';
+import { initRename, openRenameDialog, startBackgroundTicker } from './modules/rename.js';
 import {
     initCollections,
     setCollectionCounts,
@@ -1556,6 +1557,13 @@ import {
             showDetail: showDetail,
         });
 
+        initRename({
+            mediaForceCacheTokens: mediaForceCacheTokens,
+            getCurrentCat: function () { return currentCat; },
+            loadFiles: loadFiles,
+            showDetail: showDetail,
+        });
+
         initGrid({
             grid: grid,
             getMultiMode: function () { return multiMode; },
@@ -3035,6 +3043,13 @@ import {
                 var replacePath = providerReplaceBtn.getAttribute('data-provider-replace-path') || '';
                 var replaceName = providerReplaceBtn.getAttribute('data-provider-replace-name') || '';
                 if (replacePath) replaceFromProviderFile(replacePath, replaceName, providerReplaceBtn);
+                return;
+            }
+
+            var renameBtn = e.target.closest('.mp-detail-rename-btn');
+            if (renameBtn) {
+                var renameFile = renameBtn.getAttribute('data-filename') || '';
+                if (renameFile) openRenameDialog(renameFile);
                 return;
             }
 
@@ -4661,4 +4676,10 @@ import {
     // Point PAGES_PREPARED (rex_be_page::setPopup), da DOM-Selektoren je nach
     // Backend-Theme (be_style Flyout-Menue etc.) nicht zuverlaessig treffen.
 
+    // Offene Umbenennungen auf jeder Backend-Seite still fortsetzen (siehe modules/rename.js)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startBackgroundTicker);
+    } else {
+        startBackgroundTicker();
+    }
 })();

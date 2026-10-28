@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 2.6.0 – 2026-10-28
+
+### Neu
+- **Dateien umbenennen** (Recht `mediaplace[rename_files]`, Admins immer): Knopf im Detail-Panel, Dialog mit Live-Vorschau des endgültigen Namens. Die Datei heißt sofort anders; alle Verweise in den REDAXO-Tabellen ersetzt ein Job im Hintergrund – nur ganze Dateinamen, auch in JSON und PHP-serialisierten Daten. Bis zum Ende bleibt eine Übergangskopie unter dem alten Namen liegen. Der Job läuft weiter, wenn der Browser geschlossen wird (direkt nach dem Start, auf jeder Backend-Seite, per Cronjob „MediaPlace: Umbenennungen fortsetzen“ oder `mediaplace:rename-work`). Extension Points `MEDIAPLACE_RENAME_TABLES` und `MEDIAPLACE_MEDIA_RENAMED`.
+
 ## Version 2.5.4 – 2026-10-28
 
 ### Behoben

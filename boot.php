@@ -9,6 +9,7 @@ rex_perm::register('mediaplace[optimize_video]', 'Videos optimieren (ffmpeg-Addo
 rex_perm::register('mediaplace[optimize_image]', 'Bilder optimieren');
 rex_perm::register('mediaplace[manage_tags]', 'Tags umbenennen, Farbe bestehender Tags ändern, Tags löschen oder für KI-Vorschläge freigeben');
 rex_perm::register('mediaplace[bulk_operations]', 'Massenaktionen für ganze Kategorien (alle Dateien verschieben/löschen/taggen)');
+rex_perm::register(\FriendsOfRedaxo\Mediaplace\MediaRename::PERM, 'Dateien umbenennen (ersetzt alle Verweise in der Datenbank)');
 rex_perm::register(\FriendsOfRedaxo\Mediaplace\ImageEditor::PERM_EDIT, 'Bilder bearbeiten und als neue Datei speichern');
 rex_perm::register(\FriendsOfRedaxo\Mediaplace\ImageEditor::PERM_OVERWRITE, 'Bearbeitete Bilder überschreiben und Originale wiederherstellen');
 
@@ -31,6 +32,7 @@ rex_api_function::register('mediaplace_media_list', \FriendsOfRedaxo\Mediaplace\
 rex_api_function::register('mediaplace_metainfo_form', \FriendsOfRedaxo\Mediaplace\Api\MetainfoForm::class);
 rex_api_function::register('mediaplace_provider', \FriendsOfRedaxo\Mediaplace\Api\Provider::class);
 rex_api_function::register('mediaplace_replace_file', \FriendsOfRedaxo\Mediaplace\Api\ReplaceFile::class);
+rex_api_function::register('mediaplace_rename', \FriendsOfRedaxo\Mediaplace\Api\Rename::class);
 rex_api_function::register('mediaplace_schema', \FriendsOfRedaxo\Mediaplace\Api\Schema::class);
 rex_api_function::register('mediaplace_storage_usage', \FriendsOfRedaxo\Mediaplace\Api\StorageUsage::class);
 rex_api_function::register('mediaplace_tags', \FriendsOfRedaxo\Mediaplace\Api\Tags::class);
@@ -103,6 +105,7 @@ if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
     // dortiger Docblock) -- kein toter Eintrag in der Cronjob-Liste, falls
     // die Funktion (noch) nicht aktiviert ist, aber auch kein Fehler.
     rex_cronjob_manager::registerType(\FriendsOfRedaxo\Mediaplace\AiAltCompleteCronjob::class);
+    rex_cronjob_manager::registerType(\FriendsOfRedaxo\Mediaplace\MediaRenameCronjob::class);
 }
 
 if (rex::isBackend() && rex::getUser()) {
@@ -324,6 +327,11 @@ if (rex::isBackend() && rex::getUser()) {
         // hier von vornherein unnoetig.
         $optimizeImageUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_image_optimize']);
 
+        // Umbenennen (Recht mediaplace[rename_files]); rename-pending laesst jede Backend-Seite offene Jobs fortsetzen
+        $renameUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_rename']);
+        $renameToken = \FriendsOfRedaxo\Mediaplace\MediaRename::canRename() ? rex_csrf_token::factory(\FriendsOfRedaxo\Mediaplace\MediaRename::CSRF)->getValue() : '';
+        $renamePending = \FriendsOfRedaxo\Mediaplace\MediaRename::hasPending() ? '1' : '0';
+
         // Feature-Toggles der Einstellungsseite, siehe features-Objekt in mediaplace.js.
         $featureTagging = rex_config::get($addonName, 'disable_tagging', false) ? '0' : '1';
         $featureCollections = rex_config::get($addonName, 'disable_collections', false) ? '0' : '1';
@@ -452,7 +460,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-storage-usage-url="' . rex_escape($storageUsageUrl) . '" data-replace-file-url="' . rex_escape($replaceFileUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-image-edit-url="' . rex_escape($imageEditUrl) . '" data-image-edit-token="' . rex_escape($imageEditToken) . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '" data-ai-alt-url="' . rex_escape($aiAltUrl) . '" data-ai-alt-bulk-url="' . rex_escape($aiAltBulkUrl) . '" data-ai-auto-tag-url="' . rex_escape($aiAutoTagUrl) . '"></div>'
+        $inject = '<div id="mp-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-storage-usage-url="' . rex_escape($storageUsageUrl) . '" data-replace-file-url="' . rex_escape($replaceFileUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-image-edit-url="' . rex_escape($imageEditUrl) . '" data-image-edit-token="' . rex_escape($imageEditToken) . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '" data-ai-alt-url="' . rex_escape($aiAltUrl) . '" data-ai-alt-bulk-url="' . rex_escape($aiAltBulkUrl) . '" data-ai-auto-tag-url="' . rex_escape($aiAutoTagUrl) . '" data-rename-url="' . rex_escape($renameUrl) . '" data-rename-token="' . rex_escape($renameToken) . '" data-rename-pending="' . $renamePending . '"></div>'
             . "\n" . '<script type="application/json" id="mp-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         // Nur das LETZTE '</body>' ersetzen, nicht jedes Vorkommen: ein einfaches
         // str_replace() traf schon einmal versehentlich den Text eines eigenen

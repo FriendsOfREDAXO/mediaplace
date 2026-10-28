@@ -116,6 +116,7 @@ $altTextMissing = (bool) $this->getVar('alt_text_missing');
 
     <?php $this->subfragment('mediaplace/detail_actions.php', [
         'info' => $info,
+        'rename_available' => (bool) $this->getVar('rename_available'),
         'feature_collections' => $featureCollections,
         'has_collections' => !empty($collectionNames),
     ]); ?>

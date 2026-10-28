@@ -4255,6 +4255,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
 #mp-overlay .mp-detail-delete-btn,
 #mp-overlay .mp-detail-replace-btn,
 #mp-overlay .mp-detail-replace-trigger,
+#mp-overlay .mp-detail-rename-btn,
 #mp-overlay .mp-detail-collection-btn {
     display: flex;
     align-items: center;
@@ -4275,6 +4276,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
 #mp-overlay .mp-detail-download-btn:hover,
 #mp-overlay .mp-detail-replace-btn:hover,
 #mp-overlay .mp-detail-replace-trigger:hover,
+#mp-overlay .mp-detail-rename-btn:hover,
 #mp-overlay .mp-detail-collection-btn:hover {
     background: var(--mp-action-icon-hover-bg);
     color: var(--mp-action-icon-hover-text);
@@ -6427,6 +6429,54 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
    in die sonst uebliche 480px-Modal-Breite nur sehr eng. */
 .mp-bulk-progress-modal {
     max-width: 640px;
+}
+
+/* Datei umbenennen (modules/rename.js): Eingabe mit fester Endung, Vorschau, Fortschritt */
+.mp-rename-form,
+.mp-rename-status {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.mp-rename-label {
+    margin: 4px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mp-status-text);
+}
+
+.mp-rename-field {
+    display: flex;
+    align-items: stretch;
+}
+
+.mp-rename-ext {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    border: 1px solid var(--mp-input-border);
+    border-left: none;
+    background: var(--mp-status-border);
+    color: var(--mp-status-text);
+    font-size: 13px;
+}
+
+.mp-rename-preview,
+.mp-rename-progress,
+.mp-rename-hint,
+.mp-rename-done,
+.mp-rename-status p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--mp-status-text);
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.mp-rename-hint {
+    opacity: 0.8;
 }
 
 /* Review-vor-Speichern-Tabelle der AI-Massengenerierung (openBulkPanel() in
