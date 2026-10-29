@@ -4761,6 +4761,18 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     color: var(--mp-list-td-text);
 }
 
+/* PDF-Seiten (Hochformat) ganz zeigen statt Querformat-Ausschnitt */
+#mp-overlay .mp-card img.mp-pdf-thumb-img,
+#mp-overlay .mp-list-cell-preview img.mp-pdf-thumb-img,
+#mp-overlay .mp-masonry-media img.mp-pdf-thumb-img {
+    object-fit: contain !important;
+    background: var(--mp-card-icon-bg);
+}
+
+#mp-overlay .mp-card img.mp-pdf-thumb-img {
+    padding: 6px !important;
+}
+
 #mp-overlay .mp-list-cell-preview {
     width: 44px;
     text-align: center;

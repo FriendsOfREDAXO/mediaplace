@@ -75,6 +75,10 @@ export function initGrid(theCtx) {
         var div = document.createElement('div');
         div.className = 'mp-icon';
         div.innerHTML = '<i class="' + icon + '"></i>';
+        // gleiches Seitenverhaeltnis wie die Vorschau, sonst springt die Kachelhoehe
+        if (img.style.aspectRatio) {
+            div.style.aspectRatio = img.style.aspectRatio;
+        }
         if (videoThumbObserver) {
             videoThumbObserver.unobserve(img);
         }
@@ -158,7 +162,9 @@ export function previewHtml(file, ratioOverride) {
         return '<img class="mp-pdf-thumb-img" data-fallback-icon="' + escAttr(fileIcon(file.filename)) + '" src="' + escAttr(pdfSrc)
             + '" alt="' + escAttr(file.title || file.filename) + '" loading="lazy"' + pdfStyle + '>';
     }
-    return '<div class="mp-icon"><i class="' + fileIcon(file.filename) + '"></i></div>';
+    var iconRatio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
+    var iconStyle = iconRatio ? ' style="aspect-ratio:' + iconRatio + '"' : '';
+    return '<div class="mp-icon"' + iconStyle + '><i class="' + fileIcon(file.filename) + '"></i></div>';
 }
 
 function initVideoThumbObserver(container) {
