@@ -61,11 +61,22 @@ ob_start();
                 <div id="mp-warmup-video-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
             </div>
         </div>
+
+        <div id="mp-warmup-pdf-wrap" style="display:none; margin-top:20px;">
+            <div style="margin-bottom:6px;">
+                <strong><?php echo rex_i18n::msg('mediaplace_thumb_warmup_pdfs'); ?></strong>
+                <span id="mp-warmup-pdf-text"></span>
+            </div>
+            <div class="progress">
+                <div id="mp-warmup-pdf-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+            </div>
+        </div>
     </div>
 
     <div id="mp-warmup-done" class="alert alert-success" style="display:none; margin-top:20px;">
         <?php echo rex_i18n::msg('mediaplace_thumb_warmup_done'); ?>
     </div>
+    <div id="mp-warmup-failed" class="alert alert-warning" style="display:none; margin-top:20px;" data-msg="<?php echo rex_escape(rex_i18n::rawMsg('mediaplace_thumb_warmup_background_failed')); ?>"></div>
 </div>
 <?php
 $content = ob_get_clean();
@@ -90,10 +101,14 @@ echo $fragment->parse('core/page/section.php');
     var progressWrap = document.getElementById('mp-warmup-progress-wrap');
     var videoWrap = document.getElementById('mp-warmup-video-wrap');
     var doneBox = document.getElementById('mp-warmup-done');
+    var failedBox = document.getElementById('mp-warmup-failed');
     var imageBar = document.getElementById('mp-warmup-image-bar');
     var imageText = document.getElementById('mp-warmup-image-text');
     var videoBar = document.getElementById('mp-warmup-video-bar');
     var videoText = document.getElementById('mp-warmup-video-text');
+    var pdfWrap = document.getElementById('mp-warmup-pdf-wrap');
+    var pdfBar = document.getElementById('mp-warmup-pdf-bar');
+    var pdfText = document.getElementById('mp-warmup-pdf-text');
     var previewWrap = document.getElementById('mp-warmup-preview-wrap');
     var previewImg = document.getElementById('mp-warmup-preview-img');
     var previewName = document.getElementById('mp-warmup-preview-name');
@@ -154,7 +169,13 @@ echo $fragment->parse('core/page/section.php');
             }
             if (status.done || cancelled) {
                 setRunningUi(false);
-                if (!cancelled && status.total > 0) doneBox.style.display = '';
+                if (!cancelled && status.failed > 0) {
+                    failedBox.textContent = failedBox.getAttribute('data-msg')
+                        .replace('{0}', status.failed).replace('{1}', status.total).replace('{2}', status.server || '');
+                    failedBox.style.display = '';
+                } else if (!cancelled && status.total > 0) {
+                    doneBox.style.display = '';
+                }
                 pollTimer = null;
                 return;
             }
@@ -167,6 +188,7 @@ echo $fragment->parse('core/page/section.php');
     startBgBtn.addEventListener('click', function () {
         cancelled = false;
         doneBox.style.display = 'none';
+        failedBox.style.display = 'none';
         setRunningUi(true);
         apiCall({ action: 'start_background' }).then(function (result) {
             if (result.error) {
@@ -217,9 +239,16 @@ echo $fragment->parse('core/page/section.php');
                 videoWrap.style.display = '';
                 setProgress(videoBar, videoText, 0, counts.video.total);
             }
+            if (counts.pdf && counts.pdf.active) {
+                pdfWrap.style.display = '';
+                setProgress(pdfBar, pdfText, 0, counts.pdf.total);
+            }
             return warmType('image', imageBar, imageText).then(function () {
                 if (cancelled || !counts.video.active) return;
                 return warmType('video', videoBar, videoText);
+            }).then(function () {
+                if (cancelled || !counts.pdf || !counts.pdf.active) return;
+                return warmType('pdf', pdfBar, pdfText);
             });
         }).then(function () {
             setRunningUi(false);

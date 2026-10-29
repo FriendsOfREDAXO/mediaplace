@@ -23,7 +23,7 @@ var MPCore = window.MPCore;
 var t = MPCore.i18n.t;
 var qs = MPCore.helpers.qs;
 
-/** ctx-Vertrag: { overlay, lightboxLayer, lightboxImage, lightboxCaption }. */
+/** ctx-Vertrag: { overlay, lightboxLayer, lightboxImage, lightboxCaption, lightboxFrame }. */
 export function initLightbox(theCtx) {
     ctx = theCtx;
 }
@@ -61,11 +61,27 @@ export function openLightbox(src, caption) {
     lightboxOpen = true;
 }
 
+/** pdfout's pdf.js-Viewer in der Lightbox (siehe PdfoutIntegration::viewerUrl()). */
+export function openPdfViewer(src, caption) {
+    if (!ctx.lightboxLayer || !ctx.lightboxFrame || !src) return;
+    ctx.lightboxFrame.src = src;
+    ctx.lightboxFrame.title = caption || '';
+    if (ctx.lightboxCaption) {
+        ctx.lightboxCaption.textContent = '';
+        ctx.lightboxCaption.style.display = 'none';
+    }
+    ctx.lightboxLayer.classList.add('mp-lightbox-open', 'mp-lightbox-pdf');
+    lightboxOpen = true;
+}
+
 export function closeLightbox() {
     if (!ctx.lightboxLayer) return;
-    ctx.lightboxLayer.classList.remove('mp-lightbox-open');
+    ctx.lightboxLayer.classList.remove('mp-lightbox-open', 'mp-lightbox-pdf');
     if (ctx.lightboxImage) {
         ctx.lightboxImage.removeAttribute('src');
+    }
+    if (ctx.lightboxFrame) {
+        ctx.lightboxFrame.removeAttribute('src');
     }
     lightboxOpen = false;
 }

@@ -45,6 +45,7 @@ import {
     isLightboxOpen,
     setFullscreenMode,
     openLightbox,
+    openPdfViewer,
     closeLightbox,
 } from './modules/lightbox.js';
 import {
@@ -197,7 +198,7 @@ import {
     // ---- State ----
     var overlay, sidebar, grid, gridWrap, searchInput, statusBar, breadcrumb, detailPanel, multiFooter, batchFooter, providerBatchFooter;
     var scrollPillTrack, scrollPillThumb;
-    var lightboxLayer, lightboxImage, lightboxCaption;
+    var lightboxLayer, lightboxImage, lightboxCaption, lightboxFrame;
     var currentCat = -1;
     var onSelect = null;
     var onMultiSelect = null;  // callback for multi-select mode: receives array of filenames
@@ -348,6 +349,7 @@ import {
     // jetzt in modules/optimize.js.
     var videoThumbType = '';
     var videoThumbStatic = false;
+    var pdfThumbType = '';
     var canOptimizeVideo = false;
     var pageScrollTopBeforeOpen = 0;
     var pageMainScrollTopBeforeOpen = 0;
@@ -1198,6 +1200,7 @@ import {
         activeUploadProviderId = root.dataset.uploadProvider || '';
         videoThumbType = root.dataset.videoThumbType || '';
         videoThumbStatic = root.dataset.videoThumbStatic === '1';
+        pdfThumbType = root.dataset.pdfThumbType || '';
         canOptimizeVideo = root.dataset.optimizeVideoAvailable === '1';
         canAccessRootCategory = !root.dataset.canAccessRootCategory || root.dataset.canAccessRootCategory === '1';
         mediaBaseUrl = root.dataset.mediaBaseUrl || '';
@@ -1476,6 +1479,7 @@ import {
                 '<div class="mp-lightbox" id="mp-lightbox">' +
                     '<button type="button" class="mp-lightbox-close" title="' + escAttr(t('mediaplace_close')) + '"><i class="fa-solid fa-xmark"></i></button>' +
                     '<img class="mp-lightbox-image" alt="">' +
+                    '<iframe class="mp-lightbox-frame" allowfullscreen></iframe>' +
                     '<div class="mp-lightbox-caption"></div>' +
                 '</div>' +
             '</div>';
@@ -1510,6 +1514,7 @@ import {
         lightboxLayer = qs('#mp-lightbox');
         lightboxImage = qs('.mp-lightbox-image', overlay);
         lightboxCaption = qs('.mp-lightbox-caption', overlay);
+        lightboxFrame = qs('.mp-lightbox-frame', overlay);
 
         initModals({ overlay: overlay });
         initToast(overlay);
@@ -1519,6 +1524,7 @@ import {
             lightboxLayer: lightboxLayer,
             lightboxImage: lightboxImage,
             lightboxCaption: lightboxCaption,
+            lightboxFrame: lightboxFrame,
         });
 
         initFocuspoint({
@@ -1578,6 +1584,7 @@ import {
             getMediaBaseUrl: function () { return mediaBaseUrl; },
             getVideoThumbType: function () { return videoThumbType; },
             getVideoThumbStatic: function () { return videoThumbStatic; },
+            getPdfThumbType: function () { return pdfThumbType; },
             updateStatus: updateStatus,
             // Fuer den Schnellauswahl-Button auf der Kachel (Grid/Liste/
             // Media-Wall): renderFilesGrid()/-List()/-MediaWall() muessen
@@ -2999,6 +3006,15 @@ import {
                 openLightbox(
                     openLbBtn.getAttribute('data-lightbox-src') || '',
                     openLbBtn.getAttribute('data-lightbox-caption') || ''
+                );
+                return;
+            }
+
+            var openPdfBtn = e.target.closest('.mp-pdf-viewer-btn, .mp-pdf-viewer-thumb');
+            if (openPdfBtn) {
+                openPdfViewer(
+                    openPdfBtn.getAttribute('data-pdf-viewer-src') || '',
+                    openPdfBtn.getAttribute('data-pdf-viewer-caption') || ''
                 );
                 return;
             }
