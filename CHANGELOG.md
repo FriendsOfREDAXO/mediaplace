@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 2.7.1 – 2026-10-29
+
+### Behoben
+- **PDF-Vorschau in der Kachel**: Die erste Seite wird ganz gezeigt statt als Querformat-Ausschnitt, auch in Liste und Media-Wall.
+- **Kachelhöhe**: Fällt eine Vorschau aufs Datei-Icon zurück, bleibt die Kachel so hoch wie die anderen. Datei-Icons ohne Vorschau haben im Grid jetzt dasselbe Seitenverhältnis wie Bilder.
+
 ## Version 2.7.0 – 2026-10-29
 
 ### Neu
