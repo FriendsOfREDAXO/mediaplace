@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 2.7.0 – 2026-10-29
+
+### Neu
+- **PDF-Vorschau und PDF-Viewer** (mit dem [pdfout](https://github.com/FriendsOfREDAXO/pdfout)-AddOn): Grid und Detail-Panel zeigen die erste Seite eines PDFs statt des Datei-Icons. Den Media-Manager-Typ `mediaplace_pdf_thumb` legt MediaPlace selbst an. Gerendert wird mit poppler-utils, Ghostscript oder Imagick, je nachdem, was pdfout findet; ohne Konverter bleibt es beim Icon. Ein Klick auf die Vorschau öffnet das PDF im pdf.js-Viewer von pdfout direkt im Overlay.
+- **Vorschaubilder vorwärmen** erfasst jetzt auch PDFs: im Cronjob (eigenes Kontingent pro Lauf), auf der Seite „Vorschaubilder vorwärmen“ und im Hintergrundlauf.
+
+### Behoben
+- **Vorwärmen im Hintergrund erzeugte nichts**: Der Hintergrundlauf rief relative Adressen auf („../media/…“), jeder Abruf scheiterte sofort, und weil auch Fehlschläge als erledigt zählten, war der Fortschrittsbalken nach einem Klick voll. Er ruft jetzt die vollständige Adresse aus der `server`-Einstellung auf. Fehlschläge zählen nicht mehr als Fortschritt: Die Seite meldet, wie viele Vorschaubilder nicht erzeugt werden konnten, und empfiehlt dann den Browser-Modus. Das passiert z. B., wenn der Server seine eigene Adresse nicht erreicht.
+
 ## Version 2.6.0 – 2026-10-28
 
 ### Neu

@@ -189,6 +189,8 @@ class JsonMetainfo extends rex_api_function
             'category_id' => (int) $media->getCategoryId(),
             'focuspoint_available' => $media->isImage() && \FriendsOfRedaxo\Mediaplace\FocuspointIntegration::canEdit(),
             'image_edit_available' => \FriendsOfRedaxo\Mediaplace\ImageEditor::canEdit($media),
+            'pdf_thumb_available' => \FriendsOfRedaxo\Mediaplace\DetailPanelFormatter::isPdfFilename($media->getFileName()) && \FriendsOfRedaxo\Mediaplace\PdfoutIntegration::isThumbAvailable(),
+            'pdf_viewer_url' => \FriendsOfRedaxo\Mediaplace\PdfoutIntegration::viewerUrl($media->getFileName(), $media->getUpdateDate() ? (string) $media->getUpdateDate() : null, (int) $media->getSize()),
             'optimize_video_available' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::canOptimize($media->getFileName()),
             // Nur die (billige, keine ffprobe-Kosten) Sichtbarkeits-Flag hier --
             // die eigentlichen Technikdaten werden erst beim Aufklappen lazy
@@ -273,6 +275,8 @@ class JsonMetainfo extends rex_api_function
             'category_id' => (int) ($apiInfo['category_id'] ?? $media->getCategoryId()),
             'focuspoint_available' => (bool) ($apiInfo['focuspoint_available'] ?? false),
             'image_edit_available' => (bool) ($apiInfo['image_edit_available'] ?? false),
+            'pdf_thumb_available' => (bool) ($apiInfo['pdf_thumb_available'] ?? false),
+            'pdf_viewer_url' => $apiInfo['pdf_viewer_url'] ?? null,
             'optimize_video_available' => (bool) ($apiInfo['optimize_video_available'] ?? false),
             'video_details_available' => (bool) ($apiInfo['video_details_available'] ?? false),
             'optimize_video_job' => $apiInfo['optimize_video_job'] ?? null,

@@ -3,6 +3,7 @@
 namespace FriendsOfRedaxo\Mediaplace\Api;
 
 use FriendsOfRedaxo\Mediaplace\FfmpegIntegration;
+use FriendsOfRedaxo\Mediaplace\PdfoutIntegration;
 use FriendsOfRedaxo\Mediaplace\ThumbWarmupCronjob;
 use rex_api_function;
 use rex_api_result;
@@ -31,7 +32,7 @@ use rex_api_result;
  *
  * POST (JSON body, {action: ...}):
  * - count             {} -> Gesamtanzahl Dateien je Typ (fuer die Fortschrittsanzeige)
- * - warm_batch        {type: 'image'|'video', offset} -> waermt bis zu BATCH_SIZE
+ * - warm_batch        {type: 'image'|'video'|'pdf', offset} -> waermt bis zu BATCH_SIZE
  *   Dateien ab offset, gibt {processed, next_offset, total, done} zurueck
  * - start_background  {} -> baut die komplette Liste aller Vorschaubild-URLs
  *   (Bild + ggf. Video, rex_media_manager::getUrl()) und startet sie als
@@ -116,12 +117,17 @@ class ThumbWarmup extends rex_api_function
     private function handleCount(): void
     {
         $videoType = FfmpegIntegration::isAvailable() ? FfmpegIntegration::getActiveVideoThumbType() : null;
+        $pdfType = PdfoutIntegration::getActiveThumbType();
 
         \rex_response::sendJson([
             'image' => ['total' => $this->countForExtensions(ThumbWarmupCronjob::IMAGE_EXTENSIONS)],
             'video' => [
                 'total' => null !== $videoType ? $this->countForExtensions(FfmpegIntegration::supportedExtensions()) : 0,
                 'active' => null !== $videoType,
+            ],
+            'pdf' => [
+                'total' => null !== $pdfType ? $this->countForExtensions(PdfoutIntegration::EXTENSIONS) : 0,
+                'active' => null !== $pdfType,
             ],
         ]);
     }
@@ -140,6 +146,13 @@ class ThumbWarmup extends rex_api_function
         } elseif ('video' === $type) {
             $mmType = FfmpegIntegration::isAvailable() ? FfmpegIntegration::getActiveVideoThumbType() : null;
             $extensions = FfmpegIntegration::supportedExtensions();
+            if (null === $mmType) {
+                \rex_response::sendJson(['processed' => 0, 'next_offset' => $offset, 'total' => 0, 'done' => true]);
+                return;
+            }
+        } elseif ('pdf' === $type) {
+            $mmType = PdfoutIntegration::getActiveThumbType();
+            $extensions = PdfoutIntegration::EXTENSIONS;
             if (null === $mmType) {
                 \rex_response::sendJson(['processed' => 0, 'next_offset' => $offset, 'total' => 0, 'done' => true]);
                 return;
@@ -207,9 +220,9 @@ class ThumbWarmup extends rex_api_function
     }
 
     /**
-     * Alle Vorschaubild-URLs (Bild + ggf. Video), eine Liste, in der Reihenfolge
+     * Alle Vorschaubild-URLs (Bild + ggf. Video/PDF), eine Liste, in der Reihenfolge
      * wie warm_batch sie auch einzeln abarbeiten wuerde (ID aufsteigend, Bilder
-     * vor Videos).
+     * vor Videos vor PDFs).
      *
      * @return list<string>
      */
@@ -221,6 +234,11 @@ class ThumbWarmup extends rex_api_function
         $videoType = FfmpegIntegration::isAvailable() ? FfmpegIntegration::getActiveVideoThumbType() : null;
         if (null !== $videoType) {
             $urls = array_merge($urls, $this->urlsForType($videoType, FfmpegIntegration::supportedExtensions()));
+        }
+
+        $pdfType = PdfoutIntegration::getActiveThumbType();
+        if (null !== $pdfType) {
+            $urls = array_merge($urls, $this->urlsForType($pdfType, PdfoutIntegration::EXTENSIONS));
         }
 
         return $urls;
@@ -243,10 +261,51 @@ class ThumbWarmup extends rex_api_function
 
         $urls = [];
         foreach ($sql as $row) {
-            $urls[] = \rex_media_manager::getUrl($mmType, (string) $row->getValue('filename'), null, false);
+            $urls[] = self::absoluteUrl(\rex_media_manager::getUrl($mmType, (string) $row->getValue('filename'), null, false));
         }
 
         return $urls;
+    }
+
+    /**
+     * wget braucht absolute URLs: getUrl() liefert sie relativ zum Backend ("../media/...") bzw.
+     * wurzel-relativ. Pfad gegen SCRIPT_NAME aufloesen, Host aus der server-Einstellung.
+     */
+    private static function absoluteUrl(string $url): string
+    {
+        if (preg_match('#^[a-z][a-z0-9+.-]*://#i', $url)) {
+            return $url;
+        }
+
+        if (!str_starts_with($url, '/')) {
+            $script = str_replace('\\', '/', \rex_request::server('SCRIPT_NAME', 'string', '/index.php'));
+            [$path, $query] = array_pad(explode('?', $url, 2), 2, null);
+            $segments = [];
+            foreach (explode('/', dirname($script) . '/' . $path) as $segment) {
+                if ('' === $segment || '.' === $segment) {
+                    continue;
+                }
+                if ('..' === $segment) {
+                    array_pop($segments);
+                    continue;
+                }
+                $segments[] = $segment;
+            }
+            $url = '/' . implode('/', $segments) . (null !== $query ? '?' . $query : '');
+        }
+
+        return self::serverOrigin() . $url;
+    }
+
+    /** "https://example.org" aus der server-Einstellung, sonst aus dem aktuellen Request */
+    private static function serverOrigin(): string
+    {
+        $parts = parse_url(\rex::getServer());
+        if (is_array($parts) && isset($parts['scheme'], $parts['host'])) {
+            return $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+        }
+
+        return \rex_request::server('REQUEST_SCHEME', 'string', 'https') . '://' . \rex_request::server('HTTP_HOST', 'string', 'localhost');
     }
 
     /**
@@ -286,7 +345,9 @@ class ThumbWarmup extends rex_api_function
         // sie parst -- bei einer URL mit Sonderzeichen waere das ein
         // Quoting-/Injection-Risiko. Als $1 (echtes Argument des inneren
         // sh -c) uebernimmt die Shell selbst das sichere Escaping.
-        $innerScript = 'wget -q -T 10 -t 1 -O /dev/null "$1"; echo "$1" >> ' . escapeshellarg($progressFile);
+        // Selbstaufruf des eigenen Servers: Zertifikat nicht pruefen (selbstsigniert auf Staging/Dev).
+        // Fehlschlaege landen als "FAIL" in der Fortschrittsdatei und zaehlen nicht als erzeugt.
+        $innerScript = 'if wget -q --no-check-certificate -T 30 -t 1 -O /dev/null "$1"; then echo "OK $1"; else echo "FAIL $1"; fi >> ' . escapeshellarg($progressFile);
         $pipeline = 'xargs -P ' . self::BACKGROUND_CONCURRENCY . ' -a ' . escapeshellarg($urlsFile)
             . ' -I{} sh -c ' . escapeshellarg($innerScript) . ' _ {}';
 
@@ -315,14 +376,24 @@ class ThumbWarmup extends rex_api_function
         $total = self::countLines($urlsFile);
         $processedLines = is_file($progressFile) ? self::readLines($progressFile) : [];
         $processed = count($processedLines);
-        $lastUrl = [] !== $processedLines ? end($processedLines) : null;
+        $failed = 0;
+        $lastUrl = null;
+        foreach ($processedLines as $line) {
+            if (str_starts_with($line, 'FAIL ')) {
+                ++$failed;
+                continue;
+            }
+            $lastUrl = str_starts_with($line, 'OK ') ? substr($line, 3) : $line;
+        }
 
         \rex_response::sendJson([
             'running' => $processed < $total,
             'processed' => $processed,
+            'failed' => $failed,
             'total' => $total,
             'done' => $processed >= $total,
             'last_thumb_url' => $lastUrl,
+            'server' => self::serverOrigin(),
         ]);
     }
 
@@ -346,7 +417,7 @@ class ThumbWarmup extends rex_api_function
         $urlsFile = self::stateFile('urls.txt');
         $progressFile = self::stateFile('progress.log');
         if (is_file($urlsFile) && is_file($progressFile)) {
-            \rex_file::put($urlsFile, \rex_file::get($progressFile, ''));
+            \rex_file::put($urlsFile, (string) preg_replace('/^(OK|FAIL) /m', '', \rex_file::get($progressFile, '')));
         }
 
         \rex_response::sendJson(['stopped' => true]);

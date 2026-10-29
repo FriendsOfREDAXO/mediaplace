@@ -19,6 +19,7 @@ use rex_sql;
  * wenn ffmpeg installiert UND lauffaehig ist UND die Video-Vorschau nicht auf
  * "aus" steht -- Video-Generierung ist ungleich teurer als ein Bild-Resize,
  * deshalb pro Typ ein eigenes, unterschiedlich hoch vorbelegtes Kontingent.
+ * Dazu die PDF-Vorschau (PdfoutIntegration), nur mit pdfout und PDF-Konverter.
  *
  * Pro Lauf wird je Typ nur eine begrenzte Anzahl NEUER Vorschaubilder erzeugt,
  * der Rest folgt beim naechsten planmaessigen Lauf -- bereits gecachte Dateien
@@ -45,6 +46,9 @@ class ThumbWarmupCronjob extends rex_cronjob
     /** Ab dieser Dauer gilt ein einzelner create()-Aufruf als "hat wirklich neu generiert" statt als Cache-Treffer. */
     private const VIDEO_SLOW_THRESHOLD_SECONDS = 0.3;
 
+    /** Einfache PDFs rendert Ghostscript/Poppler oft in unter 0,1 s -- Schwelle wie bei Bildern. */
+    private const PDF_SLOW_THRESHOLD_SECONDS = 0.05;
+
     /** Harte Obergrenze an ueberhaupt geprueften Dateien pro Lauf und Typ (auch bei lauter Cache-Treffern). */
     private const MAX_SCANNED_PER_RUN = 300;
 
@@ -62,12 +66,22 @@ class ThumbWarmupCronjob extends rex_cronjob
             $videoResult = $this->warmupType($activeVideoThumbType, FfmpegIntegration::supportedExtensions(), $videoBatchSize, self::VIDEO_SLOW_THRESHOLD_SECONDS);
         }
 
+        // pdfout-Integration: nur mit pdfout und einem PDF-Konverter
+        $pdfResult = ['warmed' => 0, 'scanned' => 0];
+        $pdfThumbType = PdfoutIntegration::getActiveThumbType();
+        if (null !== $pdfThumbType) {
+            $pdfBatchSize = max(1, (int) $this->getParam('pdf_batch_size', 10));
+            $pdfResult = $this->warmupType($pdfThumbType, PdfoutIntegration::EXTENSIONS, $pdfBatchSize, self::PDF_SLOW_THRESHOLD_SECONDS);
+        }
+
         $this->setMessage(rex_i18n::msg(
             'mediaplace_cronjob_thumb_warmup_result',
             $imageResult['warmed'],
             $imageResult['scanned'],
             $videoResult['warmed'],
             $videoResult['scanned'],
+            $pdfResult['warmed'],
+            $pdfResult['scanned'],
         ));
 
         return true;
@@ -146,6 +160,18 @@ class ThumbWarmupCronjob extends rex_cronjob
                     5 => 5,
                     10 => 10,
                     20 => 20,
+                ],
+            ],
+            [
+                'label' => rex_i18n::msg('mediaplace_cronjob_thumb_warmup_pdf_batch_size'),
+                'name' => 'pdf_batch_size',
+                'type' => 'select',
+                'default' => 10,
+                'options' => [
+                    5 => 5,
+                    10 => 10,
+                    20 => 20,
+                    50 => 50,
                 ],
             ],
         ];

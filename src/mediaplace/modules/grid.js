@@ -49,6 +49,7 @@ var videoThumbObserver = null;
  * - getMediaForceCacheTokens()/getLastLoadedFiles()/getMediaBaseUrl(): noch-legacy-State,
  *   durchgereicht an MPCore.helpers.mediaThumbSrc()
  * - getVideoThumbType()/getVideoThumbStatic(): noch-legacy-State (FfmpegIntegration-Konfiguration)
+ * - getPdfThumbType(): Media-Manager-Typ der PDF-Vorschau, leer = Icon (PdfoutIntegration)
  * - updateStatus(count): noch-legacy-Funktion (Treffer-/Ladezaehler-Text)
  */
 export function initGrid(theCtx) {
@@ -147,6 +148,15 @@ export function previewHtml(file, ratioOverride) {
         return '<img class="mp-video-thumb-img" data-fallback-icon="' + escAttr(fileIcon(file.filename))
             + '" data-video-thumb-src="' + escAttr(videoSrc) + '" alt="' + escAttr(file.title || file.filename) + '"' + videoStyle + '>'
             + videoBadge;
+    }
+    // pdfout-Integration: erste PDF-Seite statt Icon, siehe PdfoutIntegration
+    var pdfThumbType = ctx.getPdfThumbType();
+    if (pdfThumbType && /\.pdf$/i.test(file.filename || '')) {
+        var pdfSrc = mediaThumbSrc(file.filename, pdfThumbType, file, mediaForceCacheTokens, lastLoadedFiles, mediaBaseUrl);
+        var pdfRatio = (undefined !== ratioOverride) ? ratioOverride : GRID_TILE_RATIO;
+        var pdfStyle = pdfRatio ? ' style="aspect-ratio:' + pdfRatio + '"' : '';
+        return '<img class="mp-pdf-thumb-img" data-fallback-icon="' + escAttr(fileIcon(file.filename)) + '" src="' + escAttr(pdfSrc)
+            + '" alt="' + escAttr(file.title || file.filename) + '" loading="lazy"' + pdfStyle + '>';
     }
     return '<div class="mp-icon"><i class="' + fileIcon(file.filename) + '"></i></div>';
 }

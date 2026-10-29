@@ -3394,6 +3394,54 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     text-decoration: none;
 }
 
+/* rechts neben "In neuem Tab oeffnen" */
+#mp-overlay .mp-pdf-viewer-btn {
+    position: absolute;
+    left: 44px;
+    top: 10px;
+    z-index: 2;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#mp-overlay .mp-pdf-viewer-btn:hover {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+#mp-overlay .mp-detail-preview-pdf img {
+    border: 1px solid var(--mp-detail-border);
+}
+
+#mp-overlay .mp-pdf-viewer-thumb {
+    cursor: zoom-in;
+}
+
+#mp-overlay .mp-lightbox-frame {
+    display: none;
+    width: 96%;
+    height: calc(100vh - 120px);
+    border: 0;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+#mp-overlay .mp-lightbox.mp-lightbox-pdf .mp-lightbox-frame {
+    display: block;
+}
+
+#mp-overlay .mp-lightbox.mp-lightbox-pdf .mp-lightbox-image {
+    display: none;
+}
+
 #mp-overlay .mp-detail-preview img {
     width: 100% !important;
     height: auto !important;

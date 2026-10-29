@@ -82,10 +82,23 @@ $filename = $info['filename'];
         </audio>
     </div>
 <?php elseif (DetailPanelFormatter::isPdfFilename($filename)): ?>
-    <?php $pdfSrc = DetailPanelFormatter::mediaFileUrl($filename, $info['updatedate'], $info['filesize']); ?>
-    <div class="mp-detail-preview mp-detail-preview-icon">
+    <?php
+    $pdfSrc = DetailPanelFormatter::mediaFileUrl($filename, $info['updatedate'], $info['filesize']);
+    $pdfViewerUrl = (string) ($info['pdf_viewer_url'] ?? '');
+    $pdfThumb = !empty($info['pdf_thumb_available'])
+        ? DetailPanelFormatter::mediaThumbUrl($filename, \FriendsOfRedaxo\Mediaplace\PdfoutIntegration::PDF_THUMB_TYPE, $info['updatedate'], $info['filesize'])
+        : '';
+    ?>
+    <div class="mp-detail-preview<?= '' === $pdfThumb ? ' mp-detail-preview-icon' : ' mp-detail-preview-pdf' ?>">
         <a class="mp-pdf-open-btn" href="<?= rex_escape($pdfSrc) ?>" target="_blank" rel="noopener" title="<?= rex_escape($this->i18n('mediaplace_open_pdf_new_tab')) ?>"><i class="fa-solid fa-up-right-from-square"></i></a>
-        <i class="<?= rex_escape(DetailPanelFormatter::fileIconClass($filename)) ?>"></i>
+        <?php if ('' !== $pdfViewerUrl): ?>
+            <button type="button" class="mp-pdf-viewer-btn" data-pdf-viewer-src="<?= rex_escape($pdfViewerUrl) ?>" data-pdf-viewer-caption="<?= rex_escape($info['title'] !== '' ? $info['title'] : $filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_open_pdf_viewer')) ?>"><i class="fa-solid fa-book-open"></i></button>
+        <?php endif; ?>
+        <?php if ('' !== $pdfThumb): ?>
+            <img src="<?= rex_escape($pdfThumb) ?>" alt="<?= rex_escape($info['title'] !== '' ? $info['title'] : $filename) ?>" data-fallback-icon="<?= rex_escape(DetailPanelFormatter::fileIconClass($filename)) ?>"<?= '' !== $pdfViewerUrl ? ' class="mp-pdf-viewer-thumb" data-pdf-viewer-src="' . rex_escape($pdfViewerUrl) . '" data-pdf-viewer-caption="' . rex_escape($info['title'] !== '' ? $info['title'] : $filename) . '"' : '' ?>>
+        <?php else: ?>
+            <i class="<?= rex_escape(DetailPanelFormatter::fileIconClass($filename)) ?>"></i>
+        <?php endif; ?>
     </div>
 <?php else: ?>
     <div class="mp-detail-preview mp-detail-preview-icon">

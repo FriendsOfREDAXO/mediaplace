@@ -88,6 +88,11 @@ rex_extension::register('MEDIA_MANAGER_FILTERSET', static function (rex_extensio
         && !\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable()) {
         return [];
     }
+    // gleiches Sicherheitsnetz fuer die PDF-Vorschau (pdfout entfernt oder kein Konverter mehr)
+    if (\FriendsOfRedaxo\Mediaplace\PdfoutIntegration::PDF_THUMB_TYPE === $ep->getParam('rex_media_type')
+        && !\FriendsOfRedaxo\Mediaplace\PdfoutIntegration::isThumbAvailable()) {
+        return [];
+    }
 
     return $ep->getSubject();
 });
@@ -134,6 +139,7 @@ if (rex::isBackend() && rex::getUser()) {
     // idempotente Existenzpruefung, legt beide Typen (animiert + Standbild)
     // bei Bedarf an (z.B. wenn ffmpeg erst nach MediaPlace installiert wurde).
     \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::ensureVideoThumbTypes();
+    \FriendsOfRedaxo\Mediaplace\PdfoutIntegration::ensurePdfThumbType();
 
     // Biegt den klassischen "Medienpool"-Menuepunkt auf unseren Overlay um,
     // abschaltbar ueber die Einstellungsseite.
@@ -319,6 +325,8 @@ if (rex::isBackend() && rex::getUser()) {
         $optimizeVideoAvailable = null !== rex::getUser() && rex::getUser()->hasPerm('mediaplace[optimize_video]')
             && \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::isAvailable() ? '1' : '0';
         $videoInfoUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_video_info']);
+        // pdfout-Integration (siehe PdfoutIntegration): PDF-Vorschau im Grid, leer = Datei-Icon
+        $pdfThumbType = \FriendsOfRedaxo\Mediaplace\PdfoutIntegration::isThumbAvailable() ? \FriendsOfRedaxo\Mediaplace\PdfoutIntegration::PDF_THUMB_TYPE : '';
         // Kein "optimizeImageAvailable"-Seiten-Flag hier (anders als bei Video/
         // Fokuspunkt frueher): der Button selbst wird bereits live pro Datei
         // ueber optimize_image_available in buildFastInfoFields() gerendert --
@@ -460,7 +468,7 @@ if (rex::isBackend() && rex::getUser()) {
             }
         }
 
-        $inject = '<div id="mp-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-storage-usage-url="' . rex_escape($storageUsageUrl) . '" data-replace-file-url="' . rex_escape($replaceFileUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-image-edit-url="' . rex_escape($imageEditUrl) . '" data-image-edit-token="' . rex_escape($imageEditToken) . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '" data-ai-alt-url="' . rex_escape($aiAltUrl) . '" data-ai-alt-bulk-url="' . rex_escape($aiAltBulkUrl) . '" data-ai-auto-tag-url="' . rex_escape($aiAutoTagUrl) . '" data-rename-url="' . rex_escape($renameUrl) . '" data-rename-token="' . rex_escape($renameToken) . '" data-rename-pending="' . $renamePending . '"></div>'
+        $inject = '<div id="mp-root" data-media-base-url="' . rex_escape($mediaBaseUrl) . '" data-schema-url="' . rex_escape($schemaUrl) . '" data-json-url="' . rex_escape($jsonUrl) . '" data-tags-url="' . rex_escape($tagsUrl) . '" data-categories-url="' . rex_escape($categoriesUrl) . '" data-category-bulk-url="' . rex_escape($categoryBulkUrl) . '" data-unused-url="' . rex_escape($unusedUrl) . '" data-storage-usage-url="' . rex_escape($storageUsageUrl) . '" data-replace-file-url="' . rex_escape($replaceFileUrl) . '" data-can-filter-unused="' . $canFilterUnused . '" data-can-bulk-operations="' . $canBulkOperations . '" data-can-access-root-category="' . $canAccessRootCategory . '" data-media-list-fallback-url="' . rex_escape($mediaListFallbackUrl) . '" data-api-media-list-secure="' . $apiMediaListSecure . '" data-focuspoint-url="' . rex_escape($focuspointUrl) . '" data-metainfo-form-url="' . rex_escape($metainfoFormUrl) . '" data-metainfo-form-available="' . $metainfoFormAvailable . '" data-image-edit-url="' . rex_escape($imageEditUrl) . '" data-image-edit-token="' . rex_escape($imageEditToken) . '" data-video-thumb-type="' . rex_escape($videoThumbType) . '" data-video-thumb-static="' . $videoThumbStatic . '" data-pdf-thumb-type="' . rex_escape($pdfThumbType) . '" data-optimize-video-url="' . rex_escape($optimizeVideoUrl) . '" data-optimize-video-available="' . $optimizeVideoAvailable . '" data-video-info-url="' . rex_escape($videoInfoUrl) . '" data-optimize-image-url="' . rex_escape($optimizeImageUrl) . '" data-provider-url="' . rex_escape($providerUrl) . '" data-providers="' . rex_escape(json_encode($providers)) . '" data-upload-provider="' . rex_escape($uploadProviderId) . '" data-subpages="' . rex_escape(json_encode($subpages)) . '" data-feature-tagging="' . $featureTagging . '" data-feature-collections="' . $featureCollections . '" data-feature-metainfo-editing="' . $featureMetainfoEditing . '" data-feature-upload-resize="' . $featureUploadResize . '" data-upload-resize-width="' . $uploadResizeWidth . '" data-upload-resize-height="' . $uploadResizeHeight . '" data-alt-missing-filter-available="' . $altMissingFilterAvailable . '" data-ai-alt-url="' . rex_escape($aiAltUrl) . '" data-ai-alt-bulk-url="' . rex_escape($aiAltBulkUrl) . '" data-ai-auto-tag-url="' . rex_escape($aiAutoTagUrl) . '" data-rename-url="' . rex_escape($renameUrl) . '" data-rename-token="' . rex_escape($renameToken) . '" data-rename-pending="' . $renamePending . '"></div>'
             . "\n" . '<script type="application/json" id="mp-i18n-data">' . json_encode($i18nMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . '</script>';
         // Nur das LETZTE '</body>' ersetzen, nicht jedes Vorkommen: ein einfaches
         // str_replace() traf schon einmal versehentlich den Text eines eigenen

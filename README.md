@@ -31,6 +31,10 @@ Es ist kein extra Uploader-AddOn mehr erforderlich. MediaPlace unterstützt chun
 - „Video optimieren“-Button: ersetzt eine zu große Videodatei in-place durch eine kleinere, gleicher Dateiname
 - Aufklappbare technische Details (Auflösung, Codec, Bitrate, Framerate, …)
 
+**pdfout-Integration** (sobald das [pdfout](https://github.com/FriendsOfREDAXO/pdfout)-Addon installiert ist)
+- Erste PDF-Seite als Vorschau im Grid und im Detail-Panel statt Datei-Icon
+- PDF direkt im pdf.js-Viewer von pdfout ansehen, ohne MediaPlace zu verlassen
+
 **Bilder optimieren**
 - „Bild optimieren“-Button im Detail-Panel für Bestandsbilder, die größer als die konfigurierte Upload-Grenze sind
 - Cronjob „Vorschaubilder vorwärmen“ erzeugt Grid-Thumbnails (Bild & Video) im Hintergrund vor, statt bei jedem ersten Betrachten live zu generieren
@@ -123,6 +127,12 @@ Im Detail-Panel eines Videos gibt es außerdem, sofern ffmpeg lauffähig ist:
 - **„Video optimieren“** (Rollenrecht `mediaplace[optimize_video]`): ersetzt die Videodatei in-place durch eine kleinere, gleicher Dateiname. Läuft im Hintergrund weiter, eine Statuszeile zeigt den Fortschritt; bereits optimierte Dateien zeigen die erreichte Kompressionsrate.
 - **„Technische Details“**: aufklappbare Auflösung/Dauer/Codec/Bitrate/Framerate-Angaben, erst beim Aufklappen nachgeladen.
 
+### PDFs: Vorschau und Viewer
+
+Ist das [pdfout](https://github.com/FriendsOfREDAXO/pdfout)-Addon installiert, zeigen Grid und Detail-Panel die erste Seite eines PDFs. MediaPlace legt dafür den Media-Manager-Typ `mediaplace_pdf_thumb` selbst an (pdfout-Effekt „PDF-Thumbnail“ + Resize auf 600 px), es muss nichts eingerichtet werden. Gerendert wird mit dem Konverter, den pdfout findet: poppler-utils (empfohlen), Ghostscript oder Imagick. Findet pdfout keinen, bleibt es beim Datei-Icon; ein PDF, das sich nicht rendern lässt, fällt einzeln aufs Icon zurück.
+
+Im Detail-Panel öffnet ein Klick auf die Vorschau oder den Buch-Button das PDF im pdf.js-Viewer von pdfout (Toolbar wie unter **pdfout → Einstellungen → Toolbar** konfiguriert). Der Viewer braucht keinen Konverter.
+
 ### Bildbearbeitung
 
 Bei JPEG-, PNG-, WebP- (und, wenn der Server es kann, AVIF-) Bildern öffnet der Regler-Button in der Vorschau des Detail-Panels die Bildbearbeitung im Hauptbereich:
@@ -150,7 +160,7 @@ Ist ein Storage-Provider-Addon installiert (z. B. [nextcloud](https://github.com
 
 ### Vorschaubilder im Hintergrund vorwärmen
 
-Ist das `cronjob`-Addon installiert, steht unter **Cronjobs** der Typ „MediaPlace: Vorschaubilder vorwärmen“ zur Verfügung: erzeugt Grid-Thumbnails (Bilder und, falls ffmpeg installiert ist, auch Videos) im Hintergrund vor, statt sie erst beim ersten Betrachten live zu generieren – schont den Server bei großen, noch nicht durchgewärmten Kategorien. Pro Lauf wird je Typ nur eine begrenzte, einstellbare Anzahl neuer Vorschaubilder erzeugt (bereits gecachte werden übersprungen), neueste Dateien zuerst.
+Ist das `cronjob`-Addon installiert, steht unter **Cronjobs** der Typ „MediaPlace: Vorschaubilder vorwärmen“ zur Verfügung: erzeugt Grid-Thumbnails (Bilder und, falls ffmpeg bzw. pdfout installiert ist, auch Videos und PDFs) im Hintergrund vor, statt sie erst beim ersten Betrachten live zu generieren – schont den Server bei großen, noch nicht durchgewärmten Kategorien. Pro Lauf wird je Typ nur eine begrenzte, einstellbare Anzahl neuer Vorschaubilder erzeugt (bereits gecachte werden übersprungen), neueste Dateien zuerst.
 
 ### Klassisches ALT-Text-Feld: Bilder als dekorativ auszeichnen
 
