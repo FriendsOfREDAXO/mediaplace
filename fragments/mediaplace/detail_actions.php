@@ -51,9 +51,9 @@ $downloadUrl = $apiBase . 'media/' . rawurlencode($filename) . '/file' . ($token
     <button class="mp-detail-select-btn" data-filename="<?= rex_escape($filename) ?>" style="display:none"><i class="fa-solid fa-check"></i> <?= rex_escape($this->i18n('mediaplace_select')) ?></button>
 
     <div class="mp-detail-actions-row">
-        <?php /* Datei-mit-Pfeil statt Kreispfeilen (sah aus wie „Neu laden“, Issue #23); per Tastatur bedienbar */ ?>
+        <?php /* Tausch-Pfeile statt Kreispfeilen (sah aus wie „Neu laden“, Issue #23); per Tastatur bedienbar */ ?>
         <label class="mp-detail-replace-btn" title="<?= rex_escape($this->i18n('mediaplace_replace_file')) ?>" aria-label="<?= rex_escape($this->i18n('mediaplace_replace_file')) ?>" role="button" tabindex="0">
-            <i class="fa-solid fa-file-import" aria-hidden="true"></i><input type="file" class="mp-detail-replace-input" accept="<?= rex_escape(DetailPanelFormatter::replacementAccept($filename)) ?>" style="display:none"></label>
+            <i class="fa-solid fa-right-left" aria-hidden="true"></i><input type="file" class="mp-detail-replace-input" accept="<?= rex_escape(DetailPanelFormatter::replacementAccept($filename)) ?>" style="display:none"></label>
         <?php if ($this->getVar('rename_available')): ?>
             <button type="button" class="mp-detail-rename-btn" data-filename="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_rename_file')) ?>">
                 <i class="fa-solid fa-i-cursor"></i></button>

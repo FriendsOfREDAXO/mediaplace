@@ -106,7 +106,7 @@ export function renderProvidersSection() {
     // erkennbaren Grund wieder in der normalen lokalen Ansicht landen.
     var replaceTargetHint = ctx.getReplaceTarget ? ctx.getReplaceTarget() : null;
     if (replaceTargetHint) {
-        html += '<div class="mp-providers-replace-hint"><i class="fa-solid fa-file-import"></i> ' +
+        html += '<div class="mp-providers-replace-hint"><i class="fa-solid fa-right-left"></i> ' +
             t('mediaplace_replace_pick_hint', { name: escAttr(replaceTargetHint) }) + '</div>';
     }
     for (var i = 0; i < providers.length; i++) {
@@ -478,7 +478,7 @@ export function showProviderDetail(path, name) {
         // Kategorie-Abfrage, ueberschreibt die bestehende Datei statt eine
         // neue anzulegen (siehe replaceFromProviderFile()).
         html += '<button type="button" class="mp-image-optimize-btn mp-provider-replace-btn" data-provider-replace-path="' + escAttr(path) + '" data-provider-replace-name="' + escAttr(name) + '">' +
-            '<i class="fa-solid fa-file-import"></i> ' + escAttr(t('mediaplace_provider_replace_confirm')) +
+            '<i class="fa-solid fa-right-left"></i> ' + escAttr(t('mediaplace_provider_replace_confirm')) +
             '</button>';
         html += '<div class="mp-image-optimize-status mp-provider-replace-status" style="display:none"></div>';
     } else {
