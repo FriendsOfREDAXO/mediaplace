@@ -633,3 +633,8 @@ mediaplace_cronjob_rename = MediaPlace: Umbenennungen fortsetzen
 mediaplace_cronjob_rename_seconds = Höchstdauer je Lauf (Sekunden)
 mediaplace_cronjob_rename_pending = Umbenennungen bearbeitet, es sind noch welche offen.
 mediaplace_cronjob_rename_idle = Keine offenen Umbenennungen.
+
+mediaplace_more_actions = Weitere Aktionen
+mediaplace_replace_file_from_device = Datei ersetzen – vom Gerät
+mediaplace_replace_file_from_cloud = Datei ersetzen – aus der Cloud
+mediaplace_replace_file_short = Datei ersetzen

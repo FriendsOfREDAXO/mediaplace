@@ -18,11 +18,12 @@
  * verdient er ohnehin die volle Breite statt mit den kleinen Icon-Buttons zu
  * konkurrieren.
  *
- * Aufteilung (3.0.3): Werkzeuge links, "Loeschen" rot und ganz rechts abgesetzt
- * (margin-left:auto, nicht versehentlich neben "Speichern" zu treffen),
- * "Speichern" als eigene vollbreite Zeile darunter. Vorher standen sechs
+ * Aufteilung (3.1.0): Die zentralen Aktionen stehen direkt in der Zeile --
+ * "Speichern" (breit, mit Text), Sammlungen (Lesezeichen), "Loeschen" (rotes
+ * Symbol, ganz rechts). Seltener gebrauchte Werkzeuge (Ersetzen, Umbenennen,
+ * Herunterladen) liegen im Menue "Weitere Aktionen" (…). Vorher standen sechs
  * Knoepfe in einer Reihe -- breiter als das 320px-Panel, "Loeschen" wurde
- * rechts an der Kante abgeschnitten.
+ * rechts an der Kante abgeschnitten. Menue-Logik: core.js (.mp-detail-more-btn).
  *
  * "Speichern" (.mp-detail-save-btn) lebt hier statt am Ende der (potenziell
  * langen, scrollbaren) Bearbeiten-Sektion, damit er nicht weggescrollt werden
@@ -57,23 +58,28 @@ $downloadUrl = $apiBase . 'media/' . rawurlencode($filename) . '/file' . ($token
     <button class="mp-detail-select-btn" data-filename="<?= rex_escape($filename) ?>" style="display:none"><i class="fa-solid fa-check"></i> <?= rex_escape($this->i18n('mediaplace_select')) ?></button>
 
     <div class="mp-detail-actions-row">
-        <?php /* Tausch-Pfeile statt Kreispfeilen (sah aus wie „Neu laden“, Issue #23); per Tastatur bedienbar */ ?>
-        <label class="mp-detail-replace-btn" title="<?= rex_escape($this->i18n('mediaplace_replace_file')) ?>" aria-label="<?= rex_escape($this->i18n('mediaplace_replace_file')) ?>" role="button" tabindex="0">
-            <i class="fa-solid fa-right-left" aria-hidden="true"></i><input type="file" class="mp-detail-replace-input" accept="<?= rex_escape(DetailPanelFormatter::replacementAccept($filename)) ?>" style="display:none"></label>
-        <?php if ($this->getVar('rename_available')): ?>
-            <button type="button" class="mp-detail-rename-btn" data-filename="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_rename_file')) ?>">
-                <i class="fa-solid fa-i-cursor"></i></button>
-        <?php endif; ?>
-        <a class="mp-detail-download-btn" href="<?= rex_escape($downloadUrl) ?>" download="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_download_file')) ?>">
-            <i class="fa-solid fa-download"></i></a>
+        <button type="button" class="mp-detail-save-btn" title="<?= rex_escape($this->i18n('mediaplace_save_changes')) ?>" disabled>
+            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
         <?php if ($featureCollections): ?>
-            <button type="button" class="mp-detail-collection-btn<?= $hasCollections ? ' is-active' : '' ?>" data-filename="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_manage_collections')) ?>">
-                <i class="fa-solid fa-bookmark"></i></button>
+            <button type="button" class="mp-detail-collection-btn<?= $hasCollections ? ' is-active' : '' ?>" data-filename="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_manage_collections')) ?>" aria-label="<?= rex_escape($this->i18n('mediaplace_manage_collections')) ?>">
+                <i class="fa-solid fa-bookmark" aria-hidden="true"></i></button>
         <?php endif; ?>
-        <button type="button" class="mp-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" data-in-use-detail="<?= rex_escape((string) ($info['is_in_use_detail'] ?? '')) ?>" title="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>">
-            <i class="fa-solid fa-trash-can"></i></button>
+        <div class="mp-detail-more">
+            <button type="button" class="mp-detail-more-btn" aria-expanded="false" title="<?= rex_escape($this->i18n('mediaplace_more_actions')) ?>" aria-label="<?= rex_escape($this->i18n('mediaplace_more_actions')) ?>">
+                <i class="fa-solid fa-ellipsis" aria-hidden="true"></i></button>
+            <div class="mp-detail-more-menu" hidden>
+                <?php /* Tausch-Pfeile statt Kreispfeilen (sah aus wie „Neu laden“, Issue #23); per Tastatur bedienbar */ ?>
+                <label class="mp-detail-replace-btn mp-detail-more-item" role="button" tabindex="0" title="<?= rex_escape($this->i18n('mediaplace_replace_file')) ?>">
+                    <i class="fa-solid fa-right-left" aria-hidden="true"></i><span><?= rex_escape($this->i18n('mediaplace_replace_file_short')) ?></span><input type="file" class="mp-detail-replace-input" accept="<?= rex_escape(DetailPanelFormatter::replacementAccept($filename)) ?>" style="display:none"></label>
+                <?php if ($this->getVar('rename_available')): ?>
+                    <button type="button" class="mp-detail-rename-btn mp-detail-more-item" data-filename="<?= rex_escape($filename) ?>">
+                        <i class="fa-solid fa-i-cursor" aria-hidden="true"></i><span><?= rex_escape($this->i18n('mediaplace_rename_file')) ?></span></button>
+                <?php endif; ?>
+                <a class="mp-detail-download-btn mp-detail-more-item" href="<?= rex_escape($downloadUrl) ?>" download="<?= rex_escape($filename) ?>">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i><span><?= rex_escape($this->i18n('mediaplace_download_file')) ?></span></a>
+            </div>
+        </div>
+        <button type="button" class="mp-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" data-in-use-detail="<?= rex_escape((string) ($info['is_in_use_detail'] ?? '')) ?>" title="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>" aria-label="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>">
+            <i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
     </div>
-
-    <button type="button" class="mp-detail-save-btn" title="<?= rex_escape($this->i18n('mediaplace_save_changes')) ?>" disabled>
-        <i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
 </div>

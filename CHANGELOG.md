@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 3.1.0 – 2026-11-12
+
+### Geändert
+- **Aktionen im Detail-Panel aufgeräumt**: Die zentralen Aktionen stehen direkt in einer Zeile – **Speichern** (breit, mit Text), **Sammlungen** (Lesezeichen) und **Löschen** (rotes Symbol, ganz rechts). Ersetzen, Umbenennen und Herunterladen liegen im neuen Menü **„Weitere Aktionen“** (…). Das Menü öffnet nach oben und schließt mit Escape, per Klick daneben oder nach der Auswahl; geöffnet steht der Fokus auf dem ersten Eintrag.
+- Mit Cloud-Speichern stehen „Datei ersetzen – vom Gerät“ und „– aus der Cloud“ als zwei Einträge im Menü statt in einem eigenen Unter-Dropdown.
+- Symbol-Knöpfe haben jetzt auch für Screenreader eine Beschriftung (`aria-label`).
+
 ## Version 3.0.3 – 2026-11-12
 
 ### Behoben
