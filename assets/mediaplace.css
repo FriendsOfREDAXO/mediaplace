@@ -4453,9 +4453,10 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     background: var(--mp-cat-hover-bg);
 }
 
+/* Rotes Symbol auf derselben Flaeche wie die anderen Knoepfe (eine rote
+   Vollflaeche wirkte groesser als die uebrigen Icons); erst beim Zeigen rot hinterlegt */
 #mp-overlay .mp-detail-delete-btn {
-    background: #d9534f;
-    color: #fff;
+    color: #d9534f;
 }
 
 #mp-overlay .mp-detail-delete-btn:hover,
