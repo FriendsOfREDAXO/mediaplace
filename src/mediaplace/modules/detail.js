@@ -1183,8 +1183,8 @@ function renderDetail(jsonPayload) {
         replaceTrigger.title = replaceBtnLabel.getAttribute('title') || '';
         replaceTrigger.setAttribute('aria-label', replaceTrigger.title);
         replaceTrigger.setAttribute('aria-haspopup', 'true');
-        // Datei-mit-Pfeil statt Kreispfeilen (sah aus wie „Neu laden“, Issue #23)
-        replaceTrigger.innerHTML = '<i class="fa-solid fa-file-import" aria-hidden="true"></i>';
+        // Tausch-Pfeile statt Kreispfeilen (sah aus wie „Neu laden“, Issue #23)
+        replaceTrigger.innerHTML = '<i class="fa-solid fa-right-left" aria-hidden="true"></i>';
         replaceWrap.appendChild(replaceTrigger);
 
         var replaceMenu = document.createElement('div');

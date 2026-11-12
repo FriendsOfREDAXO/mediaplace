@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 3.0.2 – 2026-11-12
+
+### Geändert
+- „Datei ersetzen“ zeigt das Tausch-Symbol (zwei gegenläufige Pfeile, `fa-right-left`) statt der Datei mit Pfeil aus 3.0.1 (#23).
+
 ## Version 3.0.1 – 2026-11-12
 
 ### Behoben
