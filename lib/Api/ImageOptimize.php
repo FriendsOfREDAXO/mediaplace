@@ -17,6 +17,11 @@ use rex_api_result;
  */
 class ImageOptimize extends rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = [];
+
     public function execute(): rex_api_result
     {
         \rex_response::cleanOutputBuffers();

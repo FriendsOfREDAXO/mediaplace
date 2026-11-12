@@ -38,7 +38,8 @@ if (!$aiAvailable) {
     return;
 }
 
-$apiUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_ai_alt_complete']);
+// mit CSRF-Token (siehe Api\CsrfProtection)
+$apiUrl = rex_url::backendController(\FriendsOfRedaxo\Mediaplace\Api\AiAltComplete::getUrlParams(), false); // unmaskiert: wird per json_encode ins JS übergeben
 
 ob_start();
 ?>

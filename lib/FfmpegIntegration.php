@@ -114,6 +114,31 @@ class FfmpegIntegration
     }
 
     /**
+     * Schnitt-Editor und Untertitel des ffmpeg-AddOns (ab 5.0) für dieses Video: Links für das Detail-Panel und die
+     * Zahl der Untertitel-/Kapitelspuren. null ohne ffmpeg 5, ohne Recht ffmpeg[] oder für Nicht-Videos.
+     *
+     * @return array{cut_url: string, subtitles_url: string, tracks: int}|null
+     */
+    public static function getEditorTools(string $filename): ?array
+    {
+        if (!self::isAvailable() || !self::isSupportedVideo($filename)
+            || version_compare((string) (\rex_addon::get('ffmpeg')->getVersion() ?: '0'), '5.0.0', '<')
+            || !method_exists(\FriendsOfRedaxo\FFmpeg\VideoInfo::class, 'tracks')) {
+            return null;
+        }
+        $user = \rex::getUser();
+        if (!$user instanceof \rex_user || !$user->hasPerm('ffmpeg[]')) {
+            return null;
+        }
+
+        return [
+            'cut_url' => \rex_url::backendPage('mediapool/ffmpeg/trimmer', ['video' => $filename], false),
+            'subtitles_url' => \rex_url::backendPage('mediapool/ffmpeg/subtitles', ['video' => $filename], false),
+            'tracks' => count(\FriendsOfRedaxo\FFmpeg\VideoInfo::tracks($filename)),
+        ];
+    }
+
+    /**
      * Converter::startOverwriteJob()/pollJob()/getActiveJobInfo() sowie
      * Job\OptimizedVideoRegistry gibt es erst seit der globalen Job-Engine-
      * Neufassung in ffmpeg 4.5.0/4.5.1 (siehe dortiges CHANGELOG) -- aeltere,

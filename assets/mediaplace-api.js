@@ -34,7 +34,31 @@
     // 500er war.
     var nativeFetch = window.fetch.bind(window);
 
+    // CSRF-Token je MediaPlace-Endpunkt (siehe lib/Api/CsrfProtection.php): aendernde Aufrufe werden serverseitig
+    // nur mit gueltigem Token ausgefuehrt. Die Tokens stehen in #mp-root[data-api-tokens]; csrfUrl() haengt das
+    // passende an jede URL mit ?rex-api-call=mediaplace_… an -- automatisch fuer alle fetch()-Aufrufe in dieser
+    // Datei, fuer andere Stellen als Core.api.csrfUrl().
+    var apiTokens = null;
+
+    function csrfUrl(url) {
+        if ('string' !== typeof url) return url;
+        var match = url.match(/[?&]rex-api-call=(mediaplace_[a-z_]+)/);
+        if (!match || /[?&]_csrf_token=/.test(url)) return url;
+        if (null === apiTokens) {
+            var root = document.getElementById('mp-root');
+            try {
+                apiTokens = JSON.parse((root && root.dataset.apiTokens) || '{}') || {};
+            } catch (e) {
+                apiTokens = {};
+            }
+        }
+        var token = apiTokens[match[1]];
+        return token ? url + (url.indexOf('?') === -1 ? '?' : '&') + '_csrf_token=' + encodeURIComponent(token) : url;
+    }
+    Core.api.csrfUrl = csrfUrl;
+
     function fetch(url, opts) {
+        url = csrfUrl(url);
         var method = (opts && opts.method ? String(opts.method) : 'GET').toUpperCase();
         var request = nativeFetch(url, opts);
         if ('GET' !== method) return request;

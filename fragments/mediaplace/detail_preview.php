@@ -67,6 +67,13 @@ $filename = $info['filename'];
         <?php endif; ?>
         <div class="mp-video-optimize-status" style="display:none"></div>
     <?php endif; ?>
+    <?php if (!empty($info['video_tools'])): ?>
+        <?php $videoTools = $info['video_tools']; ?>
+        <div class="mp-video-tools">
+            <a class="mp-video-tool" href="<?= rex_escape($videoTools['cut_url']) ?>" target="_blank" rel="noopener"><i class="fa-solid fa-scissors" aria-hidden="true"></i> <?= rex_escape($this->i18n('mediaplace_video_cut')) ?></a>
+            <a class="mp-video-tool" href="<?= rex_escape($videoTools['subtitles_url']) ?>" target="_blank" rel="noopener"><i class="fa-regular fa-closed-captioning" aria-hidden="true"></i> <?= rex_escape($this->i18n('mediaplace_video_subtitles')) ?><?php if ((int) $videoTools['tracks'] > 0): ?> <span class="mp-video-tool-count"><?= (int) $videoTools['tracks'] ?></span><?php endif; ?></a>
+        </div>
+    <?php endif; ?>
     <?php if (!empty($info['video_details_available'])): ?>
         <button type="button" class="mp-video-details-toggle" data-video-details-file="<?= rex_escape($filename) ?>" aria-expanded="false">
             <i class="fa-solid fa-chevron-right"></i> <?= rex_escape($this->i18n('mediaplace_video_details_toggle')) ?>

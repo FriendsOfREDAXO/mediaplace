@@ -53,6 +53,11 @@ use rex_api_result;
  */
 class ThumbWarmup extends rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = ['action' => ['count', 'background_status']];
+
     // Siehe Api\StorageUsage/CategoryBulk-Kommentar: umgeht nur das
     // isBackend()-Gate, execute() prueft Login+Rechte ohnehin selbst.
     protected $published = true;

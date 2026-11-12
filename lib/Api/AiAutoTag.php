@@ -16,6 +16,11 @@ use FriendsOfRedaxo\Mediaplace\MediaPermission;
  */
 class AiAutoTag extends \rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = [];
+
     protected $published = true;
 
     public function execute(): \rex_api_result

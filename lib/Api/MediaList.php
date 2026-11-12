@@ -36,6 +36,11 @@ use rex_api_result;
  */
 class MediaList extends rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = true;
+
     // rex_api_function::$published ist standardmaessig false, dann darf der
     // Aufruf nur greifen, wenn rex::isBackend() zum Zeitpunkt des Requests
     // wahr ist -- das haengt am tatsaechlichen Einstiegspunkt (public/index.php

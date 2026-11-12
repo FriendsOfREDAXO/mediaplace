@@ -15,6 +15,11 @@ use rex_api_result;
  */
 class Schema extends rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = true;
+
     /** @var bool Frontend-Aufruf erlauben (nötig, weil die API-Route im Frontend-Context läuft) */
 
     public function execute(): rex_api_result
