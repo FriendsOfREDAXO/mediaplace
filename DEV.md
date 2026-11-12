@@ -321,6 +321,13 @@ keine Sicherheitslockerung, die eigentliche Rechteprüfung passiert weiterhin
 in `execute()` selbst (siehe `lib/MediaPermission.php`-Muster, das jeder
 dieser Endpunkte nutzt).
 
+**CSRF-Schutz (ab 3.0):** Ändernde Aufrufe brauchen ein Token je Endpunkt (REDAXOs `requiresCsrfProtection()`, siehe
+`lib/Api/CsrfProtection.php`). Ein neuer Endpunkt bindet `use CsrfProtection;` ein und legt in `CSRF_READ_ONLY` fest,
+welche GET-Anfragen nur lesen (`true` = alle GET, `['func' => ['status']]` = nur diese, `[]` = keine) und deshalb ohne
+Token auskommen. Die Tokens kommen ins Overlay über `#mp-root[data-api-tokens]` (Liste in `boot.php` ergänzen);
+`mediaplace-api.js` hängt sie in seinem `fetch()` automatisch an, für eigene Aufrufe gibt es `MPCore.api.csrfUrl(url)`.
+Serverseitig erzeugte URLs: `\FriendsOfRedaxo\Mediaplace\Api\<Klasse>::getUrlParams()`.
+
 | `rex-api-call` | Klasse | Zweck |
 |---|---|---|
 | `mediaplace_ai_alt_bulk` | `AiAltBulk` | KI-ALT-Text-Massengenerierung (nur Vorschläge, siehe `apply`-Aktion fürs eigentliche Schreiben), gated auf `mediaplace[bulk_operations]` |

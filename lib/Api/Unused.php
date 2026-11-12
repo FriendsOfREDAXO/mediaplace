@@ -26,6 +26,11 @@ use rex_api_result;
  */
 class Unused extends rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = true;
+
     /** Schutz gegen versehentlich/absichtlich ueberlange Anfragen -- der
      * Client schickt normalerweise nur eine einzelne Seitengroesse (siehe
      * mediaPerPage in mediaplace.js, max. 250). */

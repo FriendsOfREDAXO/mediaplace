@@ -126,6 +126,7 @@ Im Detail-Panel eines Videos gibt es außerdem, sofern ffmpeg lauffähig ist:
 
 - **„Video optimieren“** (Rollenrecht `mediaplace[optimize_video]`): ersetzt die Videodatei in-place durch eine kleinere, gleicher Dateiname. Läuft im Hintergrund weiter, eine Statuszeile zeigt den Fortschritt; bereits optimierte Dateien zeigen die erreichte Kompressionsrate.
 - **„Technische Details“**: aufklappbare Auflösung/Dauer/Codec/Bitrate/Framerate-Angaben, erst beim Aufklappen nachgeladen.
+- **„Video schneiden“** und **„Untertitel“** (ffmpeg ab 5.0, Recht `ffmpeg[]`): öffnen den Schnitt- bzw. Untertitel-Editor des ffmpeg-AddOns; am Untertitel-Knopf steht die Zahl der vorhandenen Spuren.
 
 ### PDFs: Vorschau und Viewer
 
@@ -236,6 +237,11 @@ MP.openFile('bild.jpg');
 ### Eigene API-Endpunkte
 
 Alle `mediaplace_*`-Endpunkte laufen über REDAXOs `rex-api-call`-Mechanismus und sind **Backend-Session-Endpunkte, keine öffentliche/token-basierte API** – sie prüfen `rex::isBackend()` + `rex::getUser()` und funktionieren deshalb nur mit einer eingeloggten Backend-Session (gleicher Origin, z.B. `fetch(..., { credentials: 'same-origin' })` aus eigenem Backend-JS heraus). Für externen/headless-Zugriff auf REDAXO-Standarddaten (Titel, echte Metainfo-Felder) ist stattdessen das [FriendsOfREDAXO/api](https://github.com/FriendsOfREDAXO/api)-Addon mit Bearer-Token gedacht.
+
+**CSRF-Token (ab 3.0):** Ändernde Aufrufe (alles außer lesenden GET-Anfragen) brauchen zusätzlich ein CSRF-Token, sonst
+antworten sie mit `403`. Im Overlay hängt `MPCore.api.csrfUrl(url)` das passende Token an
+(`fetch(MPCore.api.csrfUrl('index.php?rex-api-call=mediaplace_json_metainfo&filename=…'), {method: 'PATCH', …})`),
+serverseitig liefert `\FriendsOfRedaxo\Mediaplace\Api\<Klasse>::getUrlParams()` die Parameter. Details: DEV.md, Abschnitt 5.
 
 | Methode | Endpunkt | Zweck |
 |---|---|---|

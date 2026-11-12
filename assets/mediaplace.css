@@ -4161,6 +4161,45 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     color: var(--mp-table-td-label);
 }
 
+/* Schnitt-Editor und Untertitel (ffmpeg ab 5.0) -- zwei gleich breite Links unter dem Optimieren-Button */
+#mp-overlay .mp-video-tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin: 4px 0;
+}
+
+#mp-overlay .mp-video-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border: 1px solid var(--mp-filter-btn-border);
+    background: var(--mp-filter-btn-bg);
+    color: var(--mp-filter-btn-text);
+    font-size: 13px;
+    text-decoration: none;
+}
+
+#mp-overlay .mp-video-tool:hover,
+#mp-overlay .mp-video-tool:focus-visible {
+    border-color: var(--mp-filter-active-border);
+    background: var(--mp-filter-hover-bg);
+    text-decoration: none;
+}
+
+#mp-overlay .mp-video-tool-count {
+    min-width: 1.5em;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--mp-filter-active-border);
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.6;
+    text-align: center;
+}
+
 /* "Technische Details" (ffprobe-Daten, ffmpeg-Integration) -- schlichter
    Aufklapp-Trigger statt eines vollen Buttons wie beim Optimieren, da rein
    informativ (keine Aktion). */

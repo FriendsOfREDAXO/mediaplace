@@ -21,6 +21,11 @@ use rex_api_result;
  */
 class Provider extends rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = ['func' => ['entries', 'thumbnail']];
+
     // Jeder Eintrag ist ein echter Netzwerk-Roundtrip zur entfernten Quelle
     // (Download + rex_media_service::addMedia()) -- deutlich teurer als eine
     // lokale Bulk-Operation, deshalb ein kleines Limit wie bei

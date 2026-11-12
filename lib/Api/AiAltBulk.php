@@ -29,6 +29,11 @@ use FriendsOfRedaxo\Mediaplace\MediaPermission;
  */
 class AiAltBulk extends \rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = ['action' => ['count']];
+
     protected $published = true;
 
     // Deutlich kleiner als CategoryBulk (100/500): hier ist jeder

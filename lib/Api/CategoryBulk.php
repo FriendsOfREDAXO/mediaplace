@@ -37,6 +37,11 @@ use rex_api_result;
  */
 class CategoryBulk extends rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = ['action' => ['count']];
+
     // Siehe Api\MediaList::$published-Kommentar: umgeht nur das
     // isBackend()-Gate, execute() prueft Login+Rechte ohnehin selbst.
     protected $published = true;

@@ -16,7 +16,8 @@
  *   nicht verfuegbar ist (manche Hoster sperren das).
  */
 
-$apiUrl = rex_url::backendController(['rex-api-call' => 'mediaplace_thumb_warmup']);
+// mit CSRF-Token (siehe Api\CsrfProtection)
+$apiUrl = rex_url::backendController(\FriendsOfRedaxo\Mediaplace\Api\ThumbWarmup::getUrlParams(), false); // unmaskiert: wird per json_encode ins JS übergeben
 
 ob_start();
 ?>

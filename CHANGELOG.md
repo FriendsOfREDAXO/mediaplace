@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 3.0.0 – 2026-11-12
+
+### Sicherheit
+- **CSRF-Schutz für alle ändernden Endpunkte.** Die Endpunkte prüften Login und Rechte, aber kein CSRF-Token: Eine fremde Webseite konnte einen angemeldeten Redakteur dazu bringen, Aktionen auszulösen – etwa per Weiterleitung auf `?rex-api-call=mediaplace_video_optimize&func=start&file=…` (Original überschreiben). Der Session-Cookie (`SameSite=Lax`) wird bei solchen Navigationen mitgeschickt. Betroffen waren u. a. Video/Bild optimieren, Datei ersetzen, Kategorie-Massenaktionen, Kategorien und Tags anlegen/ändern/löschen, Metadaten und Fokuspunkt speichern, Cloud-Import, KI-Alt-Texte und -Tags, Thumbnail-Vorwärmen.
+- Umsetzung mit REDAXOs eigenem Mechanismus (`rex_api_function::requiresCsrfProtection()`, ein Token je Endpunkt), siehe `lib/Api/CsrfProtection.php`. Rein lesende GET-Anfragen (Listen, Vorschaubilder, Status) brauchen weiterhin kein Token. Ohne gültiges Token antworten die Endpunkte mit `403` und JSON.
+
+### Neu
+- **Video schneiden** und **Untertitel** im Detail-Panel von Videos (mit dem [ffmpeg](https://github.com/FriendsOfREDAXO/ffmpeg)-AddOn ab 5.0 und dem Recht `ffmpeg[]`): öffnen den Schnitt- bzw. Untertitel-Editor von ffmpeg; die Zahl der vorhandenen Untertitel-Spuren steht am Knopf. Bisher fehlten diese Links, weil MediaPlace die klassische Detailansicht ersetzt, in der ffmpeg sie anbietet.
+
+### Breaking Change
+- Eigene Aufrufe ändernder MediaPlace-Endpunkte (aus anderen AddOns) brauchen das CSRF-Token: im Overlay per `MPCore.api.csrfUrl(url)` (hängt es an, alle Aufrufe über `mediaplace-api.js` bekommen es automatisch), serverseitig per `\FriendsOfRedaxo\Mediaplace\Api\<Klasse>::getUrlParams()`. Siehe DEV.md, Abschnitt 5.
+
 ## Version 2.7.1 – 2026-10-29
 
 ### Behoben

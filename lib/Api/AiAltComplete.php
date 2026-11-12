@@ -40,6 +40,11 @@ use FriendsOfRedaxo\Mediaplace\MediaPermission;
  */
 class AiAltComplete extends \rex_api_function
 {
+    use CsrfProtection;
+
+    /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
+    protected const CSRF_READ_ONLY = ['action' => ['count', 'background_status']];
+
     protected $published = true;
 
     // Wie AiAltBulk::BATCH_LIMIT_DEFAULT/-MAX: jeder Eintrag ist ein echter
