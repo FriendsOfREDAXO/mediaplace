@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 3.0.1 – 2026-11-12
+
+### Behoben
+- **„Datei ersetzen“ ist erkennbar** (#23): Das Symbol zeigt eine Datei mit Pfeil statt der Kreispfeile, die wie „Neu laden“ aussahen – im Detail-Panel und beim Ersetzen aus der Cloud.
+- Der Knopf ist jetzt per Tastatur erreichbar und mit Enter/Leertaste bedienbar (bisher nur mit der Maus) und für Screenreader beschriftet.
+
 ## Version 3.0.0 – 2026-11-12
 
 ### Sicherheit

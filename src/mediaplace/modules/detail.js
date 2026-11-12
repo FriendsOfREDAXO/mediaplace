@@ -1163,6 +1163,15 @@ function renderDetail(jsonPayload) {
     // Provider konfiguriert sind: das bestehende <label> bleibt unveraendert
     // klickbar, oeffnet weiterhin direkt den nativen Datei-Dialog.
     var replaceBtnLabel = qs('.mp-detail-replace-btn', detailPanel);
+    // „Datei ersetzen“ ist ein <label> um ein verstecktes Datei-Feld: per Tastatur (Enter/Leertaste) wie ein Knopf
+    if (replaceBtnLabel) {
+        replaceBtnLabel.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            var input = qs('.mp-detail-replace-input', replaceBtnLabel);
+            if (input) input.click();
+        });
+    }
     if (replaceBtnLabel && ctx.hasProviders && ctx.hasProviders() && selectedFile) {
         var replaceWrap = document.createElement('div');
         replaceWrap.className = 'mp-detail-replace-wrap';
@@ -1172,7 +1181,10 @@ function renderDetail(jsonPayload) {
         replaceTrigger.type = 'button';
         replaceTrigger.className = 'mp-detail-replace-trigger';
         replaceTrigger.title = replaceBtnLabel.getAttribute('title') || '';
-        replaceTrigger.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
+        replaceTrigger.setAttribute('aria-label', replaceTrigger.title);
+        replaceTrigger.setAttribute('aria-haspopup', 'true');
+        // Datei-mit-Pfeil statt Kreispfeilen (sah aus wie „Neu laden“, Issue #23)
+        replaceTrigger.innerHTML = '<i class="fa-solid fa-file-import" aria-hidden="true"></i>';
         replaceWrap.appendChild(replaceTrigger);
 
         var replaceMenu = document.createElement('div');
@@ -1192,6 +1204,7 @@ function renderDetail(jsonPayload) {
         }
         replaceBtnLabel.classList.add('mp-detail-replace-device-item');
         replaceBtnLabel.removeAttribute('title');
+        replaceBtnLabel.removeAttribute('aria-label');
         replaceMenu.appendChild(replaceBtnLabel);
 
         var replaceCloudItem = document.createElement('button');
