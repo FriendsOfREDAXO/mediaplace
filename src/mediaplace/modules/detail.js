@@ -1157,9 +1157,7 @@ function renderDetail(jsonPayload) {
     // gebrueckt). Gleiches synchrones Timing wie attachOwnFieldButton()
     // unten. Bewusst EIN Trigger-Button statt zwei separaten Icon-Buttons
     // nebeneinander (frueherer Versuch) -- die Aktionen-Zeile hat nur Platz
-    // fuer eine feste Anzahl 36px-Icons (siehe .mp-detail-actions-row),
-    // ein zusaetzliches Icon liess "Loeschen" ganz rechts abgeschnitten
-    // wirken (Nutzer-Feedback/Screenshot). Kein Dropdown, wenn keine
+    // fuer eine feste Anzahl 36px-Icons (siehe .mp-detail-actions-row). Kein Dropdown, wenn keine
     // Provider konfiguriert sind: das bestehende <label> bleibt unveraendert
     // klickbar, oeffnet weiterhin direkt den nativen Datei-Dialog.
     var replaceBtnLabel = qs('.mp-detail-replace-btn', detailPanel);
@@ -1172,49 +1170,20 @@ function renderDetail(jsonPayload) {
             if (input) input.click();
         });
     }
+    // Mit Cloud-Providern: zwei Eintraege im Menue "Weitere Aktionen" (Vom Geraet / Aus der Cloud)
+    // statt eines verschachtelten Dropdowns (seit 3.1.0 liegt "Ersetzen" selbst im Menue)
     if (replaceBtnLabel && ctx.hasProviders && ctx.hasProviders() && selectedFile) {
-        var replaceWrap = document.createElement('div');
-        replaceWrap.className = 'mp-detail-replace-wrap';
-        replaceBtnLabel.parentNode.insertBefore(replaceWrap, replaceBtnLabel);
-
-        var replaceTrigger = document.createElement('button');
-        replaceTrigger.type = 'button';
-        replaceTrigger.className = 'mp-detail-replace-trigger';
-        replaceTrigger.title = replaceBtnLabel.getAttribute('title') || '';
-        replaceTrigger.setAttribute('aria-label', replaceTrigger.title);
-        replaceTrigger.setAttribute('aria-haspopup', 'true');
-        // Tausch-Pfeile statt Kreispfeilen (sah aus wie „Neu laden“, Issue #23)
-        replaceTrigger.innerHTML = '<i class="fa-solid fa-right-left" aria-hidden="true"></i>';
-        replaceWrap.appendChild(replaceTrigger);
-
-        var replaceMenu = document.createElement('div');
-        replaceMenu.className = 'mp-detail-replace-menu';
-
-        // Bestehendes Icon im Label umlabeln (Geraet-Icon statt allgemeinem
-        // Ersetzen-Icon) + Textlabel ergaenzen, das versteckte <input> bleibt
-        // unveraendert (inkl. accept-Attribut) einfach als Kind erhalten.
         var replaceLabelIcon = qs('i', replaceBtnLabel);
         if (replaceLabelIcon) replaceLabelIcon.className = 'fa-solid fa-desktop';
-        var replaceLabelText = document.createElement('span');
-        replaceLabelText.textContent = t('mediaplace_replace_from_device');
-        if (replaceLabelIcon) {
-            replaceLabelIcon.insertAdjacentElement('afterend', replaceLabelText);
-        } else {
-            replaceBtnLabel.insertBefore(replaceLabelText, replaceBtnLabel.firstChild);
-        }
-        replaceBtnLabel.classList.add('mp-detail-replace-device-item');
-        replaceBtnLabel.removeAttribute('title');
-        replaceBtnLabel.removeAttribute('aria-label');
-        replaceMenu.appendChild(replaceBtnLabel);
+        var replaceLabelSpan = qs('span', replaceBtnLabel);
+        if (replaceLabelSpan) replaceLabelSpan.textContent = t('mediaplace_replace_file_from_device');
 
         var replaceCloudItem = document.createElement('button');
         replaceCloudItem.type = 'button';
-        replaceCloudItem.className = 'mp-detail-replace-cloud-item';
+        replaceCloudItem.className = 'mp-detail-replace-cloud-item mp-detail-more-item';
         replaceCloudItem.setAttribute('data-filename', selectedFile);
-        replaceCloudItem.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><span>' + escAttr(t('mediaplace_replace_from_cloud')) + '</span>';
-        replaceMenu.appendChild(replaceCloudItem);
-
-        replaceWrap.appendChild(replaceMenu);
+        replaceCloudItem.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i><span>' + escAttr(t('mediaplace_replace_file_from_cloud')) + '</span>';
+        replaceBtnLabel.insertAdjacentElement('afterend', replaceCloudItem);
     }
 
     // Optionaler "AI generieren"-Button neben dem eigenen JSON-Alt-Feld

@@ -2158,6 +2158,16 @@ import {
 
         // ESC to close
         document.addEventListener('keydown', function (e) {
+            // Offenes Menue "Weitere Aktionen" zuerst schliessen (nicht das ganze Overlay)
+            if (e.key === 'Escape' && overlay.classList.contains('mp-open')) {
+                var openMoreMenu = qs('.mp-detail-more.is-open', overlay);
+                if (openMoreMenu) {
+                    setDetailMoreOpen(openMoreMenu, false);
+                    var openMoreBtn = qs('.mp-detail-more-btn', openMoreMenu);
+                    if (openMoreBtn) openMoreBtn.focus();
+                    return;
+                }
+            }
             if (e.key === 'Escape' && overlay.classList.contains('mp-open')) {
                 if (isLightboxOpen()) {
                     closeLightbox();
@@ -2969,6 +2979,20 @@ import {
             // andere Klick innerhalb des Overlays ein offenes Menue zuverlaessig
             // schliesst, ohne die restliche Klick-Verarbeitung zu unterbrechen
             // (kein return hier).
+            // Menue "Weitere Aktionen" (.mp-detail-more, detail_actions.php): Knopf schaltet um,
+            // Klick daneben schliesst; Klick auf einen Eintrag schliesst nach dessen eigener
+            // Verarbeitung (setTimeout -- das <label> fuer "Ersetzen" muss den Dateidialog noch oeffnen)
+            var moreBtn = e.target.closest('.mp-detail-more-btn');
+            var openMore = qs('.mp-detail-more.is-open', overlay);
+            if (openMore && (!e.target.closest('.mp-detail-more') || e.target.closest('.mp-detail-more-item'))) {
+                setTimeout(function () { setDetailMoreOpen(openMore, false); }, 0);
+            }
+            if (moreBtn) {
+                var moreWrap = moreBtn.closest('.mp-detail-more');
+                setDetailMoreOpen(moreWrap, !moreWrap.classList.contains('is-open'));
+                return;
+            }
+
             var openReplaceWrap = qs('.mp-detail-replace-wrap.mp-detail-replace-open', overlay);
             if (openReplaceWrap && !e.target.closest('.mp-detail-replace-wrap')) {
                 openReplaceWrap.classList.remove('mp-detail-replace-open');
@@ -4699,3 +4723,19 @@ import {
         startBackgroundTicker();
     }
 })();
+
+/** Menue "Weitere Aktionen" im Detail-Panel oeffnen/schliessen (siehe detail_actions.php) */
+function setDetailMoreOpen(wrap, open) {
+    if (!wrap) return;
+    var btn = wrap.querySelector('.mp-detail-more-btn');
+    var menu = wrap.querySelector('.mp-detail-more-menu');
+    wrap.classList.toggle('is-open', open);
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (menu) {
+        menu.hidden = !open;
+        if (open) {
+            var first = menu.querySelector('.mp-detail-more-item');
+            if (first) first.focus();
+        }
+    }
+}
