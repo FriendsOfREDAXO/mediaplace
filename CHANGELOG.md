@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 3.0.3 – 2026-11-12
+
+### Behoben
+- **„Löschen“ im Detail-Panel wurde rechts abgeschnitten**: Sechs Knöpfe in einer Reihe waren breiter als das Panel. Neue Aufteilung: Werkzeuge (Ersetzen, Umbenennen, Herunterladen, Sammlungen) links, „Löschen“ rot und deutlich abgesetzt ganz rechts, „Speichern“ als eigene Zeile darunter, mit Text auch auf schmalen Bildschirmen.
+- Alle Werkzeug-Knöpfe sind gleich breit (Sammlungen war schmaler).
+
 ## Version 3.0.2 – 2026-11-12
 
 ### Geändert
