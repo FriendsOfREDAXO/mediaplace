@@ -18,6 +18,12 @@
  * verdient er ohnehin die volle Breite statt mit den kleinen Icon-Buttons zu
  * konkurrieren.
  *
+ * Aufteilung (3.0.3): Werkzeuge links, "Loeschen" rot und ganz rechts abgesetzt
+ * (margin-left:auto, nicht versehentlich neben "Speichern" zu treffen),
+ * "Speichern" als eigene vollbreite Zeile darunter. Vorher standen sechs
+ * Knoepfe in einer Reihe -- breiter als das 320px-Panel, "Loeschen" wurde
+ * rechts an der Kante abgeschnitten.
+ *
  * "Speichern" (.mp-detail-save-btn) lebt hier statt am Ende der (potenziell
  * langen, scrollbaren) Bearbeiten-Sektion, damit er nicht weggescrollt werden
  * kann -- immer sichtbar (Default: disabled), nur der disabled-Zustand wird
@@ -64,9 +70,10 @@ $downloadUrl = $apiBase . 'media/' . rawurlencode($filename) . '/file' . ($token
             <button type="button" class="mp-detail-collection-btn<?= $hasCollections ? ' is-active' : '' ?>" data-filename="<?= rex_escape($filename) ?>" title="<?= rex_escape($this->i18n('mediaplace_manage_collections')) ?>">
                 <i class="fa-solid fa-bookmark"></i></button>
         <?php endif; ?>
-        <button type="button" class="mp-detail-save-btn" title="<?= rex_escape($this->i18n('mediaplace_save_changes')) ?>" disabled>
-            <i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
-        <button class="mp-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" data-in-use-detail="<?= rex_escape((string) ($info['is_in_use_detail'] ?? '')) ?>" title="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>">
+        <button type="button" class="mp-detail-delete-btn" data-filename="<?= rex_escape($filename) ?>" data-in-use="<?= $info['is_in_use'] ? '1' : '0' ?>" data-in-use-detail="<?= rex_escape((string) ($info['is_in_use_detail'] ?? '')) ?>" title="<?= rex_escape($this->i18n('mediaplace_delete_file')) ?>">
             <i class="fa-solid fa-trash-can"></i></button>
     </div>
+
+    <button type="button" class="mp-detail-save-btn" title="<?= rex_escape($this->i18n('mediaplace_save_changes')) ?>" disabled>
+        <i class="fa-solid fa-floppy-disk"></i> <?= rex_escape($this->i18n('mediaplace_save')) ?></button>
 </div>

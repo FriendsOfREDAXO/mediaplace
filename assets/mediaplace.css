@@ -4313,7 +4313,18 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
    Unlesbarkeit zusammengequetscht, siehe detail_actions.php). */
 #mp-overlay .mp-detail-actions-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
+}
+
+/* Loeschen abgesetzt ganz rechts, rot (destruktive Aktion) */
+#mp-overlay .mp-detail-actions-row .mp-detail-delete-btn {
+    margin-left: auto;
+}
+
+/* Speichern: eigene vollbreite Zeile unter den Werkzeugen (siehe detail_actions.php) */
+#mp-overlay .mp-detail-actions > .mp-detail-save-btn {
+    width: 100%;
 }
 
 #mp-overlay .mp-detail-select-btn {
@@ -4372,6 +4383,7 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
 
 #mp-overlay .mp-detail-collection-btn {
     width: auto;
+    min-width: 36px;
     padding: 0 10px;
     gap: 6px;
     font-size: 12px;
@@ -4441,9 +4453,16 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
     background: var(--mp-cat-hover-bg);
 }
 
-#mp-overlay .mp-detail-delete-btn:hover {
-    background: var(--mp-delete-hover-bg);
-    color: var(--mp-delete-hover-text);
+/* Rotes Symbol auf derselben Flaeche wie die anderen Knoepfe (eine rote
+   Vollflaeche wirkte groesser als die uebrigen Icons); erst beim Zeigen rot hinterlegt */
+#mp-overlay .mp-detail-delete-btn {
+    color: #d9534f;
+}
+
+#mp-overlay .mp-detail-delete-btn:hover,
+#mp-overlay .mp-detail-delete-btn:focus-visible {
+    background: #b52b27;
+    color: #fff;
 }
 
 #mp-overlay .mp-detail-delete-btn:disabled {
@@ -5123,14 +5142,6 @@ body.rex-theme-dark #mp-overlay .mp-alt-missing-nav {
         flex-wrap: wrap;
     }
 
-    #mp-overlay .mp-detail-save-btn {
-        padding: 0 10px;
-        font-size: 0;
-    }
-
-    #mp-overlay .mp-detail-save-btn i {
-        font-size: 14px;
-    }
 
     /* Touch-Ziele vergroessern (Empfehlung u.a. WCAG 2.5.5: min. 44x44px) --
        nur die Klickflaeche, nicht das Icon selbst (bleibt bei seiner
@@ -7209,14 +7220,6 @@ body.rex-theme-dark #mp-overlay .mp-alt-hint {
     flex-wrap: wrap;
 }
 
-#mp-overlay.mp-compact .mp-detail-save-btn {
-    padding: 0 10px;
-    font-size: 0;
-}
-
-#mp-overlay.mp-compact .mp-detail-save-btn i {
-    font-size: 14px;
-}
 
 /* Siehe Kommentar im @media (max-width: 768px)-Block oben. */
 #mp-overlay.mp-compact .mp-collection-add-btn,
