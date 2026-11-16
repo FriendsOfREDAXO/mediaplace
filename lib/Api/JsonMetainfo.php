@@ -207,6 +207,7 @@ class JsonMetainfo extends rex_api_function
             // Detail-Panel beim (Wieder-)Oeffnen sofort den Status zeigt statt
             // erst nach einem erneuten Klick auf "optimieren".
             'optimize_video_job' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getActiveJobForFile($media->getFileName()),
+            'optimize_video_queued' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getQueuedJobForFile($media->getFileName()),
             'optimize_video_status' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getOptimizedStatus($media->getFileName()),
             // Schnitt-Editor und Untertitel (ffmpeg ab 5.0)
             'video_tools' => \FriendsOfRedaxo\Mediaplace\FfmpegIntegration::getEditorTools($media->getFileName()),
@@ -287,6 +288,7 @@ class JsonMetainfo extends rex_api_function
             'optimize_video_available' => (bool) ($apiInfo['optimize_video_available'] ?? false),
             'video_details_available' => (bool) ($apiInfo['video_details_available'] ?? false),
             'optimize_video_job' => $apiInfo['optimize_video_job'] ?? null,
+            'optimize_video_queued' => $apiInfo['optimize_video_queued'] ?? null,
             'optimize_video_status' => $apiInfo['optimize_video_status'] ?? null,
             'video_tools' => $apiInfo['video_tools'] ?? null,
             'optimize_image_available' => (bool) ($apiInfo['optimize_image_available'] ?? false),

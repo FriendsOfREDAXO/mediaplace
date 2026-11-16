@@ -59,6 +59,7 @@ $filename = $info['filename'];
         <?php $optimizedStatus = $info['optimize_video_status'] ?? null; ?>
         <button type="button" class="mp-video-optimize-btn<?= $optimizedStatus ? ' mp-video-optimize-btn-secondary' : '' ?>" data-optimize-video-file="<?= rex_escape($filename) ?>"
                 <?php if (!empty($info['optimize_video_job'])): ?>data-optimize-video-job="<?= rex_escape((string) json_encode($info['optimize_video_job'])) ?>"<?php endif; ?>
+                <?php if (!empty($info['optimize_video_queued'])): ?>data-optimize-video-queued="<?= rex_escape((string) json_encode($info['optimize_video_queued'])) ?>"<?php endif; ?>
         ><i class="fa-solid fa-arrows-rotate"></i> <?= $optimizedStatus ? $this->i18n('mediaplace_reoptimize_video') : $this->i18n('mediaplace_optimize_video') ?></button>
         <?php if ($optimizedStatus): ?>
             <p class="mp-video-optimize-badge"><i class="fa-solid fa-check"></i> <?= $optimizedStatus['compressionRate'] > 0

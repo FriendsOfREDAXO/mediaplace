@@ -136,6 +136,7 @@ mediaplace_optimize_video_progress = Wird optimiert… {percent}%
 mediaplace_optimize_video_done = Video optimiert
 mediaplace_optimize_video_failed = Optimierung fehlgeschlagen
 mediaplace_optimize_video_busy = Es läuft bereits eine andere Videokonvertierung, bitte später erneut versuchen.
+mediaplace_optimize_video_queued = In der Warteschlange (Platz {position}) – startet von selbst, sobald die laufende Konvertierung fertig ist.
 mediaplace_cronjob_thumb_warmup_title = MediaPlace: Vorschaubilder vorwärmen
 mediaplace_cronjob_thumb_warmup_image_batch_size = Neue Bild-Vorschaubilder pro Lauf
 mediaplace_cronjob_thumb_warmup_video_batch_size = Neue Video-Vorschaubilder pro Lauf (nur mit ffmpeg)

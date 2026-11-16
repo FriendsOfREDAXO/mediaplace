@@ -884,6 +884,20 @@
         });
     }
 
+    // Stand eines eingereihten Auftrags (ab ffmpeg 5.2): queued/started/gone
+    function apiQueueOptimizeVideo(queueId, filename) {
+        return fetch(getOptimizeVideoApiUrl('queue', { queue: queueId, file: filename }), {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            return r.json().then(function (json) {
+                if (!r.ok || json.error) throw new Error(json.error || 'HTTP ' + r.status);
+                return json;
+            });
+        });
+    }
+
     // Lazy nachgeladene Video-Technikdaten fuer den "Technische Details"-
     // Bereich, siehe rex_api_mediaplace_video_info.php.
     function apiLoadVideoDetails(filename) {
@@ -1303,6 +1317,7 @@
     Core.api.apiImageEditRestore = apiImageEditRestore;
     Core.api.apiStartOptimizeVideo = apiStartOptimizeVideo;
     Core.api.apiPollOptimizeVideo = apiPollOptimizeVideo;
+    Core.api.apiQueueOptimizeVideo = apiQueueOptimizeVideo;
     Core.api.apiLoadVideoDetails = apiLoadVideoDetails;
     Core.api.apiOptimizeImage = apiOptimizeImage;
     Core.api.apiFetchProviderEntries = apiFetchProviderEntries;

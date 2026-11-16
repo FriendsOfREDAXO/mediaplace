@@ -29,6 +29,8 @@ var t = MPCore.i18n.t;
 var escAttr = MPCore.helpers.escAttr;
 var apiStartOptimizeVideo = MPCore.api.apiStartOptimizeVideo;
 var apiPollOptimizeVideo = MPCore.api.apiPollOptimizeVideo;
+var apiQueueOptimizeVideo = MPCore.api.apiQueueOptimizeVideo;
+var optimizeVideoQueueWait = null;
 var apiOptimizeImage = MPCore.api.apiOptimizeImage;
 var apiLoadVideoDetails = MPCore.api.apiLoadVideoDetails;
 
@@ -62,6 +64,11 @@ export function startOptimizeVideo(filename, btn) {
 
     apiStartOptimizeVideo(filename)
         .then(function (data) {
+            // ab ffmpeg 5.2: eingereiht, weil gerade eine andere Konvertierung laeuft
+            if ('queued' === data.status && data.queue_id) {
+                waitQueuedOptimizeVideo(filename, data.queue_id, data.position, btn, statusEl);
+                return;
+            }
             if ('busy' === data.status) {
                 setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + (data.message || t('mediaplace_optimize_video_busy')));
                 if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
@@ -77,6 +84,63 @@ export function startOptimizeVideo(filename, btn) {
             setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_optimizing_video', { msg: err.message }));
             if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
         });
+}
+
+// Wartet in ffmpeg's Warteschlange: Platz anzeigen, bis der Auftrag startet (dann normales Polling) oder
+// verschwindet (fertig, herausgenommen) -- dann Liste/Detail neu laden.
+export function waitQueuedOptimizeVideo(filename, queueId, position, btn, statusEl) {
+    if (optimizeVideoQueueWait) clearInterval(optimizeVideoQueueWait);
+    if (!apiQueueOptimizeVideo) return;
+
+    var setStatus = function (html) {
+        if (!statusEl) return;
+        statusEl.style.display = '';
+        statusEl.innerHTML = html;
+    };
+    var showPosition = function (pos) {
+        setStatus('<i class="fa-solid fa-hourglass-half"></i> ' + t('mediaplace_optimize_video_queued', { position: pos }));
+    };
+    var stop = function () {
+        clearInterval(optimizeVideoQueueWait);
+        optimizeVideoQueueWait = null;
+    };
+
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.add('is-loading');
+    }
+    showPosition(position || 1);
+
+    var tick = function () {
+        // Detail-Panel inzwischen geschlossen/gewechselt: nicht weiter nachfragen
+        if (btn && !btn.isConnected) { stop(); return; }
+        apiQueueOptimizeVideo(queueId, filename)
+            .then(function (data) {
+                if ('queued' === data.status) {
+                    showPosition(data.position);
+                    return;
+                }
+                stop();
+                if ('started' === data.status && data.job) {
+                    optimizeVideoJobId = data.job;
+                    pollOptimizeVideo(filename, data.job, btn, statusEl);
+                    return;
+                }
+                // gone: schon fertig oder aus der Warteschlange genommen
+                if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+                if (statusEl) { statusEl.innerHTML = ''; statusEl.style.display = 'none'; }
+                ctx.mediaForceCacheTokens[filename] = Date.now();
+                ctx.loadFiles(ctx.getCurrentCat(), true);
+                if (ctx.getSelectedFile() === filename) ctx.showDetail(filename);
+            })
+            .catch(function (err) {
+                stop();
+                setStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + t('mediaplace_error_optimizing_video', { msg: err.message }));
+                if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+            });
+    };
+
+    optimizeVideoQueueWait = setInterval(tick, 3000);
 }
 
 export function pollOptimizeVideo(filename, jobId, btn, statusEl) {

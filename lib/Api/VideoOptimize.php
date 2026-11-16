@@ -17,13 +17,16 @@ use rex_api_result;
  *     Startet einen Job im 'overwrite'-Modus (Original wird ersetzt).
  * GET ?rex-api-call=mediaplace_video_optimize&func=status&job=...
  *     Pollt den Job-Status (siehe Converter::pollJob()).
+ * GET ?rex-api-call=mediaplace_video_optimize&func=queue&queue=...&file=...
+ *     Stand eines eingereihten Auftrags (ab ffmpeg 5.2, Antwort von func=start mit status=queued):
+ *     queued (position), started (job -> weiter mit func=status) oder gone.
  */
 class VideoOptimize extends rex_api_function
 {
     use CsrfProtection;
 
     /** Lesende GET-Anfragen ohne CSRF-Token, siehe CsrfProtection */
-    protected const CSRF_READ_ONLY = ['func' => ['status', '']];
+    protected const CSRF_READ_ONLY = ['func' => ['status', 'queue', '']];
 
     public function execute(): rex_api_result
     {
@@ -50,6 +53,11 @@ class VideoOptimize extends rex_api_function
 
         if ('start' === rex_request('func', 'string', '')) {
             $this->handleStart($user);
+        } elseif ('queue' === rex_request('func', 'string', '')) {
+            \rex_response::sendJson(\FriendsOfRedaxo\Mediaplace\FfmpegIntegration::queueState(
+                rex_request('queue', 'string', ''),
+                rex_request('file', 'string', ''),
+            ));
         } else {
             $this->handleStatus();
         }
