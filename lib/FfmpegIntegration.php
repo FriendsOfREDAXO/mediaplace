@@ -268,7 +268,53 @@ class FfmpegIntegration
      */
     public static function startOptimizeJob(string $filename, \rex_user $user): array
     {
+        // ab ffmpeg 5.2: läuft gerade eine andere Konvertierung, wird eingereiht (status=queued) statt abgelehnt
+        if (self::supportsQueue()) {
+            return \FriendsOfRedaxo\FFmpeg\Api\Converter::startOverwriteJob($filename, $user, true);
+        }
+
         return \FriendsOfRedaxo\FFmpeg\Api\Converter::startOverwriteJob($filename, $user);
+    }
+
+    /** Warteschlange für „Video optimieren“ (ffmpeg 5.2: startOverwriteJob(…, queue: true) und Converter::queueState()) */
+    public static function supportsQueue(): bool
+    {
+        return version_compare((string) (\rex_addon::get('ffmpeg')->getVersion() ?: '0'), '5.2.0', '>=')
+            && method_exists(\FriendsOfRedaxo\FFmpeg\Api\Converter::class, 'queueState');
+    }
+
+    /**
+     * Stand eines eingereihten Auftrags: queued (mit position), started (mit job fürs Polling) oder gone
+     *
+     * @return array{status: string, position?: int, job?: string}
+     */
+    public static function queueState(string $queueId, string $filename): array
+    {
+        if (!self::supportsQueue()) {
+            return ['status' => 'gone'];
+        }
+
+        return \FriendsOfRedaxo\FFmpeg\Api\Converter::queueState($queueId, $filename);
+    }
+
+    /**
+     * Wartet „Video optimieren“ für genau diese Datei in der Warteschlange? Dann zeigt das Detail-Panel beim
+     * (Wieder-)Öffnen den Platz an und übernimmt, sobald der Auftrag startet.
+     *
+     * @return array{queue_id: string, position: int}|null
+     */
+    public static function getQueuedJobForFile(string $filename): ?array
+    {
+        if (!self::isAvailable() || !self::supportsQueue()) {
+            return null;
+        }
+        foreach (\FriendsOfRedaxo\FFmpeg\Queue::overview() as $entry) {
+            if ($entry['video'] === $filename && 'overwrite' === $entry['mode']) {
+                return ['queue_id' => $entry['id'], 'position' => $entry['position']];
+            }
+        }
+
+        return null;
     }
 
     /**

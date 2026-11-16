@@ -252,7 +252,7 @@ serverseitig liefert `\FriendsOfRedaxo\Mediaplace\Api\<Klasse>::getUrlParams()` 
 | GET | `?rex-api-call=mediaplace_unused&filenames=a,b,c` | Prüft, welche Dateien unbenutzt sind |
 | GET/POST | `?rex-api-call=mediaplace_focuspoint` | Fokuspunkt lesen/speichern (nur mit `focuspoint`-Addon) |
 | GET/POST | `?rex-api-call=mediaplace_image_edit&action=info\|save\|restore&file={f}` | Bildbearbeitung (POST mit CSRF-Token) |
-| GET | `?rex-api-call=mediaplace_video_optimize&func=start\|status` | Video optimieren starten/pollen (nur mit `ffmpeg`-Addon) |
+| GET | `?rex-api-call=mediaplace_video_optimize&func=start\|status\|queue` | Video optimieren starten/pollen, Stand in der Warteschlange (`queue=…&file=…`, ab `ffmpeg` 5.2) (nur mit `ffmpeg`-Addon) |
 | GET | `?rex-api-call=mediaplace_video_info&file={f}` | Technische Videodaten lazy nachladen (nur mit `ffmpeg`-Addon) |
 | GET | `?rex-api-call=mediaplace_image_optimize&func=optimize&file={f}` | Übergroßes Bild in-place verkleinern |
 | GET | `?rex-api-call=mediaplace_metainfo_form&filename={f}` | Formular für echte Metainfo-Felder laden/speichern (Einstellung „Metadaten bearbeiten“) |

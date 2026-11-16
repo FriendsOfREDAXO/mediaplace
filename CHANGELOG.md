@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 3.2.0 – 2026-11-16
+
+### Neu
+- **„Video optimieren“ reiht ein**: Läuft gerade eine andere Videokonvertierung, kommt das Video in die Warteschlange des ffmpeg-AddOns (ab ffmpeg 5.2), statt mit „Es läuft bereits eine andere Videokonvertierung“ abzubrechen. Das Detail-Panel zeigt „In der Warteschlange (Platz n)“ und übernimmt den Fortschritt, sobald der Auftrag startet – auch nach dem Schließen und erneuten Öffnen. Mit älteren ffmpeg-Versionen bleibt es beim bisherigen Hinweis.
+- API `mediaplace_video_optimize`: neu `func=queue&queue=…&file=…` (queued mit Platz, started mit Job-ID, gone).
+
+### Behoben
+- **Klassische Medienfelder beachten `types`**: `REX_MEDIA[… types="jpg,png"]` und `REX_MEDIALIST[… types=…]` schränken jetzt auch im Overlay die wählbaren Dateien ein (bisher war jede Datei wählbar). Hochgeladene Dateien mit anderer Endung werden mit Hinweis abgewiesen. Danke an @tyrant88 (#29).
+
 ## Version 3.1.0 – 2026-11-12
 
 ### Geändert

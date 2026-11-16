@@ -19,7 +19,7 @@
 import { isFocuspointCanvasOpen, closeFocuspointCanvas } from './focuspoint.js';
 import { showAlertModal } from './modals.js';
 import { isCollectionTagName, splitSystemTags, mergeUniqueSystemTags } from './collections.js';
-import { pollOptimizeVideo } from './optimize.js';
+import { pollOptimizeVideo, waitQueuedOptimizeVideo } from './optimize.js';
 import { attachOwnFieldButton, attachClassicFieldButton } from './ai_alt.js';
 import { attachTagSuggestButton } from './ai_tags.js';
 import { renderFileTagDots } from './grid.js';
@@ -1250,6 +1250,17 @@ function renderDetail(jsonPayload) {
                     pollOptimizeVideo(optimizeFile, activeJob.id, optimizeBtn, optimizeBtn.parentNode.querySelector('.mp-video-optimize-status'));
                 }
             } catch (e) { /* malformed/missing -- kein aktiver Job */ }
+        }
+        // ... oder wartet sie in der Warteschlange (ffmpeg ab 5.2)?
+        var queuedRaw = optimizeBtn.getAttribute('data-optimize-video-queued');
+        if (queuedRaw && !activeJobRaw) {
+            try {
+                var queued = JSON.parse(queuedRaw);
+                if (queued && queued.queue_id) {
+                    waitQueuedOptimizeVideo(optimizeBtn.getAttribute('data-optimize-video-file') || '', queued.queue_id, queued.position,
+                        optimizeBtn, optimizeBtn.parentNode.querySelector('.mp-video-optimize-status'));
+                }
+            } catch (e) { /* malformed -- nichts anzeigen */ }
         }
     }
 
