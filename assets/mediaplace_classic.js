@@ -48,6 +48,37 @@
         return match ? parseInt(match[1], 10) : null;
     }
 
+    function typesFromLink(link) {
+        var onclick = link.getAttribute('onclick') || '';
+        var match = onclick.match(/args(?:\[|%5B)types(?:\]|%5D)=([^&'"]+)/i);
+        if (!match) return null;
+        var types = decodeURIComponent(match[1]).split(',').map(function (ext) {
+            return ext.trim().toLowerCase().replace(/^\./, '');
+        }).filter(Boolean);
+        return types.length ? types : null;
+    }
+
+    function isAllowedType(filename, types) {
+        if (!types) return true;
+        var name = String(filename || '');
+        var dot = name.lastIndexOf('.');
+        return dot > -1 && types.indexOf(name.substring(dot + 1).toLowerCase()) !== -1;
+    }
+
+    function rejectType(filename) {
+        var tText = window.MPCore && window.MPCore.i18n && window.MPCore.i18n.tText;
+        window.alert(tText ? tText('mediaplace_widget_upload_type_rejected', { files: filename }) : filename);
+    }
+
+    function widgetOptions(link, base) {
+        var options = base || {};
+        var categoryId = categoryFromLink(link);
+        if (null !== categoryId) options.categoryId = categoryId;
+        var types = typesFromLink(link);
+        if (types) options.allowedExtensions = types;
+        return options;
+    }
+
     // Ermittelt die "Ansehen"-Zieldatei fuer beide Widget-Typen -- genutzt
     // sowohl fuer den normalen Fall (handleMediaWidget/handleMedialistWidget)
     // als auch fuer den Metainfo-Canvas-Fall unten (dort bisher komplett
@@ -70,7 +101,13 @@
         var input = qs('input[id^="REX_MEDIA_"]', wrapper);
         if (!input) return;
 
+        var types = typesFromLink(link);
+
         function setValue(filename) {
+            if (!isAllowedType(filename, types)) {
+                rejectType(filename);
+                return;
+            }
             input.value = filename;
             if (window.jQuery) {
                 window.jQuery(input).trigger('change');
@@ -86,11 +123,10 @@
             // Ziel-Kategorie, falls das Widget mit einem "category"-Arg
             // konfiguriert ist, sonst fragt MP.openUpload() wie gewohnt
             // (aktuelle Kategorie bzw. Modal-Abfrage, siehe doUpload()).
-            var categoryId = categoryFromLink(link);
-            MP.openUpload(setValue, null !== categoryId ? { categoryId: categoryId } : undefined);
+            MP.openUpload(setValue, widgetOptions(link));
         } else {
             // 'open': normales Browsen/Auswaehlen
-            MP.open(setValue);
+            MP.open(setValue, widgetOptions(link));
         }
     }
 
@@ -100,19 +136,26 @@
         if (!select) return;
         var listId = select.id.slice('REX_MEDIALIST_SELECT_'.length);
 
+        var types = typesFromLink(link);
+
         function addFilenames(filenames) {
+            var rejected = [];
             filenames.forEach(function (filename) {
+                if (!isAllowedType(filename, types)) {
+                    rejected.push(filename);
+                    return;
+                }
                 var exists = Array.prototype.some.call(select.options, function (o) { return o.value === filename; });
                 if (!exists) select.add(new Option(filename, filename));
             });
+            if (rejected.length) rejectType(rejected.join(', '));
             if (typeof window.writeREXMedialist === 'function') {
                 window.writeREXMedialist(listId);
             }
         }
 
         if (action === 'add') {
-            var categoryId = categoryFromLink(link);
-            MP.openUpload(addFilenames, { multiple: true, categoryId: null !== categoryId ? categoryId : undefined });
+            MP.openUpload(addFilenames, widgetOptions(link, { multiple: true }));
             return;
         }
 
@@ -129,7 +172,7 @@
 
         // 'open' und 'view' ohne Auswahl: Mehrfachauswahl-Overlay ('add' bereits
         // oben per return behandelt)
-        MP.open(addFilenames, { multiple: true });
+        MP.open(addFilenames, widgetOptions(link, { multiple: true }));
     }
 
     document.addEventListener('click', function (e) {
