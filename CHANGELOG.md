@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 3.2.1 – 2026-11-18
+
+### Behoben
+- **Tag-Leiste mit HTTP 500 auf älteren Datenbanken** („Illegal mix of collations … for operation '='“): Viele seit Jahren laufende Seiten haben `rex_media` noch mit `utf8mb3_general_ci`, die von MediaPlace angelegte Tabelle `rex_mediaplace_media_tags` bekommt dagegen `…_unicode_ci`. Die Abfragen über `filename` (Tag-Leiste, Sammlungen, Tags per Kategorie zuweisen) scheiterten. Install und Update gleichen jetzt Zeichensatz und Sortierung dieser einen Spalte an `rex_media.filename` an (`install/align_filename_collation.php`, neu: `update.php`).
+  - Stimmen die Sortierungen schon überein (Normalfall), wird nichts geändert.
+  - `rex_media` selbst wird nie angefasst; ein Fehler bei der Angleichung landet im Systemlog und bricht weder Install noch Update ab.
+
 ## Version 3.2.0 – 2026-11-16
 
 ### Neu
