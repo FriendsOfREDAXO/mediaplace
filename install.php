@@ -12,6 +12,9 @@ require_once __DIR__ . '/lib/SystemTagManager.php';
 \FriendsOfRedaxo\Mediaplace\SystemTagManager::ensureSchema();
 \FriendsOfRedaxo\Mediaplace\MediaRename::ensureSchema();
 
+// filename-Spalten an rex_media angleichen (Collation), sonst scheitern die JOINs auf älteren Datenbanken
+(require __DIR__ . '/install/align_filename_collation.php')();
+
 // Standard-Feld "Beschreibung" anlegen, damit das Detail-Panel nach der
 // Installation nicht komplett leer ist. install.php laeuft sowohl beim
 // Erst-Install als auch bei jedem Update -- die Existenzpruefung verhindert
